@@ -19,7 +19,7 @@ export default function Login({ onLogin }) {
   const reqLength = password.length >= 8;
   const reqUpper = /[A-Z]/.test(password);
   const reqNumber = /[0-9]/.test(password);
-  const reqSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Nuevo requisito especial
+  const reqSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
   
   const isPasswordValid = reqLength && reqUpper && reqNumber && reqSpecial;
 
@@ -175,8 +175,9 @@ export default function Login({ onLogin }) {
           </button>
         </form>
 
-        {/* ENLACE PARA CAMBIAR ENTRE LOGIN Y REGISTRO */}
-        <div style={{ marginTop: '25px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+        {/* ENLACE PARA CAMBIAR ENTRE LOGIN Y REGISTRO (OCULTO TEMPORALMENTE) */}
+        {/* Para volver a habilitarlo en el futuro, simplemente borra los símbolos {/* y */} 
+        {/* <div style={{ marginTop: '25px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
           <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
             {isRegistering ? '¿Ya tienes una cuenta?' : '¿Personal nuevo?'} 
             <button 
@@ -188,6 +189,7 @@ export default function Login({ onLogin }) {
             </button>
           </p>
         </div>
+        */}
 
       </div>
     </div>
