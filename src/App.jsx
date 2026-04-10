@@ -4361,30 +4361,72 @@ const handleLogin = () => {
               </div>
 
               {/* Main */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ background: '#fff', borderBottom: `1px solid ${BD}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                  <div><div style={{ fontSize: 15, fontWeight: 700, color: DN }}>{TITLES[view]}</div><div style={{ fontSize: 9.5, color: MU }}>Lunes 7 de julio de 2025</div></div>
+<div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100%' }}>
+  {/* Header: Ahora es responsivo con flexWrap */}
+  <div style={{ 
+    background: '#fff', 
+    borderBottom: `1px solid ${BD}`, 
+    padding: '10px 20px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    flexShrink: 0,
+    flexWrap: 'wrap', // Permite que los botones bajen si no hay espacio
+    gap: '10px' 
+  }}>
+    <div style={{ minWidth: 'fit-content' }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: DN }}>{TITLES[view]}</div>
+      <div style={{ fontSize: 9.5, color: MU }}>Lunes 7 de julio de 2025</div>
+    </div>
 
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {selPat && view === 'historia' && <button onClick={() => setSelPat(null)} style={{ background: LT, color: MU, border: `1px solid ${BD}`, borderRadius: 7, padding: '5px 12px', fontSize: 10, cursor: 'pointer' }}>← Volver</button>}
-                    <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 7, padding: '5px 12px', fontSize: 10, color: P, fontWeight: 600, cursor: 'pointer' }} onClick={() => goTo('agenda')}>+ Nueva cita</div>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', cursor: 'pointer', fontStyle: 'italic' }}>S</div>
-                    <div onClick={handleLogout} style={{ background: '#fef2f2', border: `1px solid ${RJ}44`, borderRadius: 7, padding: '5px 10px', fontSize: 10, color: RJ, fontWeight: 600, cursor: 'pointer', marginLeft: '5px' }} title="Cerrar sesión">Salir</div>
-                  </div>
-                </div>
-                <div style={{ flex: 1, overflow: ['historia', 'whatsapp'].includes(view) ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
-                  {view === 'dashboard' && <Dashboard setView={goTo} setSelPat={setSelPat} />}
-                  {view === 'agenda' && <Agenda />}
-                  {/* Aquí inyectamos la memoria a la pantalla de Pacientes */}
-                  {view === 'pacientes' && <Pacientes setView={goTo} setSelPat={setSelPat} patientsList={patientsList} setPatientsList={setPatientsList} />}
-                  {view === 'historia' && <Historia patient={selPat} teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} setView={goTo} />}
-                  {view === 'caja' && <Caja />}
-                  {view === 'laboratorio' && <Laboratorio />}
-                  {view === 'reportes' && <Reportes />}
-                  {view === 'whatsapp' && <WhatsApp />}
-                  {view === 'config' && <Config />}
-                </div>
-              </div>
-            </div>
-            );
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      {selPat && view === 'historia' && (
+        <button 
+          onClick={() => setSelPat(null)} 
+          style={{ background: LT, color: MU, border: `1px solid ${BD}`, borderRadius: 7, padding: '5px 12px', fontSize: 10, cursor: 'pointer' }}
+        >
+          ← Volver
+        </button>
+      )}
+      <div 
+        style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 7, padding: '5px 12px', fontSize: 10, color: P, fontWeight: 600, cursor: 'pointer' }} 
+        onClick={() => goTo('agenda')}
+      >
+        + Nueva cita
+      </div>
+      <div style={{ width: 28, height: 28, borderRadius: '50%', background: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', cursor: 'pointer', fontStyle: 'italic' }}>
+        S
+      </div>
+      <div 
+        onClick={handleLogout} 
+        style={{ background: '#fef2f2', border: `1px solid ${RJ}44`, borderRadius: 7, padding: '5px 10px', fontSize: 10, color: RJ, fontWeight: 600, cursor: 'pointer', marginLeft: '5px' }} 
+        title="Cerrar sesión"
+      >
+        Salir
+      </div>
+    </div>
+  </div>
+
+  {/* Contenido Dinámico */}
+  <div style={{ 
+    flex: 1, 
+    overflow: ['historia', 'whatsapp'].includes(view) ? 'hidden' : 'auto', 
+    display: 'flex', 
+    flexDirection: 'column',
+    width: '100%' 
+  }}>
+    {view === 'dashboard' && <Dashboard setView={goTo} setSelPat={setSelPat} />}
+    {view === 'agenda' && <Agenda />}
+    {/* Aquí inyectamos la memoria a la pantalla de Pacientes */}
+    {view === 'pacientes' && <Pacientes setView={goTo} setSelPat={setSelPat} patientsList={patientsList} setPatientsList={setPatientsList} />}
+    {view === 'historia' && <Historia patient={selPat} teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} setView={goTo} />}
+    {view === 'caja' && <Caja />}
+    {view === 'laboratorio' && <Laboratorio />}
+    {view === 'reportes' && <Reportes />}
+    {view === 'whatsapp' && <WhatsApp />}
+    {view === 'config' && <Config />}
+    </div>
+  </div>
+</div>
+);
 }
