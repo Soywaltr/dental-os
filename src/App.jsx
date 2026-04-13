@@ -2332,7 +2332,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
   // Función de guardado específica para Plan de Tratamiento
   const handleSavePlanTrata = async () => {
     setSavingTrata(true);
-    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).single();
+    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).maybeSingle();
  
     let error;
     if (existe) {
@@ -2356,7 +2356,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
   useEffect(() => {
     if (patData && patData.id) {
       const cargarDatosOrto = async () => {
-        const { data } = await supabase.from('ortodoncia').select('*').eq('paciente_id', patData.id).single();
+        const { data } = await supabase.from('ortodoncia').select('*').eq('paciente_id', patData.id).maybeSingle();
         if (data) {
           if (data.examen_clinico) setOrtoForm(data.examen_clinico);
           if (data.plan_trabajo) setPlanTrabajoForm(data.plan_trabajo);
@@ -2372,7 +2372,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
   // Función de guardado específica para Plan de Trabajo
   const handleSavePlanTrabajo = async () => {
     setSavingTrabajo(true);
-    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).single();
+    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).maybeSingle();
  
     let error;
     if (existe) {
@@ -2398,7 +2398,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
  
   const handleSaveResumen = async () => {
     setSavingResumen(true);
-    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).single();
+    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).maybeSingle();
  
     let error;
     if (existe) {
@@ -2440,7 +2440,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
  
     setFotosOrto(nuevoEstadoFotos);
  
-    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).single();
+    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).maybeSingle();
     if (existe) {
       await supabase.from('ortodoncia').update({ fotografias: nuevoEstadoFotos }).eq('id', existe.id);
     } else {
@@ -2463,7 +2463,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
  
       setFotosOrto(nuevoEstadoFotos);
  
-      const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).single();
+      const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).maybeSingle();
       if (existe) await supabase.from('ortodoncia').update({ fotografias: nuevoEstadoFotos }).eq('id', existe.id);
  
     } catch (error) {
@@ -2479,7 +2479,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
   useEffect(() => {
     if (patData && patData.id) {
       const cargarOrto = async () => {
-        const { data } = await supabase.from('ortodoncia').select('*').eq('paciente_id', patData.id).single();
+        const { data } = await supabase.from('ortodoncia').select('*').eq('paciente_id', patData.id).maybeSingle();
         if (data && data.examen_clinico) {
           setOrtoForm(data.examen_clinico);
         }
@@ -2490,7 +2490,7 @@ function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion,
  
   const handleSaveOrto = async () => {
     setSavingOrto(true);
-    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).single();
+    const { data: existe } = await supabase.from('ortodoncia').select('id').eq('paciente_id', patData.id).maybeSingle();
  
     let error;
     if (existe) {
