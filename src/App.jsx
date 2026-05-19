@@ -157,7 +157,8 @@ const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 
 
-const P = '#0D5C6B', PD = '#0A4352', DN = '#0D2B2B', LT = '#F2FAF9', MT = '#E2F2F0', BD = '#C2DFDD', MU = '#7AAFAD', GL = '#C4955A', WA = '#25D366', AZ = '#1e40af', RJ = '#dc2626';
+// Paleta Ultra-Limpia (Pureza y Pulcritud)
+const P = '#0ea5e9', PD = '#0284c7', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
 
 
 
@@ -4334,99 +4335,83 @@ const handleLogin = () => {
     return <Login onLogin={(sessionData) => setSession(sessionData)} />;
   }
 
-            return(
-            <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui,sans-serif', overflow: 'hidden', background: LT }}>
-              <style>{`@keyframes bounce{0%{transform:translateY(0)}100%{transform:translateY(-5px)}}`}</style>
+         return (
+    // 1. FONDO GLOBAL (Gris ultra claro para que el contenido blanco resalte)
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: '"Inter", system-ui, sans-serif', overflow: 'hidden', background: '#f8fafc' }}>
+      
+      {/* 2. BARRA DE NAVEGACIÓN SUPERIOR (Topnav Blanca) */}
+      <div style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '72px', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.02)', zIndex: 10 }}>
+        
+        {/* Logo / Marca */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '10px', background: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 18, color: '#fff', boxShadow: `0 4px 10px ${P}33` }}>S</div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: DN, letterSpacing: '-0.3px' }}>DentalOS</div>
+            <div style={{ fontSize: 11, color: MU, fontWeight: 500 }}>Dra. Sol Vargas</div>
+          </div>
+        </div>
 
-              {/* Sidebar */}
-              <div style={{ width: col ? 52 : 198, background: DN, display: 'flex', flexDirection: 'column', transition: 'width .2s', flexShrink: 0 }}>
-                <div style={{ padding: col ? '13px 9px' : '14px 13px', borderBottom: '1px solid #1e3a3a', display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 14, color: '#fff', fontStyle: 'italic', flexShrink: 0 }}>S</div>
-                  {!col && <div><div style={{ fontSize: 11, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Dra. Sol Vargas</div><div style={{ fontSize: 9, color: MU }}>Trujillo · COP 12345</div></div>}
-                </div>
-                <nav style={{ flex: 1, padding: '7px 5px', overflowY: 'auto' }}>
-                  {NAV.map(it => (
-                    <div key={it.id} onClick={() => goTo(it.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: col ? '8px 0' : '8px 10px', cursor: 'pointer', background: view === it.id ? P : 'transparent', borderRadius: 7, margin: '1px 0', justifyContent: col ? 'center' : 'flex-start', transition: 'background .12s' }}
-                      onMouseEnter={e => view !== it.id && (e.currentTarget.style.background = 'rgba(255,255,255,.09)')}
-                      onMouseLeave={e => view !== it.id && (e.currentTarget.style.background = 'transparent')}>
-                      <span style={{ fontSize: 14, color: view === it.id ? '#fff' : MU, minWidth: 16, textAlign: 'center' }}>{it.i}</span>
-                      {!col && <span style={{ fontSize: 11.5, color: view === it.id ? '#fff' : MU, fontWeight: view === it.id ? 700 : 400 }}>{it.lbl}</span>}
-                    </div>
-                  ))}
-                </nav>
-                <div onClick={() => setCol(!col)} style={{ padding: 9, cursor: 'pointer', color: MU, fontSize: 9.5, borderTop: '1px solid #1e3a3a', textAlign: 'center' }}>
-                  {col ? '→' : '← colapsar'}
-                </div>
-              </div>
+        {/* Menú de Navegación Central */}
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '100%' }}>
+          {NAV.map(it => (
+            <div key={it.id} onClick={() => goTo(it.id)}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', 
+                cursor: 'pointer', borderRadius: '0px',
+                background: 'transparent', 
+                color: view === it.id ? P : MU,
+                borderBottom: view === it.id ? `3px solid ${P}` : '3px solid transparent',
+                transition: 'all 0.2s', height: '100%', boxSizing: 'border-box'
+              }}
+              onMouseEnter={e => view !== it.id && (e.currentTarget.style.color = DN)}
+              onMouseLeave={e => view !== it.id && (e.currentTarget.style.color = MU)}>
+              <span style={{ fontSize: 16 }}>{it.i}</span>
+              <span style={{ fontSize: 13, fontWeight: view === it.id ? 700 : 600 }}>{it.lbl}</span>
+            </div>
+          ))}
+        </nav>
 
-              {/* Main */}
-<div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100%' }}>
-  {/* Header: Ahora es responsivo con flexWrap */}
-  <div style={{ 
-    background: '#fff', 
-    borderBottom: `1px solid ${BD}`, 
-    padding: '10px 20px', 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    flexShrink: 0,
-    flexWrap: 'wrap', // Permite que los botones bajen si no hay espacio
-    gap: '10px' 
-  }}>
-    <div style={{ minWidth: 'fit-content' }}>
-      <div style={{ fontSize: 15, fontWeight: 700, color: DN }}>{TITLES[view]}</div>
-      <div style={{ fontSize: 9.5, color: MU }}>Lunes 7 de julio de 2025</div>
-    </div>
-
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-      {selPat && view === 'historia' && (
-        <button 
-          onClick={() => setSelPat(null)} 
-          style={{ background: LT, color: MU, border: `1px solid ${BD}`, borderRadius: 7, padding: '5px 12px', fontSize: 10, cursor: 'pointer' }}
-        >
-          ← Volver
-        </button>
-      )}
-      <div 
-        style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 7, padding: '5px 12px', fontSize: 10, color: P, fontWeight: 600, cursor: 'pointer' }} 
-        onClick={() => goTo('agenda')}
-      >
-        + Nueva cita
+        {/* Botones de Acción (Derecha) */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button onClick={() => goTo('agenda')} style={{ background: P, border: 'none', borderRadius: '8px', padding: '9px 20px', fontSize: 12, color: '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: `0 4px 12px ${P}44`, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+            + Nueva cita
+          </button>
+          <div onClick={handleLogout} style={{ width: 38, height: 38, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: RJ, cursor: 'pointer', transition: 'all 0.2s', border: `1px solid ${RJ}33` }} title="Cerrar sesión">
+            ✕
+          </div>
+        </div>
       </div>
-      <div style={{ width: 28, height: 28, borderRadius: '50%', background: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#fff', cursor: 'pointer', fontStyle: 'italic' }}>
-        S
-      </div>
-      <div 
-        onClick={handleLogout} 
-        style={{ background: '#fef2f2', border: `1px solid ${RJ}44`, borderRadius: 7, padding: '5px 10px', fontSize: 10, color: RJ, fontWeight: 600, cursor: 'pointer', marginLeft: '5px' }} 
-        title="Cerrar sesión"
-      >
-        Salir
-      </div>
-    </div>
-  </div>
 
-  {/* Contenido Dinámico */}
-  <div style={{ 
-    flex: 1, 
-    overflow: ['historia', 'whatsapp'].includes(view) ? 'hidden' : 'auto', 
-    display: 'flex', 
-    flexDirection: 'column',
-    width: '100%' 
-  }}>
-    {view === 'dashboard' && <Dashboard setView={goTo} setSelPat={setSelPat} />}
-    {view === 'agenda' && <Agenda />}
-    {/* Aquí inyectamos la memoria a la pantalla de Pacientes */}
-    {view === 'pacientes' && <Pacientes setView={goTo} setSelPat={setSelPat} patientsList={patientsList} setPatientsList={setPatientsList} />}
-    {view === 'historia' && <Historia patient={selPat} teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} setView={goTo} />}
-    {view === 'caja' && <Caja />}
-    {view === 'laboratorio' && <Laboratorio />}
-    {view === 'reportes' && <Reportes />}
-    {view === 'whatsapp' && <WhatsApp />}
-    {view === 'config' && <Config />}
+      {/* 3. ÁREA DE CONTENIDO (Lienzo Central) */}
+      <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1440px', margin: '0 auto', padding: '24px' }}>
+        
+        {/* Contenedor tipo Tarjeta para las Vistas */}
+        <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          
+          {/* Cabecera interna dinámica (Solo aparece si hay un paciente seleccionado) */}
+          {selPat && view === 'historia' && (
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 15, flexShrink: 0 }}>
+              <button onClick={() => setSelPat(null)} style={{ background: '#fff', color: '#475569', border: `1px solid #cbd5e1`, borderRadius: '8px', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                ← Volver al listado
+              </button>
+              <div style={{ fontSize: 15, fontWeight: 700, color: DN }}>Historia Clínica de {selPat.name}</div>
+            </div>
+          )}
+
+          {/* Inyección de los módulos */}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {view === 'dashboard' && <Dashboard setView={goTo} setSelPat={setSelPat} />}
+            {view === 'agenda' && <Agenda />}
+            {view === 'pacientes' && <Pacientes setView={goTo} setSelPat={setSelPat} patientsList={patientsList} setPatientsList={setPatientsList} />}
+            {view === 'historia' && <Historia patient={selPat} teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} setView={goTo} />}
+            {view === 'caja' && <Caja />}
+            {view === 'laboratorio' && <Laboratorio />}
+            {view === 'reportes' && <Reportes />}
+            {view === 'whatsapp' && <WhatsApp />}
+            {view === 'config' && <Config />}
+          </div>
+        </div>
+
+      </div>
     </div>
-  </div>
-</div>
-);
-}
+  );
