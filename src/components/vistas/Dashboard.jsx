@@ -1,27 +1,26 @@
 // src/components/vistas/Dashboard.jsx
 import React from 'react';
-import { TODAY, PATIENTS, P, DN, MU, LT, WA, RJ, BD } from '../../utils/constants';
+import { TODAY, P, DN, MU, WA, RJ } from '../../utils/constants';
 
 export default function Dashboard({ setView, setSelPat }) {
   
-  // Componente de Tarjeta Estilo "Glass/Soft" de tu imagen
-  const MetricCard = ({ title, date, mainValue, subValue, subColor, children, span = 1 }) => (
-    <div style={{ background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 8px 30px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gridColumn: `span ${span}` }}>
+  const MetricCard = ({ title, date, mainValue, subValue, subColor, children }) => (
+    <div style={{ background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', border: '1px solid #f1f5f9' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 800, color: DN, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: MU }}>✦</span> {title}
+            <span style={{ color: P }}>✦</span> {title}
           </div>
           {date && <div style={{ fontSize: 11, color: MU, marginTop: 4 }}>{date}</div>}
         </div>
-        <div style={{ width: 24, height: 24, borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        <div style={{ width: 28, height: 28, borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU }}>
+          ↗
         </div>
       </div>
       
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginBottom: 20 }}>
-        <div style={{ fontSize: 36, fontWeight: 800, color: DN, lineHeight: 1 }}>{mainValue}</div>
-        {subValue && <div style={{ fontSize: 13, fontWeight: 700, color: subColor, display: 'flex', alignItems: 'center', gap: 4, paddingBottom: 4 }}>● {subValue}</div>}
+        <div style={{ fontSize: 36, fontWeight: 900, color: DN, lineHeight: 1 }}>{mainValue}</div>
+        {subValue && <div style={{ fontSize: 12, fontWeight: 700, color: subColor, display: 'flex', alignItems: 'center', gap: 4, paddingBottom: 4 }}>● {subValue}</div>}
       </div>
       
       <div style={{ flex: 1 }}>{children}</div>
@@ -29,26 +28,27 @@ export default function Dashboard({ setView, setSelPat }) {
   );
 
   return (
-    <div style={{ position: 'relative', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1400px', margin: '0 auto' }}>
       
-      {/* ─── TARJETA CENTRAL FLOTANTE (Como en la referencia) ─── */}
-      <div style={{ position: 'absolute', top: '-75px', left: '50%', transform: 'translateX(-50%)', background: '#fff', padding: '16px 32px', borderRadius: '30px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <img src="/drasolvargas.jpeg" style={{ width: 20, height: 20, borderRadius: '50%' }} alt="" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: DN }}>Consultorio</span>
-          <span style={{ fontSize: 12, color: MU }}>● Activo</span>
+      {/* ─── BANNER SUPERIOR DE INGRESOS (Corregido: Ya no se superpone) ─── */}
+      <div style={{ alignSelf: 'center', background: '#fff', padding: '12px 24px', borderRadius: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid #f1f5f9', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: P, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 12 }}>SV</div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: DN }}>Consultorio Activo</span>
         </div>
+        <div style={{ width: 1, height: 20, background: '#e2e8f0' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 12, color: MU, fontWeight: 600 }}>Ingresos del mes:</span>
-          <span style={{ fontSize: 22, fontWeight: 900, color: DN }}>S/ 4,820</span>
-          <span style={{ color: WA }}>✓</span>
+          <span style={{ fontSize: 18, fontWeight: 900, color: DN }}>S/ 4,820</span>
+          <span style={{ color: WA, background: '#dcfce7', padding: '2px 8px', borderRadius: '12px', fontSize: 10, fontWeight: 800 }}>✓</span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '24px', paddingTop: '10px' }}>
+      {/* ─── CONTENEDOR PRINCIPAL RESPONSIVO ─── */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px' }}>
         
         {/* LADO IZQUIERDO: GRID DE MÉTRICAS */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', alignContent: 'start' }}>
+        <div style={{ flex: '2 1 600px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', alignContent: 'start' }}>
           
           <MetricCard title="Citas Hoy" date="Última actualización: hace 5m" mainValue={TODAY.length} subValue="2 Pendientes" subColor={WA}>
             <div style={{ display: 'flex', gap: 4, height: 40, alignItems: 'flex-end' }}>
@@ -74,12 +74,16 @@ export default function Dashboard({ setView, setSelPat }) {
             </div>
           </MetricCard>
 
-          <MetricCard title="Citas de Hoy" span={2}>
+          {/* Citas del Día a lo ancho */}
+          <div style={{ gridColumn: '1 / -1', background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: DN, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <span style={{ color: P }}>✦</span> Citas de Hoy
+            </div>
              {TODAY.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < TODAY.length - 1 ? `1px solid #f1f5f9` : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < TODAY.length - 1 ? `1px solid #f1f5f9` : 'none', flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: P, minWidth: 45 }}>{a.time}</div>
                 <div style={{ width: 36, height: 36, borderRadius: '12px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: DN }}>{a.av}</div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: DN }}>{a.patient}</div>
                   <div style={{ fontSize: 12, color: MU }}>{a.treat}</div>
                 </div>
@@ -88,25 +92,22 @@ export default function Dashboard({ setView, setSelPat }) {
                 </span>
               </div>
             ))}
-          </MetricCard>
+          </div>
         </div>
 
-        {/* LADO DERECHO: ASISTENTE IA (Idéntico a la imagen) */}
-        <div style={{ width: '400px', background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 8px 30px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', height: '650px' }}>
+        {/* LADO DERECHO: ASISTENTE IA RESPONSIVO */}
+        <div style={{ flex: '1 1 350px', background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', height: '650px' }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: DN, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: MU }}>✦</span> Asistente IA Nanda
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>⟳</div>
-              <div style={{ width: 28, height: 28, borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>↗</div>
+              <div style={{ width: 28, height: 28, borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU }}>⟳</div>
             </div>
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingRight: '10px' }}>
-            
-            {/* Mensaje IA */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <div style={{ fontSize: 18, marginTop: 4 }}>✨</div>
               <div style={{ flex: 1 }}>
@@ -117,9 +118,8 @@ export default function Dashboard({ setView, setSelPat }) {
               </div>
             </div>
 
-            {/* Mensaje Usuario con Documento */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexDirection: 'row-reverse' }}>
-              <img src="/drasolvargas.jpeg" style={{ width: 28, height: 28, borderRadius: '50%' }} alt="" />
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: P, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 'bold' }}>SV</div>
               <div style={{ flex: 1 }}>
                 <div style={{ background: '#e0f2fe', padding: '12px 16px', borderRadius: '16px 16px 4px 16px', fontSize: 13, color: '#0369a1', lineHeight: 1.5 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', padding: '8px 12px', borderRadius: '10px', marginBottom: 8, border: '1px solid #bae6fd' }}>
@@ -135,7 +135,6 @@ export default function Dashboard({ setView, setSelPat }) {
               </div>
             </div>
 
-             {/* Mensaje IA */}
              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <div style={{ fontSize: 18, marginTop: 4 }}>✨</div>
               <div style={{ flex: 1 }}>
@@ -155,7 +154,7 @@ export default function Dashboard({ setView, setSelPat }) {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, background: '#f8fafc', padding: '8px', borderRadius: '20px', border: `1px solid ${BD}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, background: '#f8fafc', padding: '8px', borderRadius: '20px', border: `1px solid #e2e8f0` }}>
             <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MU, cursor: 'pointer' }}>+</div>
             <input placeholder="Escribe a Nanda..." style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: DN }} />
             <button style={{ width: 32, height: 32, borderRadius: '50%', background: DN, color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>➤</button>

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { supabase } from './supabase';
 import Login from './Login';
 
-// Importar todas las vistas modulares
 import Dashboard from './components/vistas/Dashboard';
 import Agenda from './components/vistas/Agenda';
 import Pacientes from './components/vistas/Pacientes';
@@ -14,7 +13,7 @@ import Reportes from './components/vistas/Reportes';
 import WhatsApp from './components/vistas/WhatsApp';
 import Config from './components/vistas/Config';
 
-import { PATIENTS, P, DN, MU, BD, LT } from './utils/constants';
+import { PATIENTS, P, DN, MU, BD } from './utils/constants';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -87,22 +86,21 @@ export default function App() {
   };
 
   return (
-    // FONDO CELESTE DEGRADADO (Como en la imagen de referencia)
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: '"Inter", system-ui, sans-serif', overflow: 'hidden', background: 'linear-gradient(135deg, #B5D8F6 0%, #D8EBF9 100%)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: '"Inter", system-ui, sans-serif', overflow: 'hidden', background: 'linear-gradient(135deg, #B5D8F6 0%, #E2F0FB 100%)' }}>
       
-      {/* ─── NAVEGACIÓN SUPERIOR (Glassmorphism) ─── */}
-      <div style={{ padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10 }}>
+      {/* ─── NAVEGACIÓN SUPERIOR ─── */}
+      <div style={{ padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10, flexWrap: 'wrap', gap: '20px' }}>
         
         {/* LOGO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: '8px', background: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 18, color: '#fff', border: '1px solid rgba(255,255,255,0.5)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+          <div style={{ width: 34, height: 34, borderRadius: '8px', background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 18, color: '#0369a1', border: '1px solid rgba(255,255,255,0.6)' }}>
+            S
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>DentalOS</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#0369a1', letterSpacing: '-0.5px' }}>DentalOS</span>
         </div>
 
-        {/* NAVEGACIÓN CENTRAL EN PÍLDORA */}
-        <div style={{ background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)', borderRadius: '30px', padding: '6px 8px', display: 'flex', gap: '4px', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+        {/* NAVEGACIÓN CENTRAL EN PÍLDORA (Mejor contraste) */}
+        <div style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)', borderRadius: '30px', padding: '6px 8px', display: 'flex', gap: '4px', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
           {NAV.map(it => {
             const isActive = view === it.id;
             return (
@@ -111,49 +109,48 @@ export default function App() {
                   width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', borderRadius: '50%',
                   background: isActive ? '#ffffff' : 'transparent', 
-                  color: isActive ? '#0284c7' : '#ffffff',
+                  color: isActive ? '#0284c7' : '#64748b', // Color oscuro para que se vea
                   boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseEnter={e => { if(!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.2)' }}
+                onMouseEnter={e => { if(!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.4)' }}
                 onMouseLeave={e => { if(!isActive) e.currentTarget.style.background = 'transparent' }}>
-                <span style={{ fontSize: 18, opacity: isActive ? 1 : 0.9 }}>{it.i}</span>
+                <span style={{ fontSize: 18, opacity: isActive ? 1 : 0.8 }}>{it.i}</span>
               </div>
             );
           })}
         </div>
 
-        {/* PERFIL Y NOTIFICACIONES */}
+        {/* PERFIL */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => goTo('agenda')} style={{ background: 'rgba(255,255,255,0.9)', color: '#0284c7', border: 'none', padding: '8px 16px', borderRadius: '20px', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', transition: 'all 0.2s' }}>
+          <button onClick={() => goTo('agenda')} style={{ background: '#fff', color: '#0284c7', border: '1px solid #bae6fd', padding: '8px 16px', borderRadius: '20px', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', transition: 'all 0.2s' }}>
             + Agendar
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', padding: '4px 12px 4px 4px', borderRadius: '30px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-            <img src="/drasolvargas.jpeg" alt="Avatar" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} onError={(e) => e.target.style.display='none'} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', padding: '6px 12px 6px 6px', borderRadius: '30px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 'bold' }}>SV</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: DN }}>Dra. Sol Vargas</span>
             </div>
             <div onClick={handleLogout} style={{ marginLeft: 4, color: '#94a3b8' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              ✕
             </div>
           </div>
         </div>
       </div>
 
-      {/* ─── TÍTULO GRANDE (Como en la referencia) ─── */}
-      <div style={{ padding: '0 50px', marginBottom: '30px', zIndex: 10, position: 'relative' }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>
+      {/* ─── TÍTULO GRANDE (Mejor contraste) ─── */}
+      <div style={{ padding: '0 50px', marginBottom: '25px', zIndex: 10, position: 'relative' }}>
+        <div style={{ fontSize: 12, color: '#0284c7', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>
           {selPat && view === 'historia' ? 'Expediente del paciente' : 'Resumen de métricas'}
         </div>
-        <h1 style={{ fontSize: 48, color: '#fff', margin: 0, fontWeight: 800, letterSpacing: '-1px', textShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+        <h1 style={{ fontSize: 42, color: '#0f172a', margin: 0, fontWeight: 900, letterSpacing: '-1px' }}>
           {selPat && view === 'historia' ? selPat.name : viewTitles[view]}
         </h1>
       </div>
 
-      {/* ─── CONTENEDOR BLANCO GIGANTE ULTRA-REDONDEADO ─── */}
-      <div style={{ flex: 1, background: '#f8fafc', borderRadius: '40px 40px 0 0', boxShadow: '0 -15px 40px rgba(0,0,0,0.05)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', margin: '0 10px' }}>
-        
-        <div style={{ flex: 1, overflowY: 'auto', padding: '40px 30px' }}>
+      {/* ─── CONTENEDOR BLANCO GIGANTE ─── */}
+      <div style={{ flex: 1, background: '#f8fafc', borderRadius: '40px 40px 0 0', boxShadow: '0 -10px 40px rgba(0,0,0,0.05)', overflow: 'hidden', display: 'flex', flexDirection: 'column', margin: '0 10px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '30px' }}>
             {view === 'dashboard' && <Dashboard setView={goTo} setSelPat={setSelPat} />}
             {view === 'agenda' && <Agenda />}
             {view === 'pacientes' && <Pacientes setView={goTo} setSelPat={setSelPat} />}
@@ -164,7 +161,6 @@ export default function App() {
             {view === 'whatsapp' && <WhatsApp />}
             {view === 'config' && <Config />}
         </div>
-
       </div>
     </div>
   );
