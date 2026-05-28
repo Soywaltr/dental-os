@@ -285,6 +285,59 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
     };
     loadCloudData();
   }, [patient, setTeeth, setTeethEvolucion]);
+
+  // =========================================================================
+  // ⚡ AUTO-GUARDADO SILENCIOSO DEL ODONTOGRAMA ⚡
+  // =========================================================================
+  const isFirstRender = React.useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (!patData?.id) return;
+    
+    const timer = setTimeout(async () => {
+      const packTeeth = (db) => {
+        const out = {};
+        Object.keys(db || {}).forEach(num => {
+          const item = db[num];
+          const active = getSurfs(num).map(s => item[s]).filter(v => v && v !== 'normal');
+          if (active.length > 0 || (item.note && item.note.trim() !== '')) out[num] = item;
+        });
+        return out;
+      };
+
+      const cleanInicial = packTeeth(teeth);
+      const cleanEvo = packTeeth(teethEvolucion);
+
+      try {
+        const { data: existe } = await supabase.from('historias').select('id').eq('patient_id', patData.id).maybeSingle();
+        
+        if (existe) {
+          await supabase.from('historias').update({ 
+            odontograma: cleanInicial, 
+            evolucion: cleanEvo 
+          }).eq('id', existe.id);
+        } else {
+          if (Object.keys(cleanInicial).length > 0 || Object.keys(cleanEvo).length > 0) {
+            await supabase.from('historias').insert([{ 
+              patient_id: patData.id, 
+              odontograma: cleanInicial, 
+              evolucion: cleanEvo 
+            }]);
+          }
+        }
+      } catch (error) {
+        console.error("Error en auto-guardado:", error);
+      }
+    }, 1500); 
+
+    return () => clearTimeout(timer);
+  }, [teeth, teethEvolucion, patData]); 
+  // =========================================================================
   
   const saveAllToCloud = async () => {
     setSaving(true);
