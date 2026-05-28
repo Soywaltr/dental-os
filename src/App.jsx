@@ -7,7 +7,7 @@
 
 import React, {
   useState, useEffect, useReducer, useCallback,
-  useMemo, createContext, useContext, lazy, Suspense, memo, useRef,
+  useMemo, createContext, useContext, lazy, Suspense, memo,
 } from "react";
 import { supabase } from "./supabase";
 import Login from "./Login";
@@ -601,20 +601,26 @@ const ViewSkeleton = () => (
 
 const ViewRouter = memo(({ state, dispatch }) => {
   const ActiveView = VIEW_MAP[state.view] ?? Dashboard;
-  const viewProps = useMemo(() => {
-    const base = {};
-    if (state.view === "expediente") {
-      base.teeth              = state.teeth;
-      base.setTeeth           = t => dispatch({ type:"SET_TEETH",    payload:t });
-      base.teethEvolucion     = state.teethEvolucion;
-      base.setTeethEvolucion  = t => dispatch({ type:"SET_TEETH_EVO", payload:t });
-    }
-    if (["dashboard","expediente"].includes(state.view)) {
-      base.setView   = (v,p) => dispatch({ type:"SET_VIEW", payload:{ view:v, pat:p } });
-      base.setSelPat = p     => dispatch({ type:"SET_VIEW", payload:{ view:state.view, pat:p } });
-    }
-    return base;
-  }, [state.view]); // eslint-disable-line
+
+  // ─ Callbacks estables — dispatch es estable por useReducer, nunca cambia.
+  // NO usar useMemo con deps incompletas: causa Error #310 en producción.
+  const setView          = useCallback((v, p) => dispatch({ type:"SET_VIEW",     payload:{ view:v, pat:p } }), [dispatch]);
+  const setSelPat        = useCallback(p      => dispatch({ type:"SET_VIEW",     payload:{ view:state.view, pat:p } }), [dispatch, state.view]);
+  const setTeeth         = useCallback(t      => dispatch({ type:"SET_TEETH",    payload:t }), [dispatch]);
+  const setTeethEvolucion= useCallback(t      => dispatch({ type:"SET_TEETH_EVO",payload:t }), [dispatch]);
+
+  // Props por vista — objeto plano, sin useMemo
+  const viewProps = {};
+  if (state.view === "expediente") {
+    viewProps.teeth              = state.teeth;
+    viewProps.setTeeth           = setTeeth;
+    viewProps.teethEvolucion     = state.teethEvolucion;
+    viewProps.setTeethEvolucion  = setTeethEvolucion;
+  }
+  if (state.view === "dashboard" || state.view === "expediente") {
+    viewProps.setView   = setView;
+    viewProps.setSelPat = setSelPat;
+  }
 
   return (
     <Suspense fallback={<ViewSkeleton />}>
