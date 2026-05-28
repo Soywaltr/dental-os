@@ -1,76 +1,41 @@
 // src/components/vistas/Expediente.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// DentalOS · Expediente · Arquitectura optimizada
-// Tokens de diseño alineados con App.jsx · Sub-componentes memo
-// Lógica de negocio separada del JSX · Sin glassmorphism (consistente con Taskk layout)
-// ─────────────────────────────────────────────────────────────────────────────
-
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Historia from './Historia';
-import { BD, P, DN, MU } from '../../utils/constants';
+import { BD, P, DN, MU, MT, LT } from '../../utils/constants';
 import { normalizarTexto, ini } from '../../utils/helpers';
 
-// ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
-const C = {
-  bg:          '#F4F6F8',
-  surface:     '#FFFFFF',
-  surfaceAlt:  '#F9FAFB',
-  border:      '#E5E7EB',
-  borderStrong:'#D1D5DB',
-  ink:         '#111827',
-  inkMid:      '#4B5563',
-  inkMute:     '#9CA3AF',
-  brand:       '#4F46E5',
-  brandSoft:   '#EEF2FF',
-  brandText:   '#4338CA',
-  green:       '#10B981',
-  greenSoft:   '#D1FAE5',
-  blue:        '#3B82F6',
-  blueSoft:    '#DBEAFE',
-  red:         '#EF4444',
-  redSoft:     '#FEE2E2',
-  amber:       '#F59E0B',
-  amberSoft:   '#FEF3C7',
-  r:           '8px',
-  rl:          '12px',
-  rx:          '16px',
-  font:        "'Inter', system-ui, sans-serif",
-  shadowSm:    '0 1px 3px rgba(0,0,0,0.06)',
-  shadowMd:    '0 4px 12px rgba(0,0,0,0.06)',
+// Iconos SVG Profesionales
+const SearchIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const FolderIcon = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>;
+
+// Estilo Glassmorphism Premium
+const glassStyle = {
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  borderRadius: '32px',
+  border: '1px solid rgba(255, 255, 255, 0.8)',
+  boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08)'
 };
 
-// ─── ICONOS ───────────────────────────────────────────────────────────────────
-const IcSearch = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </svg>
-);
-const IcPlus = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-  </svg>
-);
-const IcFolder = () => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={C.borderStrong} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-
-// ─── HOOK: LÓGICA DE PACIENTES ────────────────────────────────────────────────
-// Toda la lógica de negocio separada del JSX
-function usePatientsDirectory() {
+export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView }) {
+  // ─── LÓGICA INTACTA DE PACIENTES ───
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState('todos');
+  const [showModal, setShowModal] = useState(false);
   const [patientsList, setPatientsList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [patSeleccionado, setPatSeleccionado] = useState(null);
+
+  const [form, setForm] = useState({
+    id: null, paciente: '', name: '', doc: '', phone: '', fecha: '',
+    hora: '', motivo: '', reason: '', treatment: '', birthDate: '', age: '', tag: 'nuevo'
+  });
 
   useEffect(() => {
     const cargar = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('pacientes')
-        .select('*')
-        .order('id', { ascending: false });
-
+      const { data } = await supabase.from('pacientes').select('*').order('id', { ascending: false });
       if (data) {
         const unicos = [];
         const yaVistos = new Set();
@@ -80,562 +45,212 @@ function usePatientsDirectory() {
         });
         setPatientsList(unicos);
       }
-      setLoading(false);
     };
     cargar();
   }, []);
 
-  const upsertPatient = useCallback(async (form) => {
-    const nombreLimpio = form.name.trim().replace(/\s+/g, ' ');
+  const calcAge = (dateStr) => {
+    if (!dateStr) return '';
+    const today = new Date();
+    const birthDate = new Date(dateStr);
+    if (isNaN(birthDate.getTime())) return '';
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+    return age;
+  };
+
+  const handleDocChange = (valorDoc) => {
+    if (!valorDoc || valorDoc.trim() === "") {
+      setForm({ id: null, name: '', doc: '', phone: '', reason: '', treatment: '', birthDate: '', age: '', tag: 'nuevo' });
+      return;
+    }
+    const existente = patientsList.find(p => p.doc === valorDoc);
+    if (existente) setForm({ ...existente, id: existente.id });
+    else setForm({ ...form, id: null, doc: valorDoc, name: '', phone: '', reason: '', treatment: '', birthDate: '', age: '' });
+  };
+
+  const handleNombreChange = (val) => {
+    const normIngresado = normalizarTexto(val);
+    const existente = patientsList.find(p => normalizarTexto(p.name) === normIngresado);
+    if (existente) setForm({ ...existente, id: existente.id });
+    else setForm(prev => ({ ...prev, id: null, name: val }));
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!form.name) return alert("Nombre requerido");
+    const nombreLimpio = form.name.trim().replace(/\s+/g, " ");
+
     const datos = {
-      name: nombreLimpio, doc: form.doc, phone: form.phone,
-      reason: form.reason, treatment: form.treatment,
-      birthDate: form.birthDate, age: form.age, tag: form.tag || 'nuevo',
+      name: nombreLimpio, doc: form.doc, phone: form.phone, reason: form.reason,
+      treatment: form.treatment, birthDate: form.birthDate, age: form.age, tag: form.tag || 'nuevo'
     };
 
     let idDestino = form.id;
     if (!idDestino) {
-      const existe = patientsList.find(
-        p => normalizarTexto(p.name) === normalizarTexto(nombreLimpio)
-      );
+      const existe = patientsList.find(p => normalizarTexto(p.name) === normalizarTexto(nombreLimpio));
       if (existe) idDestino = existe.id;
     }
 
     if (idDestino) {
-      const { data, error } = await supabase
-        .from('pacientes').update(datos).eq('id', idDestino).select();
-      if (error) throw error;
+      const { data, error } = await supabase.from('pacientes').update(datos).eq('id', idDestino).select();
+      if (error) return alert(error.message);
       setPatientsList(prev => {
-        const f = prev.filter(p => normalizarTexto(p.name) !== normalizarTexto(data[0].name));
-        return [data[0], ...f];
+        const filtrada = prev.filter(p => normalizarTexto(p.name) !== normalizarTexto(data[0].name));
+        return [data[0], ...filtrada];
       });
-      return data[0];
+      if (patSeleccionado?.id === idDestino) setPatSeleccionado(data[0]);
     } else {
-      // Generar num_hc autoincremental
-      const { data: hcData } = await supabase
-        .from('pacientes').select('num_hc').not('num_hc', 'is', null)
-        .order('id', { ascending: false }).limit(1);
-      let next = 1;
-      if (hcData?.[0]?.num_hc) {
-        const match = hcData[0].num_hc.match(/\d+/);
-        if (match) next = parseInt(match[0], 10) + 1;
-      }
-      datos.num_hc = String(next).padStart(4, '0');
+      try {
+        const { data: hcData } = await supabase.from('pacientes').select('num_hc').not('num_hc', 'is', null).order('id', { ascending: false }).limit(1);
+        let nextHcNumber = 1;
+        if (hcData && hcData.length > 0 && hcData[0].num_hc) {
+          const match = hcData[0].num_hc.match(/\d+/);
+          if (match) nextHcNumber = parseInt(match[0], 10) + 1;
+        }
+        const nuevoHC = String(nextHcNumber).padStart(4, '0');
+        datos.num_hc = nuevoHC;
 
-      const { data, error } = await supabase.from('pacientes').insert([datos]).select();
-      if (error) throw error;
-      setPatientsList(prev => {
-        const f = prev.filter(p => normalizarTexto(p.name) !== normalizarTexto(data[0].name));
-        return [data[0], ...f];
-      });
-      return data[0];
+        const { data, error } = await supabase.from('pacientes').insert([datos]).select();
+        if (error) throw error;
+        setPatientsList(prev => {
+          const filtrada = prev.filter(p => normalizarTexto(p.name) !== normalizarTexto(data[0].name));
+          return [data[0], ...filtrada];
+        });
+      } catch (err) { return alert("Error al crear paciente: " + err.message); }
     }
-  }, [patientsList]);
 
-  return { patientsList, loading, upsertPatient };
-}
-
-// ─── HOOK: FORMULARIO DE PACIENTE ────────────────────────────────────────────
-const FORM_EMPTY = {
-  id: null, name: '', doc: '', phone: '',
-  reason: '', treatment: '', birthDate: '', age: '', tag: 'nuevo',
-};
-
-function usePatientForm(patientsList) {
-  const [form, setForm] = useState(FORM_EMPTY);
-
-  const calcAge = (dateStr) => {
-    if (!dateStr) return '';
-    const today = new Date();
-    const birth = new Date(dateStr);
-    if (isNaN(birth.getTime())) return '';
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
+    setShowModal(false);
+    setForm({ id: null, name: '', doc: '', phone: '', reason: '', treatment: '', birthDate: '', age: '', tag: 'nuevo' });
   };
 
-  const handleDocChange = useCallback((valorDoc) => {
-    if (!valorDoc?.trim()) { setForm(FORM_EMPTY); return; }
-    const existente = patientsList.find(p => p.doc === valorDoc);
-    if (existente) setForm({ ...existente, id: existente.id });
-    else setForm(f => ({ ...f, id: null, doc: valorDoc, name: '', phone: '' }));
-  }, [patientsList]);
-
-  const handleNombreChange = useCallback((val) => {
-    const normIngresado = normalizarTexto(val);
-    const existente = patientsList.find(p => normalizarTexto(p.name) === normIngresado);
-    if (existente) setForm({ ...existente, id: existente.id });
-    else setForm(f => ({ ...f, id: null, name: val }));
-  }, [patientsList]);
-
-  const handleBirthDate = useCallback((v) => {
-    const anio = v.split('-')[0];
-    setForm(f => ({ ...f, birthDate: v, age: anio?.length === 4 ? calcAge(v) : f.age }));
-  }, []);
-
-  const reset = useCallback(() => setForm(FORM_EMPTY), []);
-
-  return { form, setForm, handleDocChange, handleNombreChange, handleBirthDate, reset };
-}
-
-// ─── SUB-COMPONENTE: FILTROS ──────────────────────────────────────────────────
-const FilterPills = memo(({ active, onChange }) => (
-  <div style={{
-    display: 'flex', gap: 4,
-    background: C.surfaceAlt, padding: 4,
-    borderRadius: C.rl, border: `1px solid ${C.border}`,
-  }}>
-    {['todos', 'activo', 'nuevo'].map(f => (
-      <button
-        key={f}
-        onClick={() => onChange(f)}
-        style={{
-          flex: 1, padding: '6px 0',
-          borderRadius: C.r, border: 'none',
-          background: active === f ? C.surface : 'transparent',
-          color: active === f ? C.ink : C.inkMute,
-          fontSize: 12, fontWeight: active === f ? 600 : 450,
-          cursor: 'pointer', fontFamily: C.font,
-          boxShadow: active === f ? C.shadowSm : 'none',
-          textTransform: 'capitalize',
-          transition: 'all 0.12s',
-        }}
-      >
-        {f}
-      </button>
-    ))}
-  </div>
-));
-
-// ─── SUB-COMPONENTE: TARJETA DE PACIENTE ─────────────────────────────────────
-const PatientCard = memo(({ patient, isSelected, onClick }) => {
-  const [hov, setHov] = useState(false);
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={e => e.key === 'Enter' && onClick()}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      aria-pressed={isSelected}
-      style={{
-        padding: '12px 14px',
-        cursor: 'pointer',
-        borderRadius: C.rl,
-        marginBottom: 4,
-        display: 'flex', alignItems: 'center', gap: 12,
-        background: isSelected ? C.brandSoft : hov ? C.surfaceAlt : 'transparent',
-        border: `1px solid ${isSelected ? C.brand + '40' : 'transparent'}`,
-        transition: 'all 0.12s',
-        outline: 'none',
-      }}
-    >
-      {/* Avatar */}
-      <div style={{
-        width: 38, height: 38, borderRadius: C.r, flexShrink: 0,
-        background: isSelected ? C.brand : C.surfaceAlt,
-        color: isSelected ? '#fff' : C.brand,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 700, fontSize: 14, fontFamily: C.font,
-        transition: 'all 0.15s',
-      }}>
-        {ini(patient.name)}
-      </div>
-
-      {/* Datos */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 13.5, fontWeight: 600, color: isSelected ? C.brandText : C.ink,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {patient.name}
-        </div>
-        <div style={{ fontSize: 11, color: C.inkMute, marginTop: 1, display: 'flex', gap: 6 }}>
-          {patient.num_hc && (
-            <span style={{ color: C.brand, fontWeight: 600 }}>HC: {patient.num_hc}</span>
-          )}
-          <span>DNI: {patient.doc || '---'}</span>
-        </div>
-      </div>
-
-      {/* Dot nuevo */}
-      {patient.tag === 'nuevo' && (
-        <span style={{
-          width: 7, height: 7, borderRadius: '50%',
-          background: C.blue, flexShrink: 0,
-        }} />
-      )}
-    </div>
-  );
-});
-
-// ─── SUB-COMPONENTE: EMPTY STATE ─────────────────────────────────────────────
-const EmptyState = memo(() => (
-  <div style={{
-    flex: 1, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    padding: 40, gap: 12, textAlign: 'center',
-  }}>
-    <IcFolder />
-    <div style={{ fontSize: 15, fontWeight: 600, color: C.ink }}>
-      Expediente Clínico
-    </div>
-    <div style={{ fontSize: 13, color: C.inkMute, maxWidth: 260, lineHeight: 1.6 }}>
-      Selecciona un paciente del directorio para cargar su historial clínico completo.
-    </div>
-  </div>
-));
-
-// ─── SUB-COMPONENTE: INPUT DE FORMULARIO ─────────────────────────────────────
-const FormField = memo(({ label, children, span }) => (
-  <div style={{ gridColumn: span ? '1 / -1' : undefined }}>
-    <label style={{
-      fontSize: 11, fontWeight: 600, color: C.inkMute,
-      textTransform: 'uppercase', letterSpacing: '0.4px',
-      display: 'block', marginBottom: 6, fontFamily: C.font,
-    }}>
-      {label}
-    </label>
-    {children}
-  </div>
-));
-
-const inputStyle = {
-  width: '100%', padding: '9px 12px',
-  borderRadius: C.r, border: `1px solid ${C.border}`,
-  fontSize: 13, fontFamily: C.font, color: C.ink,
-  background: C.surface, outline: 'none', boxSizing: 'border-box',
-  transition: 'border-color 0.12s',
-};
-
-// ─── SUB-COMPONENTE: MODAL NUEVO PACIENTE ────────────────────────────────────
-const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
-  const { form, setForm, handleDocChange, handleNombreChange, handleBirthDate } =
-    usePatientForm(patientsList);
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!form.name.trim()) { alert('Nombre requerido'); return; }
-    setSaving(true);
-    try {
-      await onSave(form);
-      onClose();
-    } catch (err) {
-      alert('Error: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(17,24,39,0.45)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{
-        background: C.surface, borderRadius: C.rx,
-        width: '100%', maxWidth: 520,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
-        border: `1px solid ${C.border}`,
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '20px 24px 16px',
-          borderBottom: `1px solid ${C.border}`,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: C.font }}>
-            Registrar paciente
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 28, height: 28, borderRadius: '50%',
-              border: `1px solid ${C.border}`, background: C.surfaceAlt,
-              cursor: 'pointer', color: C.inkMute, fontSize: 14,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: C.font, outline: 'none',
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{
-          padding: 24,
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16,
-        }}>
-          <FormField label="DNI / CE" span>
-            <input
-              value={form.doc}
-              onChange={e => handleDocChange(e.target.value)}
-              style={{ ...inputStyle, borderColor: C.brand }}
-              onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brandSoft}`; }}
-              onBlur={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = 'none'; }}
-            />
-          </FormField>
-
-          <FormField label="Nombre completo" span>
-            <input
-              list="lista-p-modal"
-              value={form.name}
-              onChange={e => handleNombreChange(e.target.value)}
-              style={inputStyle}
-              onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brandSoft}`; }}
-              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none'; }}
-            />
-            <datalist id="lista-p-modal">
-              {patientsList.map(p => <option key={p.id} value={p.name} />)}
-            </datalist>
-          </FormField>
-
-          <FormField label="Celular / WhatsApp" span>
-            <input
-              value={form.phone}
-              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-              placeholder="Ej: 990711528"
-              style={inputStyle}
-              onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brandSoft}`; }}
-              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none'; }}
-            />
-          </FormField>
-
-          <FormField label="F. Nacimiento">
-            <input
-              type="date"
-              value={form.birthDate}
-              onChange={e => handleBirthDate(e.target.value)}
-              style={inputStyle}
-              onFocus={e => { e.target.style.borderColor = C.brand; }}
-              onBlur={e => { e.target.style.borderColor = C.border; }}
-            />
-          </FormField>
-
-          <FormField label="Edad">
-            <input
-              type="number"
-              value={form.age}
-              onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-              style={{ ...inputStyle, background: C.surfaceAlt }}
-            />
-          </FormField>
-
-          <FormField label="Tratamiento" span>
-            <input
-              value={form.treatment}
-              onChange={e => setForm(f => ({ ...f, treatment: e.target.value }))}
-              style={inputStyle}
-              onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brandSoft}`; }}
-              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none'; }}
-            />
-          </FormField>
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          padding: '16px 24px',
-          borderTop: `1px solid ${C.border}`,
-          display: 'flex', gap: 10,
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '9px', borderRadius: C.r,
-              border: `1px solid ${C.border}`, background: C.surface,
-              cursor: 'pointer', fontWeight: 600, color: C.inkMid,
-              fontSize: 13, fontFamily: C.font,
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            style={{
-              flex: 1, padding: '9px', borderRadius: C.r,
-              border: 'none',
-              background: saving ? C.inkMute : C.brand,
-              color: '#fff', cursor: saving ? 'not-allowed' : 'pointer',
-              fontWeight: 600, fontSize: 13, fontFamily: C.font,
-              boxShadow: C.shadowSm,
-            }}
-          >
-            {saving ? 'Guardando…' : 'Guardar paciente'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-// ─── COMPONENTE PRINCIPAL: EXPEDIENTE ────────────────────────────────────────
-export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView }) {
-  const [q, setQ] = useState('');
-  const [filter, setFilter] = useState('todos');
-  const [showModal, setShowModal] = useState(false);
-  const [patSeleccionado, setPatSeleccionado] = useState(null);
-
-  const { patientsList, loading, upsertPatient } = usePatientsDirectory();
-
-  // Lista filtrada — solo se recalcula cuando cambian q, filter o patientsList
-  const filteredList = patientsList.filter(p => {
-    const matchSearch =
-      normalizarTexto(p.name).includes(normalizarTexto(q)) ||
-      (p.doc && p.doc.includes(q));
+  const list = patientsList.filter(p => {
+    const matchBusqueda = normalizarTexto(p.name).includes(normalizarTexto(q)) || (p.doc && p.doc.includes(q));
     const tagActual = p.tag || 'activo';
-    const matchFilter = filter === 'todos' || tagActual === filter;
-    return matchSearch && matchFilter;
+    const matchFiltro = filter === 'todos' || tagActual === filter;
+    return matchBusqueda && matchFiltro;
   });
 
-  const handleSave = useCallback(async (form) => {
-    const saved = await upsertPatient(form);
-    // Si el paciente seleccionado fue editado, actualizarlo
-    if (patSeleccionado?.id === saved.id) setPatSeleccionado(saved);
-  }, [upsertPatient, patSeleccionado]);
-
   return (
-    <div style={{
-      display: 'flex', height: 'calc(100vh - 100px)',
-      gap: 20, minHeight: 0,
-    }}>
-
-      {/* ─── PANEL IZQUIERDO: DIRECTORIO ─── */}
-      <aside style={{
-        width: 300, minWidth: 280,
-        display: 'flex', flexDirection: 'column',
-        background: C.surface,
-        borderRadius: C.rx,
-        border: `1px solid ${C.border}`,
-        boxShadow: C.shadowSm,
-        overflow: 'hidden',
-        flexShrink: 0,
-      }}>
-
-        {/* Header directorio */}
-        <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${C.border}` }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 12,
-          }}>
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: C.font,
-            }}>
-              Directorio
-            </span>
-            <button
-              onClick={() => setShowModal(true)}
-              aria-label="Nuevo paciente"
-              style={{
-                width: 30, height: 30, borderRadius: C.r,
-                background: C.brand, color: '#fff',
-                border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: C.shadowSm, transition: 'background 0.12s', outline: 'none',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = C.brandText; }}
-              onMouseLeave={e => { e.currentTarget.style.background = C.brand; }}
-            >
-              <IcPlus />
+    <div style={{ display: 'flex', height: '100%', gap: '24px', flexWrap: 'wrap' }}>
+      
+      {/* ─── ISLA IZQUIERDA: BUSCADOR DE PACIENTES (380px) ─── */}
+      <div style={{ ...glassStyle, flex: '0 0 380px', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: '320px' }}>
+        
+        {/* Cabecera del buscador */}
+        <div style={{ padding: '24px', borderBottom: '1px solid rgba(226, 232, 240, 0.6)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: DN }}>Directorio</h2>
+            <button onClick={() => setShowModal(true)} style={{ background: '#0F172A', color: '#fff', border: 'none', width: 36, height: 36, borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(15,23,42,0.15)', transition: 'transform 0.2s' }} onMouseEnter={e=>e.currentTarget.style.transform='scale(1.05)'} onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+              <PlusIcon />
             </button>
           </div>
 
-          {/* Buscador */}
-          <div style={{ position: 'relative', marginBottom: 10 }}>
-            <span style={{
-              position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-              color: C.inkMute, display: 'flex', pointerEvents: 'none',
-            }}>
-              <IcSearch />
-            </span>
-            <input
-              type="search"
-              placeholder="Buscar nombre o DNI…"
-              value={q}
-              onChange={e => setQ(e.target.value)}
-              style={{
-                ...inputStyle, paddingLeft: 32,
-                background: C.surfaceAlt,
-              }}
-              onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.background = C.surface; }}
-              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.background = C.surfaceAlt; }}
-            />
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', display: 'flex' }}><SearchIcon /></div>
+            <input placeholder="Buscar nombre o DNI..." value={q} onChange={e => setQ(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '50px', border: '1px solid #E2E8F0', outline: 'none', fontSize: 14, color: DN, boxSizing: 'border-box', background: '#FFFFFF', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }} onFocus={e => { e.target.style.borderColor = P; e.target.style.boxShadow = `0 0 0 3px ${P}22`; }} onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)'; }} />
           </div>
 
-          <FilterPills active={filter} onChange={setFilter} />
+          <div style={{ display: 'flex', gap: 6, marginTop: 16, background: '#F1F5F9', padding: '6px', borderRadius: '50px' }}>
+            {['todos', 'activo', 'nuevo'].map(f => (
+              <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: '8px', borderRadius: '50px', cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'capitalize', border: 'none', background: filter === f ? '#FFFFFF' : 'transparent', color: filter === f ? DN : MU, boxShadow: filter === f ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}>
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Lista de pacientes */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-          {loading && (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: C.inkMute, fontSize: 13 }}>
-              Cargando…
-            </div>
-          )}
-
-          {!loading && filteredList.map(p => (
-            <PatientCard
-              key={p.id}
-              patient={p}
-              isSelected={patSeleccionado?.id === p.id}
-              onClick={() => setPatSeleccionado(p)}
-            />
-          ))}
-
-          {!loading && filteredList.length === 0 && (
-            <div style={{ padding: '32px 16px', textAlign: 'center', color: C.inkMute, fontSize: 13 }}>
-              No se encontraron pacientes.
-            </div>
-          )}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+          {list.map(p => {
+            const isSelected = patSeleccionado?.id === p.id;
+            return (
+              <div key={p.id} onClick={() => setPatSeleccionado(p)}
+                style={{ padding: '16px', cursor: 'pointer', borderRadius: '20px', marginBottom: '8px', background: isSelected ? '#FFFFFF' : 'transparent', border: `1px solid ${isSelected ? '#E2E8F0' : 'transparent'}`, boxShadow: isSelected ? '0 4px 15px rgba(0,0,0,0.03)' : 'none', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 14 }}
+                onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.4)' }}
+                onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background = 'transparent' }}>
+                <div style={{ width: 46, height: 46, borderRadius: '14px', background: isSelected ? `linear-gradient(135deg, ${P} 0%, #0284c7 100%)` : '#F1F5F9', color: isSelected ? '#fff' : P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, flexShrink: 0, transition: 'all 0.3s' }}>
+                  {ini(p.name)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: MU, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {p.num_hc && <span style={{ color: P, fontWeight: 700 }}>HC: {p.num_hc}</span>}
+                    <span>DNI: {p.doc || '---'}</span>
+                  </div>
+                </div>
+                {p.tag === 'nuevo' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#38bdf8' }} />}
+              </div>
+            );
+          })}
+          {list.length === 0 && <div style={{ textAlign: 'center', padding: '40px 20px', color: MU, fontSize: 13 }}>No se encontraron pacientes.</div>}
         </div>
+      </div>
 
-        {/* Footer con contador */}
-        <div style={{
-          padding: '10px 16px',
-          borderTop: `1px solid ${C.border}`,
-          fontSize: 11, color: C.inkMute, fontFamily: C.font,
-        }}>
-          {filteredList.length} paciente{filteredList.length !== 1 ? 's' : ''}
-        </div>
-      </aside>
-
-      {/* ─── PANEL DERECHO: EXPEDIENTE ACTIVO ─── */}
-      <main style={{
-        flex: 1, minWidth: 0,
-        background: C.surface,
-        borderRadius: C.rx,
-        border: `1px solid ${C.border}`,
-        boxShadow: C.shadowSm,
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-      }}>
+      {/* ─── ISLA DERECHA: EXPEDIENTE ACTIVO (Historia.jsx) ─── */}
+      <div style={{ flex: '1 1 600px', ...glassStyle, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {patSeleccionado ? (
-          <Historia
-            patient={patSeleccionado}
-            teeth={teeth}
-            setTeeth={setTeeth}
-            teethEvolucion={teethEvolucion}
-            setTeethEvolucion={setTeethEvolucion}
-            setView={setView}
+          // Inyectamos el componente Historia aquí, pasándole los props necesarios
+          <Historia 
+            patient={patSeleccionado} 
+            teeth={teeth} setTeeth={setTeeth} 
+            teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} 
+            setView={setView} 
           />
         ) : (
-          <EmptyState />
+          // Empty State Premium
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.3)' }}>
+            <FolderIcon />
+            <h3 style={{ color: DN, fontSize: 20, fontWeight: 700, margin: '20px 0 8px 0' }}>Expediente Clínico</h3>
+            <p style={{ color: MU, fontSize: 14, maxWidth: '300px', textAlign: 'center' }}>Selecciona un paciente del directorio a la izquierda para cargar su historial clínico completo, odontograma y consentimientos.</p>
+          </div>
         )}
-      </main>
+      </div>
 
-      {/* Modal nuevo paciente */}
+      {/* ─── MODAL NUEVO PACIENTE (Glassmorphism) ─── */}
       {showModal && (
-        <NewPatientModal
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-          patientsList={patientsList}
-        />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#ffffff', padding: 40, borderRadius: '32px', width: '100%', maxWidth: 550, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.8)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
+              <h3 style={{ margin: 0, color: DN, fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>Registrar Paciente</h3>
+              <button onClick={() => setShowModal(false)} style={{ background: '#F1F5F9', border: 'none', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', color: '#64748B', fontWeight: 'bold' }}>✕</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: MU, marginBottom: 6, display: 'block' }}>DNI / CE</label>
+                <input value={form.doc} onChange={e => handleDocChange(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: `2px solid ${P}`, boxSizing: 'border-box', outline: 'none', fontSize: 14, background: '#F8FAFC' }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: MU, marginBottom: 6, display: 'block' }}>NOMBRE COMPLETO</label>
+                <input list="lista-p" value={form.name} onChange={e => handleNombreChange(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box', outline: 'none', fontSize: 14, background: '#F8FAFC' }} />
+                <datalist id="lista-p">{patientsList.map(p => <option key={p.id} value={p.name} />)}</datalist>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: MU, marginBottom: 6, display: 'block' }}>CELULAR / WHATSAPP</label>
+                <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Ej: 990711528" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box', outline: 'none', fontSize: 14, background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: MU, marginBottom: 6, display: 'block' }}>F. NACIMIENTO</label>
+                <input type="date" value={form.birthDate} onChange={e => { const v = e.target.value; const anio = v.split('-')[0]; setForm({ ...form, birthDate: v, age: (anio && anio.length === 4) ? calcAge(v) : form.age }); }} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box', background: '#F8FAFC', outline: 'none', fontSize: 14 }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: MU, marginBottom: 6, display: 'block' }}>EDAD</label>
+                <input type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box', background: '#F1F5F9', outline: 'none', fontSize: 14 }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: MU, marginBottom: 6, display: 'block' }}>TRATAMIENTO</label>
+                <input value={form.treatment} onChange={e => setForm({ ...form, treatment: e.target.value })} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box', outline: 'none', fontSize: 14, background: '#F8FAFC' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+              <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '16px', borderRadius: '14px', border: 'none', background: '#F1F5F9', cursor: 'pointer', fontWeight: 700, color: '#475569', fontSize: 14 }}>Cancelar</button>
+              <button onClick={handleSave} style={{ flex: 1, padding: '16px', borderRadius: '14px', border: 'none', background: '#0F172A', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 15px rgba(15, 23, 42, 0.2)' }}>Guardar Paciente</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
