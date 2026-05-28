@@ -1,6 +1,6 @@
 // src/components/vistas/Dashboard.jsx
 import React from 'react';
-import { TODAY, PATIENTS, P, DN, MU, LT, WA, RJ } from '../../utils/constants';
+import { TODAY, PATIENTS, P, DN, MU, LT, WA, RJ, BD } from '../../utils/constants';
 
 export default function Dashboard({ setView, setSelPat }) {
   
