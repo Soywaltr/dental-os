@@ -1,664 +1,210 @@
 // src/components/vistas/Dashboard.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// DentalOS — Dashboard
-// Arquitectura: hooks propios por sección, memoización de componentes,
-// sub-componentes con responsabilidad única, datos tipados por constantes.
-// ─────────────────────────────────────────────────────────────────────────────
+import React from 'react';
+import { TODAY } from '../../utils/constants';
 
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-  memo,
-} from "react";
-import { TODAY, DN, MU, WA, RJ } from "../../utils/constants";
-import { useAppContext } from "../../App";
-
-// ─── TOKENS DE DISEÑO ─────────────────────────────────────────────────────────
-// Un único objeto fuente de verdad para colores, radios y sombras.
-// Cualquier cambio aquí se propaga a todo el Dashboard.
-const T = {
-  // Colores
-  bg:         "rgba(255,255,255,0.72)",
-  bgHover:    "rgba(255,255,255,0.92)",
-  bgInner:    "rgba(255,255,255,0.82)",
-  border:     "rgba(255,255,255,0.9)",
-  borderSub:  "rgba(0,0,0,0.05)",
-  text:       "#0F172A",
-  textMid:    "#475569",
-  textMute:   "#64748B",
-  textFaint:  "#94A3B8",
-  accent:     "#0ea5e9",
-  accentDark: "#0284c7",
-  success:    "#10B981",
-  danger:     "#EF4444",
-  warn:       "#F59E0B",
-  // Radios
-  r:  "16px",
-  rl: "24px",
-  rx: "32px",
-  // Sombras
-  cardShadow: "0 8px 32px rgba(0,0,0,0.04)",
-  dropShadow: "0 4px 12px rgba(0,0,0,0.06)",
-};
-
-// ─── ESTILOS COMPARTIDOS ──────────────────────────────────────────────────────
-const S = {
-  card: {
-    background:     T.bg,
-    backdropFilter: "blur(20px)",
-    WebkitBackdropFilter: "blur(20px)",
-    borderRadius:   T.rl,
-    padding:        "24px",
-    border:         `1px solid ${T.border}`,
-    boxShadow:      T.cardShadow,
-    display:        "flex",
-    flexDirection:  "column",
-  },
-  cardHeader: {
-    display:        "flex",
-    justifyContent: "space-between",
-    alignItems:     "flex-start",
-    marginBottom:   18,
-  },
-  sectionLabel: {
-    fontSize: 13, fontWeight: 700, color: T.textMid,
-  },
-  subLabel: {
-    fontSize: 11, color: T.textFaint, marginTop: 3,
-  },
-  bigNumber: {
-    fontSize: 34, fontWeight: 800, color: T.text,
-    lineHeight: 1, letterSpacing: "-1.2px",
-  },
-  tag: (color, bg) => ({
-    fontSize: 11, fontWeight: 700, padding: "5px 11px",
-    borderRadius: 8, background: bg, color: color,
-    textTransform: "capitalize", whiteSpace: "nowrap",
-  }),
-};
-
-// ─── DATOS MOCK INTERNOS ──────────────────────────────────────────────────────
-// En producción se reemplazarían por llamadas a un hook de datos (useDashboardData).
-const METRICS = [
-  {
-    id:       "citas",
-    title:    "Citas de Hoy",
-    subtitle: "Agendadas en sistema",
-    getValue: () => TODAY.length,
-    trend:    "+2 vs ayer",
-    positive: true,
-    color:    T.accent,
-    bars:     [30, 55, 42, 70, 62, 90, 80],
-  },
-  {
-    id:       "nuevos",
-    title:    "Pacientes Nuevos",
-    subtitle: "Adquisición mensual",
-    getValue: () => 88,
-    trend:    "+12% crecimiento",
-    positive: true,
-    color:    T.success,
-    bars:     [60, 40, 52, 34, 80, 62, 54],
-  },
-  {
-    id:       "saldos",
-    title:    "Saldos Pendientes",
-    subtitle: "Facturas por cobrar",
-    getValue: () => "S/ 750",
-    trend:    "Requiere acción",
-    positive: false,
-    color:    T.danger,
-    bars:     [20, 30, 12, 40, 22, 32, 54],
-  },
-];
-
-const STATUS_COLORS = {
-  pendiente:  { text: T.danger,  bg: "rgba(239,68,68,0.1)"  },
-  confirmada: { text: T.success, bg: "rgba(16,185,129,0.1)" },
-  atendido:   { text: T.accent,  bg: "rgba(14,165,233,0.1)" },
-};
-
-// ─── HOOK: ASISTENTE IA ───────────────────────────────────────────────────────
-// Encapsula el estado del chat del asistente para que Dashboard no lo gestione.
-function useAIAssistant() {
-  const [messages, setMessages] = useState([
-    {
-      id:   1,
-      from: "ai",
-      text: "Hola. Sube una radiografía o escribe un comando para procesar datos clínicos automáticamente.",
-    },
-  ]);
-  const [input, setInput]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const bottomRef               = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || loading) return;
-
-    const userMsg = { id: Date.now(), from: "user", text };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
-
-    // Simulación de respuesta IA (reemplazar por fetch a API real)
-    await new Promise(r => setTimeout(r, 800));
-    setMessages(prev => [
-      ...prev,
-      { id: Date.now() + 1, from: "ai", text: `Procesando: "${text}". Funcionalidad disponible con API conectada.` },
-    ]);
-    setLoading(false);
-  }, [input, loading]);
-
-  const handleKey = useCallback(
-    e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } },
-    [sendMessage]
-  );
-
-  return { messages, input, setInput, loading, sendMessage, handleKey, bottomRef };
-}
-
-// ─── SUB-COMPONENTE: BARRA DE MINI-GRÁFICO ────────────────────────────────────
-const MiniBar = memo(({ bars, color }) => {
-  const max = Math.max(...bars);
+export default function Dashboard() {
+  
   return (
-    <div
-      role="img"
-      aria-label="Mini gráfico de tendencia"
-      style={{ display: "flex", gap: 4, height: 36, width: "100%", alignItems: "flex-end" }}
-    >
-      {bars.map((h, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            height: `${(h / max) * 100}%`,
-            borderRadius: 4,
-            background: i >= bars.length - 2 ? color : "rgba(15,23,42,0.08)",
-            transition: "height 0.4s cubic-bezier(.23,1,.32,1)",
-          }}
-        />
-      ))}
-    </div>
-  );
-});
-
-// ─── SUB-COMPONENTE: BOTÓN DE MENÚ ────────────────────────────────────────────
-const DotsButton = memo(({ onClick, label = "Opciones" }) => (
-  <button
-    onClick={onClick}
-    aria-label={label}
-    style={{
-      background: "transparent", border: "none", cursor: "pointer",
-      color: T.textFaint, padding: 4, borderRadius: 8, lineHeight: 0,
-      transition: "color 0.15s",
-    }}
-    onMouseEnter={e => { e.currentTarget.style.color = T.textMid; }}
-    onMouseLeave={e => { e.currentTarget.style.color = T.textFaint; }}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="5"  r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
-    </svg>
-  </button>
-));
-
-// ─── SUB-COMPONENTE: TARJETA MÉTRICA ─────────────────────────────────────────
-const MetricCard = memo(({ metric }) => {
-  const { title, subtitle, getValue, trend, positive, color, bars } = metric;
-  const value = useMemo(() => getValue(), [getValue]);
-  const TrendIcon = positive
-    ? () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg>
-    : () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></svg>;
-
-  return (
-    <article style={S.card}>
-      <div style={S.cardHeader}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', animation: 'fadeIn 0.5s ease-in-out' }}>
+      
+      {/* ─── SECCIÓN HERO ("Welcome back!" + Top Stats) ─── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
         <div>
-          <div style={S.sectionLabel}>{title}</div>
-          {subtitle && <div style={S.subLabel}>{subtitle}</div>}
+          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            ¡Bienvenida de nuevo! <span style={{ fontSize: 32 }}>👋</span>
+          </h1>
+          <p style={{ fontSize: 15, color: '#64748B', margin: 0, fontWeight: 500 }}>
+            Mira el resumen de tus pacientes y actividad actual aquí
+          </p>
         </div>
-        <DotsButton label={`Opciones de ${title}`} />
-      </div>
 
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 20 }}>
-        <div style={S.bigNumber}>{value}</div>
-        {trend && (
-          <div
-            style={{
-              fontSize: 12, fontWeight: 600,
-              color: positive ? T.success : T.danger,
-              display: "flex", alignItems: "center", gap: 3,
-            }}
-          >
-            <TrendIcon /> {trend}
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex: 1, display: "flex", alignItems: "flex-end" }}>
-        <MiniBar bars={bars} color={color} />
-      </div>
-    </article>
-  );
-});
-
-// ─── SUB-COMPONENTE: FILA DE AGENDA ──────────────────────────────────────────
-const AgendaRow = memo(({ appt, isLast }) => {
-  const sc = STATUS_COLORS[appt.status] ?? STATUS_COLORS["pendiente"];
-  return (
-    <tr>
-      <td style={{ padding: "14px 0", fontSize: 13, color: T.text, fontWeight: 700, borderBottom: isLast ? "none" : `1px solid ${T.borderSub}` }}>
-        {appt.time}
-      </td>
-      <td style={{ padding: "14px 0", fontSize: 13, fontWeight: 700, color: T.text, borderBottom: isLast ? "none" : `1px solid ${T.borderSub}` }}>
-        {appt.patient}
-      </td>
-      <td style={{ padding: "14px 0", fontSize: 13, color: T.textMute, borderBottom: isLast ? "none" : `1px solid ${T.borderSub}` }}>
-        {appt.treat}
-      </td>
-      <td style={{ padding: "14px 0", textAlign: "right", borderBottom: isLast ? "none" : `1px solid ${T.borderSub}` }}>
-        <span style={S.tag(sc.text, sc.bg)}>{appt.status}</span>
-      </td>
-    </tr>
-  );
-});
-
-// ─── SUB-COMPONENTE: TABLA AGENDA ─────────────────────────────────────────────
-const AgendaTable = memo(({ setView }) => {
-  const appointments = useMemo(() => TODAY, []);
-
-  return (
-    <section style={{ ...S.card, flex: "1 1 580px" }} aria-labelledby="agenda-heading">
-      <div style={S.cardHeader}>
-        <h2 id="agenda-heading" style={{ ...S.sectionLabel, fontSize: 15, fontWeight: 800, margin: 0 }}>
-          Agenda del Día
-        </h2>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={() => setView("agenda")}
-            style={{
-              fontSize: 12, fontWeight: 700, color: T.accent, background: "rgba(14,165,233,0.08)",
-              padding: "5px 12px", borderRadius: 100, border: "none", cursor: "pointer",
-              fontFamily: "inherit", transition: "background 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(14,165,233,0.15)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(14,165,233,0.08)"; }}
-          >
-            Ver todo →
-          </button>
-          <DotsButton label="Opciones de agenda" />
-        </div>
-      </div>
-
-      {appointments.length === 0 ? (
-        <EmptyState message="No hay citas agendadas para hoy." />
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-            <thead>
-              <tr>
-                {["Hora", "Paciente", "Tratamiento", "Estado"].map((col, i) => (
-                  <th
-                    key={col}
-                    style={{
-                      paddingBottom: 14, fontSize: 11, fontWeight: 700,
-                      color: T.textFaint, textTransform: "uppercase",
-                      letterSpacing: "0.5px", borderBottom: `1px solid ${T.borderSub}`,
-                      textAlign: i === 3 ? "right" : "left",
-                    }}
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {appointments.map((appt, i) => (
-                <AgendaRow key={appt.id ?? i} appt={appt} isLast={i === appointments.length - 1} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-});
-
-// ─── SUB-COMPONENTE: BURBUJA DE MENSAJE ───────────────────────────────────────
-const ChatBubble = memo(({ msg }) => {
-  const isAI = msg.from === "ai";
-  return (
-    <div
-      style={{
-        display: "flex", gap: 10, alignItems: "flex-start",
-        flexDirection: isAI ? "row" : "row-reverse",
-      }}
-    >
-      {/* Avatar */}
-      <div
-        aria-hidden="true"
-        style={{
-          width: 28, height: 28, borderRadius: isAI ? 8 : "50%",
-          background: isAI
-            ? "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"
-            : "#0F172A",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#fff", flexShrink: 0, fontSize: 10, fontWeight: 700,
-        }}
-      >
-        {isAI
-          ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a2 2 0 0 1 2 2v2" /><circle cx="12" cy="12" r="3" /><path d="M12 17v3" /><path d="M7 7l-2-2" /><path d="M17 7l2-2" /></svg>
-          : "SV"}
-      </div>
-
-      {/* Burbuja */}
-      <div
-        style={{
-          background: isAI ? T.bgInner : "rgba(14,165,233,0.1)",
-          padding: "10px 14px", maxWidth: "76%",
-          borderRadius: isAI ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
-          fontSize: 13, color: isAI ? T.textMid : "#0369A1",
-          lineHeight: 1.55,
-          border: isAI ? `1px solid ${T.border}` : "1px solid rgba(14,165,233,0.2)",
-        }}
-      >
-        {msg.text}
-        {msg.file && (
-          <div
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: "rgba(255,255,255,0.9)", padding: "7px 11px",
-              borderRadius: 8, marginBottom: 8, border: `1px solid ${T.border}`,
-              marginTop: 6,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span style={{ fontWeight: 700, fontSize: 12, color: T.text }}>{msg.file}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
-
-// ─── SUB-COMPONENTE: PANEL ASISTENTE IA ──────────────────────────────────────
-const AIAssistantPanel = memo(() => {
-  const { messages, input, setInput, loading, sendMessage, handleKey, bottomRef } = useAIAssistant();
-
-  return (
-    <section
-      style={{ ...S.card, flex: "1 1 360px", height: 480 }}
-      aria-labelledby="ai-heading"
-    >
-      {/* Header */}
-      <div style={S.cardHeader}>
-        <h2
-          id="ai-heading"
-          style={{
-            fontSize: 15, fontWeight: 800, color: T.text, margin: 0,
-            display: "flex", alignItems: "center", gap: 8,
-          }}
-        >
-          <span style={{ color: T.accent, fontSize: 16 }}>✦</span>
-          Asistente IA Nanda
-        </h2>
-        <button
-          aria-label="Reiniciar conversación"
-          style={{
-            background: T.bgInner, border: `1px solid ${T.border}`,
-            color: T.textFaint, padding: "5px", borderRadius: 8, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = T.textMid; }}
-          onMouseLeave={e => { e.currentTarget.style.color = T.textFaint; }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.08 5.08" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Mensajes */}
-      <div
-        role="log"
-        aria-live="polite"
-        aria-label="Chat con asistente IA"
-        style={{
-          flex: 1, display: "flex", flexDirection: "column", gap: 14,
-          overflowY: "auto", paddingRight: 4,
-        }}
-      >
-        {messages.map(msg => <ChatBubble key={msg.id} msg={msg} />)}
-
-        {loading && (
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <div
-              style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: "linear-gradient(135deg, #0ea5e9, #0284c7)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <svg
-                width="12" height="12" viewBox="0 0 24 24" fill="none"
-                stroke="white" strokeWidth="2.5" strokeLinecap="round"
-                style={{ animation: "spin 1s linear infinite" }}
-              >
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
+        {/* Top Floating Stats */}
+        <div style={{ display: 'flex', gap: 16 }}>
+          {/* Stat 1 */}
+          <div style={{ background: '#FFFFFF', padding: '16px 24px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F172A' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </div>
-            <div
-              style={{
-                background: T.bgInner, padding: "10px 14px", borderRadius: "4px 16px 16px 16px",
-                border: `1px solid ${T.border}`, display: "flex", gap: 5, alignItems: "center",
-              }}
-            >
-              {[0, 160, 320].map(d => (
-                <span
-                  key={d}
-                  style={{
-                    width: 6, height: 6, borderRadius: "50%", background: T.accent,
-                    animation: `bounce 1s ease-in-out ${d}ms infinite`,
-                  }}
-                />
+            <div>
+              <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                Ingresos <span style={{ background: '#0ea5e9', color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: '10px', fontWeight: 700 }}>+12%</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>S/ 4,820</div>
+            </div>
+          </div>
+          
+          {/* Stat 2 */}
+          <div style={{ background: '#FFFFFF', padding: '16px 24px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F172A' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>Pacientes Nuevos</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>88 <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>Mes actual</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── MAIN GRID (Left: Analytics, Right: Schedule/Performance) ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+        
+        {/* COLUMNA IZQUIERDA */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          
+          {/* Tarjeta: Test Analytics (Gráfico de Burbujas calcado a heal.me) */}
+          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)', height: '420px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Analíticas Clínicas</h2>
+              <div style={{ cursor: 'pointer', color: '#94A3B8' }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+            </div>
+
+            {/* Sub Nav Analytics */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24, borderBottom: '1px solid #F1F5F9', paddingBottom: 16 }}>
+              {['General', 'Ortodoncia', 'Endodoncia', 'Rehabilitación', 'Implantes'].map((t, i) => (
+                <div key={t} style={{ fontSize: 13, fontWeight: i===0 ? 700 : 500, color: i===0 ? '#fff' : '#64748B', background: i===0 ? '#0F172A' : 'transparent', padding: '6px 16px', borderRadius: '100px', cursor: 'pointer' }}>{t}</div>
               ))}
             </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
 
-      {/* Input */}
-      <div
-        style={{
-          display: "flex", alignItems: "center", gap: 10,
-          marginTop: 14, background: T.bgInner, padding: "8px",
-          borderRadius: 12, border: `1px solid ${T.border}`,
-        }}
-      >
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder="Comando de IA…"
-          aria-label="Escribe un mensaje al asistente"
-          disabled={loading}
-          style={{
-            flex: 1, background: "transparent", border: "none",
-            outline: "none", fontSize: 13, color: T.text,
-            padding: "4px 8px", fontFamily: "inherit",
-            opacity: loading ? 0.5 : 1,
-          }}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={loading || !input.trim()}
-          aria-label="Enviar mensaje"
-          style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: input.trim() && !loading ? T.text : "rgba(15,23,42,0.15)",
-            color: "#fff", border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: input.trim() && !loading ? "pointer" : "not-allowed",
-            transition: "background 0.2s, transform 0.15s",
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { if (input.trim() && !loading) e.currentTarget.style.transform = "scale(1.06)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
-      </div>
+            {/* Bubble Chart Area (Simulado con CSS y Grid de fondo) */}
+            <div style={{ flex: 1, position: 'relative', backgroundSize: '40px 40px', backgroundImage: 'linear-gradient(to right, #F1F5F9 1px, transparent 1px), linear-gradient(to bottom, #F1F5F9 1px, transparent 1px)' }}>
+              
+              {/* Y Axis labels */}
+              <div style={{ position: 'absolute', left: -20, top: 0, bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
+                <span>100</span><span>80</span><span>60</span><span>30</span><span>10</span>
+              </div>
+              
+              {/* X Axis labels */}
+              <div style={{ position: 'absolute', left: 0, right: 0, bottom: -20, display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94A3B8', fontWeight: 600, paddingLeft: 20 }}>
+                <span>20</span><span>30</span><span>40</span><span>50</span><span>60</span><span>70</span><span>90</span><span>100</span>
+              </div>
 
-      <style>{`
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0);   }
-          50%       { transform: translateY(-4px); }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-    </section>
-  );
-});
+              {/* Burbujas Flotantes estilo heal.me */}
+              <div style={{ position: 'absolute', left: '15%', top: '30%', width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)', opacity: 0.9, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 10px 25px rgba(139, 92, 246, 0.3)' }}>
+                <span style={{ fontSize: 24, fontWeight: 800 }}>88</span>
+                <span style={{ fontSize: 11, fontWeight: 500 }}>Nuevos</span>
+              </div>
 
-// ─── SUB-COMPONENTE: BANNER DE INGRESOS ───────────────────────────────────────
-const RevenueBanner = memo(() => {
-  const kpis = useMemo(
-    () => [
-      { label: "Total Facturado",    value: "S/ 5,570", color: T.text },
-      { label: "Crecimiento Mensual", value: "+12.5%",  color: T.success, arrow: true },
-      { label: "Pacientes Activos",   value: "142",     color: T.accent },
-    ],
-    []
-  );
+              <div style={{ position: 'absolute', left: '5%', top: '60%', width: '70px', height: '70px', borderRadius: '50%', background: '#e0f2fe', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#0369a1' }}>
+                <span style={{ fontSize: 16, fontWeight: 800 }}>12</span>
+                <span style={{ fontSize: 9, fontWeight: 600 }}>Citas</span>
+              </div>
 
-  return (
-    <div
-      style={{
-        ...S.card,
-        flexDirection: "row", justifyContent: "space-between",
-        alignItems: "center", flexWrap: "wrap", gap: 24,
-        padding: "28px 32px",
-        background: "rgba(255,255,255,0.75)",
-      }}
-      role="region"
-      aria-label="Resumen de ingresos"
-    >
-      {/* Cifra principal */}
-      <div>
-        <div style={{ fontSize: 13, color: T.textMute, fontWeight: 600, marginBottom: 6 }}>
-          Ingresos Consolidados del Mes
-        </div>
-        <div
-          style={{
-            fontSize: 46, fontWeight: 900, color: T.text,
-            letterSpacing: "-2px", lineHeight: 1,
-          }}
-        >
-          S/ 4,820
-        </div>
-      </div>
+              <div style={{ position: 'absolute', left: '45%', top: '55%', width: '140px', height: '140px', borderRadius: '50%', background: 'linear-gradient(135deg, #c4b5fd, #7c3aed)', opacity: 0.85, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 10px 25px rgba(124, 58, 237, 0.3)' }}>
+                <span style={{ fontSize: 28, fontWeight: 800 }}>S/ 4.8k</span>
+                <span style={{ fontSize: 12, fontWeight: 500 }}>Ingresos</span>
+              </div>
 
-      {/* KPIs secundarios */}
-      <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-        {kpis.map(k => (
-          <div key={k.label}>
-            <div style={{ fontSize: 11, color: T.textFaint, marginBottom: 4, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.4px" }}>
-              {k.label}
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: k.color, display: "flex", alignItems: "center", gap: 4 }}>
-              {k.arrow && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
-                </svg>
-              )}
-              {k.value}
+              <div style={{ position: 'absolute', right: '5%', top: '20%', width: '150px', height: '150px', borderRadius: '50%', background: 'linear-gradient(135deg, #60a5fa, #3b82f6)', opacity: 0.9, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)' }}>
+                <span style={{ fontSize: 32, fontWeight: 800 }}>92%</span>
+                <span style={{ fontSize: 12, fontWeight: 500 }}>Retención</span>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* Acción rápida */}
-      <button
-        style={{
-          padding: "10px 20px", borderRadius: 100, border: "none",
-          background: T.text, color: "#fff", fontSize: 13, fontWeight: 700,
-          cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s",
-          whiteSpace: "nowrap",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
-        onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
-      >
-        Ver reporte completo →
-      </button>
-    </div>
-  );
-});
+          {/* Tarjeta: Medication Management -> Convertida en "Asistente IA Rápido" */}
+          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '24px 32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0F172A' }}>Asistente IA Nanda</h2>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>+</div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 16 }}>
+              {/* IA Pill 1 */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, background: '#F8FAFC', padding: '16px', borderRadius: '20px' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#8b5cf6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>Redactar Presupuesto</div>
+                  <div style={{ fontSize: 11, color: '#64748B' }}>Para paciente actual</div>
+                </div>
+              </div>
+              {/* IA Pill 2 */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, background: '#F8FAFC', padding: '16px', borderRadius: '20px' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="14 2 18 6 7 17 3 17 3 13 14 2"></polygon><line x1="3" y1="22" x2="21" y2="22"></line></svg></div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>Analizar Radiografía</div>
+                  <div style={{ fontSize: 11, color: '#64748B' }}>Subir archivo JPG/PDF</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-// ─── UTILIDAD: ESTADO VACÍO ───────────────────────────────────────────────────
-const EmptyState = memo(({ message }) => (
-  <div
-    style={{
-      flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-      color: T.textFaint, fontSize: 13, fontWeight: 500,
-    }}
-  >
-    {message}
-  </div>
-));
+        {/* COLUMNA DERECHA */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          
+          {/* Tarjeta: Schedule (Agenda) */}
+          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Agenda</h2>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>Mayo</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}>&lt;</div>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}>&gt;</div>
+                </div>
+              </div>
+            </div>
 
-// ─── COMPONENTE RAÍZ: DASHBOARD ───────────────────────────────────────────────
-export default function Dashboard({ setView }) {
-  // Intentamos obtener setView desde context si no viene por props
-  let ctxSetView;
-  try {
-    const ctx = useAppContext();
-    ctxSetView = ctx ? (v, p) => ctx.dispatch({ type: "SET_VIEW", payload: { view: v, pat: p } }) : null;
-  } catch (_) {
-    ctxSetView = null;
-  }
-  const navigate = setView ?? ctxSetView ?? (() => {});
+            {/* Date Selector Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 32 }}>
+              {[26, 27, 28, 29, 30, 31].map((d, i) => (
+                <div key={d} style={{ width: 44, height: 60, borderRadius: '100px', border: i===2 ? 'none' : '1px solid #E2E8F0', background: i===2 ? '#0F172A' : 'transparent', color: i===2 ? '#fff' : '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
+                  {d}
+                </div>
+              ))}
+            </div>
 
-  const metrics = useMemo(() => METRICS, []);
+            {/* Next Appointment Card */}
+            <div style={{ background: '#F8FAFC', borderRadius: '24px', padding: '20px', border: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '16px', background: 'linear-gradient(135deg, #fbcfe8, #bfdbfe)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0369a1', fontWeight: 800, fontSize: 18 }}>ML</div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>María López</div>
+                  <div style={{ fontSize: 12, color: '#64748B' }}>Control Ortodoncia</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#0F172A', marginTop: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Hoy, 09:00 AM
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-  return (
-    <div
-      style={{
-        display: "flex", flexDirection: "column", gap: 22,
-        maxWidth: 1440, margin: "0 auto",
-      }}
-    >
-      {/* ─ 1. Banner ingresos ─ */}
-      <RevenueBanner />
+          {/* Tarjeta: Performance (Rendimiento Arc) */}
+          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Rendimiento</h2>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>→</div>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              {/* SVG Arc Score Calcado */}
+              <div style={{ position: 'relative', width: 180, height: 90, overflow: 'hidden', marginBottom: 16 }}>
+                <div style={{ width: 180, height: 180, borderRadius: '50%', border: '24px solid #F1F5F9', boxSizing: 'border-box' }}></div>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: 180, height: 180, borderRadius: '50%', border: '24px solid #3b82f6', borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: 'rotate(45deg)', boxSizing: 'border-box' }}></div>
+              </div>
+              <div style={{ fontSize: 42, fontWeight: 800, color: '#0F172A', lineHeight: 1, marginBottom: 8 }}>9.2<span style={{ fontSize: 24, color: '#94A3B8' }}>/10</span></div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', marginBottom: 8 }}>Puntaje de Clínica</div>
+              <p style={{ fontSize: 13, color: '#64748B', textAlign: 'center', margin: 0, lineHeight: 1.5, maxWidth: '200px' }}>
+                Estás rindiendo mejor que el 85% de consultorios en tu red.
+              </p>
+            </div>
+            
+            {/* User row at bottom */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F1F5F9', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 12 }}>CC</div>
+                 <div>
+                   <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>Carlos Cabrera</div>
+                   <div style={{ fontSize: 11, color: '#64748B' }}>Mejor paciente</div>
+                 </div>
+              </div>
+              <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: '100px' }}>+8%</span>
+            </div>
+          </div>
 
-      {/* ─ 2. Métricas ─ */}
-      <section
-        aria-label="Métricas clave"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 22,
-        }}
-      >
-        {metrics.map(m => <MetricCard key={m.id} metric={m} />)}
-      </section>
-
-      {/* ─ 3. Agenda + Asistente ─ */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 22 }}>
-        <AgendaTable setView={navigate} />
-        <AIAssistantPanel />
+        </div>
       </div>
     </div>
   );
