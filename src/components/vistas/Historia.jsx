@@ -1083,7 +1083,16 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
         )}
 
         {/* --- OTRAS PESTAÑAS --- */}
-        {tab === 'odontograma' && <Odontograma patient={patData || patient} teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} />}
+        {/* 3. ODONTOGRAMA COMPLETO (ARREGLADO PARA GUARDAR) */}
+        {tab === 'odontograma' && (
+          <Odontograma 
+            patient={patData} 
+            teeth={teeth} 
+            setTeeth={setTeeth} 
+            teethEvolucion={teethEvolucion} 
+            setTeethEvolucion={setTeethEvolucion} 
+          />
+        )}
 
         {tab === 'anamnesis' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
@@ -1282,47 +1291,54 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
               <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Presupuesto</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={{ background: '#fff', color: '#0087b3', border: `1px solid #0087b3`, borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🖨 Imprimir</button>
-                <button style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>💬 Enviar WA</button>
+                <button style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>💬 WhatsApp</button>
               </div>
             </div>
-            <div style={{ background: '#fff', border: `1px solid #e2e8f0`, borderRadius: 12, overflow: 'hidden', maxWidth: 700 }}>
-              <div style={{ padding: '14px 18px', borderBottom: `1px solid #e2e8f0`, display: 'flex', justifyContent: 'space-between', background: '#f8fafc' }}>
-                <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0087b3' }}>Presupuesto dental</div><div style={{ fontSize: 10, color: '#64748b' }}>Dra. Sol Vargas · {new Date().toLocaleDateString('es-PE')}</div></div>
-                <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>{patData?.name || patient.name}</div><div style={{ fontSize: 10, color: '#64748b' }}>DNI: {patData?.doc || patient.doc}</div></div>
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead><tr style={{ background: '#f8fafc' }}>
-                  {['Tratamiento', 'Pieza', 'Costo', 'Pagado', 'Saldo'].map(h => <th key={h} style={{ padding: '8px 14px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: 10, borderBottom: `1px solid #e2e8f0` }}>{h}</th>)}
-                </tr></thead>
+            
+            <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${BD}` }}>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Tratamiento</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Pieza</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Costo (S/)</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Acuenta (S/)</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Saldo (S/)</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {plan.map((row, i) => {
-                    const saldo = row.cost - row.paid;
-                    return (
-                      <tr key={i} style={{ borderBottom: `1px solid #f1f5f9` }}>
-                        <td style={{ padding: '10px 14px', color: '#0f172a', fontWeight: 500 }}>{row.name}</td>
-                        <td style={{ padding: '10px 14px', color: '#64748b' }}>{row.tooth}</td>
-                        <td style={{ padding: '10px 14px', color: '#0f172a' }}>S/{row.cost}</td>
-                        <td style={{ padding: '10px 14px', color: '#0087b3', fontWeight: 600 }}>S/{row.paid}</td>
-                        <td style={{ padding: '10px 14px' }}><span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#f1f5f9', color: '#64748b' }}>S/{saldo}</span></td>
-                      </tr>
-                    );
-                  })}
+                  {plan.map((item, idx) => (
+                    <tr key={item.id} style={{ borderBottom: idx === plan.length - 1 ? 'none' : `1px solid ${BD}` }}>
+                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: DN }}>{item.name}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: DN }}>{item.tooth}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: DN }}>{item.cost.toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#0ea5e9', fontWeight: 600 }}>{item.paid.toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: (item.cost - item.paid) > 0 ? '#ef4444' : '#10b981', fontWeight: 600 }}>{(item.cost - item.paid).toFixed(2)}</td>
+                    </tr>
+                  ))}
                 </tbody>
-                <tfoot><tr style={{ background: '#f8fafc' }}>
-                  <td colSpan={2} style={{ padding: '10px 14px', fontWeight: 800, color: '#0f172a' }}>TOTAL</td>
-                  <td style={{ padding: '10px 14px', fontWeight: 800, color: '#0f172a' }}>S/{plan.reduce((s, i) => s + i.cost, 0)}</td>
-                  <td style={{ padding: '10px 14px', fontWeight: 800, color: '#0087b3' }}>S/{plan.reduce((s, i) => s + i.paid, 0)}</td>
-                  <td style={{ padding: '10px 14px', fontWeight: 800, color: '#10b981' }}>S/{plan.reduce((s, i) => s + (i.cost - i.paid), 0)}</td>
-                </tr></tfoot>
+                <tfoot style={{ background: '#f8fafc', borderTop: `2px solid ${BD}` }}>
+                  <tr>
+                    <td colSpan={2} style={{ padding: '14px 16px', fontSize: 12, fontWeight: 800, color: DN, textAlign: 'right' }}>TOTALES:</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: DN }}>S/ {plan.reduce((acc, curr) => acc + curr.cost, 0).toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#0ea5e9' }}>S/ {plan.reduce((acc, curr) => acc + curr.paid, 0).toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>S/ {plan.reduce((acc, curr) => acc + (curr.cost - curr.paid), 0).toFixed(2)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
+            
+            <div style={{ marginTop: 20, background: '#fff', border: `1px dashed ${BD}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold' }}>$</div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#0284c7' }}>Registrar nuevo pago / abono</span>
+            </div>
+            
           </div>
         )}
 
+        {/* --- PESTAÑA CONSENTIMIENTOS --- */}
         {tab === 'consentimientos' && (
-          <div style={{ height: '100%', overflow: 'hidden' }}>
-            <Consentimientos patient={patData || patient} />
-          </div>
+          <Consentimientos patient={patData || patient} />
         )}
 
       </div>
