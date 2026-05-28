@@ -691,10 +691,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // REGLA DE HOOKS: useMemo debe estar ANTES de cualquier return condicional.
+  // Colocarlo después de "if (loading) return" viola las Rules of Hooks → Error #310.
+  const ctxValue = useMemo(() => ({ state, dispatch, logout }), [state, dispatch, logout]);
+
   if (loading)  return <SplashScreen />;
   if (!session) return <Login onLogin={() => {}} />;
-
-  const ctxValue = useMemo(() => ({ state, dispatch, logout }), [state, dispatch, logout]);
 
   return (
     <AppContext.Provider value={ctxValue}>
