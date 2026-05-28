@@ -6,13 +6,12 @@ import Login from './Login';
 // Importar todas las vistas
 import Dashboard from './components/vistas/Dashboard';
 import Agenda from './components/vistas/Agenda';
-import Pacientes from './components/vistas/Pacientes';
-import Historia from './components/vistas/Historia';
 import Caja from './components/vistas/Caja';
 import Laboratorio from './components/vistas/Laboratorio';
 import Reportes from './components/vistas/Reportes';
 import WhatsApp from './components/vistas/WhatsApp';
 import Config from './components/vistas/Config';
+import Expediente from './components/vistas/Expediente';
 
 import { PATIENTS, P, DN, MU, BD } from './utils/constants';
 
@@ -54,15 +53,14 @@ export default function App() {
   useEffect(() => { localStorage.setItem('dentalOS_patients', JSON.stringify(patientsList)); }, [patientsList]);
 
   const NAV = [
-    { id: 'dashboard', lbl: 'Dashboard' },
-    { id: 'agenda', lbl: 'Agenda' },
-    { id: 'pacientes', lbl: 'Pacientes' },
-    { id: 'historia', lbl: 'Expediente' },
-    { id: 'caja', lbl: 'Finanzas' },
-    { id: 'laboratorio', lbl: 'Laboratorio' },
-    { id: 'reportes', lbl: 'Métricas' },
-    { id: 'whatsapp', lbl: 'Asistente IA' },
-    { id: 'config', lbl: 'Ajustes' }
+    { id: 'dashboard', i: '▦', title: 'Dashboard' },
+    { id: 'agenda', i: '◫', title: 'Agenda' },
+    { id: 'expediente', i: '🗂️', title: 'Expediente' }, // <-- El nuevo unificado
+    { id: 'caja', i: '◆', title: 'Finanzas' },
+    { id: 'laboratorio', i: '◌', title: 'Laboratorio' },
+    { id: 'reportes', i: '◍', title: 'Métricas' },
+    { id: 'whatsapp', i: '◎', title: 'IA' },
+    { id: 'config', i: '⚙', title: 'Ajustes' }
   ];
 
   const goTo = (v, p = null) => { setView(v); if (p) setSelPat(p); };
@@ -163,8 +161,7 @@ export default function App() {
         <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
             {view === 'dashboard' && <Dashboard setView={goTo} setSelPat={setSelPat} />}
             {view === 'agenda' && <Agenda />}
-            {view === 'pacientes' && <Pacientes setView={goTo} setSelPat={setSelPat} />}
-            {view === 'historia' && <Historia patient={selPat} teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} setView={goTo} />}
+            {view === 'expediente' && <Expediente teeth={teeth} setTeeth={setTeeth} teethEvolucion={teethEvolucion} setTeethEvolucion={setTeethEvolucion} setView={goTo} />}
             {view === 'caja' && <Caja />}
             {view === 'laboratorio' && <Laboratorio />}
             {view === 'reportes' && <Reportes />}
