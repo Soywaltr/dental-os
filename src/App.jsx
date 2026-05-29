@@ -16,7 +16,7 @@ import { PATIENTS } from "./utils/constants";
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
 const Agenda      = lazy(() => import("./components/vistas/Agenda"));
-const Expediente  = lazy(() => import("./components/vistas/Expediente"));
+const Expediente  = lazy(() => import("./components/vistas/Historia"));
 const Caja        = lazy(() => import("./components/vistas/Caja"));
 const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
 const Reportes    = lazy(() => import("./components/vistas/Reportes"));
@@ -578,30 +578,37 @@ const Loader = () => (
 );
 
 const ViewRouter = memo(({ state, dispatch }) => {
-  const ActiveView = VIEWS[state.view] ?? Dashboard;
+  // Aseguramos que si alguna vista vieja llama a 'historia', renderice 'expediente'
+  const currentViewKey = state.view === 'historia' ? 'expediente' : state.view;
+  const ActiveView = VIEWS[currentViewKey] ?? Dashboard;
 
-  // Todos los hooks incondicionalmente — sin useMemo con deps problemáticas
+  // 1. Añadido setPatientsList para que puedas crear nuevos pacientes
   const setView           = useCallback((v, p) => dispatch({ type: "SET_VIEW",     payload: { view: v, pat: p } }), [dispatch]);
   const setSelPat         = useCallback(p      => dispatch({ type: "SET_VIEW",     payload: { view: state.view, pat: p } }), [dispatch, state.view]);
   const setTeeth          = useCallback(t      => dispatch({ type: "SET_TEETH",    payload: t }), [dispatch]);
   const setTeethEvolucion = useCallback(t      => dispatch({ type: "SET_TEETH_EVO",payload: t }), [dispatch]);
+  const setPatientsList   = useCallback(p      => dispatch({ type: "SET_PATIENTS", payload: p }), [dispatch]);
 
-  const viewProps = {};
-  if (state.view === "expediente") {
+  // 2. Props globales (Se le pasan a todas las vistas por defecto)
+  const viewProps = {
+    setView,
+    setSelPat,
+    patientsList: state.patientsList,
+    setPatientsList
+  };
+
+  // 3. Props específicas para el Expediente Clínico (Historia)
+  if (currentViewKey === "expediente") {
+    viewProps.patient            = state.selectedPat; // ¡ESTE ERA EL DATO FALTANTE CRÍTICO!
     viewProps.teeth              = state.teeth;
     viewProps.setTeeth           = setTeeth;
     viewProps.teethEvolucion     = state.teethEvolucion;
     viewProps.setTeethEvolucion  = setTeethEvolucion;
-    viewProps.setView            = setView;
-  }
-  if (state.view === "dashboard") {
-    viewProps.setView   = setView;
-    viewProps.setSelPat = setSelPat;
   }
 
   return (
     <Suspense fallback={<Loader />}>
-      <div key={state.view} style={{ animation: "viewIn 0.16s ease forwards" }}>
+      <div key={currentViewKey} style={{ animation: "viewIn 0.16s ease forwards" }}>
         <ActiveView {...viewProps} />
       </div>
     </Suspense>
