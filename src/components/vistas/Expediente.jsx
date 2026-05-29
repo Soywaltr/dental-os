@@ -132,7 +132,14 @@ function usePatientsDirectory() {
     }
   }, [patientsList]);
 
-  return { patientsList, loading, upsertPatient };
+  // NUEVA FUNCIÓN PARA BORRAR:
+  const deletePatient = useCallback(async (id) => {
+    const { error } = await supabase.from('pacientes').delete().eq('id', id);
+    if (error) throw error;
+    setPatientsList(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  return { patientsList, loading, upsertPatient, deletePatient };
 }
 
 // ─── HOOK: FORMULARIO DE PACIENTE ────────────────────────────────────────────
@@ -209,7 +216,7 @@ const FilterPills = memo(({ active, onChange }) => (
 ));
 
 // ─── SUB-COMPONENTE: TARJETA DE PACIENTE ─────────────────────────────────────
-const PatientCard = memo(({ patient, isSelected, onClick }) => {
+const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
   const [hov, setHov] = useState(false);
 
   return (
@@ -222,51 +229,56 @@ const PatientCard = memo(({ patient, isSelected, onClick }) => {
       onMouseLeave={() => setHov(false)}
       aria-pressed={isSelected}
       style={{
-        padding: '12px 14px',
-        cursor: 'pointer',
-        borderRadius: C.rl,
-        marginBottom: 4,
-        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 14px', cursor: 'pointer', borderRadius: C.rl, marginBottom: 4,
+        display: 'flex', alignItems: 'center', gap: 12, position: 'relative', // position relative es clave
         background: isSelected ? C.brandSoft : hov ? C.surfaceAlt : 'transparent',
         border: `1px solid ${isSelected ? C.brand + '40' : 'transparent'}`,
-        transition: 'all 0.12s',
-        outline: 'none',
+        transition: 'all 0.12s', outline: 'none',
       }}
     >
+      {/* Botón Eliminar (Solo aparece al pasar el mouse por encima) */}
+      {hov && !isSelected && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if(window.confirm(`¿Seguro que deseas eliminar a ${patient.name}?`)) onDelete(patient.id);
+          }}
+          title="Eliminar paciente"
+          style={{
+            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+            width: 24, height: 24, borderRadius: '50%', background: C.redSoft, color: C.red,
+            border: `1px solid ${C.red}40`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', fontSize: 12, fontWeight: 'bold', zIndex: 10
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = C.red; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = C.redSoft; e.currentTarget.style.color = C.red; }}
+        >✕</button>
+      )}
+
       {/* Avatar */}
       <div style={{
         width: 38, height: 38, borderRadius: C.r, flexShrink: 0,
-        background: isSelected ? C.brand : C.surfaceAlt,
-        color: isSelected ? '#fff' : C.brand,
+        background: isSelected ? C.brand : C.surfaceAlt, color: isSelected ? '#fff' : C.brand,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 700, fontSize: 14, fontFamily: C.font,
-        transition: 'all 0.15s',
+        fontWeight: 700, fontSize: 14, fontFamily: C.font, transition: 'all 0.15s',
       }}>
         {ini(patient.name)}
       </div>
 
       {/* Datos */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 13.5, fontWeight: 600, color: isSelected ? C.brandText : C.ink,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: isSelected ? C.brandText : C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {patient.name}
         </div>
         <div style={{ fontSize: 11, color: C.inkMute, marginTop: 1, display: 'flex', gap: 6 }}>
-          {patient.num_hc && (
-            <span style={{ color: C.brand, fontWeight: 600 }}>HC: {patient.num_hc}</span>
-          )}
+          {patient.num_hc && <span style={{ color: C.brand, fontWeight: 600 }}>HC: {patient.num_hc}</span>}
           <span>DNI: {patient.doc || '---'}</span>
         </div>
       </div>
 
       {/* Dot nuevo */}
-      {patient.tag === 'nuevo' && (
-        <span style={{
-          width: 7, height: 7, borderRadius: '50%',
-          background: C.blue, flexShrink: 0,
-        }} />
+      {patient.tag === 'nuevo' && !hov && (
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.blue, flexShrink: 0 }} />
       )}
     </div>
   );
@@ -482,7 +494,16 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   const [showModal, setShowModal] = useState(false);
   const [patSeleccionado, setPatSeleccionado] = useState(null);
 
-  const { patientsList, loading, upsertPatient } = usePatientsDirectory();
+  const { patientsList, loading, upsertPatient, deletePatient } = usePatientsDirectory();
+
+  const handleDeleteWrapper = async (id) => {
+    try {
+      await deletePatient(id);
+      if (patSeleccionado?.id === id) setPatSeleccionado(null);
+    } catch (err) {
+      alert("Error al eliminar: " + err.message);
+    }
+  };
 
   // Lista filtrada — solo se recalcula cuando cambian q, filter o patientsList
   const filteredList = patientsList.filter(p => {
@@ -585,6 +606,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
               patient={p}
               isSelected={patSeleccionado?.id === p.id}
               onClick={() => setPatSeleccionado(p)}
+              onDelete={handleDeleteWrapper}
             />
           ))}
 

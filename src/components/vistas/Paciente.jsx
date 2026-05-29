@@ -142,12 +142,40 @@ export default function Pacientes({ setView, setSelPat }) {
     setForm({ id: null, name: '', doc: '', phone: '', reason: '', treatment: '', birthDate: '', age: '', tag: 'nuevo' });
   };
 
+  const handleDeletePatient = async (e, id, name) => {
+    e.stopPropagation(); // Evita que se abra la tarjeta
+    if (window.confirm(`¿Seguro que deseas eliminar permanentemente a ${name}? Esta acción no se puede deshacer.`)) {
+      try {
+        const { error } = await supabase.from('pacientes').delete().eq('id', id);
+        if (error) throw error;
+        setPatientsList(prev => prev.filter(p => p.id !== id));
+        alert(`Paciente ${name} eliminado correctamente.`);
+      } catch (err) {
+        alert("Error al eliminar: " + err.message);
+      }
+    }
+  };
+
   const list = patientsList.filter(p => {
     const matchBusqueda = normalizarTexto(p.name).includes(normalizarTexto(q)) || (p.doc && p.doc.includes(q));
     const tagActual = p.tag || 'activo';
     const matchFiltro = filter === 'todos' || tagActual === filter;
     return matchBusqueda && matchFiltro;
   });
+
+const handleDeletePatient = async (e, id, name) => {
+    e.stopPropagation(); // Evita que se abra la tarjeta
+    if (window.confirm(`¿Seguro que deseas eliminar permanentemente a ${name}? Esta acción no se puede deshacer.`)) {
+      try {
+        const { error } = await supabase.from('pacientes').delete().eq('id', id);
+        if (error) throw error;
+        setPatientsList(prev => prev.filter(p => p.id !== id));
+        alert(`Paciente ${name} eliminado correctamente.`);
+      } catch (err) {
+        alert("Error al eliminar: " + err.message);
+      }
+    }
+  };
 
   return (
     <div style={{ padding: '24px 30px', flex: 1, overflowY: 'auto' }}>
@@ -179,9 +207,27 @@ export default function Pacientes({ setView, setSelPat }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
         {list.map(p => (
           <div key={p.id} onClick={() => { setSelPat(p); setView('historia'); }}
-            style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 16, padding: 18, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
+            style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 16, padding: 18, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 2px 5px rgba(0,0,0,0.02)', position: 'relative' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = P} onMouseLeave={e => e.currentTarget.style.borderColor = BD}
           >
+            {/* BOTÓN ELIMINAR PACIENTE */}
+            <button 
+              onClick={(e) => handleDeletePatient(e, p.id, p.name)}
+              title="Eliminar paciente"
+              style={{
+                position: 'absolute', top: 12, right: 12, 
+                width: 26, height: 26, borderRadius: '50%',
+                background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', fontSize: 12, fontWeight: 'bold', zIndex: 10,
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = RJ; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = RJ; }}
+            >
+              ✕
+            </button>
+
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', background: MT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: P, fontSize: 16, flexShrink: 0 }}>
                 {ini(p.name)}
