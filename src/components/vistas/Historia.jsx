@@ -126,7 +126,7 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
 }
 
 // ============================================================================
-// 3. COMPONENTE ODONTOGRAMA (Corregido .g y React State a prueba de fallos)
+// 3. COMPONENTE ODONTOGRAMA (Lógica de descompresión para lectura y escritura)
 // ============================================================================
 function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion }) {
   const [act, setAct] = useState('caries');
@@ -153,7 +153,13 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     }
     const up = {};
     getSurfs(n).forEach(s => up[s] = act);
-    setCurrentTeeth(p => ({ ...(p || {}), [n]: { ...((p || {})[n] || {}), ...up } }));
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const currentPiece = safeP[n] || {};
+      // Borramos "todaPieza" si venía de Supabase para evitar conflictos con las caras
+      const { todaPieza, ...rest } = currentPiece;
+      return { ...safeP, [n]: { ...rest, ...up } };
+    });
     setSel(n);
   };
 
@@ -161,15 +167,21 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     setCurrentTeeth(p => {
       const safeP = p || {};
       const currentPiece = safeP[n] || {};
-      const cur = currentPiece[sf];
       
-      if (act === 'normal' || cur === act) {
-        const nextPiece = { ...currentPiece };
-        delete nextPiece[sf];
-        return { ...safeP, [n]: nextPiece };
-      } else {
-        return { ...safeP, [n]: { ...currentPiece, [sf]: act } };
+      // ⚡ SOLUCIÓN AQUÍ: Si el diente venía guardado entero, lo desglosamos en 5 caras
+      let expandedPiece = { ...currentPiece };
+      if (expandedPiece.todaPieza) {
+        getSurfs(n).forEach(s => expandedPiece[s] = expandedPiece.todaPieza);
+        delete expandedPiece.todaPieza;
       }
+      
+      const cur = expandedPiece[sf];
+      if (act === 'normal' || cur === act) {
+        delete expandedPiece[sf];
+      } else {
+        expandedPiece[sf] = act;
+      }
+      return { ...safeP, [n]: expandedPiece };
     });
   };
 
@@ -194,11 +206,11 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const recRow = (list, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => {
-        const ss = currentTeeth[n] || {}, cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+        const ss = currentTeeth[n] || {};
+        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
         const t = cs.length ? gt(cs[0][1]) : null;
         return (
           <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
-            {/* AQUÍ ESTABA EL ERROR: Cambiado t.cr por t.g */}
             {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.g === 'r' ? RJ : AZ }}>{t.sig}</span>}
           </div>
         );
@@ -234,7 +246,12 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     </div>
   );
 
-  const selSurfs = sel ? (currentTeeth[sel] || {}) : {};
+  // ⚡ SEGUNDA SOLUCIÓN AQUÍ: Desglosamos "todaPieza" para que el SVG del panel lateral lo pueda leer
+  const rawSelSurfs = sel ? (currentTeeth[sel] || {}) : {};
+  const selSurfs = { ...rawSelSurfs };
+  if (selSurfs.todaPieza && sel) {
+    getSurfs(sel).forEach(s => selSurfs[s] = selSurfs.todaPieza);
+  }
 
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -344,7 +361,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
             <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
-            <button onClick={() => setCurrentTeeth(p => { const next = {...p}; delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+            <button onClick={() => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
           </div>
 
           <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
@@ -363,15 +380,13 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           })}
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
-          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...(p[sel] || {}), note: e.target.value } }))}
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel]={}; next[sel].note = e.target.value; return next; })}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
         </div>
       )}
     </div>
   );
 }
-
-// ... Continúa el resto de tu archivo original (export default function Historia)
 
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
