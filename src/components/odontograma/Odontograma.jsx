@@ -20,21 +20,21 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
   const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
-  // Lógica de clic a prueba de balas para aplicar a toda la pieza
-  const applyAll = n => {
-    if (act === 'normal') { 
-      setCurrentTeeth(prev => {
-        const next = { ...(prev || {}) };
-        delete next[n];
-        return next;
-      }); 
-      return; 
-    }
-    const up = {};
-    getSurfs(n).forEach(s => up[s] = act);
-    setCurrentTeeth(prev => ({ ...prev, [n]: { ...(prev[n] || {}), ...up } }));
-    setSel(n);
-  };
+  // 1. Quita el setSel de dentro de applyAll:
+const applyAll = n => {
+  if (act === 'normal') { 
+    setCurrentTeeth(prev => {
+      const next = { ...(prev || {}) };
+      delete next[n];
+      return next;
+    }); 
+    return; 
+  }
+  const up = {};
+  getSurfs(n).forEach(s => up[s] = act);
+  setCurrentTeeth(prev => ({ ...(prev || {}), [n]: { ...((prev || {})[n] || {}), ...up } }));
+  // ← ELIMINA el setSel(n) que estaba aquí
+};
 
   // Lógica de clic a prueba de balas para aplicar en una superficie (O, M, D, V, L)
   const applySurf = (n, sf) => {
@@ -98,7 +98,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
     </div>
   );
 
- /// En Odontograma.jsx, reemplaza tRow completa:
+ // 2. En tRow, maneja la lógica de selección y pintura por separado:
 const tRow = (list, upper, w) => (
   <div style={{ display: 'flex', justifyContent: 'center' }}>
     {list.map((n, i) => (
@@ -109,12 +109,15 @@ const tRow = (list, upper, w) => (
           surfs={currentTeeth[n] || {}}
           active={sel === n}
           onClick={() => {
-            if (sel === n && act !== 'normal') {
-              // Segundo clic en el mismo diente → aplica a toda la pieza
-              applyAll(n);
-            } else {
-              // Primer clic → solo selecciona y abre panel lateral
-              setSel(n);
+            setSel(n);
+            if (act !== 'normal') {
+              // Usar functional update para evitar stale closure
+              const up = {};
+              getSurfs(n).forEach(s => up[s] = act);
+              setCurrentTeeth(prev => ({ 
+                ...(prev || {}), 
+                [n]: { ...((prev || {})[n] || {}), ...up } 
+              }));
             }
           }}
           w={w}
