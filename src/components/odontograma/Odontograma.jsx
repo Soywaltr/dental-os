@@ -99,42 +99,21 @@ const applyAll = n => {
   );
 
  const tRow = (list, upper, w) => (
-  <div style={{ display: 'flex', justifyContent: 'center' }}>
-    {list.map((n, i) => {
-      const surfsActuales = currentTeeth[n] || {};
-      const tieneHallazgo = Object.keys(surfsActuales).length > 0;
-      return (
-        <div
-          key={n}
-          style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none', cursor: 'pointer' }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setSel(n);
-            if (act !== 'normal') {
-              const up = {};
-              getSurfs(n).forEach(s => { up[s] = act; });
-              setCurrentTeeth(prev => ({
-                ...(prev || {}),
-                [n]: { ...((prev || {})[n] || {}), ...up }
-              }));
-            }
-          }}
-        >
-          <ToothSVG
-            key={`${n}-${JSON.stringify(surfsActuales)}`}  {/* ← FUERZA RE-RENDER */}
-            num={n}
-            upper={upper}
-            surfs={surfsActuales}
-            active={sel === n}
-            onClick={() => {}}
-            w={w}
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {list.map((n, i) => (
+        <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
+          <ToothSVG 
+            num={n} 
+            upper={upper} 
+            surfs={currentTeeth[n] || {}} 
+            active={sel === n} 
+            onClick={() => setSel(sel === n ? null : n)} 
+            w={w} 
           />
         </div>
-      );
-    })}
-  </div>
-);
+      ))}
+    </div>
+  );
 
   const eRow = (list, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
