@@ -9,13 +9,15 @@ import {
 import { ini, sc, getSurfs, gt, isMol, isPM } from '../../utils/helpers';
 
 // ============================================================================
-// 1. COMPONENTE TOOTHSVG (100% Original)
+// 1. COMPONENTE TOOTHSVG (Corregido .g)
 // ============================================================================
 function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
   const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
   const dom = conds.length ? gt(conds[0][1]) : null;
-  const cf = !dom ? '#f8fafc' : dom.cr === 'r' ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
+  
+  // AQUÍ ESTABA EL ERROR: Cambiado dom.cr por dom.g
+  const cf = !dom ? '#f8fafc' : dom.g === 'r' ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
 
   const isExtraer = Object.values(surfs).some(s => s === 'extraer');
 
@@ -56,7 +58,7 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
 }
 
 // ============================================================================
-// 2. COMPONENTE OCCLUSALMAP (100% Original)
+// 2. COMPONENTE OCCLUSALMAP (Corregido .g)
 // ============================================================================
 function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
   const S = size, cx = S / 2, cy = S / 2, ir = S * .18, ob = S / 2 - 5;
@@ -79,7 +81,10 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
 
       {Object.entries(ZONES).map(([sf, path]) => {
         const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
-        const fill = h ? (t.cr === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
+        
+        // AQUÍ ESTABA EL ERROR: Cambiado t.cr por t.g
+        const fill = h ? (t.g === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
+        
         return (
           <path key={sf} d={path} fill={fill} stroke="rgba(0,0,0,.1)" strokeWidth="1"
             style={{ cursor: 'pointer' }} onClick={() => onSurf(sf)}
@@ -121,7 +126,7 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
 }
 
 // ============================================================================
-// 3. COMPONENTE ODONTOGRAMA (100% Original de DentalOS.txt)
+// 3. COMPONENTE ODONTOGRAMA (Corregido .g y React State a prueba de fallos)
 // ============================================================================
 function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion }) {
   const [act, setAct] = useState('caries');
@@ -134,21 +139,38 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const aw = 42;
   const pw = 32;
 
-  const currentTeeth = mode === 'inicial' ? teeth : (teethEvolucion || {});
+  const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
   const applyAll = n => {
-    if (act === 'normal') { setCurrentTeeth(p => ({ ...p, [n]: {} })); return; }
+    if (act === 'normal') { 
+      setCurrentTeeth(p => {
+        const next = { ...(p || {}) };
+        delete next[n];
+        return next;
+      }); 
+      return; 
+    }
     const up = {};
     getSurfs(n).forEach(s => up[s] = act);
-    setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], ...up } }));
+    setCurrentTeeth(p => ({ ...(p || {}), [n]: { ...((p || {})[n] || {}), ...up } }));
     setSel(n);
   };
 
   const applySurf = (n, sf) => {
-    const cur = (currentTeeth[n] || {})[sf];
-    if (act === 'normal' || cur === act) setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], [sf]: undefined } }));
-    else setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], [sf]: act } }));
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const currentPiece = safeP[n] || {};
+      const cur = currentPiece[sf];
+      
+      if (act === 'normal' || cur === act) {
+        const nextPiece = { ...currentPiece };
+        delete nextPiece[sf];
+        return { ...safeP, [n]: nextPiece };
+      } else {
+        return { ...safeP, [n]: { ...currentPiece, [sf]: act } };
+      }
+    });
   };
 
   const allF = [];
@@ -176,7 +198,8 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         const t = cs.length ? gt(cs[0][1]) : null;
         return (
           <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
-            {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.cr === 'r' ? RJ : AZ }}>{t.sig}</span>}
+            {/* AQUÍ ESTABA EL ERROR: Cambiado t.cr por t.g */}
+            {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.g === 'r' ? RJ : AZ }}>{t.sig}</span>}
           </div>
         );
       })}
@@ -254,7 +277,6 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           <div style={{ display: 'flex', gap: 15, marginBottom: 15, alignItems: 'center' }}>
             <div style={{ fontSize: 16, fontWeight: 900, color: DN }}>{patient?.name || 'Paciente'}</div>
             <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 12, background: mode === 'inicial' ? MT : '#fef3c7', color: mode === 'inicial' ? P : GL }}>{mode}</span>
-            <span style={{ marginLeft: 'auto', fontSize: 11, color: MU, fontWeight: 600 }}>{new Date().toLocaleDateString('es-PE')}</span>
           </div>
 
           <div style={{ fontSize: 10, fontWeight: 800, color: MU, textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Maxilar superior</div>
@@ -262,12 +284,10 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           {recRow(UA, aw)}{eRow(UA, aw)}{nRow(UA, aw)}{tRow(UA, true, aw)}
 
           {showP && (
-            <>
-              <div style={{ marginTop: 3 }}>
-                {tRow(UP, true, pw)}
-                {nRow(UP, pw)}
-              </div>
-            </>
+            <div style={{ marginTop: 3 }}>
+              {tRow(UP, true, pw)}
+              {nRow(UP, pw)}
+            </div>
           )}
 
           {/* PLANO OCLUSAL */}
@@ -276,12 +296,10 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           </div>
 
           {showP && (
-            <>
-              <div style={{ marginTop: 8 }}>
-                {nRow(LP, pw)}
-                {tRow(LP, false, pw)}
-              </div>
-            </>
+            <div style={{ marginTop: 8 }}>
+              {nRow(LP, pw)}
+              {tRow(LP, false, pw)}
+            </div>
           )}
 
           {tRow(LA, false, aw)}{nRow(LA, aw)}{eRow(LA, aw)}{recRow(LA, aw)}
@@ -301,7 +319,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
                 const t = gt(c);
                 return (
                   <span key={i} onClick={() => applySurf(n, sf)} title="Clic para quitar"
-                    style={{ fontSize: 10, background: '#fff', color: t.cr === 'r' ? RJ : AZ, padding: '3px 10px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', border: `1px solid ${t.cr === 'r' ? RJ : AZ}55`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    style={{ fontSize: 10, background: '#fff', color: t.g === 'r' ? RJ : AZ, padding: '3px 10px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', border: `1px solid ${t.g === 'r' ? RJ : AZ}55`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                     Pieza {n} / {sf} : {t.sig}
                   </span>
                 );
@@ -326,7 +344,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
             <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
-            <button onClick={() => setCurrentTeeth(p => ({ ...p, [sel]: {} }))} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+            <button onClick={() => setCurrentTeeth(p => { const next = {...p}; delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
           </div>
 
           <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
@@ -334,24 +352,26 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
             const c = selSurfs[sf], t = gt(c), has = c && c !== 'normal';
             return (
               <div key={sf} onClick={() => applySurf(sel, sf)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.cr === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.cr === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.cr === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.g === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.g === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.g === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontSize: 10, color: has ? '#fff' : '#94a3b8', fontWeight: 900 }}>{sf}</span>
                 </div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.cr === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div></div>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div></div>
                 {has && <span style={{ fontSize: 14, color: MU, fontWeight: 800 }}>✕</span>}
               </div>
             );
           })}
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
-          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...p[sel], note: e.target.value } }))}
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...(p[sel] || {}), note: e.target.value } }))}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
         </div>
       )}
     </div>
   );
 }
+
+// ... Continúa el resto de tu archivo original (export default function Historia)
 
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
