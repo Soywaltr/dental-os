@@ -16,7 +16,7 @@ import { PATIENTS } from "./utils/constants";
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
 const Agenda      = lazy(() => import("./components/vistas/Agenda"));
-const Expediente  = lazy(() => import("./components/vistas/Historia"));
+const Expediente  = lazy(() => import("./components/vistas/Expediente"));
 const Caja        = lazy(() => import("./components/vistas/Caja"));
 const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
 const Reportes    = lazy(() => import("./components/vistas/Reportes"));
