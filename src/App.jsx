@@ -80,8 +80,14 @@ function reducer(st, action) {
   switch (action.type) {
     case "SET_VIEW":        return { ...st, view: action.payload.view, selectedPat: action.payload.pat ?? st.selectedPat };
     case "SET_SUB_ACCOUNT": return { ...st, subAccount: action.payload };
-    case "SET_TEETH":       return { ...st, teeth: action.payload };
-    case "SET_TEETH_EVO":   return { ...st, teethEvolucion: action.payload };
+    case "SET_TEETH": 
+      // SOLUCIÓN: Si payload es una función, la ejecutamos pasando el estado anterior
+      const newTeeth = typeof action.payload === 'function' ? action.payload(st.teeth) : action.payload;
+      return { ...st, teeth: newTeeth };
+    case "SET_TEETH_EVO": 
+      // SOLUCIÓN: Igual para evolución
+      const newTeethEvo = typeof action.payload === 'function' ? action.payload(st.teethEvolucion) : action.payload;
+      return { ...st, teethEvolucion: newTeethEvo };
     case "SET_PATIENTS":    return { ...st, patientsList: action.payload };
     case "SET_SEARCH":      return { ...st, globalSearch: action.payload };
     case "TOGGLE_SIDEBAR":  return { ...st, sidebarCollapsed: !st.sidebarCollapsed };
