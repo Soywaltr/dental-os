@@ -100,42 +100,39 @@ const applyAll = n => {
 
  const tRow = (list, upper, w) => (
   <div style={{ display: 'flex', justifyContent: 'center' }}>
-    {list.map((n, i) => (
-      <div 
-        key={n} 
-        style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none', cursor: 'pointer' }}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('DIV CLICK en diente:', n, 'herramienta:', act);
-          setSel(n);
-          if (act !== 'normal') {
-            const surfsToApply = getSurfs(n);
-            console.log('Superficies:', surfsToApply);
-            const up = {};
-            surfsToApply.forEach(s => { up[s] = act; });
-            console.log('Aplicando:', up);
-            setCurrentTeeth(prev => {
-              const nuevo = { 
-                ...(prev || {}), 
-                [n]: { ...((prev || {})[n] || {}), ...up } 
-              };
-              console.log('Nuevo estado:', nuevo);
-              return nuevo;
-            });
-          }
-        }}
-      >
-        <ToothSVG
-          num={n}
-          upper={upper}
-          surfs={currentTeeth[n] || {}}
-          active={sel === n}
-          onClick={() => {}}  // vacío — el div maneja todo
-          w={w}
-        />
-      </div>
-    ))}
+    {list.map((n, i) => {
+      const surfsActuales = currentTeeth[n] || {};
+      const tieneHallazgo = Object.keys(surfsActuales).length > 0;
+      return (
+        <div
+          key={n}
+          style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none', cursor: 'pointer' }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSel(n);
+            if (act !== 'normal') {
+              const up = {};
+              getSurfs(n).forEach(s => { up[s] = act; });
+              setCurrentTeeth(prev => ({
+                ...(prev || {}),
+                [n]: { ...((prev || {})[n] || {}), ...up }
+              }));
+            }
+          }}
+        >
+          <ToothSVG
+            key={`${n}-${JSON.stringify(surfsActuales)}`}  {/* ← FUERZA RE-RENDER */}
+            num={n}
+            upper={upper}
+            surfs={surfsActuales}
+            active={sel === n}
+            onClick={() => {}}
+            w={w}
+          />
+        </div>
+      );
+    })}
   </div>
 );
 
