@@ -429,19 +429,40 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const handlePlanTrata = (campo, valor) => setPlanTrataForm(prev => ({ ...prev, [campo]: valor }));
   const handleResumen = (campo, valor) => setResumenForm(prev => ({ ...prev, [campo]: valor }));
 
-  // FUNCIÓN MAESTRA DE GUARDADO A PRUEBA DE FALLOS (UPSERT)
+  // FUNCIÓN MAESTRA DE GUARDADO (Corregida para bases de datos sin restricción UNIQUE)
   const genericSaveOrto = async (columnaBaseDatos, datosFormulario, setLoader, setLockState, nombreSeccion) => {
     setLoader(true);
     try {
-      const { error } = await supabase.from('ortodoncia').upsert({
-        paciente_id: patData.id,
-        [columnaBaseDatos]: datosFormulario
-      }, { onConflict: 'paciente_id' });
+      // 1. Verificamos si ya existe un registro de ortodoncia para este paciente
+      const { data: existe, error: fetchError } = await supabase
+        .from('ortodoncia')
+        .select('id')
+        .eq('paciente_id', patData.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+
+      let errorGuardado;
+
+      if (existe) {
+        // 2. Si existe, actualizamos usando el ID real de la fila
+        const { error } = await supabase
+          .from('ortodoncia')
+          .update({ [columnaBaseDatos]: datosFormulario })
+          .eq('id', existe.id);
+        errorGuardado = error;
+      } else {
+        // 3. Si no existe, insertamos un registro completamente nuevo
+        const { error } = await supabase
+          .from('ortodoncia')
+          .insert([{ paciente_id: patData.id, [columnaBaseDatos]: datosFormulario }]);
+        errorGuardado = error;
+      }
+
+      if (errorGuardado) throw errorGuardado;
       
       alert(`✅ ${nombreSeccion} guardado correctamente.`);
-      setLockState(false); // Bloquea la pantalla al terminar
+      setLockState(false); // Bloquea la pantalla al terminar con éxito
     } catch (err) {
       alert(`Error al guardar en Supabase: ${err.message}`);
     } finally {
