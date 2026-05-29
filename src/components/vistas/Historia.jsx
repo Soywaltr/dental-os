@@ -267,24 +267,23 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   
   const handleCancelEdit = () => { setEditForm(patData); setIsEditingFiliacion(false); };
   
-  useEffect(() => {
-    const loadCloudData = async () => {
-      if (!patient?.id) return;
-      setTeeth({}); setTeethEvolucion({});
-      if (typeof setAnamnesisData !== 'undefined') setAnamnesisData({});
-      if (typeof setPlan !== 'undefined') setPlan([]);
-      if (typeof setImagenesList !== 'undefined') setImagenesList([]);
-      const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
-      if (data) {
-        if (data.odontograma && Object.keys(data.odontograma).length > 0) setTeeth(data.odontograma);
-        if (data.evolucion && Object.keys(data.evolucion).length > 0) setTeethEvolucion(data.evolucion);
-        if (data.anamnesis) setAnamnesisData(data.anamnesis);
-        if (data.plan_tratamiento) setPlan(data.plan_tratamiento);
-        if (data.imagenes) setImagenesList(data.imagenes);
-      }
-    };
-    loadCloudData();
-  }, [patient, setTeeth, setTeethEvolucion]);
+  // En Historia.jsx, cambia las dependencias del useEffect de carga:
+useEffect(() => {
+  const loadCloudData = async () => {
+    if (!patient?.id) return;
+    setTeeth({});
+    setTeethEvolucion({});
+    const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
+    if (data) {
+      if (data.odontograma && Object.keys(data.odontograma).length > 0) setTeeth(data.odontograma);
+      if (data.evolucion && Object.keys(data.evolucion).length > 0) setTeethEvolucion(data.evolucion);
+      if (data.anamnesis) setAnamnesisData(data.anamnesis);
+      if (data.plan_tratamiento) setPlan(data.plan_tratamiento);
+      if (data.imagenes) setImagenesList(data.imagenes);
+    }
+  };
+  loadCloudData();
+}, [patient?.id]); // ← SOLO patient.id, no setTeeth ni setTeethEvolucion
 
   // =========================================================================
   // ⚡ AUTO-GUARDADO SILENCIOSO DEL ODONTOGRAMA ⚡
@@ -336,7 +335,7 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
     }, 1500); 
 
     return () => clearTimeout(timer);
-  }, [teeth, teethEvolucion, patData]); 
+  }, [teeth, teethEvolucion]); 
   // =========================================================================
   
   const saveAllToCloud = async () => {
