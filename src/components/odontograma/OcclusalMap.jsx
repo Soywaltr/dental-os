@@ -23,7 +23,8 @@ export default function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160
 
       {Object.entries(ZONES).map(([sf, path]) => {
         const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
-        const fill = h ? (t.cr === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
+        // SOLUCIÓN: Usar t.g (original) y no t.cr
+        const fill = h ? (t.g === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
         return (
           <path key={sf} d={path} fill={fill} stroke="rgba(0,0,0,.1)" strokeWidth="1"
             style={{ cursor: 'pointer' }} onClick={() => onSurf(sf)}

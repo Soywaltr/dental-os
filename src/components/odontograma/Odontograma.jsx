@@ -18,24 +18,35 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
   const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
+  // ESTADO SEGURO DE REACT:
   const applyAll = n => {
     if (act === 'normal') {
-      setCurrentTeeth(p => { const next = {...p}; if(next[n]) delete next[n]; return next; });
+      setCurrentTeeth(prev => {
+        const next = { ...(prev || {}) };
+        delete next[n];
+        return next;
+      });
       return;
     }
     const up = {};
     getSurfs(n).forEach(s => up[s] = act);
-    setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], ...up } }));
+    setCurrentTeeth(prev => ({ ...prev, [n]: { ...(prev?.[n] || {}), ...up } }));
     setSel(n);
   };
 
   const applySurf = (n, sf) => {
-    const cur = (currentTeeth[n] || {})[sf];
-    if (act === 'normal' || cur === act) {
-      setCurrentTeeth(p => { const next = {...p}; if(next[n]) delete next[n][sf]; return next; });
-    } else {
-      setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], [sf]: act } }));
-    }
+    setCurrentTeeth(prev => {
+      const p = prev || {};
+      const cur = (p[n] || {})[sf];
+      
+      if (act === 'normal' || cur === act) {
+        const nextPiece = { ...p[n] };
+        delete nextPiece[sf];
+        return { ...p, [n]: nextPiece };
+      } else {
+        return { ...p, [n]: { ...(p[n] || {}), [sf]: act } };
+      }
+    });
   };
 
   const allF = [];
@@ -63,7 +74,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
         const t = cs.length ? gt(cs[0][1]) : null;
         return (
           <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
-            {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.cr === 'r' ? RJ : AZ }}>{t.sig}</span>}
+            {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.g === 'r' ? RJ : AZ }}>{t.sig}</span>}
           </div>
         );
       })}
@@ -184,7 +195,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
                 const t = gt(c);
                 return (
                   <span key={i} onClick={() => applySurf(n, sf)} title="Clic para quitar"
-                    style={{ fontSize: 10, background: '#fff', color: t.cr === 'r' ? RJ : AZ, padding: '3px 10px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', border: `1px solid ${t.cr === 'r' ? RJ : AZ}55`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    style={{ fontSize: 10, background: '#fff', color: t.g === 'r' ? RJ : AZ, padding: '3px 10px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', border: `1px solid ${t.g === 'r' ? RJ : AZ}55`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                     Pieza {n} / {sf} : {t.sig}
                   </span>
                 );
@@ -217,18 +228,18 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
             const c = selSurfs[sf], t = gt(c), has = c && c !== 'normal';
             return (
               <div key={sf} onClick={() => applySurf(sel, sf)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.cr === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.cr === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.cr === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.g === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.g === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.g === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontSize: 10, color: has ? '#fff' : '#94a3b8', fontWeight: 900 }}>{sf}</span>
                 </div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.cr === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div></div>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div></div>
                 {has && <span style={{ fontSize: 14, color: MU, fontWeight: 800 }}>✕</span>}
               </div>
             );
           })}
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
-          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...p[sel], note: e.target.value } }))}
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...(p[sel] || {}), note: e.target.value } }))}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
         </div>
       )}

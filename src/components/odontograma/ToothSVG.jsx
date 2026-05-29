@@ -6,7 +6,9 @@ export default function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
   const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
   const dom = conds.length ? gt(conds[0][1]) : null;
-  const cf = !dom ? '#f8fafc' : dom.cr === 'r' ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
+  
+  // SOLUCIÓN: Usar dom.g (original) y no dom.cr
+  const cf = !dom ? '#f8fafc' : dom.g === 'r' ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
 
   const isExtraer = Object.values(surfs).some(s => s === 'extraer');
 

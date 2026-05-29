@@ -1,11 +1,361 @@
 // src/components/vistas/Historia.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
-import Odontograma from '../odontograma/Odontograma';
 import Consentimientos from '../historia/Consentimientos';
-import { TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS, P, BD, DN, MU, MT, LT, WA, RJ, GL } from '../../utils/constants';
-import { ini, sc, getSurfs } from '../../utils/helpers';
+import { 
+  TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS, 
+  P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, UA, LA, UP, LP, TNAME 
+} from '../../utils/constants';
+import { ini, sc, getSurfs, gt, isMol, isPM } from '../../utils/helpers';
 
+// ============================================================================
+// 1. COMPONENTE TOOTHSVG (100% Original)
+// ============================================================================
+function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
+  const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
+  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+  const dom = conds.length ? gt(conds[0][1]) : null;
+  const cf = !dom ? '#f8fafc' : dom.cr === 'r' ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
+
+  const isExtraer = Object.values(surfs).some(s => s === 'extraer');
+
+  const rp = upper
+    ? M ? `M 2 ${CH} L ${W / 2 - 1} ${TH - 1} L ${W / 2 - 1} ${CH} Z M ${W / 2 + 1} ${CH} L ${W - 2} ${TH - 1} L ${W - 2} ${CH} Z` : `M 3 ${CH} L ${W / 2} ${TH - 1} L ${W - 3} ${CH} Z`
+    : M ? `M 2 ${RH} L ${W / 2 - 1} 1 L ${W / 2 - 1} ${RH} Z M ${W / 2 + 1} ${RH} L ${W - 2} 1 L ${W - 2} ${RH} Z` : `M 3 ${RH} L ${W / 2} 1 L ${W - 3} ${RH} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${TH}`} width={W} height={TH} onClick={onClick}
+      style={{ display: 'block', cursor: 'pointer', transition: 'opacity .12s' }}
+      onMouseEnter={e => e.currentTarget.style.opacity = '.72'}
+      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+
+      {active && <rect x="0" y="0" width={W} height={TH} rx="4" fill={P + '33'} stroke={P} strokeWidth="2" />}
+      <path d={rp} fill="#f8fafc" stroke={active ? P : '#64748b'} strokeWidth={active ? 1.5 : .8} />
+      <rect x={1} y={cY} width={W - 2} height={CH} rx="2" fill={cf} stroke={active ? P : '#64748b'} strokeWidth={active ? 1.5 : .8} />
+
+      {cf === '#f8fafc' && (M || PM) && <>
+        <line x1={1} y1={cY + CH * .45} x2={W - 1} y2={cY + CH * .45} stroke="#cbd5e1" strokeWidth=".8" />
+        <line x1={W / 2} y1={cY} x2={W / 2} y2={cY + CH} stroke="#cbd5e1" strokeWidth=".8" />
+      </>}
+
+      {isExtraer && (
+        <g style={{ pointerEvents: 'none' }}>
+          <line x1="2" y1="2" x2={W - 2} y2={TH - 2} stroke={RJ} strokeWidth="3" strokeLinecap="round" />
+          <line x1={W - 2} y1="2" x2="2" y2={TH - 2} stroke={RJ} strokeWidth="3" strokeLinecap="round" />
+        </g>
+      )}
+
+      {dom?.mk === 'x' && <><line x1="2" y1="2" x2={W - 2} y2={TH - 2} stroke="#64748b" strokeWidth="2" /><line x1={W - 2} y1="2" x2="2" y2={TH - 2} stroke="#64748b" strokeWidth="2" /></>}
+      {dom?.mk === 'ca' && <ellipse cx={W / 2} cy={cY + CH / 2} rx={(W - 4) / 2} ry={CH / 2 - 1} fill="none" stroke={AZ} strokeWidth="2" />}
+      {dom?.mk === 'cr' && <ellipse cx={W / 2} cy={cY + CH / 2} rx={(W - 4) / 2} ry={CH / 2 - 1} fill="none" stroke={RJ} strokeWidth="2" />}
+      {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={RJ} strokeWidth="2" />}
+      {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={AZ} strokeWidth="2" />}
+      {conds.length > 1 && <circle cx={W - 5} cy={4} r="3.5" fill={P} />}
+    </svg>
+  );
+}
+
+// ============================================================================
+// 2. COMPONENTE OCCLUSALMAP (100% Original)
+// ============================================================================
+function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
+  const S = size, cx = S / 2, cy = S / 2, ir = S * .18, ob = S / 2 - 5;
+  const sf0 = getSurfs(num)[0];
+  const at = gt(activeTool);
+
+  const ZONES = {
+    [sf0]: `M ${cx - ir} ${cy - ir} L ${cx + ir} ${cy - ir} L ${cx + ir} ${cy + ir} L ${cx - ir} ${cy + ir} Z`,
+    L: `M ${cx - ob} ${cy - ob} L ${cx + ob} ${cy - ob} L ${cx + ir} ${cy - ir} L ${cx - ir} ${cy - ir} Z`,
+    V: `M ${cx - ob} ${cy + ob} L ${cx + ob} ${cy + ob} L ${cx + ir} ${cy + ir} L ${cx - ir} ${cy + ir} Z`,
+    M: `M ${cx - ob} ${cy - ob} L ${cx - ir} ${cy - ir} L ${cx - ir} ${cy + ir} L ${cx - ob} ${cy + ob} Z`,
+    D: `M ${cx + ob} ${cy - ob} L ${cx + ir} ${cy - ir} L ${cx + ir} ${cy + ir} L ${cx + ob} ${cy + ob} Z`
+  };
+
+  const CTR = { [sf0]: [cx, cy], L: [cx, 16], V: [cx, S - 16], M: [16, cy], D: [S - 16, cy] };
+
+  return (
+    <svg viewBox={`0 0 ${S} ${S + 20}`} width={S} height={S + 20} style={{ display: 'block', margin: '0 auto', overflow: 'visible' }}>
+      <rect x="4" y="4" width={S - 8} height={S - 8} rx="8" fill="#f8fafc" stroke="#94a3b8" strokeWidth=".7" />
+
+      {Object.entries(ZONES).map(([sf, path]) => {
+        const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
+        const fill = h ? (t.cr === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
+        return (
+          <path key={sf} d={path} fill={fill} stroke="rgba(0,0,0,.1)" strokeWidth="1"
+            style={{ cursor: 'pointer' }} onClick={() => onSurf(sf)}
+            onMouseEnter={e => e.target.setAttribute('fill', at.col + '88')}
+            onMouseLeave={e => e.target.setAttribute('fill', fill)}
+          />
+        );
+      })}
+
+      {Object.values(surfs).some(s => s === 'extraer') && (
+        <g style={{ pointerEvents: 'none' }}>
+          <line x1="10" y1="10" x2={S - 10} y2={S - 10} stroke={RJ} strokeWidth="5" strokeLinecap="round" />
+          <line x1={S - 10} y1="10" x2="10" y2={S - 10} stroke={RJ} strokeWidth="5" strokeLinecap="round" />
+        </g>
+      )}
+
+      {Object.entries(CTR).map(([sf, [tx, ty]]) => {
+        const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
+        const esExtraer = c === 'extraer';
+
+        return (
+          <g key={sf}>
+            {esExtraer && (
+              <rect x={tx - 14} y={ty - 6} width="28" height="13" rx="2" fill={RJ} />
+            )}
+            <text x={tx} y={ty + 4} textAnchor="middle" fontSize={sf === sf0 ? 12 : 10}
+              fontWeight="800" fill={esExtraer || h ? '#fff' : '#94a3b8'} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+              {esExtraer ? 'EXT' : (h && t.sig ? t.sig : sf)}
+            </text>
+          </g>
+        );
+      })}
+
+      <text x={cx} y={S + 12} textAnchor="middle" fontSize="11" fill="#0D5C6B" fontWeight="900">
+        {num}
+      </text>
+    </svg>
+  );
+}
+
+// ============================================================================
+// 3. COMPONENTE ODONTOGRAMA (100% Original de DentalOS.txt)
+// ============================================================================
+function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion }) {
+  const [act, setAct] = useState('caries');
+  const [sel, setSel] = useState(null);
+  const [specs, setSpecs] = useState('');
+  const [mode, setMode] = useState('inicial');
+  const [showP, setShowP] = useState(true);
+
+  const at = gt(act);
+  const aw = 42;
+  const pw = 32;
+
+  const currentTeeth = mode === 'inicial' ? teeth : (teethEvolucion || {});
+  const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
+
+  const applyAll = n => {
+    if (act === 'normal') { setCurrentTeeth(p => ({ ...p, [n]: {} })); return; }
+    const up = {};
+    getSurfs(n).forEach(s => up[s] = act);
+    setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], ...up } }));
+    setSel(n);
+  };
+
+  const applySurf = (n, sf) => {
+    const cur = (currentTeeth[n] || {})[sf];
+    if (act === 'normal' || cur === act) setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], [sf]: undefined } }));
+    else setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], [sf]: act } }));
+  };
+
+  const allF = [];
+  Object.entries(currentTeeth).forEach(([n, ss]) => {
+    const superficies = getSurfs(n);
+    const valores = superficies.map(s => ss[s]).filter(v => v && v !== 'normal');
+    const esTodoIgual = ss.todaPieza || (valores.length === superficies.length && valores.every(v => v === valores[0]));
+
+    if (esTodoIgual) {
+      const hallazgoDeteccion = ss.todaPieza || valores[0];
+      allF.push({ n, sf: 'Toda la pieza', c: hallazgoDeteccion });
+    } else {
+      Object.entries(ss).forEach(([sf, c]) => {
+        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza') {
+          allF.push({ n, sf, c });
+        }
+      });
+    }
+  });
+
+  const recRow = (list, w) => (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {list.map((n, i) => {
+        const ss = currentTeeth[n] || {}, cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+        const t = cs.length ? gt(cs[0][1]) : null;
+        return (
+          <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
+            {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.cr === 'r' ? RJ : AZ }}>{t.sig}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const nRow = (list, w) => (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {list.map((n, i) => (
+        <div key={n} style={{ width: w, fontSize: 12, textAlign: 'center', userSelect: 'none', color: sel === n ? P : MU, fontWeight: sel === n ? 900 : 600, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none', padding: '2px 0 6px' }}>
+          {n}
+        </div>
+      ))}
+    </div>
+  );
+
+  const tRow = (list, upper, w) => (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {list.map((n, i) => (
+        <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
+          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} />
+        </div>
+      ))}
+    </div>
+  );
+
+  const eRow = (list, w) => (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {list.map((n, i) => (
+        <div key={n} style={{ width: w, height: 13, border: '0.5px solid #374151', boxSizing: 'border-box', background: sel === n ? P + '11' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }} />
+      ))}
+    </div>
+  );
+
+  const selSurfs = sel ? (currentTeeth[sel] || {}) : {};
+
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* SIDEBAR HERRAMIENTAS */}
+      <div style={{ width: 180, background: '#fff', borderRight: `1px solid ${BD}`, overflowY: 'auto', flexShrink: 0, padding: 12 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: LT, borderRadius: 6, padding: 4 }}>
+          {['inicial', 'evolución'].map(m => (
+            <div key={m} onClick={() => setMode(m)} style={{ flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700, background: mode === m ? P : 'transparent', color: mode === m ? '#fff' : MU }}>
+              {m}
+            </div>
+          ))}
+        </div>
+        <div style={{ background: at.col, color: at.tc, padding: '6px 8px', borderRadius: 6, fontSize: 12, fontWeight: 700, textAlign: 'center', marginBottom: 10 }}>{at.lbl}</div>
+
+        {[{ label: 'Rojo — mal estado', g: 'r' }, { label: 'Azul — buen estado', g: 'a' }].map(({ label, g }) => (
+          <div key={g}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: g === 'r' ? RJ : AZ, textTransform: 'uppercase', letterSpacing: .5, margin: '12px 0 6px', borderTop: '1px solid #f0f4f8', paddingTop: 8 }}>{label}</div>
+            {TOOLS.filter(t => t.g === g).map(t => (
+              <div key={t.id} onClick={() => setAct(t.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 6, cursor: 'pointer', marginBottom: 2, background: act === t.id ? t.col : 'transparent' }}
+                onMouseEnter={e => { if (act !== t.id) e.currentTarget.style.background = '#f8fafc' }}
+                onMouseLeave={e => { if (act !== t.id) e.currentTarget.style.background = 'transparent' }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: t.col, border: '1px solid #cbd5e1', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: act === t.id ? '#fff' : '#374151', fontWeight: act === t.id ? 700 : 500 }}>{t.lbl}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <div onClick={() => setAct('normal')} style={{ marginTop: 10, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', textAlign: 'center', border: `1px solid ${BD}`, fontSize: 11, color: '#374151', fontWeight: 700 }}>↺ Limpiar pincel</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: MU, marginTop: 12, fontWeight: 600 }}>
+          <input type="checkbox" checked={showP} onChange={e => setShowP(e.target.checked)} style={{ transform: 'scale(1.2)' }} /> Dientes Primarios
+        </label>
+        {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '8px', background: '#fef2f2', border: `1px solid ${RJ}55`, borderRadius: 6, fontSize: 11, color: RJ, cursor: 'pointer', fontWeight: 800 }}>Limpiar todo el mapa</button>}
+      </div>
+
+      {/* ÁREA CENTRAL */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '30px 20px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 14, padding: '24px 30px', display: 'inline-block', minWidth: 750, boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', gap: 15, marginBottom: 15, alignItems: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: DN }}>{patient?.name || 'Paciente'}</div>
+            <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 12, background: mode === 'inicial' ? MT : '#fef3c7', color: mode === 'inicial' ? P : GL }}>{mode}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: MU, fontWeight: 600 }}>{new Date().toLocaleDateString('es-PE')}</span>
+          </div>
+
+          <div style={{ fontSize: 10, fontWeight: 800, color: MU, textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Maxilar superior</div>
+
+          {recRow(UA, aw)}{eRow(UA, aw)}{nRow(UA, aw)}{tRow(UA, true, aw)}
+
+          {showP && (
+            <>
+              <div style={{ marginTop: 3 }}>
+                {tRow(UP, true, pw)}
+                {nRow(UP, pw)}
+              </div>
+            </>
+          )}
+
+          {/* PLANO OCLUSAL */}
+          <div style={{ margin: '12px 0 10px', borderTop: '2px solid #374151', position: 'relative', width: '100%' }}>
+            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%) translateY(-50%)', background: '#fff', padding: '0 12px', fontSize: 9, color: '#94a3b8', fontWeight: 800, whiteSpace: 'nowrap' }}>PLANO OCLUSAL</span>
+          </div>
+
+          {showP && (
+            <>
+              <div style={{ marginTop: 8 }}>
+                {nRow(LP, pw)}
+                {tRow(LP, false, pw)}
+              </div>
+            </>
+          )}
+
+          {tRow(LA, false, aw)}{nRow(LA, aw)}{eRow(LA, aw)}{recRow(LA, aw)}
+
+          <div style={{ fontSize: 10, fontWeight: 800, color: MU, textTransform: 'uppercase', textAlign: 'center', marginTop: 6 }}>Maxilar inferior</div>
+
+          <div style={{ marginTop: 20, borderTop: `1px solid ${BD}`, paddingTop: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: DN }}>ESPECIFICACIONES CLÍNICAS: </span>
+            <textarea value={specs} onChange={e => setSpecs(e.target.value)} placeholder="Ej. Hallazgos múltiples o anotaciones no gráficas..."
+              style={{ width: '100%', minHeight: 30, marginTop: 5, padding: '4px 8px', border: '1px solid transparent', borderBottom: '1px solid #94a3b8', fontSize: 11, resize: 'vertical', outline: 'none', color: DN, background: '#f8fafc', borderRadius: '4px 4px 0 0', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          </div>
+
+          {allF.length > 0 && <div style={{ marginTop: 15, padding: 12, background: LT, borderRadius: 10, border: `1px solid ${BD}` }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: P, marginBottom: 8 }}>Resumen de Hallazgos ({allF.length}):</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {allF.map(({ n, sf, c }, i) => {
+                const t = gt(c);
+                return (
+                  <span key={i} onClick={() => applySurf(n, sf)} title="Clic para quitar"
+                    style={{ fontSize: 10, background: '#fff', color: t.cr === 'r' ? RJ : AZ, padding: '3px 10px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', border: `1px solid ${t.cr === 'r' ? RJ : AZ}55`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    Pieza {n} / {sf} : {t.sig}
+                  </span>
+                );
+              })}
+            </div>
+          </div>}
+        </div>
+      </div>
+
+      {/* DETALLE LATERAL DE LA PIEZA */}
+      {sel && (
+        <div style={{ width: 250, background: '#fff', borderLeft: `1px solid ${BD}`, overflowY: 'auto', flexShrink: 0, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: P }}>Pieza {sel}</div><div style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{TNAME[sel] || '—'}</div></div>
+            <button onClick={() => setSel(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 28, height: 28, fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
+
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div style={{ fontSize: 10, color: MU, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase' }}>Vista Oclusal</div>
+            <OcclusalMap num={sel} surfs={selSurfs} activeTool={act} onSurf={sf => applySurf(sel, sf)} size={160} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
+            <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
+            <button onClick={() => setCurrentTeeth(p => ({ ...p, [sel]: {} }))} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+          </div>
+
+          <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
+          {getSurfs(sel).map(sf => {
+            const c = selSurfs[sf], t = gt(c), has = c && c !== 'normal';
+            return (
+              <div key={sf} onClick={() => applySurf(sel, sf)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.cr === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.cr === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.cr === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: has ? '#fff' : '#94a3b8', fontWeight: 900 }}>{sf}</span>
+                </div>
+                <div style={{ flex: 1 }}><div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.cr === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div></div>
+                {has && <span style={{ fontSize: 14, color: MU, fontWeight: 800 }}>✕</span>}
+              </div>
+            );
+          })}
+
+          <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...p[sel], note: e.target.value } }))}
+            style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// 4. COMPONENTE PRINCIPAL HISTORIA
+// ============================================================================
 export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView }) {
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
@@ -222,30 +572,7 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const [anamnesisData, setAnamnesisData] = useState({});
   const [imagenesList, setImagenesList] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dbPatients, setDbPatients] = useState([]);
-  const [loadingPatients, setLoadingPatients] = useState(false);
   const [editForm, setEditForm] = useState({});
-  
-  useEffect(() => {
-    if (!patient) {
-      const fetchPatients = async () => {
-        setLoadingPatients(true);
-        const { data, error } = await supabase.from('pacientes').select('*').order('name', { ascending: true });
-        if (!error && data) {
-          const unicos = [];
-          const nombresVistos = new Set();
-          data.forEach(p => {
-            const nombreLimpio = (p.name || '').trim().toLowerCase();
-            if (nombreLimpio && !nombresVistos.has(nombreLimpio)) { nombresVistos.add(nombreLimpio); unicos.push(p); }
-          });
-          setDbPatients(unicos);
-        }
-        setLoadingPatients(false);
-      };
-      fetchPatients();
-    }
-  }, [patient]);
   
   useEffect(() => {
     const datosDelPaciente = patData || patient;
@@ -267,76 +594,22 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   
   const handleCancelEdit = () => { setEditForm(patData); setIsEditingFiliacion(false); };
   
-  // En Historia.jsx, cambia las dependencias del useEffect de carga:
-useEffect(() => {
-  const loadCloudData = async () => {
-    if (!patient?.id) return;
-    setTeeth({});
-    setTeethEvolucion({});
-    const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
-    if (data) {
-      if (data.odontograma && Object.keys(data.odontograma).length > 0) setTeeth(data.odontograma);
-      if (data.evolucion && Object.keys(data.evolucion).length > 0) setTeethEvolucion(data.evolucion);
-      if (data.anamnesis) setAnamnesisData(data.anamnesis);
-      if (data.plan_tratamiento) setPlan(data.plan_tratamiento);
-      if (data.imagenes) setImagenesList(data.imagenes);
-    }
-  };
-  loadCloudData();
-}, [patient?.id]); // ← SOLO patient.id, no setTeeth ni setTeethEvolucion
-
-  // =========================================================================
-  // ⚡ AUTO-GUARDADO SILENCIOSO DEL ODONTOGRAMA ⚡
-  // =========================================================================
-  const isFirstRender = React.useRef(true);
-
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    if (!patData?.id) return;
-    
-    const timer = setTimeout(async () => {
-      const packTeeth = (db) => {
-        const out = {};
-        Object.keys(db || {}).forEach(num => {
-          const item = db[num];
-          const active = getSurfs(num).map(s => item[s]).filter(v => v && v !== 'normal');
-          if (active.length > 0 || (item.note && item.note.trim() !== '')) out[num] = item;
-        });
-        return out;
-      };
-
-      const cleanInicial = packTeeth(teeth);
-      const cleanEvo = packTeeth(teethEvolucion);
-
-      try {
-        const { data: existe } = await supabase.from('historias').select('id').eq('patient_id', patData.id).maybeSingle();
-        
-        if (existe) {
-          await supabase.from('historias').update({ 
-            odontograma: cleanInicial, 
-            evolucion: cleanEvo 
-          }).eq('id', existe.id);
-        } else {
-          if (Object.keys(cleanInicial).length > 0 || Object.keys(cleanEvo).length > 0) {
-            await supabase.from('historias').insert([{ 
-              patient_id: patData.id, 
-              odontograma: cleanInicial, 
-              evolucion: cleanEvo 
-            }]);
-          }
-        }
-      } catch (error) {
-        console.error("Error en auto-guardado:", error);
+    const loadCloudData = async () => {
+      if (!patient?.id) return;
+      setTeeth({});
+      setTeethEvolucion({});
+      const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
+      if (data) {
+        if (data.odontograma && Object.keys(data.odontograma).length > 0) setTeeth(data.odontograma);
+        if (data.evolucion && Object.keys(data.evolucion).length > 0) setTeethEvolucion(data.evolucion);
+        if (data.anamnesis) setAnamnesisData(data.anamnesis);
+        if (data.plan_tratamiento) setPlan(data.plan_tratamiento);
+        if (data.imagenes) setImagenesList(data.imagenes);
       }
-    }, 1500); 
-
-    return () => clearTimeout(timer);
-  }, [teeth, teethEvolucion]); 
-  // =========================================================================
+    };
+    loadCloudData();
+  }, [patient?.id]); 
   
   const saveAllToCloud = async () => {
     setSaving(true);
@@ -401,60 +674,7 @@ useEffect(() => {
     } catch (error) { alert("Hubo un error al intentar eliminar la imagen."); } finally { setSaving(false); }
   };
   
-  if (!patient) {
-    const filteredPatients = dbPatients.filter(p => {
-      const term = searchTerm.toLowerCase();
-      return (p.name || '').toLowerCase().includes(term) || (p.doc || '').toLowerCase().includes(term) || (p.phone || '').toLowerCase().includes(term);
-    });
-    return (
-      <div style={{ padding: '30px', flex: 1, overflowY: 'auto', background: '#F0F4F4' }}>
-        <div style={{ width: '100%', margin: '0 auto' }}>
-          <div style={{ marginBottom: '30px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 45, height: 45, background: P, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 16px ${P}33` }}>
-                <span style={{ fontSize: 22 }}>🔍</span>
-              </div>
-              <div>
-                <h1 style={{ fontSize: 24, fontWeight: 800, color: DN, margin: 0, letterSpacing: '-0.5px' }}>Buscador de Pacientes</h1>
-                <p style={{ fontSize: 13, color: MU, margin: 0 }}>Accede a la historia clínica completa de tus pacientes registrados.</p>
-              </div>
-            </div>
-            <div style={{ position: 'relative', background: '#fff', padding: '8px', borderRadius: 16, border: `1px solid ${BD}`, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center' }}>
-              <input type="text" placeholder="Buscar por Nombre, DNI o Número de Celular..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus style={{ width: '100%', padding: '16px 20px', borderRadius: 12, border: 'none', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: DN, background: 'transparent' }} />
-              <div style={{ padding: '0 20px', color: P, fontWeight: 700, fontSize: 13, borderLeft: `1px solid ${BD}` }}>{filteredPatients.length} Registros</div>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-            {filteredPatients.map(p => (
-              <div key={p.id} onClick={() => setView('historia', p)} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 18, padding: '20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 15, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }} onMouseEnter={e => { e.currentTarget.style.borderColor = P; e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = `0 20px 25px -5px ${P}15`; }} onMouseLeave={e => { e.currentTarget.style.borderColor = BD; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)'; }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: P }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 15, background: `linear-gradient(135deg, ${MT} 0%, #fff 100%)`, border: `1.5px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: P, flexShrink: 0 }}>{ini(p.name)}</div>
-                  <div style={{ overflow: 'hidden', flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: DN, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontSize: 10, background: '#F1F5F9', color: MU, padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>{p.sexo || 'N/A'}</span><span style={{ fontSize: 10, background: '#F1F5F9', color: MU, padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>{p.age ? `${p.age} años` : 'Edad N/A'}</span></div>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingTop: 15, borderTop: `1px solid ${MT}` }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, color: MU, fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Documento</span><span style={{ fontSize: 12, color: DN, fontWeight: 600 }}>🆔 {p.doc || '---'}</span></div>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: 9, color: MU, fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>WhatsApp</span><span style={{ fontSize: 12, color: DN, fontWeight: 600 }}>📱 {p.phone || '---'}</span></div>
-                </div>
-                {p.direccion && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={{ fontSize: 9, color: MU, fontWeight: 700, textTransform: 'uppercase' }}>Ubicación</span><span style={{ fontSize: 11, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>📍 {p.direccion}</span></div>}
-                <div style={{ marginTop: '5px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: P }}>Ver Expediente →</div>
-              </div>
-            ))}
-            {!loadingPatients && filteredPatients.length === 0 && (
-              <div style={{ gridColumn: '1/-1', padding: '80px 40px', textAlign: 'center', background: '#fff', borderRadius: 20, border: `2px dashed ${BD}` }}>
-                <div style={{ fontSize: 50, marginBottom: 20 }}>👤</div>
-                <h3 style={{ color: DN, margin: '0 0 10px 0' }}>No encontramos al paciente</h3>
-                <p style={{ color: MU, maxWidth: 400, margin: '0 auto' }}>No hay resultados para <b>"{searchTerm}"</b>. Verifica los datos o registra al paciente desde la Agenda.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!patient) return null;
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -1134,8 +1354,7 @@ useEffect(() => {
           </div>
         )}
 
-        {/* --- OTRAS PESTAÑAS --- */}
-        {/* 3. ODONTOGRAMA COMPLETO (ARREGLADO PARA GUARDAR) */}
+        {/* --- PESTAÑA ODONTOGRAMA --- */}
         {tab === 'odontograma' && (
           <Odontograma 
             patient={patData} 
@@ -1146,6 +1365,7 @@ useEffect(() => {
           />
         )}
 
+        {/* --- PESTAÑA ANAMNESIS --- */}
         {tab === 'anamnesis' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%' }}>
@@ -1173,6 +1393,7 @@ useEffect(() => {
           </div>
         )}
 
+        {/* --- PESTAÑA PLAN --- */}
         {tab === 'plan' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -1230,6 +1451,7 @@ useEffect(() => {
           </div>
         )}
 
+        {/* --- PESTAÑA EVOLUCIÓN --- */}
         {tab === 'evolucion' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -1254,6 +1476,7 @@ useEffect(() => {
           </div>
         )}
 
+        {/* --- PESTAÑA RECETAS --- */}
         {tab === 'recetas' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -1291,6 +1514,7 @@ useEffect(() => {
           </div>
         )}
 
+        {/* --- PESTAÑA IMÁGENES --- */}
         {tab === 'imagenes' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -1337,6 +1561,7 @@ useEffect(() => {
           </div>
         )}
 
+        {/* --- PESTAÑA PRESUPUESTO --- */}
         {tab === 'presupuesto' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
