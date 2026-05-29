@@ -1,11 +1,8 @@
-// src/components/odontograma/OcclusalMap.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import { RJ, AZ } from '../../utils/constants';
 import { gt, getSurfs } from '../../utils/helpers';
 
 export default function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
-  const [hovered, setHovered] = useState(null);
-
   const S = size, cx = S / 2, cy = S / 2, ir = S * .18, ob = S / 2 - 5;
   const sf0 = getSurfs(num)[0];
   const at = gt(activeTool);
@@ -25,21 +22,13 @@ export default function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160
       <rect x="4" y="4" width={S - 8} height={S - 8} rx="8" fill="#f8fafc" stroke="#94a3b8" strokeWidth=".7" />
 
       {Object.entries(ZONES).map(([sf, path]) => {
-        const c = surfs[sf];
-        const t = gt(c);
-        const h = c && c !== 'normal';
-        
-        // Color base (si tiene hallazgo o no)
-        const baseFill = h ? (t.cr === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
-        // Color al pasar el mouse
-        const fill = hovered === sf ? (at.col + '88') : baseFill;
-
+        const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
+        const fill = h ? (t.cr === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
         return (
           <path key={sf} d={path} fill={fill} stroke="rgba(0,0,0,.1)" strokeWidth="1"
-            style={{ cursor: 'pointer', transition: 'fill 0.2s ease' }} 
-            onClick={() => onSurf(sf)}
-            onMouseEnter={() => setHovered(sf)}
-            onMouseLeave={() => setHovered(null)}
+            style={{ cursor: 'pointer' }} onClick={() => onSurf(sf)}
+            onMouseEnter={e => e.target.setAttribute('fill', at.col + '88')}
+            onMouseLeave={e => e.target.setAttribute('fill', fill)}
           />
         );
       })}

@@ -1,4 +1,3 @@
-// src/components/odontograma/Odontograma.jsx
 import React, { useState } from 'react';
 import ToothSVG from './ToothSVG';
 import OcclusalMap from './OcclusalMap';
@@ -16,41 +15,27 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
   const aw = 42;
   const pw = 32;
 
-  // Garantizamos siempre un objeto válido para evitar errores de renderizado
   const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
-  // LÓGICA RESTAURADA: Actualiza el estado usando "p" (prev state) para no perder nunca el clic
   const applyAll = n => {
-    if (act === 'normal') { 
-      setCurrentTeeth(p => {
-        const copy = { ...p };
-        delete copy[n];
-        return copy;
-      }); 
-      return; 
+    if (act === 'normal') {
+      setCurrentTeeth(p => { const next = {...p}; if(next[n]) delete next[n]; return next; });
+      return;
     }
     const up = {};
     getSurfs(n).forEach(s => up[s] = act);
-    setCurrentTeeth(p => ({ ...p, [n]: { ...(p?.[n] || {}), ...up } }));
+    setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], ...up } }));
     setSel(n);
   };
 
   const applySurf = (n, sf) => {
-    setCurrentTeeth(p => {
-      // Leemos el estado anterior directo de la memoria de React
-      const currentPiece = p?.[n] || {};
-      const curVal = currentPiece[sf];
-      
-      // Si ya tiene la herramienta o es limpiar ("normal"), borramos la superficie
-      if (act === 'normal' || curVal === act) {
-        return { ...p, [n]: { ...currentPiece, [sf]: undefined } };
-      } 
-      // Si es una herramienta nueva, la marcamos
-      else {
-        return { ...p, [n]: { ...currentPiece, [sf]: act } };
-      }
-    });
+    const cur = (currentTeeth[n] || {})[sf];
+    if (act === 'normal' || cur === act) {
+      setCurrentTeeth(p => { const next = {...p}; if(next[n]) delete next[n][sf]; return next; });
+    } else {
+      setCurrentTeeth(p => ({ ...p, [n]: { ...p[n], [sf]: act } }));
+    }
   };
 
   const allF = [];
@@ -74,8 +59,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
   const recRow = (list, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => {
-        const ss = currentTeeth[n] || {};
-        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+        const ss = currentTeeth[n] || {}, cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
         const t = cs.length ? gt(cs[0][1]) : null;
         return (
           <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
@@ -96,19 +80,11 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
     </div>
   );
 
-  // CLIC DE SELECCIÓN RESTAURADO: Solo selecciona la pieza y abre el panel
   const tRow = (list, upper, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => (
         <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
-          <ToothSVG 
-            num={n} 
-            upper={upper} 
-            surfs={currentTeeth[n] || {}} 
-            active={sel === n} 
-            onClick={() => setSel(sel === n ? null : n)} 
-            w={w} 
-          />
+          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} />
         </div>
       ))}
     </div>
@@ -165,6 +141,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
           <div style={{ display: 'flex', gap: 15, marginBottom: 15, alignItems: 'center' }}>
             <div style={{ fontSize: 16, fontWeight: 900, color: DN }}>{patient?.name || 'Paciente'}</div>
             <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 12, background: mode === 'inicial' ? MT : '#fef3c7', color: mode === 'inicial' ? P : GL }}>{mode}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: MU, fontWeight: 600 }}>{new Date().toLocaleDateString('es-PE')}</span>
           </div>
 
           <div style={{ fontSize: 10, fontWeight: 800, color: MU, textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Maxilar superior</div>
@@ -232,7 +209,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
             <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
-            <button onClick={() => setCurrentTeeth(p => { const next = { ...p }; delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+            <button onClick={() => setCurrentTeeth(p => { const next = {...p}; if(next[sel]) delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
           </div>
 
           <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
@@ -251,7 +228,7 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
           })}
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
-          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...(p[sel] || {}), note: e.target.value } }))}
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...p[sel], note: e.target.value } }))}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
         </div>
       )}
