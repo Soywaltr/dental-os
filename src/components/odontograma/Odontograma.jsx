@@ -16,43 +16,34 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
   const aw = 42;
   const pw = 32;
 
-  // Garantizar que siempre haya un objeto válido (solución al bug de no pintar)
   const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
-  // 1. Quita el setSel de dentro de applyAll:
-const applyAll = n => {
-  if (act === 'normal') { 
-    setCurrentTeeth(prev => {
-      const next = { ...(prev || {}) };
-      delete next[n];
-      return next;
-    }); 
-    return; 
-  }
-  const up = {};
-  getSurfs(n).forEach(s => up[s] = act);
-  setCurrentTeeth(prev => ({ ...(prev || {}), [n]: { ...((prev || {})[n] || {}), ...up } }));
-  // ← ELIMINA el setSel(n) que estaba aquí
-};
-
-  // Lógica de clic a prueba de balas para aplicar en una superficie (O, M, D, V, L)
+  // CLIC A PRUEBA DE BALAS: Fuerza el re-render clonando el estado
   const applySurf = (n, sf) => {
     setCurrentTeeth(prev => {
-      const safePrev = prev || {};
-      const safePiece = safePrev[n] || {};
-      const cur = safePiece[sf];
+      const newState = JSON.parse(JSON.stringify(prev || {}));
+      if (!newState[n]) newState[n] = {};
       
-      // Si ya tiene esa herramienta o es "normal", la borramos
-      if (act === 'normal' || cur === act) {
-        const updatedPiece = { ...safePiece };
-        delete updatedPiece[sf];
-        return { ...safePrev, [n]: updatedPiece };
-      } 
-      // Si es una herramienta nueva (ej. caries), la aplicamos
-      else {
-        return { ...safePrev, [n]: { ...safePiece, [sf]: act } };
+      if (act === 'normal' || newState[n][sf] === act) {
+        delete newState[n][sf];
+      } else {
+        newState[n][sf] = act;
       }
+      return newState;
+    });
+  };
+
+  const applyAll = n => {
+    setCurrentTeeth(prev => {
+      const newState = JSON.parse(JSON.stringify(prev || {}));
+      if (act === 'normal') {
+        delete newState[n];
+      } else {
+        if (!newState[n]) newState[n] = {};
+        getSurfs(n).forEach(s => newState[n][s] = act);
+      }
+      return newState;
     });
   };
 
@@ -98,18 +89,11 @@ const applyAll = n => {
     </div>
   );
 
- const tRow = (list, upper, w) => (
+  const tRow = (list, upper, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => (
         <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
-          <ToothSVG 
-            num={n} 
-            upper={upper} 
-            surfs={currentTeeth[n] || {}} 
-            active={sel === n} 
-            onClick={() => setSel(sel === n ? null : n)} 
-            w={w} 
-          />
+          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} />
         </div>
       ))}
     </div>
@@ -234,7 +218,7 @@ const applyAll = n => {
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
             <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
-            <button onClick={() => setCurrentTeeth(p => { const next = {...(p||{})}; delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+            <button onClick={() => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
           </div>
 
           <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
@@ -253,7 +237,7 @@ const applyAll = n => {
           })}
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
-          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => ({ ...p, [sel]: { ...(p[sel] || {}), note: e.target.value } }))}
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel]={}; next[sel].note = e.target.value; return next; })}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
         </div>
       )}
