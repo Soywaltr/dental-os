@@ -98,15 +98,31 @@ export default function Odontograma({ patient, teeth, setTeeth, teethEvolucion, 
     </div>
   );
 
-  const tRow = (list, upper, w) => (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
-      {list.map((n, i) => (
-        <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
-          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} />
-        </div>
-      ))}
-    </div>
-  );
+ /// En Odontograma.jsx, reemplaza tRow completa:
+const tRow = (list, upper, w) => (
+  <div style={{ display: 'flex', justifyContent: 'center' }}>
+    {list.map((n, i) => (
+      <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
+        <ToothSVG
+          num={n}
+          upper={upper}
+          surfs={currentTeeth[n] || {}}
+          active={sel === n}
+          onClick={() => {
+            if (sel === n && act !== 'normal') {
+              // Segundo clic en el mismo diente → aplica a toda la pieza
+              applyAll(n);
+            } else {
+              // Primer clic → solo selecciona y abre panel lateral
+              setSel(n);
+            }
+          }}
+          w={w}
+        />
+      </div>
+    ))}
+  </div>
+);
 
   const eRow = (list, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
