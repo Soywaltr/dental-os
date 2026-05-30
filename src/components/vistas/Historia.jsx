@@ -509,14 +509,18 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   // FUNCIONES AYUDANTES UI INTERNAS
   const getOrtoStyle = (isEditing) => ({
     ...inputStyleDoc,
-    background: isEditing ? '#fff' : '#f8fafc',
-    borderColor: isEditing ? '#cbd5e1' : '#e2e8f0',
+    background: isEditing ? '#fff' : '#f8fafc', // Fondo sutil al bloquear
+    borderColor: isEditing ? '#cbd5e1' : 'transparent', // Quitamos el borde al bloquear para que parezca texto impreso
     cursor: isEditing ? 'text' : 'default',
-    // Aquí está la magia de lectura:
-    color: isEditing ? '#0f172a' : '#000000', 
-    fontWeight: isEditing ? '400' : '600', // Texto más grueso al bloquear
-    opacity: 1, // Evita que el navegador ponga el texto gris
-    WebkitTextFillColor: isEditing ? '#0f172a' : '#000000', // Fuerzo el color negro en Safari/iOS
+    color: isEditing ? '#0f172a' : '#334155', // Un tono pizarra elegante, nada de negro agresivo
+    fontWeight: '500', // Peso medio limpio, sin negritas toscas
+    opacity: 1, 
+    WebkitTextFillColor: isEditing ? '#0f172a' : '#334155', // Evita que Safari lo ponga gris claro
+    
+    // ⚡ EL TRUCO PREMIUM: Oculta la flecha del select cuando está bloqueado
+    appearance: isEditing ? 'auto' : 'none',
+    WebkitAppearance: isEditing ? 'auto' : 'none',
+    MozAppearance: isEditing ? 'auto' : 'none',
   });
 
   const OrtoHeader = ({ title, isEditing, setIsEditing, onSave, saving, onCancel }) => (
@@ -576,18 +580,22 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
     <div style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9', gap: '20px', width: '100%' }}>
       <div style={{ width: '180px', minWidth: '180px', fontSize: '13px', color: '#475569', fontWeight: 600 }}>{label}</div>
       <div style={{ display: 'flex', gap: '15px', flexShrink: 0, alignItems: 'center' }}>
-        {opts.map(opt => (
-          <label key={opt} style={{ 
-            fontSize: '12.5px', 
-            color: ortoForm[`${field}_${opt}`] ? '#000000' : '#94a3b8', // Negro si está marcado, gris si no
-            fontWeight: ortoForm[`${field}_${opt}`] ? 700 : 500, // Negrita si está marcado
-            display: 'flex', alignItems: 'center', gap: '6px', 
-            cursor: isEditing ? 'pointer' : 'default' 
-          }}>
-            <input disabled={!isEditing} type="checkbox" checked={ortoForm[`${field}_${opt}`] || false} onChange={e => handleOrto(`${field}_${opt}`, e.target.checked)} style={{ cursor: isEditing ? 'pointer' : 'default', accentColor: '#0087b3' }} />
-            {opt}
-          </label>
-        ))}
+        {opts.map(opt => {
+          const isChecked = ortoForm[`${field}_${opt}`];
+          return (
+            <label key={opt} style={{ 
+              fontSize: '12.5px', 
+              color: isChecked ? '#334155' : '#94a3b8', // Color más sutil si está marcado
+              fontWeight: 500, // Quitamos la negrita pesada
+              display: 'flex', alignItems: 'center', gap: '6px', 
+              cursor: isEditing ? 'pointer' : 'default',
+              opacity: 1
+            }}>
+              <input disabled={!isEditing} type="checkbox" checked={isChecked || false} onChange={e => handleOrto(`${field}_${opt}`, e.target.checked)} style={{ cursor: isEditing ? 'pointer' : 'default', accentColor: '#0087b3' }} />
+              {opt}
+            </label>
+          );
+        })}
       </div>
       <div style={{ flex: 1, minWidth: '100px' }}>
         <input disabled={!isEditing} placeholder="Nota..." value={ortoForm[`${field}_nota`] || ''} onChange={e => handleOrto(`${field}_nota`, e.target.value)} style={{ ...getOrtoStyle(isEditing), height: '34px', padding: '4px 12px' }} />
