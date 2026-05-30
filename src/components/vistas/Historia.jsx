@@ -479,24 +479,36 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const getOrtoStyle = (isEditing) => ({
     ...inputStyleDoc,
     background: isEditing ? '#fff' : '#f8fafc',
-    borderColor: isEditing ? '#cbd5e1' : 'transparent',
-    cursor: isEditing ? 'text' : 'not-allowed',
-    color: isEditing ? '#0f172a' : '#64748b'
+    borderColor: isEditing ? '#cbd5e1' : '#e2e8f0',
+    cursor: isEditing ? 'text' : 'default',
+    // Aquí está la magia de lectura:
+    color: isEditing ? '#0f172a' : '#000000', 
+    fontWeight: isEditing ? '400' : '600', // Texto más grueso al bloquear
+    opacity: 1, // Evita que el navegador ponga el texto gris
+    WebkitTextFillColor: isEditing ? '#0f172a' : '#000000', // Fuerzo el color negro en Safari/iOS
   });
 
-  const OrtoHeader = ({ title, isEditing, setIsEditing, onSave, saving }) => (
+  const OrtoHeader = ({ title, isEditing, setIsEditing, onSave, saving, onCancel }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', marginTop: '10px', paddingBottom: '15px', borderBottom: '1px solid #e2e8f0' }}>
       <h2 style={{ margin: 0, color: '#0f172a', fontSize: '18px', fontWeight: 700 }}>{title}</h2>
       <div>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-            ✏️ Editar Sección
+          <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 16px', fontWeight: '600', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }} onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
+            {/* ICONO LÁPIZ PREMIUM SVG */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Editar Sección
           </button>
         ) : (
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setIsEditing(false)} style={{ background: '#fff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
-            <button onClick={onSave} style={{ background: '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-              {saving ? 'Guardando...' : '💾 Guardar Cambios'}
+            <button onClick={onCancel} style={{ background: '#fff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
+            <button onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,135,179,0.2)' }}>
+              {saving ? '⏳ Guardando...' : (
+                <>
+                  {/* ICONO GUARDAR PREMIUM SVG */}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  Guardar Cambios
+                </>
+              )}
             </button>
           </div>
         )}
@@ -534,8 +546,14 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
       <div style={{ width: '180px', minWidth: '180px', fontSize: '13px', color: '#475569', fontWeight: 600 }}>{label}</div>
       <div style={{ display: 'flex', gap: '15px', flexShrink: 0, alignItems: 'center' }}>
         {opts.map(opt => (
-          <label key={opt} style={{ fontSize: '12.5px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', cursor: isEditing ? 'pointer' : 'not-allowed', opacity: isEditing ? 1 : 0.6 }}>
-            <input disabled={!isEditing} type="checkbox" checked={ortoForm[`${field}_${opt}`] || false} onChange={e => handleOrto(`${field}_${opt}`, e.target.checked)} style={{ cursor: isEditing ? 'pointer' : 'not-allowed', margin: 0, width: '16px', height: '16px' }} />
+          <label key={opt} style={{ 
+            fontSize: '12.5px', 
+            color: ortoForm[`${field}_${opt}`] ? '#000000' : '#94a3b8', // Negro si está marcado, gris si no
+            fontWeight: ortoForm[`${field}_${opt}`] ? 700 : 500, // Negrita si está marcado
+            display: 'flex', alignItems: 'center', gap: '6px', 
+            cursor: isEditing ? 'pointer' : 'default' 
+          }}>
+            <input disabled={!isEditing} type="checkbox" checked={ortoForm[`${field}_${opt}`] || false} onChange={e => handleOrto(`${field}_${opt}`, e.target.checked)} style={{ cursor: isEditing ? 'pointer' : 'default', accentColor: '#0087b3' }} />
             {opt}
           </label>
         ))}
