@@ -509,18 +509,15 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   // FUNCIONES AYUDANTES UI INTERNAS
   const getOrtoStyle = (isEditing) => ({
     ...inputStyleDoc,
-    background: isEditing ? '#fff' : '#f8fafc', // Fondo sutil al bloquear
-    borderColor: isEditing ? '#cbd5e1' : 'transparent', // Quitamos el borde al bloquear para que parezca texto impreso
-    cursor: isEditing ? 'text' : 'default',
-    color: isEditing ? '#0f172a' : '#334155', // Un tono pizarra elegante, nada de negro agresivo
-    fontWeight: '500', // Peso medio limpio, sin negritas toscas
+    background: isEditing ? '#fff' : '#f1f5f9', // Blanco al editar, gris sutil al bloquear
+    borderColor: '#cbd5e1', // El borde se mantiene SIEMPRE visible
+    cursor: isEditing ? 'auto' : 'not-allowed', // Muestra el cursor de "prohibido" si está bloqueado
+    color: '#0f172a', // El texto se mantiene siempre oscuro y legible
+    fontWeight: '500', 
     opacity: 1, 
-    WebkitTextFillColor: isEditing ? '#0f172a' : '#334155', // Evita que Safari lo ponga gris claro
+    WebkitTextFillColor: '#0f172a', // Fuerza a Safari/iOS a no opacar el texto
     
-    // ⚡ EL TRUCO PREMIUM: Oculta la flecha del select cuando está bloqueado
-    appearance: isEditing ? 'auto' : 'none',
-    WebkitAppearance: isEditing ? 'auto' : 'none',
-    MozAppearance: isEditing ? 'auto' : 'none',
+    // Eliminamos el truco de "appearance: none" para que la flecha del select vuelva a aparecer.
   });
 
   const OrtoHeader = ({ title, isEditing, setIsEditing, onSave, saving, onCancel }) => (
