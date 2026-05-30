@@ -474,6 +474,37 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const handleSavePlanTrabajo = () => genericSaveOrto('plan_trabajo', planTrabajoForm, setSavingTrabajo, setIsEditingOrtoTrabajo, 'Plan de Trabajo');
   const handleSavePlanTrata = () => genericSaveOrto('plan_tratamiento', planTrataForm, setSavingTrata, setIsEditingOrtoTrata, 'Plan de Tratamiento');
   const handleSaveResumen = () => genericSaveOrto('resumen', resumenForm, setSavingResumen, setIsEditingOrtoResumen, 'Resumen');
+
+  // ⚡ CARGA Y BARRIDO DE MEMORIA DE ORTODONCIA ⚡
+  useEffect(() => {
+    if (patData && patData.id) {
+      // 1. BARRER LA MEMORIA ANTES DE CARGAR EL NUEVO PACIENTE
+      setOrtoForm({});
+      setPlanTrabajoForm({});
+      setPlanTrataForm({});
+      setResumenForm({});
+      setFotosOrto({});
+      
+      // 2. CERRAR CUALQUIER MODO EDICIÓN QUE HAYA QUEDADO ABIERTO
+      setIsEditingOrtoExamen(false);
+      setIsEditingOrtoTrabajo(false);
+      setIsEditingOrtoTrata(false);
+      setIsEditingOrtoResumen(false);
+      setIsEditingOrtoFotos(false);
+
+      const cargarDatosOrto = async () => {
+        const { data } = await supabase.from('ortodoncia').select('*').eq('paciente_id', patData.id).maybeSingle();
+        if (data) {
+          if (data.examen_clinico) setOrtoForm(data.examen_clinico);
+          if (data.plan_trabajo) setPlanTrabajoForm(data.plan_trabajo);
+          if (data.plan_tratamiento) setPlanTrataForm(data.plan_tratamiento);
+          if (data.fotografias) setFotosOrto(data.fotografias);
+          if (data.resumen) setResumenForm(data.resumen);
+        }
+      };
+      cargarDatosOrto();
+    }
+  }, [patData]);
   
   // FUNCIONES AYUDANTES UI INTERNAS
   const getOrtoStyle = (isEditing) => ({
@@ -605,8 +636,18 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   useEffect(() => {
     const loadCloudData = async () => {
       if (!patient?.id) return;
-      setTeeth({});
+
+      // 1. ⚡ BARRER LA MEMORIA GENERAL ANTES DE CARGAR AL NUEVO PACIENTE ⚡
+      setTeeth({}); 
       setTeethEvolucion({});
+      setAnamnesisData({});
+      setPlan([]);
+      setImagenesList([]);
+      
+      // 2. CERRAR MODOS DE EDICIÓN
+      setIsEditingAnamnesis(false);
+      setIsEditingFiliacion(false);
+
       const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
       if (data) {
         if (data.odontograma && Object.keys(data.odontograma).length > 0) setTeeth(data.odontograma);
