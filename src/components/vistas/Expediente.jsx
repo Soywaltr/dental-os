@@ -186,6 +186,29 @@ function usePatientForm(patientsList) {
   return { form, setForm, handleDocChange, handleNombreChange, handleBirthDate, reset };
 }
 
+// ─── ESTADO DEL PACIENTE (derivado, no un campo fijo) ────────────────────────
+// El campo "tag" quedaba en 'nuevo' para siempre porque nada lo actualizaba
+// después del registro. Ahora el estado se calcula desde fechas reales:
+// Nuevo = registrado hace ≤30 días · Inactivo = sin cita hace más de 6 meses.
+const DIAS_NUEVO = 30;
+const MESES_INACTIVO = 6;
+
+const estadoPaciente = (p) => {
+  const hoy = new Date();
+
+  if (p.created_at) {
+    const dias = (hoy - new Date(p.created_at)) / 86400000;
+    if (dias >= 0 && dias <= DIAS_NUEVO) return 'nuevo';
+  }
+
+  if (p.fecha) {
+    const meses = (hoy - new Date(p.fecha)) / (86400000 * 30);
+    if (meses > MESES_INACTIVO) return 'inactivo';
+  }
+
+  return 'activo';
+};
+
 // ─── SUB-COMPONENTE: FILTROS ──────────────────────────────────────────────────
 const FilterPills = memo(({ active, onChange }) => (
   <div style={{
@@ -193,7 +216,7 @@ const FilterPills = memo(({ active, onChange }) => (
     background: C.surfaceAlt, padding: 4,
     borderRadius: C.rl, border: `1px solid ${C.border}`,
   }}>
-    {['todos', 'activo', 'nuevo'].map(f => (
+    {['todos', 'activo', 'nuevo', 'inactivo'].map(f => (
       <button
         key={f}
         onClick={() => onChange(f)}
@@ -218,6 +241,7 @@ const FilterPills = memo(({ active, onChange }) => (
 // ─── SUB-COMPONENTE: TARJETA DE PACIENTE ─────────────────────────────────────
 const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
   const [hov, setHov] = useState(false);
+  const estado = estadoPaciente(patient);
 
   return (
     <div
@@ -276,9 +300,12 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
         </div>
       </div>
 
-      {/* Dot nuevo */}
-      {patient.tag === 'nuevo' && !hov && (
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.blue, flexShrink: 0 }} />
+      {/* Indicador de estado (nuevo / inactivo) */}
+      {!hov && estado !== 'activo' && (
+        <span
+          title={estado === 'nuevo' ? 'Paciente nuevo (≤30 días)' : 'Sin actividad hace más de 6 meses'}
+          style={{ width: 7, height: 7, borderRadius: '50%', background: estado === 'nuevo' ? C.blue : '#9CA3AF', flexShrink: 0 }}
+        />
       )}
     </div>
   );
@@ -506,8 +533,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
     const matchSearch =
       normalizarTexto(p.name).includes(normalizarTexto(q)) ||
       (p.doc && p.doc.includes(q));
-    const tagActual = p.tag || 'activo';
-    const matchFilter = filter === 'todos' || tagActual === filter;
+    const matchFilter = filter === 'todos' || estadoPaciente(p) === filter;
     return matchSearch && matchFilter;
   });
 
