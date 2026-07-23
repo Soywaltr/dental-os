@@ -10,7 +10,7 @@ import { supabase } from '../../supabase';
 import Historia from './Historia';
 import Modal from '../ui/Modal';
 import { BD, P, DN, MU } from '../../utils/constants';
-import { normalizarTexto, ini } from '../../utils/helpers';
+import { normalizarTexto, ini, findPatientByDoc, findPatientByName } from '../../utils/helpers';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
 const C = {
@@ -165,14 +165,13 @@ function usePatientForm(patientsList) {
 
   const handleDocChange = useCallback((valorDoc) => {
     if (!valorDoc?.trim()) { setForm(FORM_EMPTY); return; }
-    const existente = patientsList.find(p => p.doc === valorDoc);
+    const existente = findPatientByDoc(patientsList, valorDoc);
     if (existente) setForm({ ...existente, id: existente.id });
     else setForm(f => ({ ...f, id: null, doc: valorDoc, name: '', phone: '' }));
   }, [patientsList]);
 
   const handleNombreChange = useCallback((val) => {
-    const normIngresado = normalizarTexto(val);
-    const existente = patientsList.find(p => normalizarTexto(p.name) === normIngresado);
+    const existente = findPatientByName(patientsList, val);
     if (existente) setForm({ ...existente, id: existente.id });
     else setForm(f => ({ ...f, id: null, name: val }));
   }, [patientsList]);

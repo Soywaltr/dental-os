@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import Button from './Button';
+import { findPatientByDoc, findPatientByName } from '../../utils/helpers';
 
 export default function ModalNuevaCita({ onClose, onSave, listaPacientes, modo = 'cita' }) {
   const [form, setForm] = useState({
@@ -13,14 +14,12 @@ export default function ModalNuevaCita({ onClose, onSave, listaPacientes, modo =
     motivo: ''
   });
 
-  const normalizar = (t) => t ? t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : '';
-
   const handleDocChange = (val) => {
     if (!val || val.trim() === "") {
       setForm({ ...form, doc: '', paciente: '', celular: '' });
       return;
     }
-    const existente = listaPacientes.find(p => p.doc === val);
+    const existente = findPatientByDoc(listaPacientes, val);
     if (existente) {
       setForm({ ...form, doc: val, paciente: existente.name, celular: existente.phone || '' });
     } else {
@@ -29,8 +28,7 @@ export default function ModalNuevaCita({ onClose, onSave, listaPacientes, modo =
   };
 
   const handleNombreChange = (val) => {
-    const normIngresado = normalizar(val);
-    const existente = listaPacientes.find(p => normalizar(p.name) === normIngresado);
+    const existente = findPatientByName(listaPacientes, val);
     if (existente) {
       setForm({ ...form, paciente: existente.name, doc: existente.doc || '', celular: existente.phone || '' });
     } else {

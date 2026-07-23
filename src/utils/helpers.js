@@ -13,6 +13,16 @@ export const normalizarTexto = (texto) => {
 
 export const ini = n => n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
+export const findPatientByDoc = (list, doc) => {
+  if (!doc?.trim()) return null;
+  return list.find(p => p.doc === doc) || null;
+};
+
+export const findPatientByName = (list, name) => {
+  const norm = normalizarTexto(name);
+  return list.find(p => normalizarTexto(p.name) === norm) || null;
+};
+
 export const sc = s => s === 'confirmado' || s === 'pagado' || s === 'completado' ? { bg: '#dcfce7', c: '#16a34a' } : s === 'nuevo' || s === 'parcial' || s === 'en_curso' ? { bg: '#fef3c7', c: '#d97706' } : s === 'pendiente' ? { bg: '#fee2e2', c: RJ } : { bg: MT, c: P };
 
 export const getSurfs = n => n % 10 <= 3 ? ['I', 'L', 'V', 'M', 'D'] : ['O', 'L', 'V', 'M', 'D'];
