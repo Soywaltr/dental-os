@@ -755,29 +755,25 @@ const [editDraft, setEditDraft] = useState({});
           ? superficies.map(s => [s, pieza.todaPieza])
           : Object.entries(pieza).filter(([k]) => k !== 'note' && k !== 'todaPieza');
 
-        const porExtraer = entradas.some(([, v]) => baseId(v) === 'extraer');
+        const valores = entradas.map(([, v]) => v).filter(v => v && v !== 'normal');
+        if (valores.length === 0) return;
 
-        entradas.forEach(([, valorRaw]) => {
-          if (!valorRaw || valorRaw === 'normal') return;
-          const id = baseId(valorRaw);
+        // Un solo tratamiento sugerido por pieza (no por cara): extracción > reemplazo > caries
+        if (valores.some(v => baseId(v) === 'extraer')) {
+          sugerencias.push({ tooth: num, name: 'Extracción simple', cost: PRECIOS['Extracción simple'] || 0 });
+          return;
+        }
 
-          if (porExtraer) {
-            if (id === 'extraer') {
-              sugerencias.push({ tooth: num, name: 'Extracción simple', cost: PRECIOS['Extracción simple'] || 0 });
-            }
-            return;
-          }
+        const valorBad = valores.find(v => isBad(v) && REEMPLAZO_POR_MATERIAL[baseId(v)]);
+        if (valorBad) {
+          const nombreBase = REEMPLAZO_POR_MATERIAL[baseId(valorBad)];
+          sugerencias.push({ tooth: num, name: `${nombreBase} (reemplazo)`, cost: PRECIOS[nombreBase] || 0 });
+          return;
+        }
 
-          if (isBad(valorRaw) && REEMPLAZO_POR_MATERIAL[id]) {
-            const nombreBase = REEMPLAZO_POR_MATERIAL[id];
-            sugerencias.push({ tooth: num, name: `${nombreBase} (reemplazo)`, cost: PRECIOS[nombreBase] || 0 });
-            return;
-          }
-
-          if (id === 'caries') {
-            sugerencias.push({ tooth: num, name: 'Resina compuesta', cost: PRECIOS['Resina compuesta'] || 0 });
-          }
-        });
+        if (valores.some(v => baseId(v) === 'caries')) {
+          sugerencias.push({ tooth: num, name: 'Resina compuesta', cost: PRECIOS['Resina compuesta'] || 0 });
+        }
       });
     });
 
@@ -786,16 +782,30 @@ const [editDraft, setEditDraft] = useState({});
       return;
     }
 
+    // Deduplicar por pieza+tratamiento (por si la misma pieza aparece en inicial y evolución)
+    const sugerenciasUnicas = Array.from(
+      new Map(sugerencias.map(s => [`${s.tooth}|${s.name}`, s])).values()
+    );
+
+    // No repetir sugerencias que ya estén en el plan (ej. si se pulsa el botón más de una vez)
+    const yaExiste = (tooth, name) => plan.some(item => String(item.tooth) === String(tooth) && item.name === name);
+    const nuevas = sugerenciasUnicas.filter(s => !yaExiste(s.tooth, s.name));
+
+    if (nuevas.length === 0) {
+      alert('Las sugerencias detectadas ya estaban en el plan de tratamiento.');
+      return;
+    }
+
     setPlan(p => [
       ...p,
-      ...sugerencias.map((s, i) => ({
+      ...nuevas.map((s, i) => ({
         id: Date.now() + i,
         name: s.name, tooth: s.tooth, status: 'pendiente',
         cost: s.cost, paid: 0, date: new Date().toISOString().slice(0, 10),
         sessions: 1, notes: 'Generado automáticamente desde el odontograma',
       })),
     ]);
-    alert(`Se agregaron ${sugerencias.length} sugerencia(s) al plan de tratamiento.`);
+    alert(`Se agregaron ${nuevas.length} sugerencia(s) al plan de tratamiento.`);
   };
 
 
