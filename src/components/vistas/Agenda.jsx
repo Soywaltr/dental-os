@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { supabase } from '../../supabase';
 import { useGoogleLogin } from '@react-oauth/google';
 import ModalNuevaCita from '../ui/ModalNuevaCita';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 import { BD, P, GL, MU, DN, MT, LT, RJ } from '../../utils/constants';
 
 export default function Agenda() {
@@ -301,9 +303,9 @@ export default function Agenda() {
           </button>
         )}
 
-        <button onClick={() => setShowModalCita(true)} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+        <Button onClick={() => setShowModalCita(true)} style={{ padding: '6px 14px' }}>
           + Nueva cita
-        </button>
+        </Button>
       </div>
 
       <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -372,8 +374,7 @@ export default function Agenda() {
       {showModalCita && <ModalNuevaCita onClose={() => setShowModalCita(false)} onSave={handleGuardarCita} listaPacientes={listaPacientes} modo="cita" />}
 
       {showEditModal && selectedCita && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', padding: 25, borderRadius: 16, width: 400 }}>
+        <Modal cardStyle={{ padding: 25, width: 400 }}>
             <h3 style={{ marginTop: 0, color: P }}>
               {selectedCita.isGoogleOnly ? 'Editar Evento de Google' : `Editar Cita: ${selectedCita.name}`}
             </h3>
@@ -411,25 +412,24 @@ export default function Agenda() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 25 }}>
-              <button
+              <Button
+                variant="danger"
                 onClick={handleDeleteCita}
                 disabled={savingEdit}
-                style={{ padding: '10px 15px', border: 'none', background: '#fef2f2', color: '#ef4444', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+                style={{ padding: '10px 15px', fontSize: 14 }}>
                 🗑️ Eliminar
-              </button>
+              </Button>
 
               <div style={{ flex: 1, display: 'flex', gap: 10 }}>
-                <button onClick={() => setShowEditModal(false)} disabled={savingEdit} style={{ flex: 1, padding: 10, border: 'none', background: '#f1f5f9', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+                <Button variant="secondary" onClick={() => setShowEditModal(false)} disabled={savingEdit} style={{ flex: 1, padding: 10, fontSize: 14 }}>
                   Cancelar
-                </button>
-                <button onClick={handleSaveEdit} disabled={savingEdit} style={{ flex: 1, padding: 10, background: P, color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={savingEdit} style={{ flex: 1, padding: 10, fontSize: 14 }}>
                   {savingEdit ? 'Procesando...' : 'Actualizar'}
-                </button>
+                </Button>
               </div>
             </div>
-
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

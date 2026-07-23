@@ -1,6 +1,7 @@
 // src/components/historia/Consentimientos.jsx
 import React, { useState } from 'react';
 import FirmaCanvas from './FirmaCanvas';
+import Modal from '../ui/Modal';
 import { P, BD, WA, MU, DN, MT, LT, GL } from '../../utils/constants';
 import { getPreamble } from '../../utils/helpers';
 
@@ -147,9 +148,12 @@ function DocModal({ doc, patient, onClose, onGuardar, saved }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: 10 }}>
-      <div style={{ background: '#fff', borderRadius: 10, width: '100%', maxWidth: 820, maxHeight: '96vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.35)', position: 'relative' }}>
-        
+    <Modal
+      background="rgba(0,0,0,.6)"
+      zIndex={3000}
+      overlayStyle={{ padding: 10 }}
+      cardStyle={{ borderRadius: 10, width: '100%', maxWidth: 820, maxHeight: '96vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.35)', position: 'relative' }}>
+
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 8, display: 'flex', flexDirection: 'column', zIndex: 1 }}>
           <div style={{ flex: 1, background: P }} />
           <div style={{ height: 28, background: MT }} />
@@ -242,8 +246,7 @@ function DocModal({ doc, patient, onClose, onGuardar, saved }) {
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

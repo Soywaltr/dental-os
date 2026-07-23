@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '../../supabase';
 import Historia from './Historia';
+import Modal from '../ui/Modal';
 import { BD, P, DN, MU } from '../../utils/constants';
 import { normalizarTexto, ini } from '../../utils/helpers';
 
@@ -343,13 +344,10 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(17,24,39,0.45)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{
+    <Modal
+      background="rgba(17,24,39,0.45)"
+      overlayStyle={{ padding: 24 }}
+      cardStyle={{
         background: C.surface, borderRadius: C.rx,
         width: '100%', maxWidth: 520,
         boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
@@ -482,8 +480,7 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
             {saving ? 'Guardando…' : 'Guardar paciente'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 });
 

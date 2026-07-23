@@ -1,6 +1,8 @@
 // src/components/vistas/Caja.jsx
 import React, { useState } from 'react';
 import Stat from '../ui/Stat';
+import Button from '../ui/Button';
+import Badge from '../ui/Badge';
 import { INVOICES, PATIENTS, BD, P, GL, MU, DN, MT, LT } from '../../utils/constants';
 import { sc } from '../../utils/helpers';
 
@@ -22,7 +24,7 @@ export default function Caja() {
         {['facturas', 'pagos', 'gastos'].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{ padding: '6px 16px', borderRadius: 8, border: `1px solid ${BD}`, fontSize: 11, cursor: 'pointer', fontWeight: tab === t ? 700 : 400, background: tab === t ? P : '#fff', color: tab === t ? '#fff' : MU, textTransform: 'capitalize' }}>{t}</button>
         ))}
-        <button style={{ marginLeft: 'auto', background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Nueva factura</button>
+        <Button style={{ marginLeft: 'auto', padding: '6px 16px' }}>+ Nueva factura</Button>
       </div>
 
       {tab === 'facturas' && (
@@ -44,7 +46,7 @@ export default function Caja() {
                     <td style={{ padding: '9px 12px', color: MU }}>{inv.method}</td>
                     <td style={{ padding: '9px 12px', color: DN, fontWeight: 600 }}>S/{inv.total}</td>
                     <td style={{ padding: '9px 12px', color: inv.paid < inv.total ? GL : P }}>S/{inv.paid}</td>
-                    <td style={{ padding: '9px 12px' }}><span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: b.bg, color: b.c }}>{inv.status}</span></td>
+                    <td style={{ padding: '9px 12px' }}><Badge bg={b.bg} color={b.c} style={{ fontSize: 9, padding: '2px 8px' }}>{inv.status}</Badge></td>
                     <td style={{ padding: '9px 12px' }}><span style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600 }}>ver →</span></td>
                   </tr>
                 );
@@ -67,7 +69,7 @@ export default function Caja() {
               </div>
             ))}
           </div>
-          <button style={{ marginTop: 14, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Registrar pago</button>
+          <Button style={{ marginTop: 14, padding: '8px 20px', fontSize: 12 }}>Registrar pago</Button>
         </div>
       )}
 
@@ -83,7 +85,7 @@ export default function Caja() {
               </div>
             ))}
           </div>
-          <button style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Registrar gasto</button>
+          <Button>+ Registrar gasto</Button>
         </div>
       )}
     </div>

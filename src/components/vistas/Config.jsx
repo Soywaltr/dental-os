@@ -1,6 +1,7 @@
 // src/components/vistas/Config.jsx
 import React from 'react';
-import { BD, DN, MU, P, MT } from '../../utils/constants';
+import Button from '../ui/Button';
+import { BD, DN, MU, MT } from '../../utils/constants';
 
 export default function Config() {
   return (
@@ -23,7 +24,7 @@ export default function Config() {
           </div>
         ))}
       </div>
-      <button style={{ marginTop: 16, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 24px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>💾 Guardar configuración</button>
+      <Button style={{ marginTop: 16, padding: '9px 24px', fontSize: 12 }}>💾 Guardar configuración</Button>
     </div>
   );
 }
