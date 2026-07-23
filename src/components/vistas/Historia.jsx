@@ -6,7 +6,7 @@ import {
   TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS, 
   P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, UA, LA, UP, LP, TNAME 
 } from '../../utils/constants';
-import { ini, sc, getSurfs, gt, isMol, isPM } from '../../utils/helpers';
+import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX } from '../../utils/helpers';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -14,10 +14,12 @@ import { ini, sc, getSurfs, gt, isMol, isPM } from '../../utils/helpers';
 function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
   const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
-  const dom = conds.length ? gt(conds[0][1]) : null;
-  
+  const domRaw = conds.length ? conds[0][1] : null;
+  const dom = domRaw ? gt(domRaw) : null;
+  const domIsBad = isBad(domRaw);
+
   // AQUÍ ESTABA EL ERROR: Cambiado dom.cr por dom.g
-  const cf = !dom ? '#f8fafc' : dom.g === 'r' ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
+  const cf = !dom ? '#f8fafc' : (dom.g === 'r' || domIsBad) ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
 
   const isExtraer = Object.values(surfs).some(s => s === 'extraer');
 
@@ -81,9 +83,9 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
 
       {Object.entries(ZONES).map(([sf, path]) => {
         const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
-        
+
         // AQUÍ ESTABA EL ERROR: Cambiado t.cr por t.g
-        const fill = h ? (t.g === 'r' ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
+        const fill = h ? ((t.g === 'r' || isBad(c)) ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
         
         return (
           <path key={sf} d={path} fill={fill} stroke="rgba(0,0,0,.1)" strokeWidth="1"
@@ -185,6 +187,24 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     });
   };
 
+  const toggleBadFlag = (n, sf) => {
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const currentPiece = safeP[n] || {};
+
+      let expandedPiece = { ...currentPiece };
+      if (expandedPiece.todaPieza) {
+        getSurfs(n).forEach(s => expandedPiece[s] = expandedPiece.todaPieza);
+        delete expandedPiece.todaPieza;
+      }
+
+      const cur = expandedPiece[sf];
+      if (!cur) return { ...safeP, [n]: expandedPiece };
+      expandedPiece[sf] = isBad(cur) ? baseId(cur) : cur + BAD_SUFFIX;
+      return { ...safeP, [n]: expandedPiece };
+    });
+  };
+
   const allF = [];
   Object.entries(currentTeeth).forEach(([n, ss]) => {
     const superficies = getSurfs(n);
@@ -208,10 +228,11 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       {list.map((n, i) => {
         const ss = currentTeeth[n] || {};
         const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
-        const t = cs.length ? gt(cs[0][1]) : null;
+        const csRaw = cs.length ? cs[0][1] : null;
+        const t = csRaw ? gt(csRaw) : null;
         return (
           <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
-            {t && <span style={{ fontSize: 11, fontWeight: 800, color: t.g === 'r' ? RJ : AZ }}>{t.sig}</span>}
+            {t && <span style={{ fontSize: 11, fontWeight: 800, color: (t.g === 'r' || isBad(csRaw)) ? RJ : AZ }}>{t.sig}</span>}
           </div>
         );
       })}
@@ -367,13 +388,23 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
           {getSurfs(sel).map(sf => {
             const c = selSurfs[sf], t = gt(c), has = c && c !== 'normal';
+            const bad = has && isBad(c);
             return (
               <div key={sf} onClick={() => applySurf(sel, sf)}
                 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.g === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.g === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
                 <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.g === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontSize: 10, color: has ? '#fff' : '#94a3b8', fontWeight: 900 }}>{sf}</span>
                 </div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div></div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div>
+                  {bad && <div style={{ fontSize: 9, color: RJ, fontWeight: 700, marginTop: 2 }}>⚠ Marcado en mal estado</div>}
+                  {has && t.g === 'a' && (
+                    <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, fontSize: 9.5, color: MU, cursor: 'pointer', fontWeight: 600 }}>
+                      <input type="checkbox" checked={bad} onChange={() => toggleBadFlag(sel, sf)} style={{ transform: 'scale(0.9)' }} />
+                      ⚠️ Marcar como en mal estado (necesita reemplazo)
+                    </label>
+                  )}
+                </div>
                 {has && <span style={{ fontSize: 14, color: MU, fontWeight: 800 }}>✕</span>}
               </div>
             );
@@ -700,7 +731,74 @@ const [editDraft, setEditDraft] = useState({});
     else alert("¡Datos guardados con éxito!");
     setSaving(false);
   };
-  
+
+  // Mapeo de material azul (buen estado) → tratamiento de reemplazo sugerido cuando se marca isBad()
+  const REEMPLAZO_POR_MATERIAL = {
+    r_r: 'Resina compuesta',
+    r_am: 'Amalgama',
+    r_iv: 'Ionómero de vidrio',
+    r_im: 'Incrustación metálica',
+    r_ie: 'Incrustación estética',
+    cc: 'Corona metal-cerámica',
+    cmc: 'Corona metal-cerámica',
+    cj: 'Corona metal-cerámica',
+    imp: 'Implante dental',
+  };
+
+  const generarDesdeOdontograma = () => {
+    const sugerencias = [];
+
+    [teeth, teethEvolucion].forEach(dientesBase => {
+      Object.entries(dientesBase || {}).forEach(([num, pieza]) => {
+        const superficies = getSurfs(num);
+        const entradas = pieza.todaPieza
+          ? superficies.map(s => [s, pieza.todaPieza])
+          : Object.entries(pieza).filter(([k]) => k !== 'note' && k !== 'todaPieza');
+
+        const porExtraer = entradas.some(([, v]) => baseId(v) === 'extraer');
+
+        entradas.forEach(([, valorRaw]) => {
+          if (!valorRaw || valorRaw === 'normal') return;
+          const id = baseId(valorRaw);
+
+          if (porExtraer) {
+            if (id === 'extraer') {
+              sugerencias.push({ tooth: num, name: 'Extracción simple', cost: PRECIOS['Extracción simple'] || 0 });
+            }
+            return;
+          }
+
+          if (isBad(valorRaw) && REEMPLAZO_POR_MATERIAL[id]) {
+            const nombreBase = REEMPLAZO_POR_MATERIAL[id];
+            sugerencias.push({ tooth: num, name: `${nombreBase} (reemplazo)`, cost: PRECIOS[nombreBase] || 0 });
+            return;
+          }
+
+          if (id === 'caries') {
+            sugerencias.push({ tooth: num, name: 'Resina compuesta', cost: PRECIOS['Resina compuesta'] || 0 });
+          }
+        });
+      });
+    });
+
+    if (sugerencias.length === 0) {
+      alert('No se detectaron hallazgos en el odontograma para sugerir al plan de tratamiento.');
+      return;
+    }
+
+    setPlan(p => [
+      ...p,
+      ...sugerencias.map((s, i) => ({
+        id: Date.now() + i,
+        name: s.name, tooth: s.tooth, status: 'pendiente',
+        cost: s.cost, paid: 0, date: new Date().toISOString().slice(0, 10),
+        sessions: 1, notes: 'Generado automáticamente desde el odontograma',
+      })),
+    ]);
+    alert(`Se agregaron ${sugerencias.length} sugerencia(s) al plan de tratamiento.`);
+  };
+
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1422,9 +1520,14 @@ const [editDraft, setEditDraft] = useState({});
   <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Plan de tratamiento — {patData?.name || patient.name}</div>
-      <button onClick={() => { setShowTreatPicker(!showTreatPicker); setDraftTreatment(null); }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-        {showTreatPicker ? 'Cerrar catálogo' : '+ Agregar tratamiento'}
-      </button>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={generarDesdeOdontograma} style={{ background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          ⚡ Generar desde odontograma
+        </button>
+        <button onClick={() => { setShowTreatPicker(!showTreatPicker); setDraftTreatment(null); }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          {showTreatPicker ? 'Cerrar catálogo' : '+ Agregar tratamiento'}
+        </button>
+      </div>
     </div>
 
     {showTreatPicker && !draftTreatment && (

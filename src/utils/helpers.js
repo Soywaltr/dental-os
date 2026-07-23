@@ -26,9 +26,14 @@ export const findPatientByName = (list, name) => {
 export const sc = s => s === 'confirmado' || s === 'pagado' || s === 'completado' ? { bg: '#dcfce7', c: '#16a34a' } : s === 'nuevo' || s === 'parcial' || s === 'en_curso' ? { bg: '#fef3c7', c: '#d97706' } : s === 'pendiente' ? { bg: '#fee2e2', c: RJ } : { bg: MT, c: P };
 
 export const getSurfs = n => n % 10 <= 3 ? ['I', 'L', 'V', 'M', 'D'] : ['O', 'L', 'V', 'M', 'D'];
-export const isMol = n => n % 10 >= 6; 
+export const isMol = n => n % 10 >= 6;
 export const isPM = n => n % 10 >= 4 && n % 10 <= 5;
-export const gt = id => TOOLS.find(t => t.id === id) || TOOLS[0];
+
+export const BAD_SUFFIX = '::bad';
+export const isBad = v => typeof v === 'string' && v.endsWith(BAD_SUFFIX);
+export const baseId = v => isBad(v) ? v.slice(0, -BAD_SUFFIX.length) : v;
+
+export const gt = id => TOOLS.find(t => t.id === baseId(id)) || TOOLS[0];
 
 export const getPreamble = (p) => {
   if (!p) return "";
