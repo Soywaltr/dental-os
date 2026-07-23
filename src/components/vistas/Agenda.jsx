@@ -5,6 +5,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import ModalNuevaCita from '../ui/ModalNuevaCita';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import Icon from '../ui/Icon';
 import { BD, P, GL, MU, DN, MT, LT, RJ } from '../../utils/constants';
 
 export default function Agenda() {
@@ -416,8 +417,8 @@ export default function Agenda() {
                 variant="danger"
                 onClick={handleDeleteCita}
                 disabled={savingEdit}
-                style={{ padding: '10px 15px', fontSize: 14 }}>
-                🗑️ Eliminar
+                style={{ padding: '10px 15px', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="trash" size={13} /> Eliminar
               </Button>
 
               <div style={{ flex: 1, display: 'flex', gap: 10 }}>

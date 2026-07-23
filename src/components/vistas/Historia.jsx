@@ -4,6 +4,7 @@ import { supabase } from '../../supabase';
 import Consentimientos from '../historia/Consentimientos';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import Icon from '../ui/Icon';
 import {
   TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS,
   P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, UA, LA, UP, LP, TNAME
@@ -382,8 +383,8 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
               ))}
             </div>
             {periodontalDx && periodontalDx !== 'Ninguno' && (
-              <div style={{ marginTop: 10, fontSize: 10, color: '#7e22ce', fontWeight: 600 }}>
-                ⚠ Este diagnóstico es a nivel de boca completa y se guarda junto con el resto de la historia clínica.
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: '#7e22ce', fontWeight: 600 }}>
+                <Icon name="warning" size={11} /> Este diagnóstico es a nivel de boca completa y se guarda junto con el resto de la historia clínica.
               </div>
             )}
           </div>
@@ -435,11 +436,15 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div>
-                  {bad && <div style={{ fontSize: 9, color: RJ, fontWeight: 700, marginTop: 2 }}>⚠ Marcado en mal estado</div>}
+                  {bad && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: RJ, fontWeight: 700, marginTop: 2 }}>
+                      <Icon name="warning" size={10} /> Marcado en mal estado
+                    </div>
+                  )}
                   {has && t.g === 'a' && (
                     <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, fontSize: 9.5, color: MU, cursor: 'pointer', fontWeight: 600 }}>
                       <input type="checkbox" checked={bad} onChange={() => toggleBadFlag(sel, sf)} style={{ transform: 'scale(0.9)' }} />
-                      ⚠️ Marcar como en mal estado (necesita reemplazo)
+                      Marcar como en mal estado (necesita reemplazo)
                     </label>
                   )}
                 </div>
@@ -695,12 +700,13 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
   // --- EVOLUCIÓN (notas clínicas por consulta) ---
   const [notasEvolucion, setNotasEvolucion] = useState([]);
+  const [showNuevaNota, setShowNuevaNota] = useState(false);
   const [nuevaNotaTexto, setNuevaNotaTexto] = useState('');
   const [savingNota, setSavingNota] = useState(false);
   const notaTextareaRef = useRef(null);
 
-  // --- RECETAS ---
-  const [recetaMeds, setRecetaMeds] = useState([]);
+  // --- RECETAS (historial de recetas; recetas[0] es la receta activa) ---
+  const [recetas, setRecetas] = useState([]);
   const [medDraft, setMedDraft] = useState({ med: '', dose: '', inst: '' });
   const [savingReceta, setSavingReceta] = useState(false);
 
@@ -757,7 +763,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       setImagenesList([]);
       setPeriodontalDx('Ninguno');
       setNotasEvolucion([]);
-      setRecetaMeds([]);
+      setShowNuevaNota(false);
+      setRecetas([]);
 
       // 2. CERRAR MODOS DE EDICIÓN
       setIsEditingFiliacion(false);
@@ -771,7 +778,14 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         if (data.imagenes) setImagenesList(data.imagenes);
         if (data.periodontal) setPeriodontalDx(data.periodontal.diagnostico);
         if (data.notas_evolucion) setNotasEvolucion(data.notas_evolucion);
-        if (data.receta) setRecetaMeds(data.receta);
+        if (Array.isArray(data.receta) && data.receta.length > 0) {
+          // Compatibilidad: registros guardados antes del historial de recetas
+          // eran una lista plana de medicamentos, no un historial de recetas.
+          const esFormatoAntiguo = !data.receta[0].meds;
+          setRecetas(esFormatoAntiguo
+            ? [{ id: Date.now(), date: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }), meds: data.receta }]
+            : data.receta);
+        }
       }
     };
     loadCloudData();
@@ -1082,8 +1096,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     await supabase.from('historias').upsert({ patient_id: patient.id, notas_evolucion: listaActualizada }, { onConflict: 'patient_id' });
   };
 
-  const guardarReceta = async (listaActualizada) => {
-    setRecetaMeds(listaActualizada);
+  const fechaLarga = () => new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const guardarRecetas = async (listaActualizada) => {
+    setRecetas(listaActualizada);
     setSavingReceta(true);
     const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, receta: listaActualizada }, { onConflict: 'patient_id' });
     if (error) alert('Error al guardar la receta: ' + error.message);
@@ -1093,44 +1109,52 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   const handleAgregarMedicamento = () => {
     if (!medDraft.med.trim()) { alert('Ingresa al menos el nombre del medicamento.'); return; }
     const nuevoMed = { id: Date.now(), med: medDraft.med.trim(), dose: medDraft.dose.trim(), inst: medDraft.inst.trim() };
-    guardarReceta([...recetaMeds, nuevoMed]);
+    const listaActualizada = recetas.length === 0
+      ? [{ id: Date.now(), date: fechaLarga(), meds: [nuevoMed] }]
+      : recetas.map((r, i) => i === 0 ? { ...r, meds: [...r.meds, nuevoMed] } : r);
+    guardarRecetas(listaActualizada);
     setMedDraft({ med: '', dose: '', inst: '' });
   };
 
-  const handleEliminarMedicamento = (id) => {
-    guardarReceta(recetaMeds.filter(m => m.id !== id));
+  const handleEliminarMedicamento = (recetaId, medId) => {
+    guardarRecetas(recetas.map(r => r.id === recetaId ? { ...r, meds: r.meds.filter(m => m.id !== medId) } : r));
   };
 
   const handleNuevaReceta = () => {
-    if (recetaMeds.length > 0 && !window.confirm('¿Iniciar una receta nueva? Se borrarán los medicamentos actuales de esta receta.')) return;
-    guardarReceta([]);
+    if (recetas.length > 0 && recetas[0].meds.length === 0) {
+      alert('La receta actual todavía está vacía.');
+      return;
+    }
+    guardarRecetas([{ id: Date.now(), date: fechaLarga(), meds: [] }, ...recetas]);
   };
 
-  const imprimirReceta = () => {
-    if (recetaMeds.length === 0) { alert('Agrega al menos un medicamento antes de imprimir.'); return; }
+  const imprimirReceta = (receta) => {
+    if (!receta || receta.meds.length === 0) { alert('Esta receta no tiene medicamentos.'); return; }
     const esc = s => String(s ?? '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const nombre = esc(patData?.name || patient.name);
-    const fecha = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const w = window.open('', '_blank');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receta - ${nombre}</title><style>
       *{margin:0;padding:0;box-sizing:border-box}
-      body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff}
-      .page{width:210mm;min-height:150mm;margin:0 auto;padding:18mm 20mm}
-      .header{text-align:center;border-bottom:2px solid #0087b3;padding-bottom:12px;margin-bottom:18px}
+      body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;background:#e5e7eb}
+      .page{max-width:520px;margin:24px auto;padding:36px 40px;background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1)}
+      .header{text-align:center;border-bottom:2px solid #0087b3;padding-bottom:14px;margin-bottom:20px}
       .header .clinic{font-size:15px;font-weight:800;color:#0087b3}
       .header .sub{font-size:10.5px;color:#64748b;margin-top:2px}
-      .patient-box{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;font-size:12px}
+      .patient-box{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:22px;font-size:12px}
       .patient-box b{color:#0087b3}
-      .rp{font-size:13px;font-weight:800;margin-bottom:10px}
+      .rp{font-size:13px;font-weight:800;margin-bottom:12px}
       .med{margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #e2e8f0}
       .med .name{font-size:13px;font-weight:700}
       .med .dose{font-size:11.5px;color:#475569;margin-left:14px}
       .med .inst{font-size:10.5px;color:#64748b;font-style:italic;margin-left:14px}
-      .firma{margin-top:50px;text-align:center}
+      .firma{margin-top:44px;text-align:center}
       .firma img{max-height:60px;max-width:220px;object-fit:contain}
       .firma .line{border-top:1px solid #333;width:220px;margin:0 auto;padding-top:6px;font-size:10.5px;color:#333}
-      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      @media print{
+        body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .page{max-width:none;margin:0;padding:16mm 18mm;box-shadow:none;border-radius:0}
+      }
     </style></head><body>
       <div class="page">
         <div class="header">
@@ -1139,12 +1163,12 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         </div>
         <div class="patient-box">
           <div><b>Paciente:</b> ${nombre}</div>
-          <div><b>Fecha:</b> ${fecha}</div>
+          <div><b>Fecha:</b> ${esc(receta.date)}</div>
           <div><b>DNI:</b> ${esc(patData?.doc || patient.doc || '—')}</div>
           <div><b>Edad:</b> ${esc(patData?.age || patient.age || '—')} años</div>
         </div>
         <div class="rp">Rp:</div>
-        ${recetaMeds.map(m => `<div class="med"><div class="name">• ${esc(m.med)}</div>${m.dose ? `<div class="dose">${esc(m.dose)}</div>` : ''}${m.inst ? `<div class="inst">${esc(m.inst)}</div>` : ''}</div>`).join('')}
+        ${receta.meds.map(m => `<div class="med"><div class="name">${esc(m.med)}</div>${m.dose ? `<div class="dose">${esc(m.dose)}</div>` : ''}${m.inst ? `<div class="inst">${esc(m.inst)}</div>` : ''}</div>`).join('')}
         <div class="firma">
           ${firmaDoctorUrl ? `<img src="${firmaDoctorUrl}" alt="Firma y sello" />` : ''}
           <div class="line">Firma y sello · Dra. Sol Vargas</div>
@@ -1155,14 +1179,14 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     setTimeout(() => w.print(), 400);
   };
 
-  const enviarRecetaWhatsApp = () => {
-    if (recetaMeds.length === 0) { alert('Agrega al menos un medicamento antes de enviar.'); return; }
+  const enviarRecetaWhatsApp = (receta) => {
+    if (!receta || receta.meds.length === 0) { alert('Esta receta no tiene medicamentos.'); return; }
     const telefono = toWhatsAppNumber(patData?.phone || patient.phone);
     if (!telefono) { alert('El paciente no tiene un número de celular registrado.'); return; }
 
     const nombre = patData?.name || patient.name;
-    const lineas = recetaMeds.map(m => `• ${m.med}${m.dose ? ` — ${m.dose}` : ''}${m.inst ? ` (${m.inst})` : ''}`).join('\n');
-    const mensaje = `Hola ${nombre} 👋, esta es tu receta médica del *Consultorio Dra. Sol Vargas*:\n\n${lineas}\n\nCualquier duda, escríbenos. ¡Que te mejores pronto! 🦷`;
+    const lineas = receta.meds.map(m => `- ${m.med}${m.dose ? ` — ${m.dose}` : ''}${m.inst ? ` (${m.inst})` : ''}`).join('\n');
+    const mensaje = `Hola ${nombre}, esta es tu receta médica del Consultorio Dra. Sol Vargas (${receta.date}):\n\n${lineas}\n\nCualquier duda, escríbenos. Que te mejores pronto.`;
 
     window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
@@ -1179,19 +1203,29 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: DN }}>{patData?.name || patient.name}</div>
           </div>
-          <div style={{ fontSize: 10, color: MU, marginTop: 3 }}>
-            📞 {patData?.phone || 'Sin celular'} · ✉ {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años · {patData?.blood || 'O+'} {patData?.sexo ? `· ${patData.sexo}` : ''}
+          <div style={{ fontSize: 10, color: MU, marginTop: 3, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+            <Icon name="phone" size={10} /> {patData?.phone || 'Sin celular'} · <Icon name="mail" size={10} /> {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años · {patData?.blood || 'O+'} {patData?.sexo ? `· ${patData.sexo}` : ''}
           </div>
-          {(patData?.direccion) && <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>📍 {patData.direccion}</div>}
+          {(patData?.direccion) && (
+            <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon name="pin" size={9} /> {patData.direccion}
+            </div>
+          )}
         </div>
-        {patData?.allergies && patData.allergies !== 'Ninguna' && <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: RJ, padding: '4px 10px', borderRadius: 10 }}>⚠ Alergia: {patData.allergies}</span>}
+        {patData?.allergies && patData.allergies !== 'Ninguna' && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, background: '#fee2e2', color: RJ, padding: '4px 10px', borderRadius: 10 }}>
+            <Icon name="warning" size={11} /> Alergia: {patData.allergies}
+          </span>
+        )}
         <div style={{ textAlign: 'right' }}><div style={{ fontSize: 9, color: MU }}>Próx. cita</div><div style={{ fontSize: 12, fontWeight: 700, color: P }}>{patData?.nextVisit || '---'}</div></div>
 
-        <button onClick={saveAllToCloud} style={{ background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-          {saving ? '⏳...' : '💾 Guardar en Nube'}
+        <button onClick={saveAllToCloud} style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          <Icon name="save" size={13} /> {saving ? 'Guardando...' : 'Guardar en Nube'}
         </button>
 
-        <button style={{ background: WA, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>💬</button>
+        <button style={{ background: WA, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', display: 'flex', cursor: 'pointer' }}>
+          <Icon name="chat" size={14} />
+        </button>
       </div>
 
       {/* PESTAÑAS PRINCIPALES */}
@@ -1697,9 +1731,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', marginTop: '10px' }}>
                       <h3 style={{ color: '#0f172a', fontSize: '18px', fontWeight: 700, margin: 0 }}>Archivos Clínicos Iniciales</h3>
                       <div>
-                        {savingFotosOrto && <span style={{ fontSize: '12px', color: '#0087b3', fontWeight: 600, marginRight: 10 }}>⏳ Subiendo...</span>}
-                        <button onClick={() => setIsEditingOrtoFotos(!isEditingOrtoFotos)} style={{ background: isEditingOrtoFotos ? '#fff' : '#f1f5f9', color: isEditingOrtoFotos ? '#ef4444' : '#475569', border: `1px solid ${isEditingOrtoFotos ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-                          {isEditingOrtoFotos ? 'Cerrar Edición' : '✏️ Editar Fotografías'}
+                        {savingFotosOrto && <span style={{ fontSize: '12px', color: '#0087b3', fontWeight: 600, marginRight: 10 }}>Subiendo...</span>}
+                        <button onClick={() => setIsEditingOrtoFotos(!isEditingOrtoFotos)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isEditingOrtoFotos ? '#fff' : '#f1f5f9', color: isEditingOrtoFotos ? '#ef4444' : '#475569', border: `1px solid ${isEditingOrtoFotos ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
+                          {isEditingOrtoFotos ? 'Cerrar Edición' : <><Icon name="edit" size={13} /> Editar Fotografías</>}
                         </button>
                       </div>
                     </div>
@@ -1718,8 +1752,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                             <div style={{ height: '140px', background: hasFile ? '#000' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                               {hasFile ? (
                                 fileData.ext.match(/(pdf|ppt|pptx)/i) ? (
-                                  <a href={fileData.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', fontSize: '50px', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    📄 <span style={{ fontSize: '10px', marginTop: '5px', color: '#cbd5e1' }}>Abrir {fileData.ext.toUpperCase()}</span>
+                                  <a href={fileData.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                                    <Icon name="document" size={40} />
+                                    <span style={{ fontSize: '10px', color: '#cbd5e1' }}>Abrir {fileData.ext.toUpperCase()}</span>
                                   </a>
                                 ) : (
                                   <a href={fileData.url} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%', display: 'block' }}>
@@ -1766,13 +1801,15 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 <h2 style={{ margin: 0, color: '#0f172a', fontSize: '20px', fontWeight: 600 }}>Datos Personales</h2>
                 <div>
                   {!isEditingFiliacion ? (
-                    <button onClick={() => setIsEditingFiliacion(true)} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-                      ✏️ Editar Campos
+                    <button onClick={() => setIsEditingFiliacion(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
+                      <Icon name="edit" size={13} /> Editar Campos
                     </button>
                   ) : (
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button onClick={handleCancelEdit} style={{ background: '#fff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
-                      <button onClick={handleSaveEditPatient} style={{ background: '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>{saving ? 'Guardando...' : '💾 Guardar Cambios'}</button>
+                      <button onClick={handleSaveEditPatient} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
+                        <Icon name="save" size={13} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1851,7 +1888,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 </div>
               ))}
             </div>
-            <button onClick={saveAllToCloud} style={{ marginTop: 14, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>💾 Guardar anamnesis</button>
+            <button onClick={saveAllToCloud} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <Icon name="save" size={13} /> Guardar anamnesis
+            </button>
           </div>
         )}
 
@@ -1862,8 +1901,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Plan de tratamiento — {patData?.name || patient.name}</div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={generarDesdeOdontograma} style={{ background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-          ⚡ Generar desde odontograma
+        <button onClick={generarDesdeOdontograma} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          <Icon name="bolt" size={12} /> Generar desde odontograma
         </button>
         <button onClick={() => { setShowTreatPicker(!showTreatPicker); setDraftTreatment(null); }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
           {showTreatPicker ? 'Cerrar catálogo' : '+ Agregar tratamiento'}
@@ -1948,8 +1987,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   <div style={{ fontSize: 12, color: DN, fontWeight: 700 }}>S/{item.cost}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button onClick={() => { setEditingItemId(isEditing ? null : item.id); setEditDraft(item); }}
-                      style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${P}55`, background: '#fff', color: P, fontWeight: 700 }}>
-                      {isEditing ? 'Cerrar' : '✏️ Editar'}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${P}55`, background: '#fff', color: P, fontWeight: 700 }}>
+                      {isEditing ? 'Cerrar' : <><Icon name="edit" size={9} /> Editar</>}
                     </button>
                     {['pendiente', 'en_curso', 'completado'].filter(s => s !== st).map(ns => (
                       <button key={ns} onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: ns } : i))}
@@ -1963,7 +2002,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 </div>
 
                 {item.notes && !isEditing && (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${BD}`, fontSize: 11, color: MU, fontStyle: 'italic' }}>📝 {item.notes}</div>
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${BD}`, fontSize: 11, color: MU, fontStyle: 'italic', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                    <Icon name="document" size={11} style={{ marginTop: 1, flexShrink: 0 }} /> {item.notes}
+                  </div>
                 )}
 
                 {isEditing && (
@@ -2007,12 +2048,32 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Notas de evolución</div>
-              <button onClick={() => notaTextareaRef.current?.focus()} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Nueva nota</button>
+              <button
+                onClick={() => { setShowNuevaNota(true); setTimeout(() => notaTextareaRef.current?.focus(), 0); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                <Icon name="plus" size={12} /> Nueva nota
+              </button>
             </div>
 
-            {notasEvolucion.length === 0 && (
+            {notasEvolucion.length === 0 && !showNuevaNota && (
               <div style={{ background: '#fff', border: `1px dashed ${BD}`, borderRadius: 11, padding: 30, textAlign: 'center', color: MU, fontSize: 12, marginBottom: 11 }}>
                 Aún no hay notas de evolución registradas.
+              </div>
+            )}
+
+            {showNuevaNota && (
+              <div style={{ background: '#fff', border: `1px solid ${P}55`, borderRadius: 11, padding: 14, marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: DN, marginBottom: 8 }}>Nueva nota clínica</div>
+                <textarea ref={notaTextareaRef} value={nuevaNotaTexto} onChange={e => setNuevaNotaTexto(e.target.value)}
+                  placeholder="Descripción de la consulta, hallazgos clínicos, procedimiento realizado y recomendaciones..."
+                  style={{ width: '100%', minHeight: 80, padding: 9, border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <Button variant="secondary" onClick={() => { setShowNuevaNota(false); setNuevaNotaTexto(''); }} style={{ padding: '7px 16px', fontSize: 11 }}>Cancelar</Button>
+                  <button onClick={async () => { await handleAgregarNotaEvolucion(); setShowNuevaNota(false); }} disabled={savingNota}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: savingNota ? MU : P, color: '#fff', border: 'none', borderRadius: 7, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: savingNota ? 'not-allowed' : 'pointer' }}>
+                    <Icon name="save" size={12} /> {savingNota ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -2023,58 +2084,59 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 10, color: MU }}>{n.dr}</span>
                     <button onClick={() => handleEliminarNotaEvolucion(n.id)} title="Eliminar nota"
-                      style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', fontSize: 12, fontWeight: 700, padding: 0 }}>✕</button>
+                      style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', display: 'flex', padding: 0 }}>
+                      <Icon name="trash" size={13} />
+                    </button>
                   </div>
                 </div>
                 <div style={{ fontSize: 12, color: DN, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{n.txt}</div>
               </div>
             ))}
-
-            <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 11, padding: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: DN, marginBottom: 8 }}>Nueva nota clínica</div>
-              <textarea ref={notaTextareaRef} value={nuevaNotaTexto} onChange={e => setNuevaNotaTexto(e.target.value)}
-                placeholder="Descripción de la consulta, hallazgos clínicos, procedimiento realizado y recomendaciones..."
-                style={{ width: '100%', minHeight: 80, padding: 9, border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box' }} />
-              <button onClick={handleAgregarNotaEvolucion} disabled={savingNota}
-                style={{ marginTop: 8, background: savingNota ? MU : P, color: '#fff', border: 'none', borderRadius: 7, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: savingNota ? 'not-allowed' : 'pointer' }}>
-                {savingNota ? 'Guardando...' : '💾 Guardar'}
-              </button>
-            </div>
           </div>
         )}
 
         {/* --- PESTAÑA RECETAS --- */}
-        {tab === 'recetas' && (
+        {tab === 'recetas' && (() => {
+          const recetaActual = recetas[0] || null;
+          const historialAnterior = recetas.slice(1);
+
+          return (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Recetas médicas</div>
-              <button onClick={handleNuevaReceta} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Nueva receta</button>
+              <button onClick={handleNuevaReceta}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                <Icon name="plus" size={12} /> Nueva receta
+              </button>
             </div>
+
             <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 20, maxWidth: 500 }}>
               <div style={{ textAlign: 'center', borderBottom: `1px solid ${BD}`, paddingBottom: 12, marginBottom: 14 }}>
                 <div style={{ fontSize: 10, color: MU }}>Cirujano Dentista · COP 12345</div>
                 <div style={{ fontSize: 10, color: MU }}>Los Diamantes 178, Trujillo · +51 915 054 145</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                {[['Paciente', patData?.name || patient.name], ['DNI', patData?.doc || patient.doc], ['Edad', (patData?.age || patient.age) + ' años'], ['Fecha', new Date().toLocaleDateString('es-PE')]].map(([k, v]) => (
+                {[['Paciente', patData?.name || patient.name], ['DNI', patData?.doc || patient.doc], ['Edad', (patData?.age || patient.age) + ' años'], ['Fecha', recetaActual?.date || fechaLarga()]].map(([k, v]) => (
                   <div key={k}><div style={{ fontSize: 9, color: MU }}>{k}</div><div style={{ fontSize: 11, fontWeight: 600, color: DN, borderBottom: `1px solid ${BD}` }}>{v}</div></div>
                 ))}
               </div>
               <div style={{ fontSize: 10, fontWeight: 700, color: DN, marginBottom: 8 }}>Rp:</div>
 
-              {recetaMeds.length === 0 && (
+              {(!recetaActual || recetaActual.meds.length === 0) && (
                 <div style={{ fontSize: 11, color: MU, fontStyle: 'italic', marginBottom: 10 }}>Sin medicamentos agregados aún.</div>
               )}
 
-              {recetaMeds.map(r => (
+              {recetaActual?.meds.map(r => (
                 <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 10, paddingBottom: 10, borderBottom: `1px dashed ${BD}` }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: DN }}>• {r.med}</div>
-                    {r.dose && <div style={{ fontSize: 11, color: MU, marginLeft: 12 }}>{r.dose}</div>}
-                    {r.inst && <div style={{ fontSize: 10, color: MU, marginLeft: 12, fontStyle: 'italic' }}>{r.inst}</div>}
+                    <div style={{ fontSize: 12, fontWeight: 700, color: DN }}>{r.med}</div>
+                    {r.dose && <div style={{ fontSize: 11, color: MU }}>{r.dose}</div>}
+                    {r.inst && <div style={{ fontSize: 10, color: MU, fontStyle: 'italic' }}>{r.inst}</div>}
                   </div>
-                  <button onClick={() => handleEliminarMedicamento(r.id)} title="Quitar medicamento"
-                    style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', fontSize: 12, fontWeight: 700, padding: 0, flexShrink: 0 }}>✕</button>
+                  <button onClick={() => handleEliminarMedicamento(recetaActual.id, r.id)} title="Quitar medicamento"
+                    style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', display: 'flex', padding: 0, flexShrink: 0 }}>
+                    <Icon name="trash" size={13} />
+                  </button>
                 </div>
               ))}
 
@@ -2087,8 +2149,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   style={{ padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <button onClick={handleAgregarMedicamento} disabled={savingReceta}
-                style={{ marginTop: 8, width: '100%', background: savingReceta ? MU : '#fff', color: savingReceta ? '#fff' : P, border: `1px solid ${P}`, borderRadius: 6, padding: '6px', fontSize: 11, fontWeight: 700, cursor: savingReceta ? 'not-allowed' : 'pointer' }}>
-                {savingReceta ? 'Guardando...' : '+ Agregar medicamento'}
+                style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', background: savingReceta ? MU : '#fff', color: savingReceta ? '#fff' : P, border: `1px solid ${P}`, borderRadius: 6, padding: '6px', fontSize: 11, fontWeight: 700, cursor: savingReceta ? 'not-allowed' : 'pointer' }}>
+                <Icon name="plus" size={12} /> {savingReceta ? 'Guardando...' : 'Agregar medicamento'}
               </button>
 
               <div style={{ marginTop: 16, borderTop: `1px solid ${BD}`, paddingTop: 10, textAlign: 'right' }}>
@@ -2109,12 +2171,40 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button onClick={imprimirReceta} style={{ flex: 1, background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '7px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🖨 Imprimir</button>
-                <button onClick={enviarRecetaWhatsApp} style={{ flex: 1, background: WA, color: '#fff', border: 'none', borderRadius: 7, padding: '7px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>💬 Enviar WA</button>
+                <button onClick={() => imprimirReceta(recetaActual)}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '7px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  <Icon name="print" size={13} /> Imprimir
+                </button>
+                <button onClick={() => enviarRecetaWhatsApp(recetaActual)}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: WA, color: '#fff', border: 'none', borderRadius: 7, padding: '7px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  <Icon name="chat" size={13} /> Enviar WhatsApp
+                </button>
               </div>
             </div>
+
+            {historialAnterior.length > 0 && (
+              <div style={{ marginTop: 20, maxWidth: 500 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: MU, textTransform: 'uppercase', letterSpacing: .3, marginBottom: 8 }}>Historial de recetas</div>
+                {historialAnterior.map(r => (
+                  <div key={r.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Icon name="document" size={15} color={MU} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 600, color: DN }}>{r.date}</div>
+                      <div style={{ fontSize: 10, color: MU }}>{r.meds.length} medicamento{r.meds.length !== 1 ? 's' : ''}</div>
+                    </div>
+                    <button onClick={() => imprimirReceta(r)} title="Imprimir" style={{ background: 'none', border: 'none', color: P, cursor: 'pointer', display: 'flex', padding: 4 }}>
+                      <Icon name="print" size={14} />
+                    </button>
+                    <button onClick={() => enviarRecetaWhatsApp(r)} title="Enviar por WhatsApp" style={{ background: 'none', border: 'none', color: WA, cursor: 'pointer', display: 'flex', padding: 4 }}>
+                      <Icon name="chat" size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {/* --- PESTAÑA IMÁGENES --- */}
         {tab === 'imagenes' && (
@@ -2179,9 +2269,13 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={imprimirPresupuesto} disabled={sinTratamientos}
-                  style={{ background: '#fff', color: '#0087b3', border: `1px solid #0087b3`, borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>🖨 Imprimir</button>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: '#0087b3', border: `1px solid #0087b3`, borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>
+                  <Icon name="print" size={13} /> Imprimir
+                </button>
                 <button onClick={enviarPresupuestoWhatsApp} disabled={sinTratamientos}
-                  style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>💬 WhatsApp</button>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>
+                  <Icon name="chat" size={13} /> WhatsApp
+                </button>
               </div>
             </div>
 

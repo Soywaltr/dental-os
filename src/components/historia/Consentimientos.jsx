@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import FirmaCanvas from './FirmaCanvas';
 import Modal from '../ui/Modal';
+import Icon from '../ui/Icon';
 import { P, BD, WA, MU, DN, MT, LT, GL } from '../../utils/constants';
 import { getPreamble } from '../../utils/helpers';
 
@@ -182,8 +183,8 @@ function DocModal({ doc, patient, onClose, onGuardar, saved }) {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 20px 14px 16px' }}>
           {!isSaved && (
-            <div style={{ fontSize: 10, color: GL, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '6px 12px', marginBottom: 10, fontFamily: 'sans-serif' }}>
-              ✏️ El documento se autocompletó con la información actual del paciente. Si nota algún error, actualice sus datos en el botón "Editar".
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 10, color: GL, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '6px 12px', marginBottom: 10, fontFamily: 'sans-serif' }}>
+              <Icon name="edit" size={11} style={{ marginTop: 1, flexShrink: 0 }} /> El documento se autocompletó con la información actual del paciente. Si nota algún error, actualice sus datos en el botón "Editar".
             </div>
           )}
           <textarea
@@ -233,16 +234,17 @@ function DocModal({ doc, patient, onClose, onGuardar, saved }) {
           <button onClick={onClose} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #ccc', background: '#fff', cursor: 'pointer', fontSize: 11, color: '#666', fontWeight: 600 }}>Cerrar</button>
           <div style={{ flex: 1 }} />
           <button onClick={imprimir}
-            style={{ padding: '7px 16px', background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
-            🖨️ Imprimir
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
+            <Icon name="print" size={13} /> Imprimir
           </button>
           {!isSaved && (
             <button onClick={guardar} disabled={saving || !firmaP}
               style={{
+                display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 20px', background: firmaP ? P : '#94a3b8', color: '#fff', border: 'none', borderRadius: 7,
                 cursor: firmaP && !saving ? 'pointer' : 'not-allowed', fontSize: 11, fontWeight: 700
               }}>
-              {saving ? 'Guardando...' : '💾 Guardar'}
+              <Icon name="save" size={13} /> {saving ? 'Guardando...' : 'Guardar'}
             </button>
           )}
         </div>

@@ -10,8 +10,8 @@ export default function Dashboard() {
       {/* ─── SECCIÓN HERO ("Welcome back!" + Top Stats) ─── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
         <div>
-          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            ¡Bienvenida de nuevo! <span style={{ fontSize: 32 }}>👋</span>
+          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-1px' }}>
+            Bienvenida de nuevo
           </h1>
           <p style={{ fontSize: 15, color: '#64748B', margin: 0, fontWeight: 500 }}>
             Mira el resumen de tus pacientes y actividad actual aquí
