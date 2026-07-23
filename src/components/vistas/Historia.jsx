@@ -834,7 +834,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     // Evaluación periodontal — es a nivel de boca completa, sin pieza asociada.
     // El tratamiento de gingivitis/periodontitis ya incluye la limpieza y profilaxis,
     // así que no se sugiere aparte (evita duplicar el cobro).
-    (PERIODONTAL_TRATAMIENTOS[periodontalDx] || []).forEach(t => {
+    const sugerenciasPeriodontal = PERIODONTAL_TRATAMIENTOS[periodontalDx] || [];
+    sugerenciasPeriodontal.forEach(t => {
       sugerencias.push({ tooth: '—', name: t.name, cost: t.cost });
     });
 
@@ -848,17 +849,28 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       new Map(sugerencias.map(s => [`${s.tooth}|${s.name}`, s])).values()
     );
 
-    // No repetir sugerencias que ya estén en el plan (ej. si se pulsa el botón más de una vez)
-    const yaExiste = (tooth, name) => plan.some(item => String(item.tooth) === String(tooth) && item.name === name);
+    // Un tratamiento periodontal generado con un diagnóstico anterior (ej. se cambió de
+    // "leve" a "moderada") debe quedar reemplazado, no duplicado junto al nuevo
+    const nombresPeriodontalVigentes = new Set(sugerenciasPeriodontal.map(t => t.name));
+    const nombresPeriodontalTodos = new Set(Object.values(PERIODONTAL_TRATAMIENTOS).flat().map(t => t.name));
+    const esPeriodontalObsoleto = item =>
+      item.tooth === '—' &&
+      item.notes === 'Generado automáticamente desde el odontograma' &&
+      nombresPeriodontalTodos.has(item.name) &&
+      !nombresPeriodontalVigentes.has(item.name);
+
+    // No repetir sugerencias que ya estén vigentes en el plan (ej. si se pulsa el botón más de una vez)
+    const yaExiste = (tooth, name) => plan.some(item => String(item.tooth) === String(tooth) && item.name === name && !esPeriodontalObsoleto(item));
     const nuevas = sugerenciasUnicas.filter(s => !yaExiste(s.tooth, s.name));
 
-    if (nuevas.length === 0) {
+    const removidos = plan.filter(esPeriodontalObsoleto).length;
+    if (nuevas.length === 0 && removidos === 0) {
       alert('Las sugerencias detectadas ya estaban en el plan de tratamiento.');
       return;
     }
 
     setPlan(p => [
-      ...p,
+      ...p.filter(item => !esPeriodontalObsoleto(item)),
       ...nuevas.map((s, i) => ({
         id: Date.now() + i,
         name: s.name, tooth: s.tooth, status: 'pendiente',
@@ -866,7 +878,12 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         sessions: 1, notes: 'Generado automáticamente desde el odontograma',
       })),
     ]);
-    alert(`Se agregaron ${nuevas.length} sugerencia(s) al plan de tratamiento.`);
+
+    if (removidos > 0) {
+      alert(`Se actualizó el tratamiento periodontal en el plan${nuevas.length > removidos ? ` y se agregaron ${nuevas.length - removidos} sugerencia(s) más` : ''}.`);
+    } else {
+      alert(`Se agregaron ${nuevas.length} sugerencia(s) al plan de tratamiento.`);
+    }
   };
 
   const registrarAbono = () => {
