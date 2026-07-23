@@ -23,6 +23,15 @@ export const findPatientByName = (list, name) => {
   return list.find(p => normalizarTexto(p.name) === norm) || null;
 };
 
+// Convierte un teléfono guardado (con o sin código de país/espacios) al formato que espera wa.me
+export const toWhatsAppNumber = (phone) => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 9) return `51${digits}`; // celular peruano sin código de país
+  return digits;
+};
+
 export const sc = s => s === 'confirmado' || s === 'pagado' || s === 'completado' ? { bg: '#dcfce7', c: '#16a34a' } : s === 'nuevo' || s === 'parcial' || s === 'en_curso' ? { bg: '#fef3c7', c: '#d97706' } : s === 'pendiente' ? { bg: '#fee2e2', c: RJ } : { bg: MT, c: P };
 
 export const getSurfs = n => n % 10 <= 3 ? ['I', 'L', 'V', 'M', 'D'] : ['O', 'L', 'V', 'M', 'D'];

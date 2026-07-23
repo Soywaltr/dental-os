@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Consentimientos from '../historia/Consentimientos';
-import { 
-  TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS, 
-  P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, UA, LA, UP, LP, TNAME 
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
+import {
+  TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS,
+  P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, UA, LA, UP, LP, TNAME
 } from '../../utils/constants';
-import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX } from '../../utils/helpers';
+import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsAppNumber } from '../../utils/helpers';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -642,6 +644,8 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const [draftTreatment, setDraftTreatment] = useState(null); // tratamiento seleccionado, pendiente de detalles
 const [editingItemId, setEditingItemId] = useState(null);   // id del item en edición inline
 const [editDraft, setEditDraft] = useState({});
+const [showPagoModal, setShowPagoModal] = useState(false);
+const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
   
   const TABS = [{ id: 'filiacion', lbl: 'Filiación' }, { id: 'anamnesis', lbl: 'Anamnesis' }, { id: 'odontograma', lbl: 'Odontograma' }, { id: 'ortodoncia', lbl: 'Ortodoncia' }, { id: 'plan', lbl: 'Plan trat.' }, { id: 'evolucion', lbl: 'Evolución' }, { id: 'recetas', lbl: 'Recetas' }, { id: 'imagenes', lbl: 'Imágenes' }, { id: 'presupuesto', lbl: 'Presupuesto' }, { id: 'consentimientos', lbl: 'Consentimientos' }];
   const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }];
@@ -806,6 +810,112 @@ const [editDraft, setEditDraft] = useState({});
       })),
     ]);
     alert(`Se agregaron ${nuevas.length} sugerencia(s) al plan de tratamiento.`);
+  };
+
+  const registrarAbono = () => {
+    if (!pagoDraft.itemId) { alert('Selecciona un tratamiento.'); return; }
+    const monto = parseFloat(pagoDraft.monto);
+    if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
+
+    setPlan(p => p.map(i => {
+      if (String(i.id) !== String(pagoDraft.itemId)) return i;
+      const saldo = i.cost - i.paid;
+      const abono = Math.min(monto, saldo);
+      const nuevoPaid = i.paid + abono;
+      return { ...i, paid: nuevoPaid, status: nuevoPaid >= i.cost ? 'completado' : (i.status === 'pendiente' ? 'en_curso' : i.status) };
+    }));
+    setShowPagoModal(false);
+    setPagoDraft({ itemId: '', monto: '' });
+    alert('Abono registrado. Recuerda hacer clic en "Guardar en Nube" para persistirlo.');
+  };
+
+  const imprimirPresupuesto = () => {
+    if (plan.length === 0) { alert('No hay tratamientos en el plan para generar un presupuesto.'); return; }
+
+    const esc = s => String(s ?? '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const nombre = esc(patData?.name || patient.name);
+    const totalCosto = plan.reduce((a, c) => a + c.cost, 0);
+    const totalPagado = plan.reduce((a, c) => a + c.paid, 0);
+    const totalSaldo = totalCosto - totalPagado;
+    const fecha = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Presupuesto - ${nombre}</title><style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff}
+      .page{width:210mm;min-height:297mm;margin:0 auto;padding:18mm 20mm}
+      .header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0087b3;padding-bottom:14px;margin-bottom:18px}
+      .header-left{display:flex;align-items:center;gap:12px}
+      .header-left img{width:56px;height:56px;object-fit:contain}
+      .clinic-name{font-size:16px;font-weight:800;color:#0087b3}
+      .clinic-sub{font-size:10.5px;color:#64748b;margin-top:2px}
+      .doc-title{text-align:right}
+      .doc-title .lbl{font-size:20px;font-weight:900;color:#0f172a;letter-spacing:.5px}
+      .doc-title .date{font-size:11px;color:#64748b;margin-top:2px;text-transform:capitalize}
+      .patient-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:12.5px}
+      .patient-box b{color:#0087b3}
+      table{width:100%;border-collapse:collapse;margin-bottom:4px}
+      th{background:#f1f5f9;text-align:left;font-size:11px;color:#64748b;padding:10px 12px;border-bottom:2px solid #e2e8f0}
+      td{padding:10px 12px;font-size:12px;border-bottom:1px solid #e2e8f0}
+      tfoot td{font-weight:800;border-top:2px solid #0f172a;border-bottom:none}
+      .saldo-pos{color:#ef4444}
+      .saldo-zero{color:#10b981}
+      .validity{margin-top:22px;font-size:10.5px;color:#94a3b8;text-align:center}
+      .footer{margin-top:40px;text-align:center;font-size:9.5px;color:#94a3b8;border-top:1px solid #eee;padding-top:10px}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+    </style></head><body>
+      <div class="page">
+        <div class="header">
+          <div class="header-left">
+            <img src="/logo_web.png" alt="Logo" />
+            <div>
+              <div class="clinic-name">Consultorio Dra. Sol Vargas</div>
+              <div class="clinic-sub">Los Diamantes 178, Trujillo 13011, Perú · +51 915 054 145</div>
+            </div>
+          </div>
+          <div class="doc-title"><div class="lbl">PRESUPUESTO</div><div class="date">${fecha}</div></div>
+        </div>
+
+        <div class="patient-box">
+          <b>Paciente:</b> ${nombre} &nbsp;·&nbsp;
+          <b>DNI:</b> ${esc(patData?.doc || patient.doc || '—')} &nbsp;·&nbsp;
+          <b>Edad:</b> ${esc(patData?.age || patient.age || '—')} años
+        </div>
+
+        <table>
+          <thead><tr><th>Tratamiento</th><th>Pieza</th><th>Costo (S/)</th><th>Abonado (S/)</th><th>Saldo (S/)</th></tr></thead>
+          <tbody>
+            ${plan.map(i => `<tr><td>${esc(i.name)}</td><td>${esc(i.tooth)}</td><td>${i.cost.toFixed(2)}</td><td>${i.paid.toFixed(2)}</td><td class="${(i.cost - i.paid) > 0 ? 'saldo-pos' : 'saldo-zero'}">${(i.cost - i.paid).toFixed(2)}</td></tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="2">TOTALES</td><td>${totalCosto.toFixed(2)}</td><td>${totalPagado.toFixed(2)}</td><td class="${totalSaldo > 0 ? 'saldo-pos' : 'saldo-zero'}">${totalSaldo.toFixed(2)}</td></tr>
+          </tfoot>
+        </table>
+
+        <div class="validity">Este presupuesto tiene una validez de 30 días a partir de la fecha de emisión. Los precios pueden variar según hallazgos clínicos adicionales.</div>
+        <div class="footer">Consultorio Dra. Sol Vargas · Los Diamantes 178, Trujillo 13011, Perú · +51 915 054 145</div>
+      </div>
+    </body></html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 400);
+  };
+
+  const enviarPresupuestoWhatsApp = () => {
+    if (plan.length === 0) { alert('No hay tratamientos en el plan para generar un presupuesto.'); return; }
+
+    const telefono = toWhatsAppNumber(patData?.phone || patient.phone);
+    if (!telefono) { alert('El paciente no tiene un número de celular registrado.'); return; }
+
+    const nombre = patData?.name || patient.name;
+    const totalCosto = plan.reduce((a, c) => a + c.cost, 0);
+    const totalPagado = plan.reduce((a, c) => a + c.paid, 0);
+    const totalSaldo = totalCosto - totalPagado;
+
+    const lineas = plan.map(i => `• ${i.name}${i.tooth && i.tooth !== '—' ? ` (Pieza ${i.tooth})` : ''}: S/${i.cost.toFixed(2)}`).join('\n');
+
+    const mensaje = `Hola ${nombre} 👋, aquí tienes tu presupuesto del *Consultorio Dra. Sol Vargas*:\n\n${lineas}\n\n💰 Total: S/${totalCosto.toFixed(2)}\n✅ Abonado: S/${totalPagado.toFixed(2)}\n${totalSaldo > 0 ? '🔴' : '🟢'} Saldo pendiente: S/${totalSaldo.toFixed(2)}\n\nCualquier consulta, escríbenos. ¡Gracias por tu confianza! 🦷`;
+
+    window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
 
@@ -1782,16 +1892,32 @@ const [editDraft, setEditDraft] = useState({});
         )}
 
         {/* --- PESTAÑA PRESUPUESTO --- */}
-        {tab === 'presupuesto' && (
+        {tab === 'presupuesto' && (() => {
+          const totalCosto = plan.reduce((acc, curr) => acc + curr.cost, 0);
+          const totalPagado = plan.reduce((acc, curr) => acc + curr.paid, 0);
+          const totalSaldo = totalCosto - totalPagado;
+          const sinTratamientos = plan.length === 0;
+
+          return (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Presupuesto</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Presupuesto</div>
+                <div style={{ fontSize: 11, color: MU, marginTop: 2 }}>{patData?.name || patient.name} · {new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+              </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button style={{ background: '#fff', color: '#0087b3', border: `1px solid #0087b3`, borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🖨 Imprimir</button>
-                <button style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>💬 WhatsApp</button>
+                <button onClick={imprimirPresupuesto} disabled={sinTratamientos}
+                  style={{ background: '#fff', color: '#0087b3', border: `1px solid #0087b3`, borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>🖨 Imprimir</button>
+                <button onClick={enviarPresupuestoWhatsApp} disabled={sinTratamientos}
+                  style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>💬 WhatsApp</button>
               </div>
             </div>
-            
+
+            {sinTratamientos ? (
+              <div style={{ background: '#fff', border: `1px dashed ${BD}`, borderRadius: 12, padding: 40, textAlign: 'center', color: MU, fontSize: 12 }}>
+                Aún no hay tratamientos en el plan. Agrégalos desde la pestaña "Plan trat." para generar el presupuesto.
+              </div>
+            ) : (
             <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
@@ -1799,7 +1925,7 @@ const [editDraft, setEditDraft] = useState({});
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Tratamiento</th>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Pieza</th>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Costo (S/)</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Acuenta (S/)</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Abonado (S/)</th>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Saldo (S/)</th>
                   </tr>
                 </thead>
@@ -1817,21 +1943,53 @@ const [editDraft, setEditDraft] = useState({});
                 <tfoot style={{ background: '#f8fafc', borderTop: `2px solid ${BD}` }}>
                   <tr>
                     <td colSpan={2} style={{ padding: '14px 16px', fontSize: 12, fontWeight: 800, color: DN, textAlign: 'right' }}>TOTALES:</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: DN }}>S/ {plan.reduce((acc, curr) => acc + curr.cost, 0).toFixed(2)}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#0ea5e9' }}>S/ {plan.reduce((acc, curr) => acc + curr.paid, 0).toFixed(2)}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>S/ {plan.reduce((acc, curr) => acc + (curr.cost - curr.paid), 0).toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: DN }}>S/ {totalCosto.toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#0ea5e9' }}>S/ {totalPagado.toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>S/ {totalSaldo.toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>
             </div>
-            
-            <div style={{ marginTop: 20, background: '#fff', border: `1px dashed ${BD}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+            )}
+
+            <div
+              onClick={() => { setPagoDraft({ itemId: plan.find(i => (i.cost - i.paid) > 0)?.id ? String(plan.find(i => (i.cost - i.paid) > 0).id) : '', monto: '' }); setShowPagoModal(true); }}
+              style={{ marginTop: 20, background: '#fff', border: `1px dashed ${BD}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
               <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold' }}>$</div>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#0284c7' }}>Registrar nuevo pago / abono</span>
             </div>
-            
+
+            {showPagoModal && (
+              <Modal cardStyle={{ padding: 24, width: 380, boxShadow: '0 20px 50px rgba(0,0,0,0.15)' }}>
+                <h3 style={{ marginTop: 0, marginBottom: 16, color: '#0f172a', fontSize: 15 }}>Registrar pago / abono</h3>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: MU, display: 'block', marginBottom: 4 }}>Tratamiento</label>
+                  <select value={pagoDraft.itemId} onChange={e => setPagoDraft({ ...pagoDraft, itemId: e.target.value })}
+                    style={{ width: '100%', padding: 9, borderRadius: 8, border: `1px solid ${BD}`, fontSize: 12, boxSizing: 'border-box', background: '#fff' }}>
+                    <option value="">Selecciona un tratamiento…</option>
+                    {plan.filter(i => (i.cost - i.paid) > 0).map(i => (
+                      <option key={i.id} value={i.id}>{i.name} (Pieza {i.tooth}) — Saldo S/{(i.cost - i.paid).toFixed(2)}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: MU, display: 'block', marginBottom: 4 }}>Monto a abonar (S/)</label>
+                  <input type="number" min="0" step="0.01" value={pagoDraft.monto} onChange={e => setPagoDraft({ ...pagoDraft, monto: e.target.value })}
+                    placeholder="0.00" style={{ width: '100%', padding: 9, borderRadius: 8, border: `1px solid ${BD}`, fontSize: 12, boxSizing: 'border-box' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Button variant="secondary" onClick={() => setShowPagoModal(false)} style={{ flex: 1, padding: 10, fontSize: 12 }}>Cancelar</Button>
+                  <Button onClick={registrarAbono} style={{ flex: 1, padding: 10, fontSize: 12 }}>Registrar abono</Button>
+                </div>
+              </Modal>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {/* --- PESTAÑA CONSENTIMIENTOS --- */}
         {tab === 'consentimientos' && (
