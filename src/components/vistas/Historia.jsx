@@ -13,9 +13,9 @@ import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsA
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
 // ============================================================================
-function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
+function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots = 0 }) {
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
-  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== 'sarro');
+  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
   const domRaw = conds.length ? conds[0][1] : null;
   const dom = domRaw ? gt(domRaw) : null;
   const domIsBad = isBad(domRaw);
@@ -57,7 +57,13 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
       {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={RJ} strokeWidth="2" />}
       {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={AZ} strokeWidth="2" />}
       {conds.length > 1 && <circle cx={W - 5} cy={4} r="3.5" fill={P} />}
-      {surfs.sarro && <circle cx={W - 4} cy={cY + CH - 4} r="3" fill="#a16207" stroke="#fff" strokeWidth=".6" />}
+      {sarroDots > 0 && (
+        <g style={{ pointerEvents: 'none' }}>
+          {Array.from({ length: sarroDots }).map((_, i) => (
+            <circle key={i} cx={4 + i * 6} cy={cY + CH - 4} r="2.2" fill="#a16207" stroke="#fff" strokeWidth=".5" />
+          ))}
+        </g>
+      )}
     </svg>
   );
 }
@@ -144,6 +150,10 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const aw = 42;
   const pw = 32;
 
+  // Puntos de sarro: se marcan automáticamente en todas las piezas según la evaluación periodontal
+  const SARRO_DOTS = { 'Ninguno': 0, 'Gingivitis leve': 1, 'Gingivitis moderada': 2, 'Gingivitis severa': 3, 'Periodontitis': 4 };
+  const sarroDots = SARRO_DOTS[periodontalDx] || 0;
+
   const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
@@ -208,17 +218,6 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     });
   };
 
-  const toggleSarro = (n) => {
-    setCurrentTeeth(p => {
-      const safeP = p || {};
-      const currentPiece = safeP[n] || {};
-      const next = { ...currentPiece };
-      if (next.sarro) delete next.sarro;
-      else next.sarro = true;
-      return { ...safeP, [n]: next };
-    });
-  };
-
   const allF = [];
   Object.entries(currentTeeth).forEach(([n, ss]) => {
     const superficies = getSurfs(n);
@@ -230,7 +229,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       allF.push({ n, sf: 'Toda la pieza', c: hallazgoDeteccion });
     } else {
       Object.entries(ss).forEach(([sf, c]) => {
-        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza' && sf !== 'sarro') {
+        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza') {
           allF.push({ n, sf, c });
         }
       });
@@ -241,7 +240,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => {
         const ss = currentTeeth[n] || {};
-        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== 'sarro');
+        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
         const csRaw = cs.length ? cs[0][1] : null;
         const t = csRaw ? gt(csRaw) : null;
         return (
@@ -267,7 +266,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => (
         <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
-          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} />
+          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} sarroDots={sarroDots} />
         </div>
       ))}
     </div>
@@ -448,11 +447,6 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
               </div>
             );
           })}
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 15, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: selSurfs.sarro ? '#fef9e7' : LT, border: `1px solid ${selSurfs.sarro ? '#eab30855' : BD}` }}>
-            <input type="checkbox" checked={!!selSurfs.sarro} onChange={() => toggleSarro(sel)} style={{ transform: 'scale(1.1)' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: selSurfs.sarro ? '#a16207' : MU }}>🦷 Presencia de sarro</span>
-          </label>
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
           <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel]={}; next[sel].note = e.target.value; return next; })}
@@ -759,7 +753,6 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         if (esTodoIgual) {
           limpios[num] = { todaPieza: valores[0] };
           if (pieza.note) limpios[num].note = pieza.note;
-          if (pieza.sarro) limpios[num].sarro = true;
         } else {
           const filtrada = {};
           let tieneHallazgo = false;
@@ -843,9 +836,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       sugerencias.push({ tooth: '—', name: t.name, cost: t.cost });
     });
 
-    // Sarro: si hay al menos una pieza marcada, se sugiere una sola limpieza (no por diente)
-    const haySarro = Object.values(teeth || {}).some(pieza => pieza.sarro);
-    if (haySarro) {
+    // Sarro (marcado automáticamente en todas las piezas según el diagnóstico periodontal):
+    // una sola sugerencia de limpieza, no por diente
+    if (periodontalDx !== 'Ninguno') {
       sugerencias.push({ tooth: '—', name: 'Limpieza y profilaxis', cost: PRECIOS['Limpieza y profilaxis'] || 60 });
     }
 
