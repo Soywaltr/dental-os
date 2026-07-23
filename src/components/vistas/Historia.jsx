@@ -831,16 +831,12 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       });
     });
 
-    // Evaluación periodontal — es a nivel de boca completa, sin pieza asociada
+    // Evaluación periodontal — es a nivel de boca completa, sin pieza asociada.
+    // El tratamiento de gingivitis/periodontitis ya incluye la limpieza y profilaxis,
+    // así que no se sugiere aparte (evita duplicar el cobro).
     (PERIODONTAL_TRATAMIENTOS[periodontalDx] || []).forEach(t => {
       sugerencias.push({ tooth: '—', name: t.name, cost: t.cost });
     });
-
-    // Sarro (marcado automáticamente en todas las piezas según el diagnóstico periodontal):
-    // una sola sugerencia de limpieza, no por diente
-    if (periodontalDx !== 'Ninguno') {
-      sugerencias.push({ tooth: '—', name: 'Limpieza y profilaxis', cost: PRECIOS['Limpieza y profilaxis'] || 60 });
-    }
 
     if (sugerencias.length === 0) {
       alert('No se detectaron hallazgos en el odontograma para sugerir al plan de tratamiento.');
