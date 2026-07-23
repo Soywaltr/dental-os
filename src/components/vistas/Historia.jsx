@@ -15,7 +15,7 @@ import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsA
 // ============================================================================
 function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
-  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== 'sarro');
   const domRaw = conds.length ? conds[0][1] : null;
   const dom = domRaw ? gt(domRaw) : null;
   const domIsBad = isBad(domRaw);
@@ -57,6 +57,7 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31 }) {
       {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={RJ} strokeWidth="2" />}
       {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={AZ} strokeWidth="2" />}
       {conds.length > 1 && <circle cx={W - 5} cy={4} r="3.5" fill={P} />}
+      {surfs.sarro && <circle cx={W - 4} cy={cY + CH - 4} r="3" fill="#a16207" stroke="#fff" strokeWidth=".6" />}
     </svg>
   );
 }
@@ -132,7 +133,7 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
 // ============================================================================
 // 3. COMPONENTE ODONTOGRAMA (Lógica de descompresión para lectura y escritura)
 // ============================================================================
-function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion }) {
+function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, periodontalDx, setPeriodontalDx }) {
   const [act, setAct] = useState('caries');
   const [sel, setSel] = useState(null);
   const [specs, setSpecs] = useState('');
@@ -207,6 +208,17 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     });
   };
 
+  const toggleSarro = (n) => {
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const currentPiece = safeP[n] || {};
+      const next = { ...currentPiece };
+      if (next.sarro) delete next.sarro;
+      else next.sarro = true;
+      return { ...safeP, [n]: next };
+    });
+  };
+
   const allF = [];
   Object.entries(currentTeeth).forEach(([n, ss]) => {
     const superficies = getSurfs(n);
@@ -218,7 +230,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       allF.push({ n, sf: 'Toda la pieza', c: hallazgoDeteccion });
     } else {
       Object.entries(ss).forEach(([sf, c]) => {
-        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza') {
+        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza' && sf !== 'sarro') {
           allF.push({ n, sf, c });
         }
       });
@@ -229,7 +241,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => {
         const ss = currentTeeth[n] || {};
-        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== 'sarro');
         const csRaw = cs.length ? cs[0][1] : null;
         const t = csRaw ? gt(csRaw) : null;
         return (
@@ -352,6 +364,31 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
               style={{ width: '100%', minHeight: 30, marginTop: 5, padding: '4px 8px', border: '1px solid transparent', borderBottom: '1px solid #94a3b8', fontSize: 11, resize: 'vertical', outline: 'none', color: DN, background: '#f8fafc', borderRadius: '4px 4px 0 0', fontFamily: 'inherit', boxSizing: 'border-box' }} />
           </div>
 
+          {/* EVALUACIÓN PERIODONTAL — a nivel de boca completa, no por pieza */}
+          <div style={{ marginTop: 20, background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#7e22ce', marginBottom: 10, textTransform: 'uppercase', letterSpacing: .3 }}>
+              Evaluación Periodontal — Boca completa
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {['Ninguno', 'Gingivitis leve', 'Gingivitis moderada', 'Gingivitis severa', 'Periodontitis'].map(opt => (
+                <div key={opt} onClick={() => setPeriodontalDx(opt)}
+                  style={{
+                    padding: '7px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                    background: periodontalDx === opt ? '#7e22ce' : '#fff',
+                    color: periodontalDx === opt ? '#fff' : '#7e22ce',
+                    border: '1px solid #7e22ce55',
+                  }}>
+                  {opt}
+                </div>
+              ))}
+            </div>
+            {periodontalDx && periodontalDx !== 'Ninguno' && (
+              <div style={{ marginTop: 10, fontSize: 10, color: '#7e22ce', fontWeight: 600 }}>
+                ⚠ Este diagnóstico es a nivel de boca completa y se guarda junto con el resto de la historia clínica.
+              </div>
+            )}
+          </div>
+
           {allF.length > 0 && <div style={{ marginTop: 15, padding: 12, background: LT, borderRadius: 10, border: `1px solid ${BD}` }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: P, marginBottom: 8 }}>Resumen de Hallazgos ({allF.length}):</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -411,6 +448,11 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
               </div>
             );
           })}
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 15, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: selSurfs.sarro ? '#fef9e7' : LT, border: `1px solid ${selSurfs.sarro ? '#eab30855' : BD}` }}>
+            <input type="checkbox" checked={!!selSurfs.sarro} onChange={() => toggleSarro(sel)} style={{ transform: 'scale(1.1)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: selSurfs.sarro ? '#a16207' : MU }}>🦷 Presencia de sarro</span>
+          </label>
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
           <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel]={}; next[sel].note = e.target.value; return next; })}
@@ -646,6 +688,7 @@ const [editingItemId, setEditingItemId] = useState(null);   // id del item en ed
 const [editDraft, setEditDraft] = useState({});
 const [showPagoModal, setShowPagoModal] = useState(false);
 const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
+const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico periodontal — a nivel de boca completa, no por pieza
   
   const TABS = [{ id: 'filiacion', lbl: 'Filiación' }, { id: 'anamnesis', lbl: 'Anamnesis' }, { id: 'odontograma', lbl: 'Odontograma' }, { id: 'ortodoncia', lbl: 'Ortodoncia' }, { id: 'plan', lbl: 'Plan trat.' }, { id: 'evolucion', lbl: 'Evolución' }, { id: 'recetas', lbl: 'Recetas' }, { id: 'imagenes', lbl: 'Imágenes' }, { id: 'presupuesto', lbl: 'Presupuesto' }, { id: 'consentimientos', lbl: 'Consentimientos' }];
   const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }];
@@ -686,7 +729,8 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
       setAnamnesisData({});
       setPlan([]);
       setImagenesList([]);
-      
+      setPeriodontalDx('Ninguno');
+
       // 2. CERRAR MODOS DE EDICIÓN
       setIsEditingFiliacion(false);
 
@@ -697,6 +741,7 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
         if (data.anamnesis) setAnamnesisData(data.anamnesis);
         if (data.plan_tratamiento) setPlan(data.plan_tratamiento);
         if (data.imagenes) setImagenesList(data.imagenes);
+        if (data.periodontal) setPeriodontalDx(data.periodontal.diagnostico);
       }
     };
     loadCloudData();
@@ -714,6 +759,7 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
         if (esTodoIgual) {
           limpios[num] = { todaPieza: valores[0] };
           if (pieza.note) limpios[num].note = pieza.note;
+          if (pieza.sarro) limpios[num].sarro = true;
         } else {
           const filtrada = {};
           let tieneHallazgo = false;
@@ -730,7 +776,7 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
     const cleanInicial = limpiarDientes(teeth);
     const cleanEvo = limpiarDientes(teethEvolucion);
     setTeeth(cleanInicial); setTeethEvolucion(cleanEvo);
-    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, odontograma: cleanInicial, evolucion: cleanEvo, anamnesis: anamnesisData, plan_tratamiento: plan, imagenes: imagenesList }, { onConflict: 'patient_id' });
+    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, odontograma: cleanInicial, evolucion: cleanEvo, anamnesis: anamnesisData, plan_tratamiento: plan, imagenes: imagenesList, periodontal: { diagnostico: periodontalDx } }, { onConflict: 'patient_id' });
     if (error) alert("Error al guardar: " + error.message);
     else alert("¡Datos guardados con éxito!");
     setSaving(false);
@@ -747,6 +793,17 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
     cmc: 'Corona metal-cerámica',
     cj: 'Corona metal-cerámica',
     imp: 'Implante dental',
+  };
+
+  // Sugerencias de tratamiento según el diagnóstico periodontal (a nivel de boca completa)
+  const PERIODONTAL_TRATAMIENTOS = {
+    'Gingivitis leve': [{ name: 'Tratamiento de gingivitis leve', cost: 100 }],
+    'Gingivitis moderada': [{ name: 'Tratamiento de gingivitis moderada', cost: 150 }],
+    'Gingivitis severa': [{ name: 'Tratamiento de gingivitis severa', cost: 180 }],
+    'Periodontitis': [
+      { name: 'Tratamiento periodontal', cost: 180 },
+      { name: 'Referencia a Periodoncista', cost: 0 },
+    ],
   };
 
   const generarDesdeOdontograma = () => {
@@ -780,6 +837,17 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
         }
       });
     });
+
+    // Evaluación periodontal — es a nivel de boca completa, sin pieza asociada
+    (PERIODONTAL_TRATAMIENTOS[periodontalDx] || []).forEach(t => {
+      sugerencias.push({ tooth: '—', name: t.name, cost: t.cost });
+    });
+
+    // Sarro: si hay al menos una pieza marcada, se sugiere una sola limpieza (no por diente)
+    const haySarro = Object.values(teeth || {}).some(pieza => pieza.sarro);
+    if (haySarro) {
+      sugerencias.push({ tooth: '—', name: 'Limpieza y profilaxis', cost: PRECIOS['Limpieza y profilaxis'] || 60 });
+    }
 
     if (sugerencias.length === 0) {
       alert('No se detectaron hallazgos en el odontograma para sugerir al plan de tratamiento.');
@@ -1597,12 +1665,14 @@ const [pagoDraft, setPagoDraft] = useState({ itemId: '', monto: '' });
 
         {/* --- PESTAÑA ODONTOGRAMA --- */}
         {tab === 'odontograma' && (
-          <Odontograma 
-            patient={patData} 
-            teeth={teeth} 
-            setTeeth={setTeeth} 
-            teethEvolucion={teethEvolucion} 
-            setTeethEvolucion={setTeethEvolucion} 
+          <Odontograma
+            patient={patData}
+            teeth={teeth}
+            setTeeth={setTeeth}
+            teethEvolucion={teethEvolucion}
+            setTeethEvolucion={setTeethEvolucion}
+            periodontalDx={periodontalDx}
+            setPeriodontalDx={setPeriodontalDx}
           />
         )}
 
