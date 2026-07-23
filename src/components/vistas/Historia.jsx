@@ -608,6 +608,9 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
     { id: 3, name: 'Radiografía panorámica', tooth: '—', status: 'completado', cost: 45, paid: 45, date: '10 Jun 2025', sessions: 1 },
   ]);
   const [showTreatPicker, setShowTreatPicker] = useState(false);
+  const [draftTreatment, setDraftTreatment] = useState(null); // tratamiento seleccionado, pendiente de detalles
+const [editingItemId, setEditingItemId] = useState(null);   // id del item en edición inline
+const [editDraft, setEditDraft] = useState({});
   
   const TABS = [{ id: 'filiacion', lbl: 'Filiación' }, { id: 'anamnesis', lbl: 'Anamnesis' }, { id: 'odontograma', lbl: 'Odontograma' }, { id: 'ortodoncia', lbl: 'Ortodoncia' }, { id: 'plan', lbl: 'Plan trat.' }, { id: 'evolucion', lbl: 'Evolución' }, { id: 'recetas', lbl: 'Recetas' }, { id: 'imagenes', lbl: 'Imágenes' }, { id: 'presupuesto', lbl: 'Presupuesto' }, { id: 'consentimientos', lbl: 'Consentimientos' }];
   const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }];
@@ -1414,62 +1417,146 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
         )}
 
         {/* --- PESTAÑA PLAN --- */}
+        
         {tab === 'plan' && (
-          <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Plan de tratamiento — {patData?.name || patient.name}</div>
-              <button onClick={() => setShowTreatPicker(!showTreatPicker)} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Agregar tratamiento</button>
-            </div>
-            {showTreatPicker && (
-              <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 12, color: DN, marginBottom: 10 }}>Seleccionar tratamiento:</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
-                  {TRATAMIENTOS_CAT.map(cat => (
-                    <div key={cat.cat}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: P, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>{cat.cat}</div>
-                      {cat.items.map(item => (
-                        <div key={item} onClick={() => { setPlan(p => [...p, { id: Date.now(), name: item, tooth: '—', status: 'pendiente', cost: PRECIOS[item] || 0, paid: 0, date: '—', sessions: 1 }]); setShowTreatPicker(false); }}
-                          style={{ fontSize: 11, color: DN, padding: '3px 7px', borderRadius: 5, cursor: 'pointer', marginBottom: 2 }}
-                          onMouseEnter={e => { e.currentTarget.style.background = MT; e.currentTarget.style.color = P }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DN }}>
-                          {item} — S/{PRECIOS[item] || 0}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+  <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Plan de tratamiento — {patData?.name || patient.name}</div>
+      <button onClick={() => { setShowTreatPicker(!showTreatPicker); setDraftTreatment(null); }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+        {showTreatPicker ? 'Cerrar catálogo' : '+ Agregar tratamiento'}
+      </button>
+    </div>
+
+    {showTreatPicker && !draftTreatment && (
+      <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: DN, marginBottom: 10 }}>Seleccionar tratamiento:</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
+          {TRATAMIENTOS_CAT.map(cat => (
+            <div key={cat.cat}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: P, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>{cat.cat}</div>
+              {cat.items.map(item => (
+                <div key={item} onClick={() => setDraftTreatment({ name: item, cost: PRECIOS[item] || 0, tooth: '', date: new Date().toISOString().slice(0,10), sessions: 1, notes: '' })}
+                  style={{ fontSize: 11, color: DN, padding: '3px 7px', borderRadius: 5, cursor: 'pointer', marginBottom: 2 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = MT; e.currentTarget.style.color = P }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DN }}>
+                  {item} — S/{PRECIOS[item] || 0}
                 </div>
-              </div>
-            )}
-            {['pendiente', 'en_curso', 'completado'].map(st => {
-              const items = plan.filter(i => i.status === st);
-              const b = sc(st);
-              return (
-                <div key={st} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: b.c, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.c }} />{st.replace('_', ' ')} ({items.length})
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {draftTreatment && (
+      <div style={{ background: '#fff', border: `1px solid ${P}55`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
+        <div style={{ fontWeight: 800, fontSize: 13, color: P, marginBottom: 14 }}>Detalles del tratamiento: {draftTreatment.name}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Pieza dental</label>
+            <input value={draftTreatment.tooth} onChange={e => setDraftTreatment({ ...draftTreatment, tooth: e.target.value })} placeholder="Ej: 14, 24-26" style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Fecha</label>
+            <input type="date" value={draftTreatment.date} onChange={e => setDraftTreatment({ ...draftTreatment, date: e.target.value })} style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>N° sesiones</label>
+            <input type="number" min="1" value={draftTreatment.sessions} onChange={e => setDraftTreatment({ ...draftTreatment, sessions: parseInt(e.target.value) || 1 })} style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Costo (S/)</label>
+            <input type="number" value={draftTreatment.cost} onChange={e => setDraftTreatment({ ...draftTreatment, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+          </div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Notas clínicas</label>
+          <textarea value={draftTreatment.notes} onChange={e => setDraftTreatment({ ...draftTreatment, notes: e.target.value })} placeholder="Observaciones, indicaciones, plan específico para esta pieza..." style={{ width: '100%', minHeight: 60, padding: '8px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setDraftTreatment(null)} style={{ background: '#fff', color: MU, border: `1px solid ${BD}`, borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={() => {
+            setPlan(p => [...p, { id: Date.now(), name: draftTreatment.name, tooth: draftTreatment.tooth || '—', status: 'pendiente', cost: draftTreatment.cost, paid: 0, date: draftTreatment.date, sessions: draftTreatment.sessions, notes: draftTreatment.notes }]);
+            setDraftTreatment(null);
+            setShowTreatPicker(false);
+          }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Agregar al plan</button>
+        </div>
+      </div>
+    )}
+
+    {['pendiente', 'en_curso', 'completado'].map(st => {
+      const items = plan.filter(i => i.status === st);
+      const b = sc(st);
+      return (
+        <div key={st} style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: b.c, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.c }} />{st.replace('_', ' ')} ({items.length})
+          </div>
+          {items.map(item => {
+            const isEditing = editingItemId === item.id;
+            return (
+              <div key={item.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, padding: '10px 14px', marginBottom: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: DN }}>{item.name}</div>
+                    <div style={{ fontSize: 10, color: MU }}>Pieza: {item.tooth} · {item.date} · {item.sessions || 1} sesión(es)</div>
                   </div>
-                  {items.map(item => (
-                    <div key={item.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, padding: '10px 14px', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: DN }}>{item.name}</div><div style={{ fontSize: 10, color: MU }}>Pieza: {item.tooth} · {item.date}</div></div>
-                      <div style={{ fontSize: 12, color: DN }}>S/{item.cost}</div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {['pendiente', 'en_curso', 'completado'].filter(s => s !== st).map(ns => (
-                          <button key={ns} onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: ns } : i))}
-                            style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${sc(ns).c}`, background: sc(ns).bg, color: sc(ns).c, fontWeight: 600 }}>
-                            → {ns.replace('_', ' ')}
-                          </button>
-                        ))}
-                        <button onClick={() => setPlan(p => p.filter(i => i.id !== item.id))}
-                          style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${RJ}44`, background: '#fef2f2', color: RJ, fontWeight: 700 }}>✕</button>
+                  <div style={{ fontSize: 12, color: DN, fontWeight: 700 }}>S/{item.cost}</div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button onClick={() => { setEditingItemId(isEditing ? null : item.id); setEditDraft(item); }}
+                      style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${P}55`, background: '#fff', color: P, fontWeight: 700 }}>
+                      {isEditing ? 'Cerrar' : '✏️ Editar'}
+                    </button>
+                    {['pendiente', 'en_curso', 'completado'].filter(s => s !== st).map(ns => (
+                      <button key={ns} onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: ns } : i))}
+                        style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${sc(ns).c}`, background: sc(ns).bg, color: sc(ns).c, fontWeight: 600 }}>
+                        → {ns.replace('_', ' ')}
+                      </button>
+                    ))}
+                    <button onClick={() => setPlan(p => p.filter(i => i.id !== item.id))}
+                      style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${RJ}44`, background: '#fef2f2', color: RJ, fontWeight: 700 }}>✕</button>
+                  </div>
+                </div>
+
+                {item.notes && !isEditing && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${BD}`, fontSize: 11, color: MU, fontStyle: 'italic' }}>📝 {item.notes}</div>
+                )}
+
+                {isEditing && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${BD}` }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 10 }}>
+                      <div>
+                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Pieza</label>
+                        <input value={editDraft.tooth || ''} onChange={e => setEditDraft({ ...editDraft, tooth: e.target.value })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Fecha</label>
+                        <input type="date" value={editDraft.date === '—' ? '' : editDraft.date || ''} onChange={e => setEditDraft({ ...editDraft, date: e.target.value })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Sesiones</label>
+                        <input type="number" min="1" value={editDraft.sessions || 1} onChange={e => setEditDraft({ ...editDraft, sessions: parseInt(e.target.value) || 1 })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Costo (S/)</label>
+                        <input type="number" value={editDraft.cost || 0} onChange={e => setEditDraft({ ...editDraft, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
                       </div>
                     </div>
-                  ))}
-                  {items.length === 0 && <div style={{ fontSize: 11, color: MU, fontStyle: 'italic', padding: '5px 8px' }}>Sin tratamientos en este estado</div>}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Notas clínicas</label>
+                    <textarea value={editDraft.notes || ''} onChange={e => setEditDraft({ ...editDraft, notes: e.target.value })} style={{ width: '100%', minHeight: 50, padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: 8 }} />
+                    <button onClick={() => { setPlan(p => p.map(i => i.id === item.id ? { ...editDraft } : i)); setEditingItemId(null); }}
+                      style={{ background: P, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Guardar cambios</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {items.length === 0 && <div style={{ fontSize: 11, color: MU, fontStyle: 'italic', padding: '5px 8px' }}>Sin tratamientos en este estado</div>}
+        </div>
+      );
+    })}
+  </div>
+)}
 
         {/* --- PESTAÑA EVOLUCIÓN --- */}
         {tab === 'evolucion' && (
