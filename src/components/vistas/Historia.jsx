@@ -650,7 +650,6 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
       setImagenesList([]);
       
       // 2. CERRAR MODOS DE EDICIÓN
-      setIsEditingAnamnesis(false);
       setIsEditingFiliacion(false);
 
       const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
