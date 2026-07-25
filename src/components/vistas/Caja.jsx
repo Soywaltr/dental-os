@@ -17,7 +17,7 @@ const parseFecha = (s) => { if (!s) return null; const d = new Date(s); return i
 const formatFecha = (s) => { const d = parseFecha(s); return d ? d.toLocaleDateString('es-PE') : (s || '—'); };
 const mismoMes = (d, ref) => d && d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
 
-const PAGO_VACIO = { patientId: '', facturaId: '', monto: '', metodo: 'Efectivo', referencia: '' };
+const PAGO_VACIO = { patientId: '', grupoKey: '', monto: '', metodo: 'Efectivo', referencia: '' };
 const GASTO_VACIO = { categoria: 'Materiales', monto: '', fecha: hoyISO(), nota: '' };
 
 export default function Caja() {
@@ -59,32 +59,43 @@ export default function Caja() {
   const nombrePaciente = (id) => pacientes.find(p => String(p.id) === String(id))?.name || '—';
 
   const irAPagar = (grupo) => {
-    setPagoDraft({
-      patientId: String(grupo.patient_id),
-      facturaId: grupo.items.length === 1 ? String(grupo.items[0].id) : '',
-      monto: '', metodo: 'Efectivo', referencia: '',
-    });
+    setPagoDraft({ patientId: String(grupo.patient_id), grupoKey: grupo.key, monto: '', metodo: 'Efectivo', referencia: '' });
     setTab('pagos');
   };
 
   const registrarPago = async () => {
-    if (!pagoDraft.patientId || !pagoDraft.facturaId) { alert('Selecciona paciente y tratamiento.'); return; }
+    if (!pagoDraft.patientId || !pagoDraft.grupoKey) { alert('Selecciona paciente y tratamiento.'); return; }
     const monto = parseFloat(pagoDraft.monto);
     if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
 
+    const grupo = facturasAgrupadas.find(g => g.key === pagoDraft.grupoKey);
+    if (!grupo) { alert('No se encontró el tratamiento seleccionado.'); return; }
+
     setSavingPago(true);
+
+    // Reparte el monto entre las piezas del grupo (la más antigua primero) hasta agotarlo
+    let restante = monto;
+    const cambiosPorId = new Map();
+    grupo.items.forEach(item => {
+      if (restante <= 0) return;
+      const saldo = item.cost - item.paid;
+      if (saldo <= 0) return;
+      const abono = Math.min(restante, saldo);
+      restante -= abono;
+      const nuevoPaid = item.paid + abono;
+      cambiosPorId.set(item.id, {
+        paid: nuevoPaid,
+        status: nuevoPaid >= item.cost ? 'completado' : (item.status === 'pendiente' ? 'en_curso' : item.status),
+      });
+    });
+
     const itemsDelPaciente = facturas.filter(f => String(f.patient_id) === String(pagoDraft.patientId));
     const planActualizado = itemsDelPaciente.map(f => {
       const rest = { ...f };
       delete rest.patient_id;
-      if (String(rest.id) !== String(pagoDraft.facturaId)) return rest;
-      const saldo = rest.cost - rest.paid;
-      const abono = Math.min(monto, saldo);
-      const nuevoPaid = rest.paid + abono;
-      return {
-        ...rest, paid: nuevoPaid, metodo: pagoDraft.metodo, referencia: pagoDraft.referencia || rest.referencia || '',
-        status: nuevoPaid >= rest.cost ? 'completado' : (rest.status === 'pendiente' ? 'en_curso' : rest.status),
-      };
+      const cambio = cambiosPorId.get(rest.id);
+      if (!cambio) return rest;
+      return { ...rest, ...cambio, metodo: pagoDraft.metodo, referencia: pagoDraft.referencia || rest.referencia || '' };
     });
 
     const { error } = await supabase.from('historias').upsert({ patient_id: pagoDraft.patientId, plan_tratamiento: planActualizado }, { onConflict: 'patient_id' });
@@ -138,15 +149,13 @@ export default function Caja() {
   }));
   const totalGastosMes = gastosDelMes.reduce((s, g) => s + (g.monto || 0), 0);
 
-  const facturasDelPacienteSeleccionado = facturas.filter(f => String(f.patient_id) === String(pagoDraft.patientId) && (f.cost - f.paid) > 0);
-
   // Agrupa por paciente + fecha + tratamiento: varias piezas del mismo tratamiento
   // en la misma fecha aparecen como una sola fila (ej. "Resina compuesta, piezas 12, 14, 15")
   const grupos = new Map();
   facturas.forEach(f => {
     const key = `${f.patient_id}|${f.date}|${f.name}`;
     if (!grupos.has(key)) {
-      grupos.set(key, { patient_id: f.patient_id, date: f.date, name: f.name, teeth: [], cost: 0, paid: 0, items: [], metodos: new Set() });
+      grupos.set(key, { key, patient_id: f.patient_id, date: f.date, name: f.name, teeth: [], cost: 0, paid: 0, items: [], metodos: new Set() });
     }
     const g = grupos.get(key);
     if (f.tooth && f.tooth !== '—') g.teeth.push(f.tooth);
@@ -163,6 +172,8 @@ export default function Caja() {
       status: g.items.every(i => i.status === 'completado') ? 'completado' : (g.items.some(i => i.status === 'pendiente') ? 'pendiente' : 'en_curso'),
     }))
     .sort((a, b) => nombrePaciente(a.patient_id).localeCompare(nombrePaciente(b.patient_id)) || String(b.date).localeCompare(String(a.date)));
+
+  const gruposDelPacienteSeleccionado = facturasAgrupadas.filter(g => String(g.patient_id) === String(pagoDraft.patientId) && (g.cost - g.paid) > 0);
 
   return (
     <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
@@ -226,7 +237,7 @@ export default function Caja() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 500 }}>
             <div>
               <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Paciente</label>
-              <select value={pagoDraft.patientId} onChange={e => setPagoDraft({ ...pagoDraft, patientId: e.target.value, facturaId: '' })}
+              <select value={pagoDraft.patientId} onChange={e => setPagoDraft({ ...pagoDraft, patientId: e.target.value, grupoKey: '' })}
                 style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', background: '#fff' }}>
                 <option value="">Selecciona un paciente…</option>
                 {pacientes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -234,11 +245,13 @@ export default function Caja() {
             </div>
             <div>
               <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Tratamiento con saldo pendiente</label>
-              <select value={pagoDraft.facturaId} onChange={e => setPagoDraft({ ...pagoDraft, facturaId: e.target.value })} disabled={!pagoDraft.patientId}
+              <select value={pagoDraft.grupoKey} onChange={e => setPagoDraft({ ...pagoDraft, grupoKey: e.target.value })} disabled={!pagoDraft.patientId}
                 style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', background: '#fff' }}>
                 <option value="">Selecciona…</option>
-                {facturasDelPacienteSeleccionado.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}{f.tooth && f.tooth !== '—' ? ` (Pieza ${f.tooth})` : ''} — Saldo S/{(f.cost - f.paid).toLocaleString()}</option>
+                {gruposDelPacienteSeleccionado.map(g => (
+                  <option key={g.key} value={g.key}>
+                    {g.name}{g.items.length > 1 ? ` (piezas ${g.toothLabel})` : (g.toothLabel !== '—' ? ` (Pieza ${g.toothLabel})` : '')} — Saldo S/{(g.cost - g.paid).toLocaleString()}
+                  </option>
                 ))}
               </select>
             </div>
