@@ -65,14 +65,14 @@ const BACKDROP_IMAGE_URL = `url("data:image/svg+xml,${BACKDROP_SVG}")`;
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
   // Fondos
-  sidebarBg:   "rgba(255,255,255,0.6)",
+  sidebarBg:   "rgba(255,255,255,0.42)",
   pageBg:      "#e1e4e1",
-  cardBg:      "rgba(255,255,255,0.6)",
+  cardBg:      "rgba(255,255,255,0.42)",
   hoverBg:     "rgba(15,23,42,0.05)",
   activeBg:    "rgba(240,240,239,0.85)",
-  glassBlur:   "blur(20px)",
-  glassBorder: "1px solid rgba(255,255,255,0.7)",
-  glassShadow: "0 8px 32px rgba(30,35,33,0.10)",
+  glassBlur:   "blur(26px) saturate(180%)",
+  glassBorder: "1px solid rgba(255,255,255,0.75)",
+  glassShadow: "0 12px 40px rgba(30,35,33,0.14)",
   // Texto
   ink:         "#111827",
   inkMid:      "#4B5563",
@@ -475,7 +475,7 @@ const TopHeader = memo(({ state, dispatch, onLogout }) => {
       height: 56,
       display: "flex", alignItems: "center",
       padding: "0 24px",
-      background: "rgba(255,255,255,0.45)",
+      background: "rgba(255,255,255,0.35)",
       backdropFilter: C.glassBlur, WebkitBackdropFilter: C.glassBlur,
       borderBottom: `1px solid rgba(255,255,255,0.4)`,
       gap: 12, flexShrink: 0, zIndex: 90, position: "relative",

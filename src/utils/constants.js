@@ -36,10 +36,10 @@ export const CAT_ACCENT = '#7c3aed';
 // Glassmorphism — superficies de vidrio esmerilado reutilizadas en tarjetas y paneles.
 // Los colores clínicos/semánticos de arriba (RJ, AZ, WA, GL) no cambian: sólo el "chrome"
 // estructural (fondos, tarjetas, botones primarios) adopta este tratamiento.
-export const GLASS_BG = 'rgba(255,255,255,0.55)';
-export const GLASS_BLUR = 'blur(18px)';
-export const GLASS_BORDER = '1px solid rgba(255,255,255,0.6)';
-export const GLASS_SHADOW = '0 20px 50px rgba(30,35,33,0.08)';
+export const GLASS_BG = 'rgba(255,255,255,0.4)';
+export const GLASS_BLUR = 'blur(26px) saturate(180%)';
+export const GLASS_BORDER = '1px solid rgba(255,255,255,0.75)';
+export const GLASS_SHADOW = '0 25px 60px rgba(30,35,33,0.12)';
 export const GRAD_PRIMARY = 'linear-gradient(135deg, #52525b 0%, #27272a 100%)';
 export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(39,39,42,0.35)';
 export const GRAD_SUCCESS = 'linear-gradient(135deg, #14b8a6 0%, #22d3aa 100%)';
