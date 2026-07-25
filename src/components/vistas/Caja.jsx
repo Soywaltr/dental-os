@@ -20,7 +20,7 @@ const mismoMes = (d, ref) => d && d.getFullYear() === ref.getFullYear() && d.get
 const PAGO_VACIO = { patientId: '', grupoKey: '', monto: '', metodo: 'Efectivo', referencia: '' };
 const GASTO_VACIO = { categoria: 'Materiales', monto: '', fecha: hoyISO(), nota: '' };
 
-export default function Caja() {
+export default function Caja({ clinicaId }) {
   const [tab, setTab] = useState('facturas');
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -98,7 +98,7 @@ export default function Caja() {
       return { ...rest, ...cambio, metodo: pagoDraft.metodo, referencia: pagoDraft.referencia || rest.referencia || '' };
     });
 
-    const { error } = await supabase.from('historias').upsert({ patient_id: pagoDraft.patientId, plan_tratamiento: planActualizado }, { onConflict: 'patient_id' });
+    const { error } = await supabase.from('historias').upsert({ patient_id: pagoDraft.patientId, clinica_id: clinicaId, plan_tratamiento: planActualizado }, { onConflict: 'patient_id' });
     setSavingPago(false);
     if (error) { alert('Error al registrar el pago: ' + error.message); return; }
 
@@ -118,6 +118,7 @@ export default function Caja() {
     setSavingGasto(true);
     const { data, error } = await supabase.from('gastos').insert([{
       categoria: gastoDraft.categoria, monto, fecha: gastoDraft.fecha, nota: gastoDraft.nota.trim() || null,
+      clinica_id: clinicaId,
     }]).select();
     setSavingGasto(false);
 

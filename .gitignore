@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Config MCP local (puede contener tokens de acceso — nunca subir a git)
+.mcp.json

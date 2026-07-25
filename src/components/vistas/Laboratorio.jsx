@@ -16,7 +16,7 @@ const ESTADO_COLOR = {
 
 const ORDEN_VACIA = { patient_id: '', type: '', tooth: '', lab: '', cost: '', sent: new Date().toISOString().slice(0, 10), eta: '' };
 
-export default function Laboratorio() {
+export default function Laboratorio({ clinicaId }) {
   const [orders, setOrders] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +56,7 @@ export default function Laboratorio() {
     const paciente = pacientes.find(p => String(p.id) === String(draft.patient_id));
     const { data, error } = await supabase.from('laboratorio_ordenes').insert([{
       patient_id: draft.patient_id,
+      clinica_id: clinicaId,
       patient_name: paciente?.name || '—',
       type: draft.type.trim(),
       tooth: draft.tooth.trim() || '—',

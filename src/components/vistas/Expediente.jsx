@@ -60,7 +60,7 @@ const IcFolder = () => (
 
 // ─── HOOK: LÓGICA DE PACIENTES ────────────────────────────────────────────────
 // Toda la lógica de negocio separada del JSX
-function usePatientsDirectory() {
+function usePatientsDirectory(clinicaId) {
   const [patientsList, setPatientsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -122,6 +122,7 @@ function usePatientsDirectory() {
         if (match) next = parseInt(match[0], 10) + 1;
       }
       datos.num_hc = String(next).padStart(4, '0');
+      datos.clinica_id = clinicaId;
 
       const { data, error } = await supabase.from('pacientes').insert([datos]).select();
       if (error) throw error;
@@ -131,7 +132,7 @@ function usePatientsDirectory() {
       });
       return data[0];
     }
-  }, [patientsList]);
+  }, [patientsList, clinicaId]);
 
   // NUEVA FUNCIÓN PARA BORRAR:
   const deletePatient = useCallback(async (id) => {
@@ -488,13 +489,13 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
 });
 
 // ─── COMPONENTE PRINCIPAL: EXPEDIENTE ────────────────────────────────────────
-export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView }) {
+export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView, clinicaId }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
   const [patSeleccionado, setPatSeleccionado] = useState(null);
 
-  const { patientsList, loading, upsertPatient, deletePatient } = usePatientsDirectory();
+  const { patientsList, loading, upsertPatient, deletePatient } = usePatientsDirectory(clinicaId);
 
   const handleDeleteWrapper = async (id) => {
     try {
@@ -648,6 +649,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
             teethEvolucion={teethEvolucion}
             setTeethEvolucion={setTeethEvolucion}
             setView={setView}
+            clinicaId={clinicaId}
           />
         ) : (
           <EmptyState />

@@ -206,7 +206,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       const safeP = p || {};
       const currentPiece = currentTeeth[n] || {};
       // Borramos "todaPieza" si venía de Supabase para evitar conflictos con las caras
-      const { todaPieza, ...rest } = currentPiece;
+      const { todaPieza: _todaPieza, ...rest } = currentPiece;
       return { ...safeP, [n]: { ...rest, ...up } };
     });
     setSel(n);
@@ -570,7 +570,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
-export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView }) {
+export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId }) {
   const { isTablet } = useResponsive();
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
@@ -635,7 +635,7 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
         // 3. Si no existe, insertamos un registro completamente nuevo
         const { error } = await supabase
           .from('ortodoncia')
-          .insert([{ paciente_id: patData.id, [columnaBaseDatos]: datosFormulario }]);
+          .insert([{ paciente_id: patData.id, clinica_id: clinicaId, [columnaBaseDatos]: datosFormulario }]);
         errorGuardado = error;
       }
 
@@ -654,6 +654,61 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const handleSavePlanTrabajo = () => genericSaveOrto('plan_trabajo', planTrabajoForm, setSavingTrabajo, setIsEditingOrtoTrabajo, 'Plan de Trabajo');
   const handleSavePlanTrata = () => genericSaveOrto('plan_tratamiento', planTrataForm, setSavingTrata, setIsEditingOrtoTrata, 'Plan de Tratamiento');
   const handleSaveResumen = () => genericSaveOrto('resumen', resumenForm, setSavingResumen, setIsEditingOrtoResumen, 'Resumen');
+
+  // Guarda el objeto completo de fotografías de ortodoncia (mismo patrón sin-UNIQUE que genericSaveOrto)
+  const guardarFotografiasOrto = async (nuevoObjetoFotos) => {
+    const { data: existe, error: fetchError } = await supabase
+      .from('ortodoncia')
+      .select('id')
+      .eq('paciente_id', patData.id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+
+    if (existe) {
+      const { error } = await supabase.from('ortodoncia').update({ fotografias: nuevoObjetoFotos }).eq('id', existe.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('ortodoncia').insert([{ paciente_id: patData.id, clinica_id: clinicaId, fotografias: nuevoObjetoFotos }]);
+      if (error) throw error;
+    }
+  };
+
+  const handleUploadFotoOrto = async (e, key) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSavingFotosOrto(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `orto-${patData.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('imagenes').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data: publicUrlData } = supabase.storage.from('imagenes').getPublicUrl(fileName);
+      const nuevoObjetoFotos = { ...fotosOrto, [key]: { url: publicUrlData.publicUrl, ext: fileExt, date: new Date().toLocaleDateString('es-PE') } };
+      await guardarFotografiasOrto(nuevoObjetoFotos);
+      setFotosOrto(nuevoObjetoFotos);
+    } catch (err) {
+      alert('Error al subir el archivo: ' + err.message);
+    } finally {
+      setSavingFotosOrto(false);
+    }
+  };
+
+  const handleDeleteFotoOrto = async (key, url) => {
+    if (!window.confirm('¿Eliminar este archivo permanentemente?')) return;
+    setSavingFotosOrto(true);
+    try {
+      const fileName = url.split('/').pop();
+      await supabase.storage.from('imagenes').remove([fileName]);
+      const nuevoObjetoFotos = { ...fotosOrto };
+      delete nuevoObjetoFotos[key];
+      await guardarFotografiasOrto(nuevoObjetoFotos);
+      setFotosOrto(nuevoObjetoFotos);
+    } catch (err) {
+      alert('Error al eliminar el archivo: ' + err.message);
+    } finally {
+      setSavingFotosOrto(false);
+    }
+  };
 
   // ⚡ CARGA Y BARRIDO DE MEMORIA DE ORTODONCIA ⚡
   useEffect(() => {
@@ -884,7 +939,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       }
     };
     loadCloudData();
-  }, [patient?.id]); 
+  }, [patient?.id, setTeeth, setTeethEvolucion]);
   
   const saveAllToCloud = async () => {
     setSaving(true);
@@ -914,7 +969,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     const cleanInicial = limpiarDientes(teeth);
     const cleanEvo = limpiarDientes(teethEvolucion);
     setTeeth(cleanInicial); setTeethEvolucion(cleanEvo);
-    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, odontograma: cleanInicial, evolucion: cleanEvo, anamnesis: anamnesisData, plan_tratamiento: plan, imagenes: imagenesList, periodontal: { diagnostico: periodontalDx } }, { onConflict: 'patient_id' });
+    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, odontograma: cleanInicial, evolucion: cleanEvo, anamnesis: anamnesisData, plan_tratamiento: plan, imagenes: imagenesList, periodontal: { diagnostico: periodontalDx } }, { onConflict: 'patient_id' });
     if (error) alert("Error al guardar: " + error.message);
     else alert("¡Datos guardados con éxito!");
     setSaving(false);
@@ -1150,7 +1205,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     const nuevaImagen = { type: 'Radiografía / Foto', date: new Date().toLocaleDateString('es-PE'), url: publicUrlData.publicUrl };
     const nuevaLista = [...imagenesList, nuevaImagen];
     setImagenesList(nuevaLista);
-    await supabase.from('historias').upsert({ patient_id: patient.id, imagenes: nuevaLista }, { onConflict: 'patient_id' });
+    await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, imagenes: nuevaLista }, { onConflict: 'patient_id' });
     setSaving(false);
     alert("¡Imagen subida y guardada correctamente!");
   };
@@ -1163,8 +1218,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       await supabase.storage.from('imagenes').remove([fileName]);
       const nuevaLista = imagenesList.filter((_, i) => i !== indexToDelete);
       setImagenesList(nuevaLista);
-      await supabase.from('historias').upsert({ patient_id: patient.id, imagenes: nuevaLista }, { onConflict: 'patient_id' });
-    } catch (error) { alert("Hubo un error al intentar eliminar la imagen."); } finally { setSaving(false); }
+      await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, imagenes: nuevaLista }, { onConflict: 'patient_id' });
+    } catch (err) { console.error(err); alert("Hubo un error al intentar eliminar la imagen."); } finally { setSaving(false); }
   };
 
   const handleAgregarNotaEvolucion = async () => {
@@ -1177,7 +1232,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       txt: nuevaNotaTexto.trim(),
     };
     const listaActualizada = [nuevaNota, ...notasEvolucion];
-    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, notas_evolucion: listaActualizada }, { onConflict: 'patient_id' });
+    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, notas_evolucion: listaActualizada }, { onConflict: 'patient_id' });
     if (error) { alert('Error al guardar la nota: ' + error.message); setSavingNota(false); return; }
     setNotasEvolucion(listaActualizada);
     setNuevaNotaTexto('');
@@ -1188,7 +1243,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     if (!window.confirm('¿Eliminar esta nota de evolución?')) return;
     const listaActualizada = notasEvolucion.filter(n => n.id !== id);
     setNotasEvolucion(listaActualizada);
-    await supabase.from('historias').upsert({ patient_id: patient.id, notas_evolucion: listaActualizada }, { onConflict: 'patient_id' });
+    await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, notas_evolucion: listaActualizada }, { onConflict: 'patient_id' });
   };
 
   const fechaLarga = () => new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -1196,7 +1251,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   const guardarRecetas = async (listaActualizada) => {
     setRecetas(listaActualizada);
     setSavingReceta(true);
-    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, receta: listaActualizada }, { onConflict: 'patient_id' });
+    const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, receta: listaActualizada }, { onConflict: 'patient_id' });
     if (error) alert('Error al guardar la receta: ' + error.message);
     setSavingReceta(false);
   };

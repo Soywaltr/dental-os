@@ -21,7 +21,7 @@ const cardStyle = {
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
 
-export default function Config() {
+export default function Config({ clinicaId }) {
   const [tab, setTab] = useState('generales');
 
   return (
@@ -37,7 +37,7 @@ export default function Config() {
 
       {tab === 'generales' && <Generales />}
       {tab === 'perfil' && <MiPerfil />}
-      {tab === 'integraciones' && <Integraciones />}
+      {tab === 'integraciones' && <Integraciones clinicaId={clinicaId} />}
     </div>
   );
 }
@@ -190,9 +190,9 @@ function MiPerfil() {
 }
 
 // ── INTEGRACIONES ────────────────────────────────────────────────────────────
-function Integraciones() {
-  const google = useGoogleCalendar();
-  const wa = useMetaWhatsApp();
+function Integraciones({ clinicaId }) {
+  const google = useGoogleCalendar(clinicaId);
+  const wa = useMetaWhatsApp(clinicaId);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>

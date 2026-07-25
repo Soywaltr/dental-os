@@ -7,14 +7,16 @@
 
 import React, {
   useState, useEffect, useReducer, useCallback,
-  useMemo, createContext, useContext, lazy, Suspense, memo,
+  useMemo, lazy, Suspense, memo,
 } from "react";
 import { supabase } from "./supabase";
 import Login from "./Login";
 import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
 import useResponsive from "./utils/useResponsive";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
+import useClinic from "./utils/useClinic";
 import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
+import { AppContext } from "./utils/appContext";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -25,10 +27,6 @@ const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
 const Reportes    = lazy(() => import("./components/vistas/Reportes"));
 const WhatsApp    = lazy(() => import("./components/vistas/WhatsApp"));
 const Config      = lazy(() => import("./components/vistas/Config"));
-
-// ─── CONTEXTO ─────────────────────────────────────────────────────────────────
-export const AppContext = createContext(null);
-export const useAppContext = () => useContext(AppContext);
 
 // ─── FONDO DECORATIVO (glassmorphism) ─────────────────────────────────────────
 // Compartido con Login.jsx vía utils/backdrop.js (evita import circular App<->Login).
@@ -91,14 +89,16 @@ function reducer(st, action) {
   switch (action.type) {
     case "SET_VIEW":        return { ...st, view: action.payload.view, selectedPat: action.payload.pat ?? st.selectedPat };
     case "SET_SUB_ACCOUNT": return { ...st, subAccount: action.payload };
-    case "SET_TEETH":
+    case "SET_TEETH": {
       // SOLUCIÓN: Si payload es una función, la ejecutamos pasando el estado anterior
       const newTeeth = typeof action.payload === 'function' ? action.payload(st.teeth) : action.payload;
       return { ...st, teeth: newTeeth };
-    case "SET_TEETH_EVO":
+    }
+    case "SET_TEETH_EVO": {
       // SOLUCIÓN: Igual para evolución
       const newTeethEvo = typeof action.payload === 'function' ? action.payload(st.teethEvolucion) : action.payload;
       return { ...st, teethEvolucion: newTeethEvo };
+    }
     case "SET_PATIENTS":    return { ...st, patientsList: action.payload };
     case "SET_SEARCH":      return { ...st, globalSearch: action.payload };
     case "TOGGLE_SIDEBAR":  return { ...st, sidebarCollapsed: !st.sidebarCollapsed };
@@ -110,7 +110,7 @@ function reducer(st, action) {
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 const jp = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } };
-const sp = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const sp = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* almacenamiento no disponible (privado/cuota llena) — se ignora */ } };
 
 // ─── HOOK SESIÓN ──────────────────────────────────────────────────────────────
 function useSession() {
@@ -254,7 +254,7 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
 
 // ─── COMPONENTE: SIDEBAR ─────────────────────────────────────────────────────
 const Sidebar = memo(({ state, dispatch, onLogout }) => {
-  const { sidebarCollapsed: col, view, subAccount, notifCount } = state;
+  const { sidebarCollapsed: col, view } = state;
   const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
   const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
   const W = col ? 60 : 220;
@@ -599,7 +599,7 @@ const Loader = () => (
   </div>
 );
 
-const ViewRouter = memo(({ state, dispatch }) => {
+const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaLoading }) => {
   // Aseguramos que si alguna vista vieja llama a 'historia', renderice 'expediente'
   const currentViewKey = state.view === 'historia' ? 'expediente' : state.view;
   const ActiveView = VIEWS[currentViewKey] ?? Dashboard;
@@ -612,11 +612,16 @@ const ViewRouter = memo(({ state, dispatch }) => {
   const setPatientsList   = useCallback(p      => dispatch({ type: "SET_PATIENTS", payload: p }), [dispatch]);
 
   // 2. Props globales (Se le pasan a todas las vistas por defecto)
+  // clinicaId: toda vista que inserte/lea datos de clínica lo necesita para
+  // cumplir con el RLS "clinic_isolation" recién aplicado en Supabase.
   const viewProps = {
     setView,
     setSelPat,
     patientsList: state.patientsList,
-    setPatientsList
+    setPatientsList,
+    clinicaId,
+    clinica,
+    clinicaLoading,
   };
 
   // 3. Props específicas para el Expediente Clínico (Historia)
@@ -672,7 +677,8 @@ export default function App() {
   const { session, loading, logout } = useSession();
   const [state, dispatch] = useReducer(reducer, INIT);
   const { isTablet } = useResponsive();
-  const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp();
+  const { clinicaId, clinica, loading: clinicaLoading } = useClinic();
+  const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp(clinicaId);
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
   // No pelea con un re-expandido manual del usuario mientras siga en ese ancho
@@ -682,13 +688,15 @@ export default function App() {
   }, [isTablet]);
 
   // Si Meta acaba de redirigir aquí tras el OAuth de WhatsApp Business
-  // (?code=...), procesa la conexión y regresa a Ajustes.
+  // (?code=...), procesa la conexión y regresa a Ajustes. Espera a que
+  // useClinic() resuelva la clínica (clinica_id es obligatorio al guardar).
   useEffect(() => {
+    if (clinicaLoading) return;
     handleMetaWhatsAppCallback().then(returnView => {
       if (returnView) dispatch({ type: "SET_VIEW", payload: { view: returnView } });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clinicaLoading]);
 
   useEffect(() => {
     dispatch({ type: "HYDRATE", payload: {
@@ -778,7 +786,7 @@ export default function App() {
           {/* Contenido */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "16px 16px 32px" : "24px 24px 48px", background: "transparent" }}>
             <div style={{ maxWidth: 1480, margin: "0 auto" }}>
-              <ViewRouter state={state} dispatch={dispatch} />
+              <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaLoading={clinicaLoading} />
             </div>
           </main>
         </div>

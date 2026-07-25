@@ -8,7 +8,7 @@ import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import { BD, P, GL, MU, DN, MT, LT, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
-export default function Agenda() {
+export default function Agenda({ clinicaId }) {
   const hours = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -17,7 +17,7 @@ export default function Agenda() {
   const [showModalCita, setShowModalCita] = useState(false);
   const [datosTemp, setDatosTemp] = useState(null);
 
-  const { token: googleToken, connect: login, disconnect: googleDisconnect } = useGoogleCalendar(async (accessToken) => {
+  const { token: googleToken, connect: login, disconnect: googleDisconnect } = useGoogleCalendar(clinicaId, async (accessToken) => {
     if (datosTemp) {
       await enviarAGoogleCalendar(accessToken, datosTemp);
       setDatosTemp(null);
@@ -201,7 +201,8 @@ export default function Agenda() {
       } else {
         await supabase.from('pacientes').insert([{
           name: nombreLimpio, doc: docLimpio, phone: cita.celular, reason: cita.motivo,
-          fecha: cita.fecha, hora_cita: cita.hora, tag: 'nuevo', google_event_id: googleEventId
+          fecha: cita.fecha, hora_cita: cita.hora, tag: 'nuevo', google_event_id: googleEventId,
+          clinica_id: clinicaId
         }]);
       }
 

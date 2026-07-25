@@ -2,7 +2,8 @@
 // Conexión de WhatsApp Business vía OAuth de Meta. El estado real (token,
 // negocios asociados) vive en Supabase (tabla `integraciones_whatsapp`), no en
 // localStorage, porque es una integración de todo el consultorio, no del
-// navegador de quien la conectó.
+// navegador de quien la conectó. Se filtra/etiqueta por `clinicaId` para que
+// dos clínicas nunca vean (ni puedan desconectar) el WhatsApp de la otra.
 //
 // Requiere, para funcionar de verdad:
 //  - META_APP_ID real en utils/constants.js (hoy es un placeholder).
@@ -16,22 +17,24 @@ import { META_APP_ID, META_OAUTH_SCOPE, META_OAUTH_STATE } from './constants';
 
 const RETURN_VIEW_KEY = 'dentalos_return_view';
 
-export default function useMetaWhatsApp() {
+export default function useMetaWhatsApp(clinicaId) {
   const [connection, setConnection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const cargar = useCallback(async () => {
+    if (!clinicaId) { setConnection(null); setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
       .from('integraciones_whatsapp')
       .select('*')
+      .eq('clinica_id', clinicaId)
       .order('updated_at', { ascending: false })
       .limit(1);
     if (!error) setConnection((data && data[0]) || null);
     setLoading(false);
-  }, []);
+  }, [clinicaId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -64,6 +67,7 @@ export default function useMetaWhatsApp() {
     sessionStorage.removeItem(RETURN_VIEW_KEY);
 
     if (!code || state !== META_OAUTH_STATE) return returnView;
+    if (!clinicaId) return returnView;
 
     window.history.replaceState({}, '', window.location.pathname);
     setConnecting(true);
@@ -77,7 +81,7 @@ export default function useMetaWhatsApp() {
       if (data?.error) throw new Error(data.error);
 
       const { error: dbError } = await supabase.from('integraciones_whatsapp').insert([{
-        access_token: data.accessToken, businesses: data.businesses || [], connected_at: new Date().toISOString(),
+        clinica_id: clinicaId, access_token: data.accessToken, businesses: data.businesses || [], connected_at: new Date().toISOString(),
       }]);
       if (dbError) throw dbError;
       await cargar();
@@ -87,7 +91,7 @@ export default function useMetaWhatsApp() {
       setConnecting(false);
     }
     return returnView;
-  }, [cargar]);
+  }, [cargar, clinicaId]);
 
   return { connection, connected: !!connection, loading, connecting, errorMsg, connect, disconnect, handleOAuthCallback };
 }

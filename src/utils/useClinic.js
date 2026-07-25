@@ -1,0 +1,39 @@
+// src/utils/useClinic.js
+// Resuelve a qué clínica pertenece el usuario logueado (tabla usuarios_clinica),
+// para que el resto de la app pueda filtrar/etiquetar cada consulta con clinica_id.
+// Si el usuario perteneciera a más de una clínica (caso futuro), hoy se toma la
+// primera — el selector de clínica activa queda fuera de esta fase.
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../supabase';
+
+export default function useClinic() {
+  const [clinicaId, setClinicaId] = useState(null);
+  const [clinica, setClinica] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  useEffect(() => {
+    const cargar = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setClinicaId(null); setClinica(null); setLoading(false); return; }
+
+      const { data, error } = await supabase
+        .from('usuarios_clinica')
+        .select('clinica_id, rol, clinicas ( id, nombre, direccion, telefono, email, cop, whatsapp_numero, logo_url )')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        setClinicaId(data[0].clinica_id);
+        setClinica(data[0].clinicas);
+      }
+      setLoading(false);
+    };
+    cargar();
+  }, [reloadTick]);
+
+  const refrescar = useCallback(() => setReloadTick(t => t + 1), []);
+
+  return { clinicaId, clinica, loading, refrescar };
+}
