@@ -156,23 +156,28 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const SARRO_DOTS = { 'Ninguno': 0, 'Gingivitis leve': 1, 'Gingivitis moderada': 2, 'Gingivitis severa': 3, 'Periodontitis': 4 };
   const sarroDots = SARRO_DOTS[periodontalDx] || 0;
 
-  const currentTeeth = mode === 'inicial' ? (teeth || {}) : (teethEvolucion || {});
+  // Odo. Evolución hereda por defecto los hallazgos de Odo. Inicial (misma pieza),
+  // para saber qué diente está por hacerse. Una pieza editada en evolución (aunque
+  // sea con el pincel "Normal") queda con su propia entrada, que ya no se pisa
+  // con lo de inicial.
+  const currentTeeth = mode === 'inicial' ? (teeth || {}) : { ...(teeth || {}), ...(teethEvolucion || {}) };
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
   const applyAll = n => {
-    if (act === 'normal') { 
+    if (act === 'normal') {
       setCurrentTeeth(p => {
         const next = { ...(p || {}) };
-        delete next[n];
+        if (mode === 'evolución') next[n] = {}; // override explícito: ya no hereda lo de inicial
+        else delete next[n];
         return next;
-      }); 
-      return; 
+      });
+      return;
     }
     const up = {};
     getSurfs(n).forEach(s => up[s] = act);
     setCurrentTeeth(p => {
       const safeP = p || {};
-      const currentPiece = safeP[n] || {};
+      const currentPiece = safeP[n] || currentTeeth[n] || {};
       // Borramos "todaPieza" si venía de Supabase para evitar conflictos con las caras
       const { todaPieza, ...rest } = currentPiece;
       return { ...safeP, [n]: { ...rest, ...up } };
@@ -183,15 +188,15 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const applySurf = (n, sf) => {
     setCurrentTeeth(p => {
       const safeP = p || {};
-      const currentPiece = safeP[n] || {};
-      
+      const currentPiece = safeP[n] || currentTeeth[n] || {};
+
       // ⚡ SOLUCIÓN AQUÍ: Si el diente venía guardado entero, lo desglosamos en 5 caras
       let expandedPiece = { ...currentPiece };
       if (expandedPiece.todaPieza) {
         getSurfs(n).forEach(s => expandedPiece[s] = expandedPiece.todaPieza);
         delete expandedPiece.todaPieza;
       }
-      
+
       const cur = expandedPiece[sf];
       if (act === 'normal' || cur === act) {
         delete expandedPiece[sf];
@@ -205,7 +210,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const toggleBadFlag = (n, sf) => {
     setCurrentTeeth(p => {
       const safeP = p || {};
-      const currentPiece = safeP[n] || {};
+      const currentPiece = safeP[n] || currentTeeth[n] || {};
 
       let expandedPiece = { ...currentPiece };
       if (expandedPiece.todaPieza) {
@@ -441,6 +446,48 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
             <button onClick={() => setSel(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 28, height: 28, fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
 
+          {mode === 'evolución' && (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Estado del tratamiento</div>
+              {itemsPieza.length === 0 ? (
+                <div style={{ fontSize: 11, color: MU, lineHeight: 1.5, background: MT, border: `1px solid ${BD}`, borderRadius: 8, padding: 10 }}>
+                  {allF.some(f => String(f.n) === String(sel)) ? (
+                    <>
+                      Esta pieza aún no tiene un tratamiento en el Plan.
+                      {onGenerarSugerencia && (
+                        <button onClick={onGenerarSugerencia}
+                          style={{ display: 'block', marginTop: 8, width: '100%', padding: '7px', background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                          Generar sugerencias del odontograma
+                        </button>
+                      )}
+                    </>
+                  ) : 'Marca un hallazgo en esta pieza para poder generar su tratamiento.'}
+                </div>
+              ) : itemsPieza.map(item => (
+                <div key={item.id} style={{ background: sc(item.status).bg, border: `1px solid ${sc(item.status).c}55`, borderRadius: 8, padding: '10px 12px', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: DN }}>{item.name}</div>
+                    <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 10, background: '#fff', color: sc(item.status).c, whiteSpace: 'nowrap' }}>
+                      {item.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  {item.status === 'pendiente' && (
+                    <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'en_curso' } : i))}
+                      style={{ marginTop: 8, width: '100%', padding: '7px', background: sc('en_curso').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                      Iniciar tratamiento
+                    </button>
+                  )}
+                  {item.status === 'en_curso' && (
+                    <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'completado' } : i))}
+                      style={{ marginTop: 8, width: '100%', padding: '7px', background: sc('completado').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                      Marcar como completado
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div style={{ fontSize: 10, color: MU, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase' }}>Vista Oclusal</div>
             <OcclusalMap num={sel} surfs={selSurfs} activeTool={act} onSurf={sf => applySurf(sel, sf)} size={160} />
@@ -481,50 +528,8 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           })}
 
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
-          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel]={}; next[sel].note = e.target.value; return next; })}
+          <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel] = JSON.parse(JSON.stringify(currentTeeth[sel] || {})); next[sel].note = e.target.value; return next; })}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
-
-          {mode === 'evolución' && (
-            <div style={{ marginTop: 15, paddingTop: 15, borderTop: `1px solid ${BD}` }}>
-              <div style={{ fontSize: 10, color: MU, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase' }}>Estado del tratamiento</div>
-              {itemsPieza.length === 0 ? (
-                <div style={{ fontSize: 11, color: MU, lineHeight: 1.5 }}>
-                  {allF.some(f => String(f.n) === String(sel)) ? (
-                    <>
-                      Esta pieza aún no tiene un tratamiento en el Plan.
-                      {onGenerarSugerencia && (
-                        <button onClick={onGenerarSugerencia}
-                          style={{ display: 'block', marginTop: 8, width: '100%', padding: '7px', background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
-                          Generar sugerencias del odontograma
-                        </button>
-                      )}
-                    </>
-                  ) : 'Marca un hallazgo en esta pieza para poder generar su tratamiento.'}
-                </div>
-              ) : itemsPieza.map(item => (
-                <div key={item.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: '8px 10px', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: DN }}>{item.name}</div>
-                    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: sc(item.status).bg, color: sc(item.status).c, whiteSpace: 'nowrap' }}>
-                      {item.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                  {item.status === 'pendiente' && (
-                    <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'en_curso' } : i))}
-                      style={{ marginTop: 6, width: '100%', padding: '6px', background: sc('en_curso').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
-                      Iniciar tratamiento
-                    </button>
-                  )}
-                  {item.status === 'en_curso' && (
-                    <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'completado' } : i))}
-                      style={{ marginTop: 6, width: '100%', padding: '6px', background: sc('completado').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
-                      Marcar como completado
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
       </div>
