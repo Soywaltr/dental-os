@@ -87,6 +87,16 @@ export default function Login({ onLogin }) {
     marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5,
   };
 
+  const logoMark = (size) => (
+    <div style={{ width: size, height: size, borderRadius: size * 0.26, background: GRAD_PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0, boxShadow: '0 8px 20px rgba(39,39,42,0.25)' }}>
+      <svg width={size * 0.52} height={size * 0.52} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
+        <path d="M2 12l10 5 10-5" />
+      </svg>
+    </div>
+  );
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', position: 'relative', overflow: 'hidden', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
       {/* Fondo decorativo compartido con el resto de la app */}
@@ -98,61 +108,65 @@ export default function Login({ onLogin }) {
 
       {/* PANEL IZQUIERDO — marca y propuesta de valor (oculto en tablet/iPad) */}
       {!isTablet && (
-        <div style={{ position: 'relative', zIndex: 1, flex: '1 1 50%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '64px 72px', maxWidth: 620, boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 11, background: GRAD_PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0, boxShadow: '0 8px 20px rgba(39,39,42,0.25)' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            </div>
+        <div style={{ position: 'relative', zIndex: 1, flex: '1 1 50%', display: 'flex', flexDirection: 'column', padding: '56px 72px', maxWidth: 640, boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {logoMark(42)}
             <span style={{ fontSize: 19, fontWeight: 800, color: DN, letterSpacing: '-0.4px' }}>DentalOS</span>
           </div>
 
-          <h1 style={{ fontSize: 36, fontWeight: 800, color: DN, margin: '0 0 14px', letterSpacing: '-1px', lineHeight: 1.15 }}>
-            Toda tu clínica,<br />en un solo lugar.
-          </h1>
-          <p style={{ fontSize: 15, color: MU, margin: '0 0 36px', lineHeight: 1.6, maxWidth: 440 }}>
-            Historias clínicas, agenda, finanzas y comunicación con pacientes,
-            todo conectado en una sola plataforma diseñada para consultorios dentales.
-          </p>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h1 style={{ fontSize: 54, fontWeight: 800, color: DN, margin: '0 0 20px', letterSpacing: '-1.5px', lineHeight: 1.08 }}>
+              Toda tu<br />clínica, en un<br />solo lugar.
+            </h1>
+            <p style={{ fontSize: 16, color: MU, margin: '0 0 40px', lineHeight: 1.6, maxWidth: 440 }}>
+              Historias clínicas, agenda, finanzas y comunicación con pacientes,
+              todo conectado en una sola plataforma diseñada para consultorios dentales.
+            </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {FEATURES.map(f => (
-              <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,0.6)', border: GLASS_BORDER, display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
-                  <Icon name={f.icon} size={15} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {FEATURES.map(f => (
+                <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.6)', border: GLASS_BORDER, display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
+                    <Icon name={f.icon} size={16} />
+                  </div>
+                  <span style={{ fontSize: 14.5, color: DN, fontWeight: 500 }}>{f.text}</span>
                 </div>
-                <span style={{ fontSize: 13.5, color: DN, fontWeight: 500 }}>{f.text}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          <p style={{ margin: 0, fontSize: 12.5, color: MU, fontWeight: 500 }}>
+            Consultorio Dra. Sol Vargas · Trujillo, Perú
+          </p>
         </div>
       )}
 
-      {/* PANEL DERECHO — formulario */}
-      <div style={{ position: 'relative', zIndex: 1, flex: isTablet ? '1 1 100%' : '0 0 480px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
-        <div style={{
-          width: '100%', maxWidth: 400, padding: '40px 36px', borderRadius: 20,
-          background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-          border: GLASS_BORDER, boxShadow: GLASS_SHADOW, boxSizing: 'border-box',
-        }}>
-          {isTablet && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 28 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: GRAD_PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <span style={{ fontSize: 17, fontWeight: 800, color: DN, letterSpacing: '-0.3px' }}>DentalOS</span>
-            </div>
-          )}
+      {/* PANEL DERECHO — formulario, en su propio panel de cristal a todo lo alto */}
+      <div style={{
+        position: 'relative', zIndex: 1, flex: isTablet ? '1 1 100%' : '0 0 520px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '56px 40px', boxSizing: 'border-box',
+        background: isTablet ? 'transparent' : GLASS_BG,
+        backdropFilter: isTablet ? 'none' : GLASS_BLUR, WebkitBackdropFilter: isTablet ? 'none' : GLASS_BLUR,
+        borderLeft: isTablet ? 'none' : GLASS_BORDER,
+      }}>
+        <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        {isTablet && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 28 }}>
+            {logoMark(36)}
+            <span style={{ fontSize: 17, fontWeight: 800, color: DN, letterSpacing: '-0.3px' }}>DentalOS</span>
+          </div>
+        )}
 
+        <div style={{
+          width: '100%', maxWidth: 380, padding: isTablet ? '36px 32px' : 0, borderRadius: 20,
+          background: isTablet ? GLASS_BG : 'transparent',
+          backdropFilter: isTablet ? GLASS_BLUR : 'none', WebkitBackdropFilter: isTablet ? GLASS_BLUR : 'none',
+          border: isTablet ? GLASS_BORDER : 'none', boxShadow: isTablet ? GLASS_SHADOW : 'none',
+          boxSizing: 'border-box',
+        }}>
           <div style={{ marginBottom: 30 }}>
-            <h2 style={{ margin: '0 0 4px', color: DN, fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
+            <h2 style={{ margin: '0 0 6px', color: DN, fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>
               {isRegistering ? 'Crear cuenta' : 'Bienvenida de nuevo'}
             </h2>
             <p style={{ margin: 0, color: MU, fontSize: 13.5 }}>
@@ -251,6 +265,11 @@ export default function Login({ onLogin }) {
           </div>
           */}
         </div>
+        </div>
+
+        <p style={{ margin: 0, fontSize: 12, color: MU, textAlign: 'center', maxWidth: 340 }}>
+          Tus datos están cifrados y respaldados en la nube.
+        </p>
       </div>
     </div>
   );
