@@ -44,6 +44,27 @@ export const baseId = v => isBad(v) ? v.slice(0, -BAD_SUFFIX.length) : v;
 
 export const gt = id => TOOLS.find(t => t.id === baseId(id)) || TOOLS[0];
 
+// Estado del paciente, derivado de fechas reales (no un campo fijo que nunca se actualiza):
+// Nuevo = registrado hace ≤30 días · Inactivo = sin cita hace más de 6 meses.
+const DIAS_NUEVO = 30;
+const MESES_INACTIVO = 6;
+
+export const estadoPaciente = (p) => {
+  const hoy = new Date();
+
+  if (p.created_at) {
+    const dias = (hoy - new Date(p.created_at)) / 86400000;
+    if (dias >= 0 && dias <= DIAS_NUEVO) return 'nuevo';
+  }
+
+  if (p.fecha) {
+    const meses = (hoy - new Date(p.fecha)) / (86400000 * 30);
+    if (meses > MESES_INACTIVO) return 'inactivo';
+  }
+
+  return 'activo';
+};
+
 export const getPreamble = (p) => {
   if (!p) return "";
   const isMinor = parseInt(p.age) < 18;

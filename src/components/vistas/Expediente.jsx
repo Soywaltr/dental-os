@@ -10,7 +10,7 @@ import { supabase } from '../../supabase';
 import Historia from './Historia';
 import Modal from '../ui/Modal';
 import { BD, P, DN, MU } from '../../utils/constants';
-import { normalizarTexto, ini, findPatientByDoc, findPatientByName } from '../../utils/helpers';
+import { normalizarTexto, ini, findPatientByDoc, findPatientByName, estadoPaciente } from '../../utils/helpers';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
 const C = {
@@ -185,29 +185,6 @@ function usePatientForm(patientsList) {
 
   return { form, setForm, handleDocChange, handleNombreChange, handleBirthDate, reset };
 }
-
-// ─── ESTADO DEL PACIENTE (derivado, no un campo fijo) ────────────────────────
-// El campo "tag" quedaba en 'nuevo' para siempre porque nada lo actualizaba
-// después del registro. Ahora el estado se calcula desde fechas reales:
-// Nuevo = registrado hace ≤30 días · Inactivo = sin cita hace más de 6 meses.
-const DIAS_NUEVO = 30;
-const MESES_INACTIVO = 6;
-
-const estadoPaciente = (p) => {
-  const hoy = new Date();
-
-  if (p.created_at) {
-    const dias = (hoy - new Date(p.created_at)) / 86400000;
-    if (dias >= 0 && dias <= DIAS_NUEVO) return 'nuevo';
-  }
-
-  if (p.fecha) {
-    const meses = (hoy - new Date(p.fecha)) / (86400000 * 30);
-    if (meses > MESES_INACTIVO) return 'inactivo';
-  }
-
-  return 'activo';
-};
 
 // ─── SUB-COMPONENTE: FILTROS ──────────────────────────────────────────────────
 const FilterPills = memo(({ active, onChange }) => (
