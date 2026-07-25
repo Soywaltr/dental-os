@@ -17,7 +17,7 @@ export default function Agenda({ clinicaId }) {
   const [showModalCita, setShowModalCita] = useState(false);
   const [datosTemp, setDatosTemp] = useState(null);
 
-  const { token: googleToken, connect: login, disconnect: googleDisconnect } = useGoogleCalendar(clinicaId, async (accessToken) => {
+  const { connected: googleConnected, connect: login, disconnect: googleDisconnect, getToken } = useGoogleCalendar(clinicaId, async (accessToken) => {
     if (datosTemp) {
       await enviarAGoogleCalendar(accessToken, datosTemp);
       setDatosTemp(null);
@@ -38,6 +38,7 @@ export default function Agenda({ clinicaId }) {
       if (error) { console.error("Error cargando Supabase:", error); return; }
 
       let externalGoogleApts = [];
+      const googleToken = googleConnected ? await getToken() : null;
       if (googleToken) {
         try {
           const timeMin = new Date(); timeMin.setDate(timeMin.getDate() - 30);
@@ -63,6 +64,8 @@ export default function Agenda({ clinicaId }) {
                 };
               }).filter(Boolean);
           } else if (res.status === 401) {
+            // getToken() ya renovó el token antes de esta llamada — un 401 aquí
+            // significa que el usuario revocó el acceso desde su cuenta de Google.
             googleDisconnect();
           }
         } catch (e) { console.error("Error conectando a Google:", e); }
@@ -114,7 +117,7 @@ export default function Agenda({ clinicaId }) {
     };
 
     fetchData();
-  }, [currentDate, view, googleToken, googleDisconnect]);
+  }, [currentDate, view, googleConnected, getToken, googleDisconnect]);
 
   const handleNext = () => {
     const next = new Date(currentDate);
@@ -155,12 +158,13 @@ export default function Agenda({ clinicaId }) {
 
   const displayDays = view === 'Semana' ? getWeekDays() : view === 'Día' ? [currentDate] : getMonthDays();
 
-  const handleGuardarCita = (datosCita) => {
+  const handleGuardarCita = async (datosCita) => {
     const isOccupied = allApts.some(cita => cita.fecha === datosCita.fecha && cita.hora_cita === datosCita.hora);
     if (isOccupied) {
       alert("⚠️ Ese horario ya está ocupado. Por favor, elige otra fecha u hora para la cita.");
       return;
     }
+    const googleToken = googleConnected ? await getToken() : null;
     if (googleToken) enviarAGoogleCalendar(googleToken, datosCita);
     else { setDatosTemp(datosCita); login(); }
   };
@@ -230,6 +234,7 @@ export default function Agenda({ clinicaId }) {
       if (error) { alert('Error: ' + error.message); setSavingEdit(false); return; }
     }
 
+    const googleToken = googleConnected ? await getToken() : null;
     if (googleToken && selectedCita.google_event_id) {
       try {
         const startDateTime = `${selectedCita.fecha}T${selectedCita.hora_cita}:00-05:00`;
@@ -253,6 +258,7 @@ export default function Agenda({ clinicaId }) {
     if (!window.confirm(`¿Estás seguro de que deseas eliminar la cita de ${selectedCita.name}?`)) return;
     setSavingEdit(true);
     try {
+      const googleToken = googleConnected ? await getToken() : null;
       if (googleToken && selectedCita.google_event_id) {
         await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${selectedCita.google_event_id}`, {
           method: 'DELETE', headers: { 'Authorization': `Bearer ${googleToken}` }
@@ -291,7 +297,7 @@ export default function Agenda({ clinicaId }) {
           <option value="Mensual">Vista mensual</option>
         </select>
 
-        {!googleToken && (
+        {!googleConnected && (
           <button onClick={() => login()} style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
             Sincronizar Google
           </button>
