@@ -2,7 +2,7 @@
 import React from 'react';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
-import { BD, DN, MU, MT } from '../../utils/constants';
+import { BD, DN, MU, MT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 export default function Config() {
   return (
@@ -14,7 +14,7 @@ export default function Config() {
           { title: 'WhatsApp IA — Agente Nanda', fields: [['Número WA', '+51 915 054 145'], ['Nombre del agente', 'Nanda'], ['Recordatorio (horas antes)', '24h y 1h'], ['Auto-respuesta', 'Activada']] },
           { title: 'Notificaciones', fields: [['Nuevas citas', 'Email + WhatsApp'], ['Pagos recibidos', 'Email'], ['Laboratorio listo', 'WhatsApp'], ['Ausencias', 'WhatsApp']] },
         ].map((sec, si) => (
-          <div key={si} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 17 }}>
+          <div key={si} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 17, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${MT}` }}>{sec.title}</div>
             {sec.fields.map(([k, v]) => (
               <div key={k} style={{ marginBottom: 10 }}>

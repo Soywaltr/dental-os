@@ -6,7 +6,7 @@ import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import Modal from '../ui/Modal';
 import Icon from '../ui/Icon';
-import { BD, P, DN, MU, MT, RJ } from '../../utils/constants';
+import { BD, P, DN, MU, MT, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 const ESTADO_COLOR = {
   en_proceso: { bg: '#fef3c7', c: '#d97706' },
@@ -110,7 +110,7 @@ export default function Laboratorio() {
           {orders.map(o => {
             const b = ESTADO_COLOR[o.status] || ESTADO_COLOR.en_proceso;
             return (
-              <div key={o.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <div key={o.id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>{o.type}</div>
                   <div style={{ fontSize: 10, color: MU }}>Paciente: {o.patient_name} · Pieza: {o.tooth}</div>

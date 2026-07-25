@@ -6,7 +6,7 @@ import ModalNuevaCita from '../ui/ModalNuevaCita';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
-import { BD, P, GL, MU, DN, MT, LT, RJ } from '../../utils/constants';
+import { BD, P, GL, MU, DN, MT, LT, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 export default function Agenda() {
   const hours = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
@@ -309,7 +309,7 @@ export default function Agenda() {
         </Button>
       </div>
 
-      <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
 
         <div style={{ display: 'grid', gridTemplateColumns: view === 'Mensual' ? 'repeat(7, 1fr)' : `50px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, background: LT }}>
           {view !== 'Mensual' && <div style={{ padding: 4 }} />}

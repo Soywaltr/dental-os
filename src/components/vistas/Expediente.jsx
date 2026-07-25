@@ -9,7 +9,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '../../supabase';
 import Historia from './Historia';
 import Modal from '../ui/Modal';
-import { BD, P, DN, MU } from '../../utils/constants';
+import { BD, P, DN, MU, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { normalizarTexto, ini, findPatientByDoc, findPatientByName, estadoPaciente } from '../../utils/helpers';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
@@ -530,10 +530,12 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
       <aside style={{
         width: 300, minWidth: 280,
         display: 'flex', flexDirection: 'column',
-        background: C.surface,
+        background: GLASS_BG,
+        backdropFilter: GLASS_BLUR,
+        WebkitBackdropFilter: GLASS_BLUR,
         borderRadius: C.rx,
-        border: `1px solid ${C.border}`,
-        boxShadow: C.shadowSm,
+        border: GLASS_BORDER,
+        boxShadow: GLASS_SHADOW,
         overflow: 'hidden',
         flexShrink: 0,
       }}>
@@ -629,10 +631,12 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
       {/* ─── PANEL DERECHO: EXPEDIENTE ACTIVO ─── */}
       <main style={{
         flex: 1, minWidth: 0,
-        background: C.surface,
+        background: GLASS_BG,
+        backdropFilter: GLASS_BLUR,
+        WebkitBackdropFilter: GLASS_BLUR,
         borderRadius: C.rx,
-        border: `1px solid ${C.border}`,
-        boxShadow: C.shadowSm,
+        border: GLASS_BORDER,
+        boxShadow: GLASS_SHADOW,
         overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
       }}>

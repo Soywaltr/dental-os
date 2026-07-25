@@ -1,9 +1,9 @@
 // src/components/ui/Button.jsx
 import React from 'react';
-import { P } from '../../utils/constants';
+import { GRAD_PRIMARY } from '../../utils/constants';
 
 const VARIANTS = {
-  primary: { background: P, color: '#fff' },
+  primary: { background: GRAD_PRIMARY, color: '#fff', boxShadow: '0 4px 14px rgba(79,124,255,0.35)' },
   secondary: { background: '#f1f5f9', color: '#64748b' },
   danger: { background: '#fef2f2', color: '#ef4444' },
 };

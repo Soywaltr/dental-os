@@ -27,6 +27,16 @@ export const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 // Paleta Ultra-Limpia
 export const P = '#0ea5e9', PD = '#0284c7', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
 
+// Glassmorphism — superficies de vidrio esmerilado reutilizadas en tarjetas y paneles.
+// Los colores clínicos/semánticos de arriba (RJ, AZ, WA, GL) no cambian: sólo el "chrome"
+// estructural (fondos, tarjetas, botones primarios) adopta este tratamiento.
+export const GLASS_BG = 'rgba(255,255,255,0.55)';
+export const GLASS_BLUR = 'blur(18px)';
+export const GLASS_BORDER = '1px solid rgba(255,255,255,0.6)';
+export const GLASS_SHADOW = '0 20px 50px rgba(15,23,42,0.08)';
+export const GRAD_PRIMARY = 'linear-gradient(135deg, #4f7cff 0%, #7c5cfa 100%)';
+export const GRAD_SUCCESS = 'linear-gradient(135deg, #14b8a6 0%, #22d3aa 100%)';
+
 export const PATIENTS = [
   { id: 1, name: 'María López', age: 32, phone: '+51 987 654 321', email: 'maria@gmail.com', tag: 'activo', treatment: 'Ortodoncia', nextVisit: 'Hoy 9:00', since: '2023', balance: 0, doc: '72345678', blood: 'O+', allergies: 'Ninguna', meds: 'Ninguno' },
   { id: 2, name: 'Juan Ramírez', age: 28, phone: '+51 976 543 210', email: 'juan@gmail.com', tag: 'nuevo', treatment: 'Limpieza', nextVisit: 'Hoy 10:30', since: '2025', balance: 80, doc: '87654321', blood: 'A+', allergies: 'Penicilina', meds: 'Ninguno' },

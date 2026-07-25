@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { supabase } from "./supabase";
 import Login from "./Login";
-import { PATIENTS } from "./utils/constants";
+import { PATIENTS, GRAD_PRIMARY } from "./utils/constants";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -35,12 +35,23 @@ const BACKDROP_SVG = encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0a2540"/>
-      <stop offset="45%" stop-color="#0d3f66"/>
-      <stop offset="100%" stop-color="#0ea5e9"/>
+      <stop offset="0%" stop-color="#111133"/>
+      <stop offset="30%" stop-color="#33266b"/>
+      <stop offset="62%" stop-color="#3452a8"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
     </linearGradient>
+    <radialGradient id="g2" cx="25%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#7c5cfa" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7c5cfa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g3" cx="80%" cy="75%" r="55%">
+      <stop offset="0%" stop-color="#22d3aa" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#22d3aa" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="1600" height="1000" fill="url(#g)"/>
+  <rect width="1600" height="1000" fill="url(#g2)"/>
+  <rect width="1600" height="1000" fill="url(#g3)"/>
   <g fill="#ffffff" opacity="0.12">
     <path transform="translate(140,120) scale(3.4) rotate(-14)" d="${DENTAL_TOOTH_PATH}"/>
     <path transform="translate(1120,80) scale(4.6) rotate(20)" d="${DENTAL_TOOTH_PATH}"/>
@@ -56,7 +67,7 @@ const BACKDROP_IMAGE_URL = `url("data:image/svg+xml,${BACKDROP_SVG}")`;
 const C = {
   // Fondos
   sidebarBg:   "rgba(255,255,255,0.55)",
-  pageBg:      "#0a2540",
+  pageBg:      "#171740",
   cardBg:      "rgba(255,255,255,0.55)",
   hoverBg:     "rgba(15,23,42,0.06)",
   activeBg:    "rgba(238,242,255,0.75)",
@@ -301,7 +312,7 @@ const Sidebar = memo(({ state, dispatch, onLogout }) => {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
               width: 30, height: 30, borderRadius: 8,
-              background: C.brand,
+              background: GRAD_PRIMARY,
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "#fff", flexShrink: 0,
             }}>
@@ -554,11 +565,12 @@ const PrimaryBtn = memo(({ children, onClick }) => {
       style={{
         display: "flex", alignItems: "center", gap: 5,
         padding: "6px 14px", borderRadius: C.r, border: "none",
-        background: hov ? C.brandHov : C.brand,
+        background: GRAD_PRIMARY,
+        opacity: hov ? 0.9 : 1,
         color: "#fff", fontSize: 13, fontWeight: 600,
         fontFamily: C.font, cursor: "pointer", outline: "none",
-        transition: "background 0.12s",
-        boxShadow: C.shadowSm,
+        transition: "opacity 0.12s",
+        boxShadow: "0 4px 14px rgba(79,124,255,0.35)",
         letterSpacing: "-0.1px",
       }}
     >
@@ -667,7 +679,7 @@ const Splash = () => (
     }} />
     <div style={{
       position: "relative", zIndex: 1,
-      width: 48, height: 48, borderRadius: 14, background: C.brand,
+      width: 48, height: 48, borderRadius: 14, background: GRAD_PRIMARY,
       display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
       animation: "pulse 1.5s ease-in-out infinite",
       boxShadow: `0 8px 24px rgba(79,70,229,0.3)`,

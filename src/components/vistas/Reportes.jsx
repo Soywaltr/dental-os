@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Stat from '../ui/Stat';
 import Icon from '../ui/Icon';
-import { BD, P, PD, GL, MU, DN, MT, WA, AZ, RJ } from '../../utils/constants';
+import { BD, P, PD, GL, MU, DN, MT, WA, AZ, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { sc, estadoPaciente } from '../../utils/helpers';
 
 // Paleta categórica validada (contraste + separación CVD) para identidad de tratamientos.
@@ -127,7 +127,7 @@ export default function Reportes() {
     .sort((a, b) => b.saldo - a.saldo)
     .slice(0, 5);
 
-  const cardStyle = { background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 18 };
+  const cardStyle = { background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW };
   const sectionTitle = { fontWeight: 700, fontSize: 13, color: DN, marginBottom: 14 };
 
   return (

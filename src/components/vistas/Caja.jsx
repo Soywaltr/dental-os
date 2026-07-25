@@ -6,7 +6,7 @@ import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import Modal from '../ui/Modal';
 import Icon from '../ui/Icon';
-import { BD, P, GL, MU, DN, MT, LT, WA, RJ } from '../../utils/constants';
+import { BD, P, GL, MU, DN, MT, LT, WA, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { sc } from '../../utils/helpers';
 
 const METODOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
@@ -197,7 +197,7 @@ export default function Caja() {
             Aún no hay tratamientos facturados. Se agregan desde la pestaña "Plan trat." de cada paciente.
           </div>
         ) : (
-          <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead><tr style={{ background: LT }}>
                 {['Paciente', 'Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 10, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
@@ -232,7 +232,7 @@ export default function Caja() {
       )}
 
       {tab === 'pagos' && (
-        <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 18 }}>
+        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: DN, marginBottom: 12 }}>Registrar nuevo pago</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 500 }}>
             <div>
@@ -280,7 +280,7 @@ export default function Caja() {
       )}
 
       {tab === 'gastos' && (
-        <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, padding: 18 }}>
+        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: DN }}>Gastos del consultorio</div>
             <div style={{ fontSize: 11, color: MU }}>Total del mes: <b style={{ color: DN }}>S/{totalGastosMes.toLocaleString()}</b></div>
