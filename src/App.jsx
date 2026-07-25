@@ -35,23 +35,23 @@ const BACKDROP_SVG = encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#d7e6e1"/>
-      <stop offset="45%" stop-color="#c8d9d5"/>
-      <stop offset="100%" stop-color="#8fb8a8"/>
+      <stop offset="0%" stop-color="#f2f3f2"/>
+      <stop offset="45%" stop-color="#e1e4e1"/>
+      <stop offset="100%" stop-color="#c4cac6"/>
     </linearGradient>
     <radialGradient id="g2" cx="25%" cy="20%" r="60%">
-      <stop offset="0%" stop-color="#dff2b0" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#dff2b0" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#e8ece6" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#e8ece6" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="g3" cx="80%" cy="75%" r="55%">
-      <stop offset="0%" stop-color="#6fd6ab" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#6fd6ab" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#b7c1bb" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#b7c1bb" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1600" height="1000" fill="url(#g)"/>
   <rect width="1600" height="1000" fill="url(#g2)"/>
   <rect width="1600" height="1000" fill="url(#g3)"/>
-  <g fill="#4caf7d" opacity="0.14">
+  <g fill="#8a908c" opacity="0.12">
     <path transform="translate(140,120) scale(3.4) rotate(-14)" d="${DENTAL_TOOTH_PATH}"/>
     <path transform="translate(1120,80) scale(4.6) rotate(20)" d="${DENTAL_TOOTH_PATH}"/>
     <path transform="translate(760,560) scale(6.2) rotate(-6)" d="${DENTAL_TOOTH_PATH}"/>
@@ -66,23 +66,23 @@ const BACKDROP_IMAGE_URL = `url("data:image/svg+xml,${BACKDROP_SVG}")`;
 const C = {
   // Fondos
   sidebarBg:   "rgba(255,255,255,0.6)",
-  pageBg:      "#c8d9d5",
+  pageBg:      "#e1e4e1",
   cardBg:      "rgba(255,255,255,0.6)",
   hoverBg:     "rgba(15,23,42,0.05)",
-  activeBg:    "rgba(227,243,236,0.75)",
+  activeBg:    "rgba(240,240,239,0.85)",
   glassBlur:   "blur(20px)",
   glassBorder: "1px solid rgba(255,255,255,0.7)",
-  glassShadow: "0 8px 32px rgba(16,120,80,0.10)",
+  glassShadow: "0 8px 32px rgba(30,35,33,0.10)",
   // Texto
   ink:         "#111827",
   inkMid:      "#4B5563",
   inkMute:     "#9CA3AF",
   inkFaint:    "#D1D5DB",
   // Acento
-  brand:       "#2f9d76",
-  brandHov:    "#1f7a5a",
-  brandSoft:   "#e3f3ec",
-  brandText:   "#1f7a5a",
+  brand:       "#404040",
+  brandHov:    "#262626",
+  brandSoft:   "#f1f1f0",
+  brandText:   "#262626",
   // Semánticos
   green:       "#10B981",
   greenSoft:   "#D1FAE5",

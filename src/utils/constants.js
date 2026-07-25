@@ -25,7 +25,13 @@ export const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/cal
 export const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 // Paleta Ultra-Limpia
-export const P = '#2f9d76', PD = '#1f7a5a', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
+export const P = '#404040', PD = '#262626', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
+
+// Color dedicado para paletas categóricas de datos (ej. gráficos de Analítica), separado
+// de P: P es ahora un gris neutro de marca/chrome y no pasa el piso de croma de una
+// paleta categórica (leería como "sin color"). Validado con validate_palette.js junto a
+// GL/AZ/WA/RJ.
+export const CAT_ACCENT = '#7c3aed';
 
 // Glassmorphism — superficies de vidrio esmerilado reutilizadas en tarjetas y paneles.
 // Los colores clínicos/semánticos de arriba (RJ, AZ, WA, GL) no cambian: sólo el "chrome"
@@ -33,9 +39,9 @@ export const P = '#2f9d76', PD = '#1f7a5a', DN = '#0f172a', LT = '#ffffff', MT =
 export const GLASS_BG = 'rgba(255,255,255,0.55)';
 export const GLASS_BLUR = 'blur(18px)';
 export const GLASS_BORDER = '1px solid rgba(255,255,255,0.6)';
-export const GLASS_SHADOW = '0 20px 50px rgba(16,120,80,0.08)';
-export const GRAD_PRIMARY = 'linear-gradient(135deg, #6fae9d 0%, #356b5a 100%)';
-export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(53,107,90,0.35)';
+export const GLASS_SHADOW = '0 20px 50px rgba(30,35,33,0.08)';
+export const GRAD_PRIMARY = 'linear-gradient(135deg, #52525b 0%, #27272a 100%)';
+export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(39,39,42,0.35)';
 export const GRAD_SUCCESS = 'linear-gradient(135deg, #14b8a6 0%, #22d3aa 100%)';
 
 export const PATIENTS = [
