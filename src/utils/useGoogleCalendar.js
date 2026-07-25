@@ -88,8 +88,7 @@ export default function useGoogleCalendar(clinicaId, onConnected) {
   });
 
   // Devuelve un access_token vigente, renovándolo primero si está por vencer.
-  // Devuelve null si no hay conexión, o si la renovación falla (ej. el usuario
-  // revocó el acceso desde su cuenta de Google) — en ese caso desconecta.
+  // Devuelve null si no hay conexión o si la renovación falla.
   const getToken = useCallback(async () => {
     const fila = filaRef.current;
     if (!fila || !fila.refresh_token) return null;
@@ -101,7 +100,10 @@ export default function useGoogleCalendar(clinicaId, onConnected) {
       body: { action: 'refresh', refreshToken: fila.refresh_token },
     });
     if (error || data?.error || !data?.access_token) {
-      await disconnect();
+      // Solo se borra la conexión guardada si Google dice que el permiso ya no
+      // sirve ('invalid_grant': revocado o expirado). Ante un fallo pasajero
+      // (red, Edge Function caída) se deja la fila intacta y se reintenta luego.
+      if (data?.error_code === 'invalid_grant') await disconnect();
       return null;
     }
 

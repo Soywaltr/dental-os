@@ -52,7 +52,16 @@ serve(async (req: Request) => {
     })
     const tokenData = await tokenRes.json()
     if (!tokenRes.ok || !tokenData.access_token) {
-      throw new Error(tokenData.error_description || tokenData.error || 'Google rechazó la solicitud de token.')
+      // Se devuelve el código crudo de Google además del mensaje: el cliente
+      // distingue 'invalid_grant' (permiso revocado — hay que reconectar) de un
+      // fallo pasajero, para no borrar la conexión guardada por un error de red.
+      return new Response(
+        JSON.stringify({
+          error: tokenData.error_description || tokenData.error || 'Google rechazó la solicitud de token.',
+          error_code: tokenData.error || null,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      )
     }
 
     return new Response(
