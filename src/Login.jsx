@@ -5,15 +5,14 @@ import Icon from './components/ui/Icon';
 import { BACKDROP_IMAGE_URL } from './utils/backdrop';
 import useResponsive from './utils/useResponsive';
 import {
-  P, DN, MU, BD, MT, RJ,
-  GRAD_PRIMARY, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW,
+  P, DN, MU, RJ,
+  GRAD_PRIMARY, GLASS_BLUR, GLASS_BORDER,
 } from './utils/constants';
 
 const FEATURES = [
   { icon: 'document', text: 'Historia clínica y odontograma digital' },
   { icon: 'clock', text: 'Agenda con recordatorios automáticos' },
-  { icon: 'trendingUp', text: 'Finanzas y analítica del consultorio en tiempo real' },
-  { icon: 'chat', text: 'Comunicación con pacientes desde un solo lugar' },
+  { icon: 'trendingUp', text: 'Finanzas y analítica en tiempo real' },
 ];
 
 export default function Login({ onLogin }) {
@@ -75,16 +74,21 @@ export default function Login({ onLogin }) {
     setLoading(false);
   };
 
-  const inputStyle = (focused) => ({
-    width: '100%', padding: '13px 14px', border: `1.5px solid ${focused ? P : BD}`,
-    borderRadius: 10, fontSize: 14, boxSizing: 'border-box', outline: 'none',
-    transition: 'border-color 0.15s, box-shadow 0.15s', backgroundColor: '#fff', color: DN,
-    boxShadow: focused ? `0 0 0 3px ${P}22` : 'none',
+  // Campo "flotante": una sola cápsula de cristal con el label arriba y el
+  // input transparente adentro, sin tarjeta contenedora ni fondo sólido.
+  const glassField = (focused) => ({
+    background: 'rgba(255,255,255,0.4)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
+    border: `1.5px solid ${focused ? P : 'rgba(255,255,255,0.7)'}`, borderRadius: 14,
+    padding: '10px 16px', boxShadow: focused ? `0 0 0 3px ${P}22` : '0 4px 16px rgba(30,35,33,0.06)',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
   });
-
-  const labelStyle = {
-    display: 'block', fontSize: 11.5, color: MU, fontWeight: 700,
-    marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5,
+  const fieldLabelStyle = {
+    display: 'block', fontSize: 10.5, color: MU, fontWeight: 700,
+    marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5,
+  };
+  const bareInputStyle = {
+    width: '100%', border: 'none', background: 'transparent', outline: 'none',
+    fontSize: 15, color: DN, padding: 0, fontFamily: 'inherit',
   };
 
   const logoMark = (size) => (
@@ -98,85 +102,73 @@ export default function Login({ onLogin }) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', position: 'relative', overflow: 'hidden', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
-      {/* Fondo decorativo compartido con el resto de la app */}
+    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+      {/* Fondo decorativo compartido con el resto de la app — un solo lienzo, sin panel dividido */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0,
         backgroundImage: BACKDROP_IMAGE_URL, backgroundSize: 'cover', backgroundPosition: 'center',
         filter: 'blur(50px)', transform: 'scale(1.15)',
       }} />
 
-      {/* PANEL IZQUIERDO — marca y propuesta de valor (oculto en tablet/iPad) */}
-      {!isTablet && (
-        <div style={{ position: 'relative', zIndex: 1, flex: '1 1 50%', display: 'flex', flexDirection: 'column', padding: '56px 72px', maxWidth: 640, boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {logoMark(42)}
-            <span style={{ fontSize: 19, fontWeight: 800, color: DN, letterSpacing: '-0.4px' }}>DentalOS</span>
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <h1 style={{ fontSize: 54, fontWeight: 800, color: DN, margin: '0 0 20px', letterSpacing: '-1.5px', lineHeight: 1.08 }}>
-              Toda tu<br />clínica, en un<br />solo lugar.
-            </h1>
-            <p style={{ fontSize: 16, color: MU, margin: '0 0 40px', lineHeight: 1.6, maxWidth: 440 }}>
-              Historias clínicas, agenda, finanzas y comunicación con pacientes,
-              todo conectado en una sola plataforma diseñada para consultorios dentales.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {FEATURES.map(f => (
-                <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.6)', border: GLASS_BORDER, display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
-                    <Icon name={f.icon} size={16} />
-                  </div>
-                  <span style={{ fontSize: 14.5, color: DN, fontWeight: 500 }}>{f.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p style={{ margin: 0, fontSize: 12.5, color: MU, fontWeight: 500 }}>
-            Consultorio Dra. Sol Vargas · Trujillo, Perú
-          </p>
-        </div>
-      )}
-
-      {/* PANEL DERECHO — formulario, en su propio panel de cristal a todo lo alto */}
       <div style={{
-        position: 'relative', zIndex: 1, flex: isTablet ? '1 1 100%' : '0 0 520px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '56px 40px', boxSizing: 'border-box',
-        background: isTablet ? 'transparent' : GLASS_BG,
-        backdropFilter: isTablet ? 'none' : GLASS_BLUR, WebkitBackdropFilter: isTablet ? 'none' : GLASS_BLUR,
-        borderLeft: isTablet ? 'none' : GLASS_BORDER,
+        position: 'relative', zIndex: 1, minHeight: '100vh', boxSizing: 'border-box',
+        display: 'flex', flexDirection: isTablet ? 'column' : 'row',
+        alignItems: isTablet ? 'center' : 'stretch', justifyContent: isTablet ? 'center' : 'space-between',
+        padding: isTablet ? '48px 24px' : '64px 72px', gap: isTablet ? 44 : 24,
       }}>
-        <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        {isTablet && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 28 }}>
-            {logoMark(36)}
-            <span style={{ fontSize: 17, fontWeight: 800, color: DN, letterSpacing: '-0.3px' }}>DentalOS</span>
+        {/* IZQUIERDA — marca y propuesta de valor, flotando directo sobre el fondo */}
+        <div style={{ flex: isTablet ? 'none' : '1 1 50%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', maxWidth: isTablet ? 480 : 560 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {logoMark(40)}
+            <span style={{ fontSize: 18, fontWeight: 800, color: DN, letterSpacing: '-0.4px' }}>DentalOS</span>
           </div>
-        )}
 
-        <div style={{
-          width: '100%', maxWidth: 380, padding: isTablet ? '36px 32px' : 0, borderRadius: 20,
-          background: isTablet ? GLASS_BG : 'transparent',
-          backdropFilter: isTablet ? GLASS_BLUR : 'none', WebkitBackdropFilter: isTablet ? GLASS_BLUR : 'none',
-          border: isTablet ? GLASS_BORDER : 'none', boxShadow: isTablet ? GLASS_SHADOW : 'none',
-          boxSizing: 'border-box',
-        }}>
-          <div style={{ marginBottom: 30 }}>
-            <h2 style={{ margin: '0 0 6px', color: DN, fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>
-              {isRegistering ? 'Crear cuenta' : 'Bienvenida de nuevo'}
+          {!isTablet && (
+            <div>
+              <h1 style={{ fontSize: 52, fontWeight: 800, color: DN, margin: '0 0 18px', letterSpacing: '-1.5px', lineHeight: 1.08 }}>
+                Bienvenida<br />de nuevo.
+              </h1>
+              <p style={{ fontSize: 15.5, color: MU, margin: '0 0 30px', lineHeight: 1.6, maxWidth: 400 }}>
+                Historias clínicas, agenda, finanzas y comunicación con pacientes,
+                todo en un solo lugar diseñado para tu consultorio.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {FEATURES.map(f => (
+                  <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Icon name={f.icon} size={15} color={P} />
+                    <span style={{ fontSize: 13.5, color: DN, fontWeight: 500 }}>{f.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!isTablet && (
+            <p style={{ margin: 0, fontSize: 12, color: MU }}>Consultorio Dra. Sol Vargas · Trujillo, Perú</p>
+          )}
+        </div>
+
+        {/* DERECHA — campos flotantes de cristal, sin tarjeta contenedora */}
+        <div style={{ flex: isTablet ? 'none' : '0 0 400px', width: isTablet ? '100%' : undefined, maxWidth: isTablet ? 380 : undefined, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18 }}>
+          {isTablet && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 4 }}>
+              {logoMark(34)}
+              <span style={{ fontSize: 16, fontWeight: 800, color: DN, letterSpacing: '-0.3px' }}>DentalOS</span>
+            </div>
+          )}
+
+          <div style={{ textAlign: isTablet ? 'center' : 'left' }}>
+            <h2 style={{ margin: '0 0 4px', color: DN, fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>
+              {isRegistering ? 'Crear cuenta' : 'Ingresa a tu cuenta'}
             </h2>
-            <p style={{ margin: 0, color: MU, fontSize: 13.5 }}>
+            <p style={{ margin: 0, color: MU, fontSize: 13 }}>
               {isRegistering ? 'Completa tus datos para solicitar acceso.' : 'Ingresa tus credenciales para continuar.'}
             </p>
           </div>
 
-          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <div>
-              <label style={labelStyle}>Correo electrónico</label>
+          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={glassField(focusEmail)}>
+              <label style={fieldLabelStyle}>Correo electrónico</label>
               <input
                 type="email"
                 placeholder="doctora@clinica.com"
@@ -185,13 +177,13 @@ export default function Login({ onLogin }) {
                 onFocus={() => setFocusEmail(true)}
                 onBlur={() => setFocusEmail(false)}
                 required
-                style={inputStyle(focusEmail)}
+                style={bareInputStyle}
               />
             </div>
 
-            <div>
-              <label style={labelStyle}>Contraseña</label>
-              <div style={{ position: 'relative' }}>
+            <div style={glassField(focusPass)}>
+              <label style={fieldLabelStyle}>Contraseña</label>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
@@ -200,25 +192,25 @@ export default function Login({ onLogin }) {
                   onFocus={() => setFocusPass(true)}
                   onBlur={() => setFocusPass(false)}
                   required
-                  style={{ ...inputStyle(focusPass), paddingRight: 44 }}
+                  style={bareInputStyle}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: showPassword ? P : '#94a3b8', transition: 'color 0.15s' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: showPassword ? P : '#94a3b8', flexShrink: 0, transition: 'color 0.15s' }}
                   title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                   {showPassword ? (
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   ) : (
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                   )}
                 </button>
               </div>
             </div>
 
             {isRegistering && (
-              <div style={{ background: MT, padding: 14, borderRadius: 10, border: `1px solid ${BD}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div style={{ background: 'rgba(255,255,255,0.4)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, padding: 14, borderRadius: 14, border: GLASS_BORDER, display: 'flex', flexDirection: 'column', gap: 7 }}>
                 <p style={{ margin: '0 0 2px', fontSize: 11.5, fontWeight: 700, color: MU }}>Requisitos de contraseña:</p>
                 {[
                   [reqLength, 'Mínimo 8 caracteres'],
@@ -235,7 +227,7 @@ export default function Login({ onLogin }) {
             )}
 
             {errorMsg && (
-              <div style={{ padding: '10px 14px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 12.5, fontWeight: 500 }}>
+              <div style={{ padding: '10px 14px', background: 'rgba(254,242,242,0.85)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderLeft: `3px solid ${RJ}`, borderRadius: 10, color: '#b91c1c', fontSize: 12.5, fontWeight: 500 }}>
                 {errorMsg}
               </div>
             )}
@@ -243,15 +235,19 @@ export default function Login({ onLogin }) {
             <Button
               type="submit"
               disabled={loading || (isRegistering && !isPasswordValid)}
-              style={{ width: '100%', padding: '13px', fontSize: 14, borderRadius: 10, marginTop: 4 }}
+              style={{ width: '100%', padding: '13px', fontSize: 14, borderRadius: 14, marginTop: 4 }}
             >
               {loading ? 'Procesando...' : (isRegistering ? 'Crear cuenta segura' : 'Ingresar al sistema')}
             </Button>
           </form>
 
+          <p style={{ margin: 0, fontSize: 11.5, color: MU, textAlign: isTablet ? 'center' : 'left' }}>
+            Tus datos están cifrados y respaldados en la nube.
+          </p>
+
           {/* ENLACE PARA CAMBIAR ENTRE LOGIN Y REGISTRO (OCULTO TEMPORALMENTE) */}
           {/* Para volver a habilitarlo en el futuro, simplemente borra los símbolos {/* y */}
-          {/* <div style={{ marginTop: 22, textAlign: 'center', borderTop: `1px solid ${BD}`, paddingTop: 18 }}>
+          {/* <div style={{ textAlign: 'center', marginTop: 6 }}>
             <p style={{ margin: 0, fontSize: 13, color: MU }}>
               {isRegistering ? '¿Ya tienes una cuenta?' : '¿Personal nuevo?'}
               <button
@@ -265,11 +261,6 @@ export default function Login({ onLogin }) {
           </div>
           */}
         </div>
-        </div>
-
-        <p style={{ margin: 0, fontSize: 12, color: MU, textAlign: 'center', maxWidth: 340 }}>
-          Tus datos están cifrados y respaldados en la nube.
-        </p>
       </div>
     </div>
   );
