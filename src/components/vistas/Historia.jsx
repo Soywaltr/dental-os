@@ -14,7 +14,7 @@ import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsA
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
 // ============================================================================
-function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots = 0 }) {
+function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots = 0, estadoDot = null }) {
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
   const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
   const domRaw = conds.length ? conds[0][1] : null;
@@ -58,6 +58,7 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots =
       {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={RJ} strokeWidth="2" />}
       {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={AZ} strokeWidth="2" />}
       {conds.length > 1 && <circle cx={W - 5} cy={4} r="3.5" fill={P} />}
+      {estadoDot && <circle cx={5} cy={4} r="3.5" fill={estadoDot} stroke="#fff" strokeWidth=".8" />}
       {sarroDots > 0 && (
         <g style={{ pointerEvents: 'none' }}>
           {Array.from({ length: sarroDots }).map((_, i) => (
@@ -140,7 +141,7 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
 // ============================================================================
 // 3. COMPONENTE ODONTOGRAMA (Lógica de descompresión para lectura y escritura)
 // ============================================================================
-function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, periodontalDx, setPeriodontalDx }) {
+function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, periodontalDx, setPeriodontalDx, plan, setPlan, onGenerarSugerencia }) {
   const [act, setAct] = useState('caries');
   const [sel, setSel] = useState(null);
   const [specs, setSpecs] = useState('');
@@ -263,11 +264,22 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     </div>
   );
 
+  // En Odo. Evolución, cada pieza con tratamiento en el Plan muestra un punto de estado
+  // (rojo=pendiente, ámbar=en curso, verde=completado) tomando el peor/último estado vigente.
+  const estadoParaPieza = (n) => {
+    if (mode !== 'evolución') return null;
+    const items = (plan || []).filter(i => String(i.tooth) === String(n));
+    if (items.length === 0) return null;
+    if (items.every(i => i.status === 'completado')) return sc('completado').c;
+    if (items.some(i => i.status === 'en_curso')) return sc('en_curso').c;
+    return sc('pendiente').c;
+  };
+
   const tRow = (list, upper, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => (
         <div key={n} style={{ borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
-          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} sarroDots={sarroDots} />
+          <ToothSVG num={n} upper={upper} surfs={currentTeeth[n] || {}} active={sel === n} onClick={() => setSel(sel === n ? null : n)} w={w} sarroDots={sarroDots} estadoDot={estadoParaPieza(n)} />
         </div>
       ))}
     </div>
@@ -288,17 +300,32 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     getSurfs(sel).forEach(s => selSurfs[s] = selSurfs.todaPieza);
   }
 
+  const itemsPieza = sel ? (plan || []).filter(i => String(i.tooth) === String(sel)) : [];
+
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* PESTAÑAS: Odo. Inicial / Odo. Evolución */}
+      <div style={{ display: 'flex', gap: 22, padding: '0 20px', background: '#fff', borderBottom: `1px solid ${BD}`, flexShrink: 0 }}>
+        {[{ id: 'inicial', lbl: 'Odo. Inicial' }, { id: 'evolución', lbl: 'Odo. Evolución' }].map(t => (
+          <div key={t.id} onClick={() => setMode(t.id)}
+            style={{ padding: '12px 2px', marginBottom: -1, cursor: 'pointer', fontSize: 13, fontWeight: mode === t.id ? 700 : 500, color: mode === t.id ? P : MU, borderBottom: mode === t.id ? `2px solid ${P}` : '2px solid transparent', transition: 'all .15s' }}>
+            {t.lbl}
+          </div>
+        ))}
+        {mode === 'evolución' && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14, fontSize: 10, color: MU, fontWeight: 600 }}>
+            {[{ s: 'pendiente', l: 'Pendiente' }, { s: 'en_curso', l: 'En curso' }, { s: 'completado', l: 'Completado' }].map(({ s, l }) => (
+              <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: sc(s).c, display: 'inline-block' }} /> {l}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       {/* SIDEBAR HERRAMIENTAS */}
       <div style={{ width: 180, background: '#fff', borderRight: `1px solid ${BD}`, overflowY: 'auto', flexShrink: 0, padding: 12 }}>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: LT, borderRadius: 6, padding: 4 }}>
-          {['inicial', 'evolución'].map(m => (
-            <div key={m} onClick={() => setMode(m)} style={{ flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700, background: mode === m ? P : 'transparent', color: mode === m ? '#fff' : MU }}>
-              {m}
-            </div>
-          ))}
-        </div>
         <div style={{ background: at.col, color: at.tc, padding: '6px 8px', borderRadius: 6, fontSize: 12, fontWeight: 700, textAlign: 'center', marginBottom: 10 }}>{at.lbl}</div>
 
         {[{ label: 'Rojo — mal estado', g: 'r' }, { label: 'Azul — buen estado', g: 'a' }].map(({ label, g }) => (
@@ -456,8 +483,51 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
           <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel]={}; next[sel].note = e.target.value; return next; })}
             style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
+
+          {mode === 'evolución' && (
+            <div style={{ marginTop: 15, paddingTop: 15, borderTop: `1px solid ${BD}` }}>
+              <div style={{ fontSize: 10, color: MU, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase' }}>Estado del tratamiento</div>
+              {itemsPieza.length === 0 ? (
+                <div style={{ fontSize: 11, color: MU, lineHeight: 1.5 }}>
+                  {allF.some(f => String(f.n) === String(sel)) ? (
+                    <>
+                      Esta pieza aún no tiene un tratamiento en el Plan.
+                      {onGenerarSugerencia && (
+                        <button onClick={onGenerarSugerencia}
+                          style={{ display: 'block', marginTop: 8, width: '100%', padding: '7px', background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                          Generar sugerencias del odontograma
+                        </button>
+                      )}
+                    </>
+                  ) : 'Marca un hallazgo en esta pieza para poder generar su tratamiento.'}
+                </div>
+              ) : itemsPieza.map(item => (
+                <div key={item.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: '8px 10px', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: DN }}>{item.name}</div>
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: sc(item.status).bg, color: sc(item.status).c, whiteSpace: 'nowrap' }}>
+                      {item.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  {item.status === 'pendiente' && (
+                    <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'en_curso' } : i))}
+                      style={{ marginTop: 6, width: '100%', padding: '6px', background: sc('en_curso').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                      Iniciar tratamiento
+                    </button>
+                  )}
+                  {item.status === 'en_curso' && (
+                    <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'completado' } : i))}
+                      style={{ marginTop: 6, width: '100%', padding: '6px', background: sc('completado').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                      Marcar como completado
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1861,6 +1931,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             setTeethEvolucion={setTeethEvolucion}
             periodontalDx={periodontalDx}
             setPeriodontalDx={setPeriodontalDx}
+            plan={plan}
+            setPlan={setPlan}
+            onGenerarSugerencia={generarDesdeOdontograma}
           />
         )}
 
