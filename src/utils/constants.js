@@ -24,6 +24,15 @@ export const CLIENT_ID = "849091491290-t1h1q1p8j40rhndjlosh0e0dsokm5907.apps.goo
 export const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
 export const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
+// Integración WhatsApp Business (Meta) — OAuth de autorización de negocio.
+// META_APP_ID es un PLACEHOLDER: reemplázalo por el App ID real de tu app en
+// developers.facebook.com (producto "WhatsApp" agregado) para que el botón
+// "Conectar WhatsApp Business" funcione. Sin un App ID real, Meta rechaza el
+// diálogo de OAuth con un error de "invalid app id".
+export const META_APP_ID = "TU_META_APP_ID_AQUI";
+export const META_OAUTH_SCOPE = "whatsapp_business_management,whatsapp_business_messaging";
+export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
+
 // Paleta Ultra-Limpia
 export const P = '#404040', PD = '#262626', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
 

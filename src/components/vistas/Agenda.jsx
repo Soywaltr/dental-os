@@ -1,7 +1,7 @@
 // src/components/vistas/Agenda.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from '../../supabase';
-import { useGoogleLogin } from '@react-oauth/google';
+import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import ModalNuevaCita from '../ui/ModalNuevaCita';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -17,7 +17,12 @@ export default function Agenda() {
   const [showModalCita, setShowModalCita] = useState(false);
   const [datosTemp, setDatosTemp] = useState(null);
 
-  const [googleToken, setGoogleToken] = useState(() => localStorage.getItem('google_access_token'));
+  const { token: googleToken, connect: login, disconnect: googleDisconnect } = useGoogleCalendar(async (accessToken) => {
+    if (datosTemp) {
+      await enviarAGoogleCalendar(accessToken, datosTemp);
+      setDatosTemp(null);
+    }
+  });
 
   const [weekApts, setWeekApts] = useState([[], [], [], [], [], []]);
   const [allApts, setAllApts] = useState([]);
@@ -58,8 +63,7 @@ export default function Agenda() {
                 };
               }).filter(Boolean);
           } else if (res.status === 401) {
-            localStorage.removeItem('google_access_token');
-            setGoogleToken(null);
+            googleDisconnect();
           }
         } catch (e) { console.error("Error conectando a Google:", e); }
       }
@@ -110,7 +114,7 @@ export default function Agenda() {
     };
 
     fetchData();
-  }, [currentDate, view, googleToken]);
+  }, [currentDate, view, googleToken, googleDisconnect]);
 
   const handleNext = () => {
     const next = new Date(currentDate);
@@ -150,18 +154,6 @@ export default function Agenda() {
   };
 
   const displayDays = view === 'Semana' ? getWeekDays() : view === 'Día' ? [currentDate] : getMonthDays();
-
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      localStorage.setItem('google_access_token', tokenResponse.access_token);
-      setGoogleToken(tokenResponse.access_token);
-      if (datosTemp) {
-        await enviarAGoogleCalendar(tokenResponse.access_token, datosTemp);
-        setDatosTemp(null);
-      }
-    },
-    scope: 'https://www.googleapis.com/auth/calendar.events',
-  });
 
   const handleGuardarCita = (datosCita) => {
     const isOccupied = allApts.some(cita => cita.fecha === datosCita.fecha && cita.hora_cita === datosCita.hora);

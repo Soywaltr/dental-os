@@ -13,6 +13,7 @@ import { supabase } from "./supabase";
 import Login from "./Login";
 import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
 import useResponsive from "./utils/useResponsive";
+import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
@@ -671,6 +672,7 @@ export default function App() {
   const { session, loading, logout } = useSession();
   const [state, dispatch] = useReducer(reducer, INIT);
   const { isTablet } = useResponsive();
+  const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp();
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
   // No pelea con un re-expandido manual del usuario mientras siga en ese ancho
@@ -678,6 +680,15 @@ export default function App() {
   useEffect(() => {
     if (isTablet) dispatch({ type: "SET_SIDEBAR", payload: true });
   }, [isTablet]);
+
+  // Si Meta acaba de redirigir aquí tras el OAuth de WhatsApp Business
+  // (?code=...), procesa la conexión y regresa a Ajustes.
+  useEffect(() => {
+    handleMetaWhatsAppCallback().then(returnView => {
+      if (returnView) dispatch({ type: "SET_VIEW", payload: { view: returnView } });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     dispatch({ type: "HYDRATE", payload: {

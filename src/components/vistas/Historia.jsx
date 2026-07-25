@@ -816,27 +816,16 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   const [medDraft, setMedDraft] = useState({ med: '', dose: '', inst: '' });
   const [savingReceta, setSavingReceta] = useState(false);
 
-  // --- FIRMA Y SELLO DEL DOCTOR (global, no por paciente — se guarda en Storage) ---
+  // --- FIRMA Y SELLO DEL DOCTOR (global, no por paciente) ---
+  // Solo lectura aquí: se sube/gestiona desde Ajustes → Mi perfil.
   const FIRMA_DOCTOR_PATH = 'firma-doctor.png';
   const [firmaDoctorUrl, setFirmaDoctorUrl] = useState(null);
-  const [subiendoFirma, setSubiendoFirma] = useState(false);
 
   useEffect(() => {
     const { data } = supabase.storage.from('imagenes').getPublicUrl(FIRMA_DOCTOR_PATH);
     if (data?.publicUrl) setFirmaDoctorUrl(data.publicUrl);
   }, []);
 
-  const handleUploadFirma = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setSubiendoFirma(true);
-    const { error } = await supabase.storage.from('imagenes').upload(FIRMA_DOCTOR_PATH, file, { upsert: true });
-    if (error) { alert('Error al subir la firma: ' + error.message); setSubiendoFirma(false); return; }
-    const { data } = supabase.storage.from('imagenes').getPublicUrl(FIRMA_DOCTOR_PATH);
-    setFirmaDoctorUrl(`${data.publicUrl}?t=${Date.now()}`);
-    setSubiendoFirma(false);
-  };
-  
   useEffect(() => {
     const datosDelPaciente = patData || patient;
     if (datosDelPaciente) setEditForm(datosDelPaciente);
@@ -2265,18 +2254,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               <div style={{ marginTop: 16, borderTop: `1px solid ${BD}`, paddingTop: 10, textAlign: 'right' }}>
                 <div style={{ fontSize: 10, color: MU, marginBottom: 4 }}>Firma y sello</div>
                 {firmaDoctorUrl ? (
-                  <div>
-                    <img src={firmaDoctorUrl} alt="Firma y sello" onError={() => setFirmaDoctorUrl(null)} style={{ maxHeight: 44, maxWidth: '100%', objectFit: 'contain' }} />
-                    <div>
-                      <label htmlFor="firma-upload" style={{ fontSize: 9.5, color: P, cursor: 'pointer', fontWeight: 600 }}>Cambiar firma/sello</label>
-                    </div>
-                  </div>
+                  <img src={firmaDoctorUrl} alt="Firma y sello" onError={() => setFirmaDoctorUrl(null)} style={{ maxHeight: 44, maxWidth: '100%', objectFit: 'contain' }} />
                 ) : (
-                  <label htmlFor="firma-upload" style={{ height: 40, border: `1px dashed ${BD}`, borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, color: P, fontWeight: 600 }}>
-                    {subiendoFirma ? 'Subiendo...' : '+ Subir firma y sello'}
-                  </label>
+                  <div style={{ fontSize: 9.5, color: MU, fontStyle: 'italic' }}>Configura tu firma en Ajustes → Mi perfil</div>
                 )}
-                <input type="file" id="firma-upload" accept="image/*" style={{ display: 'none' }} onChange={handleUploadFirma} />
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
