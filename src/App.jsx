@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { supabase } from "./supabase";
 import Login from "./Login";
-import { PATIENTS, GRAD_PRIMARY } from "./utils/constants";
+import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -35,9 +35,9 @@ const BACKDROP_SVG = encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#eafaf1"/>
-      <stop offset="45%" stop-color="#d3f2e2"/>
-      <stop offset="100%" stop-color="#a9e6c8"/>
+      <stop offset="0%" stop-color="#eef7f2"/>
+      <stop offset="45%" stop-color="#c8d9d5"/>
+      <stop offset="100%" stop-color="#9dc3b7"/>
     </linearGradient>
     <radialGradient id="g2" cx="25%" cy="20%" r="60%">
       <stop offset="0%" stop-color="#dff2b0" stop-opacity="0.6"/>
@@ -66,7 +66,7 @@ const BACKDROP_IMAGE_URL = `url("data:image/svg+xml,${BACKDROP_SVG}")`;
 const C = {
   // Fondos
   sidebarBg:   "rgba(255,255,255,0.6)",
-  pageBg:      "#eafaf1",
+  pageBg:      "#c8d9d5",
   cardBg:      "rgba(255,255,255,0.6)",
   hoverBg:     "rgba(15,23,42,0.05)",
   activeBg:    "rgba(238,242,255,0.75)",
@@ -569,7 +569,7 @@ const PrimaryBtn = memo(({ children, onClick }) => {
         color: "#fff", fontSize: 13, fontWeight: 600,
         fontFamily: C.font, cursor: "pointer", outline: "none",
         transition: "opacity 0.12s",
-        boxShadow: "0 4px 14px rgba(79,124,255,0.35)",
+        boxShadow: GRAD_PRIMARY_SHADOW,
         letterSpacing: "-0.1px",
       }}
     >
@@ -681,7 +681,7 @@ const Splash = () => (
       width: 48, height: 48, borderRadius: 14, background: GRAD_PRIMARY,
       display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
       animation: "pulse 1.5s ease-in-out infinite",
-      boxShadow: `0 8px 24px rgba(79,70,229,0.3)`,
+      boxShadow: `0 8px 24px rgba(53,107,90,0.3)`,
     }}>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
