@@ -35,9 +35,9 @@ const BACKDROP_SVG = encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#eef7f2"/>
+      <stop offset="0%" stop-color="#d7e6e1"/>
       <stop offset="45%" stop-color="#c8d9d5"/>
-      <stop offset="100%" stop-color="#9dc3b7"/>
+      <stop offset="100%" stop-color="#8fb8a8"/>
     </linearGradient>
     <radialGradient id="g2" cx="25%" cy="20%" r="60%">
       <stop offset="0%" stop-color="#dff2b0" stop-opacity="0.6"/>
@@ -69,7 +69,7 @@ const C = {
   pageBg:      "#c8d9d5",
   cardBg:      "rgba(255,255,255,0.6)",
   hoverBg:     "rgba(15,23,42,0.05)",
-  activeBg:    "rgba(238,242,255,0.75)",
+  activeBg:    "rgba(227,243,236,0.75)",
   glassBlur:   "blur(20px)",
   glassBorder: "1px solid rgba(255,255,255,0.7)",
   glassShadow: "0 8px 32px rgba(16,120,80,0.10)",
@@ -79,10 +79,10 @@ const C = {
   inkMute:     "#9CA3AF",
   inkFaint:    "#D1D5DB",
   // Acento
-  brand:       "#4F46E5",
-  brandHov:    "#4338CA",
-  brandSoft:   "#EEF2FF",
-  brandText:   "#4338CA",
+  brand:       "#2f9d76",
+  brandHov:    "#1f7a5a",
+  brandSoft:   "#e3f3ec",
+  brandText:   "#1f7a5a",
   // Semánticos
   green:       "#10B981",
   greenSoft:   "#D1FAE5",

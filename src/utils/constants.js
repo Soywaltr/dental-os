@@ -25,7 +25,7 @@ export const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/cal
 export const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 // Paleta Ultra-Limpia
-export const P = '#0ea5e9', PD = '#0284c7', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
+export const P = '#2f9d76', PD = '#1f7a5a', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
 
 // Glassmorphism — superficies de vidrio esmerilado reutilizadas en tarjetas y paneles.
 // Los colores clínicos/semánticos de arriba (RJ, AZ, WA, GL) no cambian: sólo el "chrome"
