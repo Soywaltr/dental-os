@@ -14,6 +14,7 @@ const CATEGORIAS_GASTO = ['Materiales', 'Laboratorio', 'Servicios', 'Sueldos', '
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 const parseFecha = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d.getTime()) ? null : d; };
+const formatFecha = (s) => { const d = parseFecha(s); return d ? d.toLocaleDateString('es-PE') : (s || '—'); };
 const mismoMes = (d, ref) => d && d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
 
 const PAGO_VACIO = { patientId: '', facturaId: '', monto: '', metodo: 'Efectivo', referencia: '' };
@@ -57,8 +58,12 @@ export default function Caja() {
 
   const nombrePaciente = (id) => pacientes.find(p => String(p.id) === String(id))?.name || '—';
 
-  const irAPagar = (f) => {
-    setPagoDraft({ patientId: String(f.patient_id), facturaId: String(f.id), monto: '', metodo: 'Efectivo', referencia: '' });
+  const irAPagar = (grupo) => {
+    setPagoDraft({
+      patientId: String(grupo.patient_id),
+      facturaId: grupo.items.length === 1 ? String(grupo.items[0].id) : '',
+      monto: '', metodo: 'Efectivo', referencia: '',
+    });
     setTab('pagos');
   };
 
@@ -135,6 +140,30 @@ export default function Caja() {
 
   const facturasDelPacienteSeleccionado = facturas.filter(f => String(f.patient_id) === String(pagoDraft.patientId) && (f.cost - f.paid) > 0);
 
+  // Agrupa por paciente + fecha + tratamiento: varias piezas del mismo tratamiento
+  // en la misma fecha aparecen como una sola fila (ej. "Resina compuesta, piezas 12, 14, 15")
+  const grupos = new Map();
+  facturas.forEach(f => {
+    const key = `${f.patient_id}|${f.date}|${f.name}`;
+    if (!grupos.has(key)) {
+      grupos.set(key, { patient_id: f.patient_id, date: f.date, name: f.name, teeth: [], cost: 0, paid: 0, items: [], metodos: new Set() });
+    }
+    const g = grupos.get(key);
+    if (f.tooth && f.tooth !== '—') g.teeth.push(f.tooth);
+    g.cost += f.cost || 0;
+    g.paid += f.paid || 0;
+    g.items.push(f);
+    if (f.metodo) g.metodos.add(f.metodo);
+  });
+  const facturasAgrupadas = Array.from(grupos.values())
+    .map(g => ({
+      ...g,
+      toothLabel: g.teeth.length > 0 ? g.teeth.join(', ') : '—',
+      metodo: g.metodos.size === 1 ? [...g.metodos][0] : (g.metodos.size > 1 ? 'Mixto' : null),
+      status: g.items.every(i => i.status === 'completado') ? 'completado' : (g.items.some(i => i.status === 'pendiente') ? 'pendiente' : 'en_curso'),
+    }))
+    .sort((a, b) => nombrePaciente(a.patient_id).localeCompare(nombrePaciente(b.patient_id)) || String(b.date).localeCompare(String(a.date)));
+
   return (
     <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
       <div style={{ display: 'flex', gap: 11, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -160,26 +189,26 @@ export default function Caja() {
           <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 12, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead><tr style={{ background: LT }}>
-                {['Paciente', 'Tratamiento', 'Pieza', 'Fecha', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 10, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
+                {['Paciente', 'Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 10, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
               </tr></thead>
               <tbody>
-                {facturas.map((inv, i) => {
-                  const b = sc(inv.status); const saldo = inv.cost - inv.paid;
+                {facturasAgrupadas.map((g, i) => {
+                  const b = sc(g.status); const saldo = g.cost - g.paid;
                   return (
-                    <tr key={`${inv.patient_id}-${inv.id}-${i}`} style={{ borderBottom: `1px solid ${MT}` }}
+                    <tr key={`${g.patient_id}-${g.date}-${g.name}-${i}`} style={{ borderBottom: `1px solid ${MT}` }}
                       onMouseEnter={e => e.currentTarget.style.background = LT}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '9px 12px', color: DN, fontWeight: 500 }}>{nombrePaciente(inv.patient_id)}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{inv.name}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{inv.tooth}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{inv.date}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{inv.metodo || '—'}</td>
-                      <td style={{ padding: '9px 12px', color: DN, fontWeight: 600 }}>S/{inv.cost}</td>
-                      <td style={{ padding: '9px 12px', color: inv.paid < inv.cost ? GL : WA }}>S/{inv.paid}</td>
-                      <td style={{ padding: '9px 12px' }}><Badge bg={b.bg} color={b.c} style={{ fontSize: 9, padding: '2px 8px' }}>{inv.status}</Badge></td>
+                      <td style={{ padding: '9px 12px', color: DN, fontWeight: 500 }}>{nombrePaciente(g.patient_id)}</td>
+                      <td style={{ padding: '9px 12px', color: MU }}>{formatFecha(g.date)}</td>
+                      <td style={{ padding: '9px 12px', color: MU }}>{g.name}{g.items.length > 1 ? ` (x${g.items.length})` : ''}</td>
+                      <td style={{ padding: '9px 12px', color: MU }}>{g.toothLabel}</td>
+                      <td style={{ padding: '9px 12px', color: MU }}>{g.metodo || '—'}</td>
+                      <td style={{ padding: '9px 12px', color: DN, fontWeight: 600 }}>S/{g.cost}</td>
+                      <td style={{ padding: '9px 12px', color: g.paid < g.cost ? GL : WA }}>S/{g.paid}</td>
+                      <td style={{ padding: '9px 12px' }}><Badge bg={b.bg} color={b.c} style={{ fontSize: 9, padding: '2px 8px' }}>{g.status}</Badge></td>
                       <td style={{ padding: '9px 12px' }}>
                         {saldo > 0 && (
-                          <span onClick={() => irAPagar(inv)} style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600 }}>registrar pago →</span>
+                          <span onClick={() => irAPagar(g)} style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600 }}>registrar pago →</span>
                         )}
                       </td>
                     </tr>
@@ -209,7 +238,7 @@ export default function Caja() {
                 style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', background: '#fff' }}>
                 <option value="">Selecciona…</option>
                 {facturasDelPacienteSeleccionado.map(f => (
-                  <option key={f.id} value={f.id}>{f.name} — Saldo S/{(f.cost - f.paid).toLocaleString()}</option>
+                  <option key={f.id} value={f.id}>{f.name}{f.tooth && f.tooth !== '—' ? ` (Pieza ${f.tooth})` : ''} — Saldo S/{(f.cost - f.paid).toLocaleString()}</option>
                 ))}
               </select>
             </div>
