@@ -27,14 +27,42 @@ const Config      = lazy(() => import("./components/vistas/Config"));
 export const AppContext = createContext(null);
 export const useAppContext = () => useContext(AppContext);
 
+// ─── FONDO DECORATIVO (glassmorphism) ─────────────────────────────────────────
+// Textura odontológica difuminada de fondo. Placeholder generado en SVG — se puede
+// reemplazar más adelante por una foto real del consultorio sin tocar el resto del look.
+const DENTAL_TOOTH_PATH = "M12 2C7 2 4 5 4 9c0 3 1 5 1 8 0 2 1 4 3 4s2-3 2-5 1-2 2-2 2 0 2 2 0 5 2 5 3-2 3-4c0-3 1-5 1-8 0-4-3-7-8-7z";
+const BACKDROP_SVG = encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a2540"/>
+      <stop offset="45%" stop-color="#0d3f66"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#g)"/>
+  <g fill="#ffffff" opacity="0.12">
+    <path transform="translate(140,120) scale(3.4) rotate(-14)" d="${DENTAL_TOOTH_PATH}"/>
+    <path transform="translate(1120,80) scale(4.6) rotate(20)" d="${DENTAL_TOOTH_PATH}"/>
+    <path transform="translate(760,560) scale(6.2) rotate(-6)" d="${DENTAL_TOOTH_PATH}"/>
+    <path transform="translate(1280,620) scale(3.2) rotate(28)" d="${DENTAL_TOOTH_PATH}"/>
+    <path transform="translate(60,700) scale(3.8) rotate(10)" d="${DENTAL_TOOTH_PATH}"/>
+  </g>
+</svg>
+`);
+const BACKDROP_IMAGE_URL = `url("data:image/svg+xml,${BACKDROP_SVG}")`;
+
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
   // Fondos
-  sidebarBg:   "#FFFFFF",
-  pageBg:      "#F4F6F8",
-  cardBg:      "#FFFFFF",
-  hoverBg:     "#F0F2F5",
-  activeBg:    "#EEF2FF",
+  sidebarBg:   "rgba(255,255,255,0.55)",
+  pageBg:      "#0a2540",
+  cardBg:      "rgba(255,255,255,0.55)",
+  hoverBg:     "rgba(15,23,42,0.06)",
+  activeBg:    "rgba(238,242,255,0.75)",
+  glassBlur:   "blur(20px)",
+  glassBorder: "1px solid rgba(255,255,255,0.5)",
+  glassShadow: "0 8px 32px rgba(15,23,42,0.12)",
   // Texto
   ink:         "#111827",
   inkMid:      "#4B5563",
@@ -253,7 +281,9 @@ const Sidebar = memo(({ state, dispatch, onLogout }) => {
       height: "100vh",
       display: "flex", flexDirection: "column",
       background: C.sidebarBg,
-      borderRight: `1px solid ${C.border}`,
+      backdropFilter: C.glassBlur, WebkitBackdropFilter: C.glassBlur,
+      borderRight: `1px solid rgba(255,255,255,0.4)`,
+      boxShadow: C.glassShadow,
       transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
       overflow: "hidden", flexShrink: 0, zIndex: 100,
     }}>
@@ -435,9 +465,10 @@ const TopHeader = memo(({ state, dispatch, onLogout }) => {
       height: 56,
       display: "flex", alignItems: "center",
       padding: "0 24px",
-      background: C.pageBg,
-      borderBottom: `1px solid ${C.border}`,
-      gap: 12, flexShrink: 0,
+      background: "rgba(255,255,255,0.45)",
+      backdropFilter: C.glassBlur, WebkitBackdropFilter: C.glassBlur,
+      borderBottom: `1px solid rgba(255,255,255,0.4)`,
+      gap: 12, flexShrink: 0, zIndex: 90, position: "relative",
     }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
@@ -625,10 +656,17 @@ const ViewRouter = memo(({ state, dispatch }) => {
 const Splash = () => (
   <div style={{
     display: "flex", flexDirection: "column", alignItems: "center",
-    justifyContent: "center", height: "100vh",
+    justifyContent: "center", height: "100vh", position: "relative", overflow: "hidden",
     background: C.pageBg, gap: 16, fontFamily: C.font,
   }}>
     <div style={{
+      position: "fixed", inset: 0, zIndex: 0,
+      backgroundImage: BACKDROP_IMAGE_URL,
+      backgroundSize: "cover", backgroundPosition: "center",
+      filter: "blur(50px)", transform: "scale(1.15)",
+    }} />
+    <div style={{
+      position: "relative", zIndex: 1,
       width: 48, height: 48, borderRadius: 14, background: C.brand,
       display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
       animation: "pulse 1.5s ease-in-out infinite",
@@ -640,7 +678,7 @@ const Splash = () => (
         <path d="M2 12l10 5 10-5"/>
       </svg>
     </div>
-    <span style={{ fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: "-0.3px" }}>DentalOS</span>
+    <span style={{ position: "relative", zIndex: 1, fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>DentalOS</span>
   </div>
 );
 
@@ -716,18 +754,26 @@ export default function App() {
       <div style={{
         display: "flex", height: "100vh",
         overflow: "hidden", background: C.pageBg,
-        fontFamily: C.font,
+        fontFamily: C.font, position: "relative",
       }}>
+        {/* Fondo decorativo: textura odontológica difuminada (glassmorphism) */}
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 0,
+          backgroundImage: BACKDROP_IMAGE_URL,
+          backgroundSize: "cover", backgroundPosition: "center",
+          filter: "blur(50px)", transform: "scale(1.15)",
+        }} />
+
         {/* Sidebar izquierdo */}
         <Sidebar state={state} dispatch={dispatch} onLogout={logout} />
 
         {/* Columna derecha */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
           {/* Header con breadcrumb */}
           <TopHeader state={state} dispatch={dispatch} onLogout={logout} />
 
           {/* Contenido */}
-          <main role="main" style={{ flex: 1, overflowY: "auto", padding: "24px 24px 48px", background: C.pageBg }}>
+          <main role="main" style={{ flex: 1, overflowY: "auto", padding: "24px 24px 48px", background: "transparent" }}>
             <div style={{ maxWidth: 1480, margin: "0 auto" }}>
               <ViewRouter state={state} dispatch={dispatch} />
             </div>

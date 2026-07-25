@@ -146,16 +146,16 @@ export default function Dashboard({ setView }) {
       {/* ─── HERO ─── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
         <div>
-          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-1px' }}>
+          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', margin: '0 0 8px 0', letterSpacing: '-1px', textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
             Bienvenida de nuevo
           </h1>
-          <p style={{ fontSize: 15, color: '#64748B', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 500 }}>
             Mira el resumen de tus pacientes y actividad actual aquí
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ background: '#FFFFFF', padding: '16px 24px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.6)', padding: '16px 24px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F172A' }}>
               <Icon name="trendingUp" size={20} />
             </div>
@@ -168,7 +168,7 @@ export default function Dashboard({ setView }) {
             </div>
           </div>
 
-          <div style={{ background: '#FFFFFF', padding: '16px 24px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.6)', padding: '16px 24px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F172A' }}>
               <Icon name="userPlus" size={20} />
             </div>
@@ -187,7 +187,7 @@ export default function Dashboard({ setView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
           {/* Analíticas Clínicas */}
-          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)', height: '420px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)', height: '420px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Analíticas Clínicas</h2>
               <div style={{ cursor: 'pointer', color: '#94A3B8' }} onClick={() => setView && setView('reportes')} title="Ver analítica completa">
@@ -224,7 +224,7 @@ export default function Dashboard({ setView }) {
           </div>
 
           {/* Asistente IA Nanda */}
-          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '24px 32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '32px', padding: '24px 32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0F172A' }}>Asistente IA Nanda</h2>
               <div onClick={() => setView && setView('whatsapp')} title="Ir a Chat IA"
@@ -256,7 +256,7 @@ export default function Dashboard({ setView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
           {/* Agenda */}
-          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Agenda</h2>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -309,7 +309,7 @@ export default function Dashboard({ setView }) {
           </div>
 
           {/* Rendimiento */}
-          <div style={{ background: '#FFFFFF', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '32px', padding: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.03)', flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Rendimiento</h2>
               <div onClick={() => setView && setView('reportes')} title="Ver analítica completa"
