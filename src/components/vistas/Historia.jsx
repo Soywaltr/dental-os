@@ -156,19 +156,44 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const SARRO_DOTS = { 'Ninguno': 0, 'Gingivitis leve': 1, 'Gingivitis moderada': 2, 'Gingivitis severa': 3, 'Periodontitis': 4 };
   const sarroDots = SARRO_DOTS[periodontalDx] || 0;
 
-  // Odo. Evolución hereda por defecto los hallazgos de Odo. Inicial (misma pieza),
-  // para saber qué diente está por hacerse. Una pieza editada en evolución (aunque
-  // sea con el pincel "Normal") queda con su propia entrada, que ya no se pisa
-  // con lo de inicial.
-  const currentTeeth = mode === 'inicial' ? (teeth || {}) : { ...(teeth || {}), ...(teethEvolucion || {}) };
+  // Odo. Evolución hereda por defecto los hallazgos de Odo. Inicial, cara por cara:
+  // una cara no tocada en evolución sigue mostrando lo que diagnosticó Inicial (para
+  // saber qué falta por curar); una cara sí editada en evolución (incluso al pincel
+  // "Normal", que queda guardado como valor explícito) ya no vuelve a heredar.
+  const expandPieza = (p, n) => {
+    if (!p || !p.todaPieza) return p || {};
+    const exp = {};
+    getSurfs(n).forEach(s => { exp[s] = p.todaPieza; });
+    if (p.note) exp.note = p.note;
+    return exp;
+  };
+  const mergedPieza = (n) => {
+    const base = (teeth || {})[n];
+    const evo = (teethEvolucion || {})[n];
+    if (!evo) return base || {};
+    if (!base) return expandPieza(evo, n);
+    return { ...expandPieza(base, n), ...expandPieza(evo, n) };
+  };
+  const currentTeeth = mode === 'inicial'
+    ? (teeth || {})
+    : Object.fromEntries(
+        Array.from(new Set([...Object.keys(teeth || {}), ...Object.keys(teethEvolucion || {})]))
+          .map(n => [n, mergedPieza(n)])
+      );
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
 
   const applyAll = n => {
     if (act === 'normal') {
       setCurrentTeeth(p => {
         const next = { ...(p || {}) };
-        if (mode === 'evolución') next[n] = {}; // override explícito: ya no hereda lo de inicial
-        else delete next[n];
+        if (mode === 'evolución') {
+          // Override explícito por cara: "normal" queda guardado y ya no hereda de Inicial
+          const cleared = {};
+          getSurfs(n).forEach(s => { cleared[s] = 'normal'; });
+          next[n] = cleared;
+        } else {
+          delete next[n];
+        }
         return next;
       });
       return;
@@ -177,7 +202,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     getSurfs(n).forEach(s => up[s] = act);
     setCurrentTeeth(p => {
       const safeP = p || {};
-      const currentPiece = safeP[n] || currentTeeth[n] || {};
+      const currentPiece = currentTeeth[n] || {};
       // Borramos "todaPieza" si venía de Supabase para evitar conflictos con las caras
       const { todaPieza, ...rest } = currentPiece;
       return { ...safeP, [n]: { ...rest, ...up } };
@@ -188,7 +213,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const applySurf = (n, sf) => {
     setCurrentTeeth(p => {
       const safeP = p || {};
-      const currentPiece = safeP[n] || currentTeeth[n] || {};
+      const currentPiece = currentTeeth[n] || {};
 
       // ⚡ SOLUCIÓN AQUÍ: Si el diente venía guardado entero, lo desglosamos en 5 caras
       let expandedPiece = { ...currentPiece };
@@ -199,7 +224,10 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
       const cur = expandedPiece[sf];
       if (act === 'normal' || cur === act) {
-        delete expandedPiece[sf];
+        // En evolución, "borrar" una cara heredada debe quedar explícito para no volver
+        // a mostrar el hallazgo de Inicial; en inicial no hay nada que heredar.
+        if (mode === 'evolución') expandedPiece[sf] = 'normal';
+        else delete expandedPiece[sf];
       } else {
         expandedPiece[sf] = act;
       }
@@ -210,7 +238,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const toggleBadFlag = (n, sf) => {
     setCurrentTeeth(p => {
       const safeP = p || {};
-      const currentPiece = safeP[n] || currentTeeth[n] || {};
+      const currentPiece = currentTeeth[n] || {};
 
       let expandedPiece = { ...currentPiece };
       if (expandedPiece.todaPieza) {
