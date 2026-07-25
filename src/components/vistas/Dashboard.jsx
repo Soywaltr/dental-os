@@ -4,6 +4,7 @@ import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import { P, MT, MU, AZ, RJ, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente } from '../../utils/helpers';
+import useResponsive from '../../utils/useResponsive';
 
 const NOMBRE_A_CAT = {};
 TRATAMIENTOS_CAT.forEach(c => c.items.forEach(n => { NOMBRE_A_CAT[n] = c.cat; }));
@@ -31,6 +32,7 @@ const getWeekDays = (anchor) => {
 };
 
 export default function Dashboard({ setView }) {
+  const { isTablet } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [pacientes, setPacientes] = useState([]);
@@ -181,7 +183,7 @@ export default function Dashboard({ setView }) {
       </div>
 
       {/* ─── GRID PRINCIPAL ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1.8fr 1fr', gap: '32px' }}>
 
         {/* COLUMNA IZQUIERDA */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>

@@ -11,6 +11,7 @@ import {
   GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW
 } from '../../utils/constants';
 import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsAppNumber } from '../../utils/helpers';
+import useResponsive from '../../utils/useResponsive';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -570,6 +571,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
 export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView }) {
+  const { isTablet } = useResponsive();
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
   
@@ -1372,7 +1374,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {['Motivo de consulta', 'Historia médica', 'Historia odontológica', 'Historia Familiar'].map(f => (
-                        <div key={f} style={{ display: 'grid', gridTemplateColumns: '250px 1fr', alignItems: 'center', gap: '20px' }}>
+                        <div key={f} style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '250px 1fr', alignItems: 'center', gap: '20px' }}>
                           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>{f}</label>
                           <input disabled={!isEditingOrtoExamen} value={ortoForm[f] || ''} onChange={e => handleOrto(f, e.target.value)} style={getOrtoStyle(isEditingOrtoExamen)} />
                         </div>
@@ -1402,7 +1404,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                       {renderSelectOrto('Comisura bucales', 'comisuras', ['Niveladas', 'Discrepantes a la derecha', 'Discrepantes a la izquierda'], isEditingOrtoExamen)}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px 100px 250px 150px', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '120px 100px 250px 150px', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
                       <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Filtrum</div>
                       <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_alineado || false} onChange={e => handleOrto('filtrum_alineado', e.target.checked)} /> Alineado</label>
                       <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Desviación lateral del filtrum</div>
@@ -1412,7 +1414,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px 100px 250px 150px', gap: '15px', alignItems: 'center' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '120px 100px 250px 150px', gap: '15px', alignItems: 'center' }}>
                       <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Mentón</div>
                       <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_alineado || false} onChange={e => handleOrto('menton_alineado', e.target.checked)} /> Alineado</label>
                       <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Desviación lateral del mentón</div>
@@ -1512,7 +1514,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <SectionHeader title="Dientes y Alteraciones" />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {['Error molar derecho', 'Error molar izquierdo', 'Dientes ausentes', 'Alteraciones de número, forma y tamaño de dientes'].map(f => (
-                        <div key={f} style={{ display: 'grid', gridTemplateColumns: '250px 1fr', alignItems: 'center', gap: '20px' }}>
+                        <div key={f} style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '250px 1fr', alignItems: 'center', gap: '20px' }}>
                           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>{f}</label>
                           <input disabled={!isEditingOrtoExamen} value={ortoForm[f] || ''} onChange={e => handleOrto(f, e.target.value)} style={getOrtoStyle(isEditingOrtoExamen)} />
                         </div>
@@ -1549,7 +1551,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <SectionHeader title="Conclusión" />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>
                       {['Observaciones', 'Maloclusión'].map(f => (
-                        <div key={f} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', alignItems: 'center', gap: '20px' }}>
+                        <div key={f} style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '150px 1fr', alignItems: 'center', gap: '20px' }}>
                           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>{f}</label>
                           <input disabled={!isEditingOrtoExamen} value={ortoForm[f] || ''} onChange={e => handleOrto(f, e.target.value)} placeholder="Anotaciones adicionales..." style={getOrtoStyle(isEditingOrtoExamen)} />
                         </div>
@@ -1676,7 +1678,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr 1fr 1fr', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '100px 1fr 1fr 1fr 1fr', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
                       <span style={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}>Tipo</span>
                       <select disabled={!isEditingOrtoTrata} value={planTrataForm.tipo_1 || ''} onChange={e => handlePlanTrata('tipo_1', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)}>
                         <option value="">Seleccionar</option>
@@ -2392,6 +2394,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
             ) : (
             <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${BD}` }}>
@@ -2422,6 +2425,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
             )}
 

@@ -5,6 +5,7 @@ import Stat from '../ui/Stat';
 import Icon from '../ui/Icon';
 import { BD, P, PD, GL, MU, DN, MT, WA, AZ, RJ, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { sc, estadoPaciente } from '../../utils/helpers';
+import useResponsive from '../../utils/useResponsive';
 
 // Paleta categórica validada (contraste + separación CVD) para identidad de tratamientos.
 // El color se asigna por hash del nombre, no por ranking, para que un tratamiento
@@ -26,6 +27,7 @@ const parseFecha = (s) => {
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 export default function Reportes() {
+  const { isTablet } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [pacientes, setPacientes] = useState([]);
@@ -146,7 +148,7 @@ export default function Reportes() {
         <Stat label="Tasa de completados" value={`${tasaCompletado}%`} col={PD} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1.3fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* ── Ingresos mensuales: facturado vs cobrado ── */}
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -204,7 +206,7 @@ export default function Reportes() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr 1.2fr', gap: 16 }}>
         {/* ── Estado de tratamientos ── */}
         <div style={cardStyle}>
           <div style={sectionTitle}>Estado de tratamientos</div>

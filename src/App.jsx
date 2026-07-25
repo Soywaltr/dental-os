@@ -12,6 +12,7 @@ import React, {
 import { supabase } from "./supabase";
 import Login from "./Login";
 import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
+import useResponsive from "./utils/useResponsive";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -108,27 +109,30 @@ const C = {
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
+// Arranca colapsado si la ventana ya es angosta (iPad y menor) al cargar la app.
 const INIT = {
   view: "dashboard", selectedPat: null, subAccount: "Sede Principal",
   teeth: {}, teethEvolucion: {}, patientsList: [],
-  globalSearch: "", notifCount: 3, sidebarCollapsed: false,
+  globalSearch: "", notifCount: 3,
+  sidebarCollapsed: typeof window !== "undefined" && window.innerWidth <= 1180,
 };
 
 function reducer(st, action) {
   switch (action.type) {
     case "SET_VIEW":        return { ...st, view: action.payload.view, selectedPat: action.payload.pat ?? st.selectedPat };
     case "SET_SUB_ACCOUNT": return { ...st, subAccount: action.payload };
-    case "SET_TEETH": 
+    case "SET_TEETH":
       // SOLUCIÓN: Si payload es una función, la ejecutamos pasando el estado anterior
       const newTeeth = typeof action.payload === 'function' ? action.payload(st.teeth) : action.payload;
       return { ...st, teeth: newTeeth };
-    case "SET_TEETH_EVO": 
+    case "SET_TEETH_EVO":
       // SOLUCIÓN: Igual para evolución
       const newTeethEvo = typeof action.payload === 'function' ? action.payload(st.teethEvolucion) : action.payload;
       return { ...st, teethEvolucion: newTeethEvo };
     case "SET_PATIENTS":    return { ...st, patientsList: action.payload };
     case "SET_SEARCH":      return { ...st, globalSearch: action.payload };
     case "TOGGLE_SIDEBAR":  return { ...st, sidebarCollapsed: !st.sidebarCollapsed };
+    case "SET_SIDEBAR":     return { ...st, sidebarCollapsed: action.payload };
     case "HYDRATE":         return { ...st, ...action.payload };
     default:                return st;
   }
@@ -697,6 +701,14 @@ const Splash = () => (
 export default function App() {
   const { session, loading, logout } = useSession();
   const [state, dispatch] = useReducer(reducer, INIT);
+  const { isTablet } = useResponsive();
+
+  // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
+  // No pelea con un re-expandido manual del usuario mientras siga en ese ancho
+  // (el efecto solo se dispara cuando isTablet cambia de valor, no en cada render).
+  useEffect(() => {
+    if (isTablet) dispatch({ type: "SET_SIDEBAR", payload: true });
+  }, [isTablet]);
 
   useEffect(() => {
     dispatch({ type: "HYDRATE", payload: {
@@ -784,7 +796,7 @@ export default function App() {
           <TopHeader state={state} dispatch={dispatch} onLogout={logout} />
 
           {/* Contenido */}
-          <main role="main" style={{ flex: 1, overflowY: "auto", padding: "24px 24px 48px", background: "transparent" }}>
+          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "16px 16px 32px" : "24px 24px 48px", background: "transparent" }}>
             <div style={{ maxWidth: 1480, margin: "0 auto" }}>
               <ViewRouter state={state} dispatch={dispatch} />
             </div>

@@ -198,6 +198,7 @@ export default function Caja() {
           </div>
         ) : (
           <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+            <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead><tr style={{ background: LT }}>
                 {['Paciente', 'Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 10, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
@@ -227,6 +228,7 @@ export default function Caja() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )
       )}
@@ -292,7 +294,7 @@ export default function Caja() {
             </div>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
                 {gastosPorCategoria.map(({ cat, monto }) => (
                   <div key={cat} style={{ background: LT, borderRadius: 9, padding: '12px 14px' }}>
                     <div style={{ fontSize: 10, color: MU, marginBottom: 3 }}>{cat}</div>
