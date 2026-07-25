@@ -33,7 +33,7 @@ export const P = '#0ea5e9', PD = '#0284c7', DN = '#0f172a', LT = '#ffffff', MT =
 export const GLASS_BG = 'rgba(255,255,255,0.55)';
 export const GLASS_BLUR = 'blur(18px)';
 export const GLASS_BORDER = '1px solid rgba(255,255,255,0.6)';
-export const GLASS_SHADOW = '0 20px 50px rgba(15,23,42,0.08)';
+export const GLASS_SHADOW = '0 20px 50px rgba(16,120,80,0.08)';
 export const GRAD_PRIMARY = 'linear-gradient(135deg, #4f7cff 0%, #7c5cfa 100%)';
 export const GRAD_SUCCESS = 'linear-gradient(135deg, #14b8a6 0%, #22d3aa 100%)';
 

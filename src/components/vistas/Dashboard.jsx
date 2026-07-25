@@ -146,10 +146,10 @@ export default function Dashboard({ setView }) {
       {/* ─── HERO ─── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
         <div>
-          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', margin: '0 0 8px 0', letterSpacing: '-1px', textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-1px' }}>
             Bienvenida de nuevo
           </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 15, color: '#475569', margin: 0, fontWeight: 500 }}>
             Mira el resumen de tus pacientes y actividad actual aquí
           </p>
         </div>

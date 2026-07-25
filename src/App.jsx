@@ -35,24 +35,23 @@ const BACKDROP_SVG = encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#111133"/>
-      <stop offset="30%" stop-color="#33266b"/>
-      <stop offset="62%" stop-color="#3452a8"/>
-      <stop offset="100%" stop-color="#14b8a6"/>
+      <stop offset="0%" stop-color="#eafaf1"/>
+      <stop offset="45%" stop-color="#d3f2e2"/>
+      <stop offset="100%" stop-color="#a9e6c8"/>
     </linearGradient>
     <radialGradient id="g2" cx="25%" cy="20%" r="60%">
-      <stop offset="0%" stop-color="#7c5cfa" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#7c5cfa" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#dff2b0" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#dff2b0" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="g3" cx="80%" cy="75%" r="55%">
-      <stop offset="0%" stop-color="#22d3aa" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#22d3aa" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#6fd6ab" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#6fd6ab" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1600" height="1000" fill="url(#g)"/>
   <rect width="1600" height="1000" fill="url(#g2)"/>
   <rect width="1600" height="1000" fill="url(#g3)"/>
-  <g fill="#ffffff" opacity="0.12">
+  <g fill="#4caf7d" opacity="0.14">
     <path transform="translate(140,120) scale(3.4) rotate(-14)" d="${DENTAL_TOOTH_PATH}"/>
     <path transform="translate(1120,80) scale(4.6) rotate(20)" d="${DENTAL_TOOTH_PATH}"/>
     <path transform="translate(760,560) scale(6.2) rotate(-6)" d="${DENTAL_TOOTH_PATH}"/>
@@ -66,14 +65,14 @@ const BACKDROP_IMAGE_URL = `url("data:image/svg+xml,${BACKDROP_SVG}")`;
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
   // Fondos
-  sidebarBg:   "rgba(255,255,255,0.55)",
-  pageBg:      "#171740",
-  cardBg:      "rgba(255,255,255,0.55)",
-  hoverBg:     "rgba(15,23,42,0.06)",
+  sidebarBg:   "rgba(255,255,255,0.6)",
+  pageBg:      "#eafaf1",
+  cardBg:      "rgba(255,255,255,0.6)",
+  hoverBg:     "rgba(15,23,42,0.05)",
   activeBg:    "rgba(238,242,255,0.75)",
   glassBlur:   "blur(20px)",
-  glassBorder: "1px solid rgba(255,255,255,0.5)",
-  glassShadow: "0 8px 32px rgba(15,23,42,0.12)",
+  glassBorder: "1px solid rgba(255,255,255,0.7)",
+  glassShadow: "0 8px 32px rgba(16,120,80,0.10)",
   // Texto
   ink:         "#111827",
   inkMid:      "#4B5563",
@@ -690,7 +689,7 @@ const Splash = () => (
         <path d="M2 12l10 5 10-5"/>
       </svg>
     </div>
-    <span style={{ position: "relative", zIndex: 1, fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>DentalOS</span>
+    <span style={{ position: "relative", zIndex: 1, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: "-0.3px" }}>DentalOS</span>
   </div>
 );
 
