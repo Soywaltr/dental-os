@@ -1,13 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Orígenes permitidos. Antes era '*': con verify_jwt cualquier origen podía
+// invocar la función si conseguía un token válido. Se puede ampliar con el
+// secreto ALLOWED_ORIGINS (lista separada por comas) sin volver a desplegar.
+const DEFAULT_ORIGINS = [
+  'https://drasolvargas.com',
+  'https://www.drasolvargas.com',
+  'http://localhost:5173',
+]
+const allowedOrigins = () => {
+  const extra = Deno.env.get('ALLOWED_ORIGINS')
+  return extra ? extra.split(',').map(o => o.trim()).filter(Boolean) : DEFAULT_ORIGINS
+}
+const corsFor = (req: Request) => {
+  const origin = req.headers.get('origin') ?? ''
+  const permitido = allowedOrigins().includes(origin)
+  return {
+    'Access-Control-Allow-Origin': permitido ? origin : DEFAULT_ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  }
 }
 
 const GRAPH_VERSION = 'v21.0'
 
 serve(async (req: Request) => {
+  const corsHeaders = corsFor(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
