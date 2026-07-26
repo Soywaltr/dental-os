@@ -11,6 +11,8 @@
 //
 // El UUID no es un secreto en sí, pero solo se expone a los miembros de la
 // clínica: la tabla `clinicas` está protegida por RLS.
+import { supabase } from '../supabase';
+
 export const BUCKET = 'imagenes';
 
 export const rutaPerfil = (clinicaId) => `${clinicaId}/perfil.png`;
@@ -33,8 +35,47 @@ export const rutaFotoOrto = (clinicaId, pacienteId, nombreArchivo) =>
 // antiguos, que viven en la raíz del bucket.
 export const rutaDesdeUrl = (url) => {
   const texto = String(url || '');
+  if (!texto) return '';
   const marca = `/object/public/${BUCKET}/`;
   const i = texto.indexOf(marca);
+  // Ya es una ruta (lo que guardan los registros nuevos), no una URL.
+  if (i === -1 && !texto.startsWith('http')) return texto.split('?')[0];
   if (i === -1) return texto.split('/').pop().split('?')[0];
   return decodeURIComponent(texto.slice(i + marca.length).split('?')[0]);
 };
+
+// ─── URLs FIRMADAS ───────────────────────────────────────────────────────────
+// El bucket es privado: las URLs públicas no pasan por RLS, así que cualquiera
+// con la ruta descargaba el archivo. Con URLs firmadas cada acceso exige una
+// firma temporal que solo se emite si el RLS del usuario lo permite.
+//
+// Acepta tanto una ruta como una URL pública antigua: los registros existentes
+// guardan URLs completas, y de ahí se deriva la ruta. Así no hace falta migrar
+// los datos ya guardados en historias.imagenes ni en ortodoncia.fotografias.
+const VIGENCIA_SEGUNDOS = 3600;
+const MARGEN_MS = 60_000;
+const cacheFirmas = new Map(); // ruta -> { url, expiraEn }
+
+export async function firmar(rutaOUrl, segundos = VIGENCIA_SEGUNDOS) {
+  const ruta = rutaDesdeUrl(rutaOUrl);
+  if (!ruta) return null;
+
+  const enCache = cacheFirmas.get(ruta);
+  if (enCache && enCache.expiraEn - MARGEN_MS > Date.now()) return enCache.url;
+
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(ruta, segundos);
+  // Un error aquí normalmente significa que el archivo no existe (por ejemplo,
+  // una clínica que todavía no subió su firma). Se devuelve null y la vista
+  // muestra su estado vacío.
+  if (error || !data?.signedUrl) return null;
+
+  cacheFirmas.set(ruta, { url: data.signedUrl, expiraEn: Date.now() + segundos * 1000 });
+  return data.signedUrl;
+}
+
+// Se llama tras subir o reemplazar un archivo: si no, la firma vieja seguiría
+// sirviendo la versión anterior desde la caché.
+export function invalidarFirma(rutaOUrl) {
+  const ruta = rutaDesdeUrl(rutaOUrl);
+  if (ruta) cacheFirmas.delete(ruta);
+}

@@ -17,6 +17,7 @@ import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
 import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
 import { AppContext } from "./utils/appContext";
+import useSignedUrl from "./utils/useSignedUrl";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -283,6 +284,9 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
 // ─── COMPONENTE: SIDEBAR ─────────────────────────────────────────────────────
 const Sidebar = memo(({ state, dispatch, onLogout, clinica }) => {
   const { sidebarCollapsed: col, view } = state;
+  // El bucket es privado: el logo se sirve con una URL firmada, no con la
+  // pública que quedó guardada en clinicas.logo_url.
+  const logoUrl = useSignedUrl(clinica?.logo_url);
   const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
   const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
   const W = col ? 60 : 220;
@@ -313,12 +317,12 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica }) => {
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <div style={{
               width: 30, height: 30, borderRadius: 8,
-              background: clinica?.logo_url ? "transparent" : GRAD_PRIMARY,
+              background: logoUrl ? "transparent" : GRAD_PRIMARY,
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "#fff", flexShrink: 0, overflow: "hidden",
             }}>
-              {clinica?.logo_url ? (
-                <img src={clinica.logo_url} alt={clinica.nombre || "Logo del consultorio"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {logoUrl ? (
+                <img src={logoUrl} alt={clinica?.nombre || "Logo del consultorio"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5z"/>

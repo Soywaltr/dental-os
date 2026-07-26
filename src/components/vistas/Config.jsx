@@ -6,7 +6,7 @@ import Icon from '../ui/Icon';
 import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import useMetaWhatsApp from '../../utils/useMetaWhatsApp';
 import { BD, DN, MU, MT, P, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
-import { BUCKET, rutaPerfil, rutaFirma, rutaLogo } from '../../utils/storage';
+import { BUCKET, rutaPerfil, rutaFirma, rutaLogo, firmar, invalidarFirma } from '../../utils/storage';
 
 const TABS = [
   { id: 'generales', lbl: 'Generales' },
@@ -55,16 +55,20 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
   const [subiendoLogo, setSubiendoLogo] = useState(false);
 
   useEffect(() => {
-    const sincronizar = () => {
+    let vivo = true;
+    const sincronizar = async () => {
       if (!clinica) return;
       setNombre(clinica.nombre || '');
       setDireccion(clinica.direccion || '');
       setTelefono(clinica.telefono || '');
       setEmail(clinica.email || '');
       setCop(clinica.cop || '');
-      setLogoUrl(clinica.logo_url || null);
+      // Bucket privado: hay que firmar la ruta guardada para poder mostrarla.
+      const firmada = clinica.logo_url ? await firmar(clinica.logo_url) : null;
+      if (vivo) setLogoUrl(firmada);
     };
     sincronizar();
+    return () => { vivo = false; };
   }, [clinica]);
 
   const guardar = async () => {
@@ -86,12 +90,13 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
     const path = rutaLogo(clinicaId);
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
     if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    const url = `${data.publicUrl}?t=${Date.now()}`;
-    const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: url }).eq('id', clinicaId);
+    // Se guarda la RUTA, no una URL pública: con el bucket privado esa URL no
+    // resuelve, y la firma se genera al momento de mostrar.
+    const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: path }).eq('id', clinicaId);
     setSubiendoLogo(false);
     if (dbErr) { alert('Error al guardar el logo: ' + dbErr.message); return; }
-    setLogoUrl(url);
+    invalidarFirma(path);
+    setLogoUrl(await firmar(path));
     refrescarClinica?.();
   };
 
@@ -258,10 +263,10 @@ function MiPerfil({ clinicaId }) {
         setEmail(user.email || '');
       }
       if (clinicaId) {
-        const { data: avatarData } = supabase.storage.from(BUCKET).getPublicUrl(rutaPerfil(clinicaId));
-        if (avatarData?.publicUrl) setAvatarUrl(avatarData.publicUrl);
-        const { data: firmaData } = supabase.storage.from(BUCKET).getPublicUrl(rutaFirma(clinicaId));
-        if (firmaData?.publicUrl) setFirmaUrl(firmaData.publicUrl);
+        // firmar() devuelve null si el archivo no existe, así que la tarjeta
+        // muestra su estado vacío en vez de una imagen rota.
+        setAvatarUrl(await firmar(rutaPerfil(clinicaId)));
+        setFirmaUrl(await firmar(rutaFirma(clinicaId)));
       }
       setLoading(false);
     };
@@ -283,8 +288,8 @@ function MiPerfil({ clinicaId }) {
     const ruta = rutaPerfil(clinicaId);
     const { error } = await supabase.storage.from(BUCKET).upload(ruta, file, { upsert: true });
     if (error) { alert('Error al subir la foto: ' + error.message); setSubiendoAvatar(false); return; }
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(ruta);
-    setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`);
+    invalidarFirma(ruta);
+    setAvatarUrl(await firmar(ruta));
     setSubiendoAvatar(false);
   };
 
@@ -295,8 +300,8 @@ function MiPerfil({ clinicaId }) {
     const ruta = rutaFirma(clinicaId);
     const { error } = await supabase.storage.from(BUCKET).upload(ruta, file, { upsert: true });
     if (error) { alert('Error al subir la firma: ' + error.message); setSubiendoFirma(false); return; }
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(ruta);
-    setFirmaUrl(`${data.publicUrl}?t=${Date.now()}`);
+    invalidarFirma(ruta);
+    setFirmaUrl(await firmar(ruta));
     setSubiendoFirma(false);
   };
 

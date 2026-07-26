@@ -12,7 +12,9 @@ import {
 } from '../../utils/constants';
 import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsAppNumber } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
-import { BUCKET, rutaFirma, rutaImagenPaciente, rutaFotoOrto, rutaDesdeUrl } from '../../utils/storage';
+// No se importa invalidarFirma: aquí cada subida genera una ruta nueva con
+// timestamp, así que nunca hay una firma cacheada que quede obsoleta.
+import { BUCKET, rutaFirma, rutaImagenPaciente, rutaFotoOrto, rutaDesdeUrl, firmar } from '../../utils/storage';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -626,6 +628,22 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const [planTrataForm, setPlanTrataForm] = useState({});
   const [resumenForm, setResumenForm] = useState({});
   const [fotosOrto, setFotosOrto] = useState({});
+  // Igual que imagenesFirmadas: mismas claves, con la URL firmada añadida.
+  const [fotosOrtoFirmadas, setFotosOrtoFirmadas] = useState({});
+
+  useEffect(() => {
+    let vivo = true;
+    const resolver = async () => {
+      const entradas = await Promise.all(
+        Object.entries(fotosOrto || {}).map(async ([clave, dato]) =>
+          [clave, { ...dato, urlFirmada: await firmar(dato.url) }]
+        )
+      );
+      if (vivo) setFotosOrtoFirmadas(Object.fromEntries(entradas));
+    };
+    resolver();
+    return () => { vivo = false; };
+  }, [fotosOrto]);
 
   // Seguros (Bloqueos de pantalla)
   const [isEditingOrtoExamen, setIsEditingOrtoExamen] = useState(false);
@@ -720,8 +738,8 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
       const fileName = rutaFotoOrto(clinicaId, patData.id, file.name);
       const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
       if (uploadError) throw uploadError;
-      const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
-      const nuevoObjetoFotos = { ...fotosOrto, [key]: { url: publicUrlData.publicUrl, ext: fileExt, date: new Date().toLocaleDateString('es-PE') } };
+      // Igual que en las imágenes de historia: se guarda la ruta, no la URL.
+      const nuevoObjetoFotos = { ...fotosOrto, [key]: { url: fileName, ext: fileExt, date: new Date().toLocaleDateString('es-PE') } };
       await guardarFotografiasOrto(nuevoObjetoFotos);
       setFotosOrto(nuevoObjetoFotos);
     } catch (err) {
@@ -893,6 +911,22 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   
   const [anamnesisData, setAnamnesisData] = useState({});
   const [imagenesList, setImagenesList] = useState([]);
+  // Copia de imagenesList con la URL firmada de cada archivo (bucket privado).
+  // Se mantiene aparte para que .url siga siendo el localizador guardado, que es
+  // lo que necesita el borrado.
+  const [imagenesFirmadas, setImagenesFirmadas] = useState([]);
+
+  useEffect(() => {
+    let vivo = true;
+    const resolver = async () => {
+      const firmadas = await Promise.all(
+        (imagenesList || []).map(async img => ({ ...img, urlFirmada: await firmar(img.url) }))
+      );
+      if (vivo) setImagenesFirmadas(firmadas);
+    };
+    resolver();
+    return () => { vivo = false; };
+  }, [imagenesList]);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({});
 
@@ -913,9 +947,16 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   const [firmaDoctorUrl, setFirmaDoctorUrl] = useState(null);
 
   useEffect(() => {
-    if (!clinicaId) { setFirmaDoctorUrl(null); return; }
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(rutaFirma(clinicaId));
-    if (data?.publicUrl) setFirmaDoctorUrl(data.publicUrl);
+    let vivo = true;
+    const resolver = async () => {
+      if (!clinicaId) { setFirmaDoctorUrl(null); return; }
+      // Bucket privado: se firma la ruta. La URL firmada dura una hora, más que
+      // suficiente para la ventana de impresión de recetas y presupuestos.
+      const url = await firmar(rutaFirma(clinicaId));
+      if (vivo) setFirmaDoctorUrl(url);
+    };
+    resolver();
+    return () => { vivo = false; };
   }, [clinicaId]);
 
   useEffect(() => {
@@ -1241,8 +1282,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     const fileName = rutaImagenPaciente(clinicaId, patient.id, file.name);
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
     if (uploadError) { alert('Error al subir la imagen: ' + uploadError.message); setSaving(false); return; }
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
-    const nuevaImagen = { type: 'Radiografía / Foto', date: new Date().toLocaleDateString('es-PE'), url: publicUrlData.publicUrl };
+    // Se guarda la RUTA, no una URL pública: el bucket es privado y la firma se
+    // genera al mostrar. Los registros antiguos con URL completa siguen
+    // funcionando porque firmar() deriva la ruta de la URL.
+    const nuevaImagen = { type: 'Radiografía / Foto', date: new Date().toLocaleDateString('es-PE'), url: fileName };
     const nuevaLista = [...imagenesList, nuevaImagen];
     setImagenesList(nuevaLista);
     await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, imagenes: nuevaLista }, { onConflict: 'patient_id' });
@@ -1933,7 +1976,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px', paddingBottom: '40px' }}>
                       {ORTO_CAJAS.map(item => {
-                        const fileData = fotosOrto[item.key];
+                        // fotosOrtoFirmadas trae la urlFirmada para mostrar;
+                        // fileData.url sigue siendo el localizador para borrar.
+                        const fileData = fotosOrtoFirmadas[item.key];
                         const hasFile = !!fileData;
 
                         return (
@@ -1945,13 +1990,13 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                             <div style={{ height: '140px', background: hasFile ? '#000' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                               {hasFile ? (
                                 fileData.ext.match(/(pdf|ppt|pptx)/i) ? (
-                                  <a href={fileData.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                                  <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                                     <Icon name="document" size={40} />
                                     <span style={{ fontSize: '10px', color: '#cbd5e1' }}>Abrir {fileData.ext.toUpperCase()}</span>
                                   </a>
                                 ) : (
-                                  <a href={fileData.url} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%', display: 'block' }}>
-                                    <img src={fileData.url} alt={item.key} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                  <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%', display: 'block' }}>
+                                    <img src={fileData.urlFirmada} alt={item.key} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                   </a>
                                 )
                               ) : (
@@ -2487,7 +2532,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
-              {imagenesList.map((img, i) => (
+              {imagenesFirmadas.map((img, i) => (
                 <div key={i} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, overflow: 'hidden', position: 'relative' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = P} onMouseLeave={e => e.currentTarget.style.borderColor = BD}>
 
@@ -2503,7 +2548,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   </button>
 
                   <div style={{ height: 100, background: LT, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    <img src={img.url} alt="Radiografía" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={img.urlFirmada} alt="Radiografía" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ padding: '7px 10px' }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: DN }}>{img.type}</div>
