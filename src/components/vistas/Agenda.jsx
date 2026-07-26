@@ -6,10 +6,30 @@ import ModalNuevaCita from '../ui/ModalNuevaCita';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
-import { BD, P, GL, MU, DN, MT, LT, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BD, P, GL, MU, DN, MT, LT, RJ, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
-export default function Agenda({ clinicaId }) {
-  const hours = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
+
+export default function Agenda({ clinicaId, clinica }) {
+  // Horario real del consultorio (Ajustes > Generales > Horario de atención),
+  // con respaldo a un horario por defecto mientras la clínica no lo configure.
+  const horario = { ...DEFAULT_HORARIO, ...(clinica?.horario || {}) };
+  const lvInicioH = horaNum(horario.lv_inicio);
+  const lvFinH = horaNum(horario.lv_fin);
+  const sabInicioH = horaNum(horario.sab_inicio);
+  const sabFinH = horaNum(horario.sab_fin);
+  const inicioH = horario.sab_cerrado ? lvInicioH : Math.min(lvInicioH, sabInicioH);
+  const finH = horario.sab_cerrado ? lvFinH : Math.max(lvFinH, sabFinH);
+  const hours = Array.from({ length: Math.max(finH - inicioH + 1, 0) }, (_, i) => `${inicioH + i}:00`);
+
+  // Domingo (0) siempre cerrado — la Agenda nunca agenda ese día. Sábado (6)
+  // usa su propio rango; el resto (Lun-Vie) usa el rango general.
+  const estaAbierto = (fecha, hora) => {
+    const dow = fecha.getDay();
+    if (dow === 0) return false;
+    if (dow === 6) return !horario.sab_cerrado && hora >= sabInicioH && hora <= sabFinH;
+    return hora >= lvInicioH && hora <= lvFinH;
+  };
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('Semana');
@@ -172,7 +192,7 @@ export default function Agenda({ clinicaId }) {
   const enviarAGoogleCalendar = async (accessToken, cita) => {
     try {
       const startDateTime = `${cita.fecha}T${cita.hora}:00-05:00`;
-      const endDate = new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000);
+      const endDate = new Date(new Date(startDateTime).getTime() + horario.duracion_cita * 60 * 1000);
       const endDateTime = endDate.toISOString();
 
       const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
@@ -238,7 +258,7 @@ export default function Agenda({ clinicaId }) {
     if (googleToken && selectedCita.google_event_id) {
       try {
         const startDateTime = `${selectedCita.fecha}T${selectedCita.hora_cita}:00-05:00`;
-        const endDate = new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000);
+        const endDate = new Date(new Date(startDateTime).getTime() + horario.duracion_cita * 60 * 1000);
         await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${selectedCita.google_event_id}`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${googleToken}`, 'Content-Type': 'application/json' },
@@ -352,9 +372,13 @@ export default function Agenda({ clinicaId }) {
                 {displayDays.map((d, di) => {
                   const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const abierto = estaAbierto(d, parseInt(h, 10));
 
                   return (
-                    <div key={di} style={{ borderLeft: `1px solid ${MT}`, padding: 2, minHeight: 46 }}>
+                    <div key={di} style={{
+                      borderLeft: `1px solid ${MT}`, padding: 2, minHeight: 46,
+                      background: abierto ? undefined : 'repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 6px, #e9edf1 6px, #e9edf1 12px)',
+                    }}>
                       {(weekApts[mapIndex] || []).filter(a => a.h === parseInt(h, 10) && a.fecha === targetDate).map((a, ai) => (
                         <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }} style={{ background: a.col, borderRadius: 5, padding: '5px 8px', cursor: 'pointer', marginBottom: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                           <div style={{ fontSize: 10, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>

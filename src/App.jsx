@@ -253,7 +253,7 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
 });
 
 // ─── COMPONENTE: SIDEBAR ─────────────────────────────────────────────────────
-const Sidebar = memo(({ state, dispatch, onLogout }) => {
+const Sidebar = memo(({ state, dispatch, onLogout, clinica }) => {
   const { sidebarCollapsed: col, view } = state;
   const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
   const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
@@ -282,21 +282,25 @@ const Sidebar = memo(({ state, dispatch, onLogout }) => {
         flexShrink: 0,
       }}>
         {!col && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <div style={{
               width: 30, height: 30, borderRadius: 8,
-              background: GRAD_PRIMARY,
+              background: clinica?.logo_url ? "transparent" : GRAD_PRIMARY,
               display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", flexShrink: 0,
+              color: "#fff", flexShrink: 0, overflow: "hidden",
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
-              </svg>
+              {clinica?.logo_url ? (
+                <img src={clinica.logo_url} alt={clinica.nombre || "Logo del consultorio"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              )}
             </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font, letterSpacing: "-0.3px" }}>
-              DentalOS
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font, letterSpacing: "-0.3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {clinica?.nombre || "DentalOS"}
             </span>
           </div>
         )}
@@ -599,7 +603,7 @@ const Loader = () => (
   </div>
 );
 
-const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaLoading }) => {
+const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaLoading, refrescarClinica }) => {
   // Aseguramos que si alguna vista vieja llama a 'historia', renderice 'expediente'
   const currentViewKey = state.view === 'historia' ? 'expediente' : state.view;
   const ActiveView = VIEWS[currentViewKey] ?? Dashboard;
@@ -622,6 +626,7 @@ const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaLoading }
     clinicaId,
     clinica,
     clinicaLoading,
+    refrescarClinica,
   };
 
   // 3. Props específicas para el Expediente Clínico (Historia)
@@ -677,7 +682,7 @@ export default function App() {
   const { session, loading, logout } = useSession();
   const [state, dispatch] = useReducer(reducer, INIT);
   const { isTablet } = useResponsive();
-  const { clinicaId, clinica, loading: clinicaLoading } = useClinic();
+  const { clinicaId, clinica, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
   const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp(clinicaId);
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
@@ -776,7 +781,7 @@ export default function App() {
         }} />
 
         {/* Sidebar izquierdo */}
-        <Sidebar state={state} dispatch={dispatch} onLogout={logout} />
+        <Sidebar state={state} dispatch={dispatch} onLogout={logout} clinica={clinica} />
 
         {/* Columna derecha */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
@@ -786,7 +791,7 @@ export default function App() {
           {/* Contenido */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "16px 16px 32px" : "24px 24px 48px", background: "transparent" }}>
             <div style={{ maxWidth: 1480, margin: "0 auto" }}>
-              <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaLoading={clinicaLoading} />
+              <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
             </div>
           </main>
         </div>

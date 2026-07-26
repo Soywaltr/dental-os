@@ -158,3 +158,7 @@ export const TOOLS = [
 ];
 
 export const TODAY_STR = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+
+// Horario de atención por defecto — usado como respaldo mientras clinica.horario
+// no esté configurado, y como valor inicial del formulario en Ajustes.
+export const DEFAULT_HORARIO = { lv_inicio: '08:00', lv_fin: '18:00', sab_inicio: '08:00', sab_fin: '13:00', sab_cerrado: false, duracion_cita: 30 };

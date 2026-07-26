@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import useMetaWhatsApp from '../../utils/useMetaWhatsApp';
-import { BD, DN, MU, MT, P, RJ, WA, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BD, DN, MU, MT, P, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 const TABS = [
   { id: 'generales', lbl: 'Generales' },
@@ -21,7 +21,7 @@ const cardStyle = {
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
 
-export default function Config({ clinicaId }) {
+export default function Config({ clinicaId, clinica, refrescarClinica }) {
   const [tab, setTab] = useState('generales');
 
   return (
@@ -35,7 +35,7 @@ export default function Config({ clinicaId }) {
         ))}
       </div>
 
-      {tab === 'generales' && <Generales />}
+      {tab === 'generales' && <Generales clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />}
       {tab === 'perfil' && <MiPerfil />}
       {tab === 'integraciones' && <Integraciones clinicaId={clinicaId} />}
     </div>
@@ -43,13 +43,105 @@ export default function Config({ clinicaId }) {
 }
 
 // ── GENERALES ────────────────────────────────────────────────────────────────
-function Generales() {
+// Datos del consultorio (nombre + logo): funcional, se guarda en la tabla
+// `clinicas` y alimenta la marca del sidebar. El resto (horario, agente IA,
+// notificaciones) sigue como maqueta — fuera de alcance de esta fase.
+function Generales({ clinicaId, clinica, refrescarClinica }) {
+  const [nombre, setNombre] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [email, setEmail] = useState('');
+  const [cop, setCop] = useState('');
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [subiendoLogo, setSubiendoLogo] = useState(false);
+
+  useEffect(() => {
+    const sincronizar = () => {
+      if (!clinica) return;
+      setNombre(clinica.nombre || '');
+      setDireccion(clinica.direccion || '');
+      setTelefono(clinica.telefono || '');
+      setEmail(clinica.email || '');
+      setCop(clinica.cop || '');
+      setLogoUrl(clinica.logo_url || null);
+    };
+    sincronizar();
+  }, [clinica]);
+
+  const guardar = async () => {
+    if (!clinicaId) return;
+    setGuardando(true);
+    const { error } = await supabase.from('clinicas')
+      .update({ nombre, direccion, telefono, email, cop })
+      .eq('id', clinicaId);
+    setGuardando(false);
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    alert('Datos del consultorio actualizados.');
+    refrescarClinica?.();
+  };
+
+  const subirLogo = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !clinicaId) return;
+    setSubiendoLogo(true);
+    const path = `logo-clinica-${clinicaId}.png`;
+    const { error: upErr } = await supabase.storage.from('imagenes').upload(path, file, { upsert: true });
+    if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
+    const { data } = supabase.storage.from('imagenes').getPublicUrl(path);
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+    const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: url }).eq('id', clinicaId);
+    setSubiendoLogo(false);
+    if (dbErr) { alert('Error al guardar el logo: ' + dbErr.message); return; }
+    setLogoUrl(url);
+    refrescarClinica?.();
+  };
+
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
+        <div style={cardStyle}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${MT}` }}>Datos del consultorio</div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 10, background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <Icon name="document" size={20} color={MU} />
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 9.5, color: MU, fontWeight: 700, textTransform: 'uppercase', letterSpacing: .3, marginBottom: 3 }}>Logo del consultorio</div>
+              <label htmlFor="logo-upload" style={{ fontSize: 11, color: P, fontWeight: 700, cursor: 'pointer' }}>
+                {subiendoLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar logo' : '+ Subir logo')}
+              </label>
+              <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={subirLogo} />
+            </div>
+          </div>
+
+          {[
+            ['Nombre', nombre, setNombre],
+            ['Dirección', direccion, setDireccion],
+            ['Teléfono', telefono, setTelefono],
+            ['Email', email, setEmail],
+            ['COP', cop, setCop],
+          ].map(([label, value, setValue]) => (
+            <div key={label} style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>{label}</label>
+              <input value={value} onChange={e => setValue(e.target.value)}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+          ))}
+
+          <Button onClick={guardar} disabled={guardando} style={{ marginTop: 6, padding: '9px 24px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="save" size={13} /> {guardando ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+
+        <HorarioCard clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />
+
         {[
-          { title: 'Datos del consultorio', fields: [['Nombre', 'Consultorio Dra. Sol Vargas'], ['Dirección', 'Los Diamantes 178, Trujillo 13011'], ['Teléfono', '+51 915 054 145'], ['Email', 'drasolvargass@gmail.com'], ['COP', '12345']] },
-          { title: 'Horario de atención', fields: [['Lunes - Viernes', '8:00 am - 6:00 pm'], ['Sábado', '8:00 am - 1:00 pm'], ['Domingo', 'Cerrado'], ['Duración cita por defecto', '30 minutos']] },
           { title: 'WhatsApp IA — Agente Nanda', fields: [['Número WA', '+51 915 054 145'], ['Nombre del agente', 'Nanda'], ['Recordatorio (horas antes)', '24h y 1h'], ['Auto-respuesta', 'Activada']] },
           { title: 'Notificaciones', fields: [['Nuevas citas', 'Email + WhatsApp'], ['Pagos recibidos', 'Email'], ['Laboratorio listo', 'WhatsApp'], ['Ausencias', 'WhatsApp']] },
         ].map((sec, si) => (
@@ -64,8 +156,84 @@ function Generales() {
           </div>
         ))}
       </div>
-      <Button style={{ marginTop: 16, padding: '9px 24px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <Icon name="save" size={13} /> Guardar configuración
+    </div>
+  );
+}
+
+// ── HORARIO DE ATENCIÓN ──────────────────────────────────────────────────────
+// Se guarda en clinicas.horario (jsonb) y alimenta el rango de horas y el
+// estado abierto/cerrado que dibuja Agenda.jsx en su grilla semanal/diaria.
+function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
+  const [lvInicio, setLvInicio] = useState(DEFAULT_HORARIO.lv_inicio);
+  const [lvFin, setLvFin] = useState(DEFAULT_HORARIO.lv_fin);
+  const [sabCerrado, setSabCerrado] = useState(DEFAULT_HORARIO.sab_cerrado);
+  const [sabInicio, setSabInicio] = useState(DEFAULT_HORARIO.sab_inicio);
+  const [sabFin, setSabFin] = useState(DEFAULT_HORARIO.sab_fin);
+  const [duracionCita, setDuracionCita] = useState(DEFAULT_HORARIO.duracion_cita);
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    const sincronizar = () => {
+      const h = { ...DEFAULT_HORARIO, ...(clinica?.horario || {}) };
+      setLvInicio(h.lv_inicio);
+      setLvFin(h.lv_fin);
+      setSabCerrado(h.sab_cerrado);
+      setSabInicio(h.sab_inicio);
+      setSabFin(h.sab_fin);
+      setDuracionCita(h.duracion_cita);
+    };
+    sincronizar();
+  }, [clinica]);
+
+  const guardar = async () => {
+    if (!clinicaId) return;
+    setGuardando(true);
+    const horario = { lv_inicio: lvInicio, lv_fin: lvFin, sab_inicio: sabInicio, sab_fin: sabFin, sab_cerrado: sabCerrado, duracion_cita: Number(duracionCita) };
+    const { error } = await supabase.from('clinicas').update({ horario }).eq('id', clinicaId);
+    setGuardando(false);
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    alert('Horario de atención actualizado.');
+    refrescarClinica?.();
+  };
+
+  const timeInputStyle = { flex: 1, padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' };
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${MT}` }}>Horario de atención</div>
+
+      <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Lunes a viernes</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <input type="time" value={lvInicio} onChange={e => setLvInicio(e.target.value)} style={timeInputStyle} />
+        <input type="time" value={lvFin} onChange={e => setLvFin(e.target.value)} style={timeInputStyle} />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+        <label style={{ fontSize: 9.5, color: MU, fontWeight: 600 }}>Sábado</label>
+        <label style={{ fontSize: 10, color: MU, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+          <input type="checkbox" checked={!sabCerrado} onChange={e => setSabCerrado(!e.target.checked)} style={{ accentColor: P, cursor: 'pointer' }} /> Abierto
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, opacity: sabCerrado ? .5 : 1 }}>
+        <input type="time" disabled={sabCerrado} value={sabInicio} onChange={e => setSabInicio(e.target.value)} style={timeInputStyle} />
+        <input type="time" disabled={sabCerrado} value={sabFin} onChange={e => setSabFin(e.target.value)} style={timeInputStyle} />
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Domingo</label>
+        <div style={{ padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 10.5, color: MU, background: MT }}>Cerrado — la Agenda no muestra domingos</div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Duración de cita por defecto</label>
+        <select value={duracionCita} onChange={e => setDuracionCita(e.target.value)}
+          style={{ width: '100%', padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box', background: '#fff' }}>
+          {[15, 20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m} minutos</option>)}
+        </select>
+      </div>
+
+      <Button onClick={guardar} disabled={guardando} style={{ padding: '9px 24px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <Icon name="save" size={13} /> {guardando ? 'Guardando...' : 'Guardar'}
       </Button>
     </div>
   );

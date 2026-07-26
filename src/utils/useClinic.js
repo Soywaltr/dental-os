@@ -36,7 +36,7 @@ export default function useClinic() {
 
       const { data, error } = await supabase
         .from('usuarios_clinica')
-        .select('clinica_id, rol, clinicas ( id, nombre, direccion, telefono, email, cop, whatsapp_numero, logo_url )')
+        .select('clinica_id, rol, clinicas ( id, nombre, direccion, telefono, email, cop, whatsapp_numero, logo_url, horario )')
         .eq('user_id', userId)
         .limit(1);
 
