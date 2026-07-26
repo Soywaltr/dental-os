@@ -6,15 +6,13 @@ import Icon from '../ui/Icon';
 import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import useMetaWhatsApp from '../../utils/useMetaWhatsApp';
 import { BD, DN, MU, MT, P, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BUCKET, rutaPerfil, rutaFirma, rutaLogo } from '../../utils/storage';
 
 const TABS = [
   { id: 'generales', lbl: 'Generales' },
   { id: 'perfil', lbl: 'Mi perfil' },
   { id: 'integraciones', lbl: 'Integraciones' },
 ];
-
-const AVATAR_PATH = 'perfil-doctor.png';
-const FIRMA_PATH = 'firma-doctor.png';
 
 const cardStyle = {
   background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 20,
@@ -36,7 +34,7 @@ export default function Config({ clinicaId, clinica, refrescarClinica }) {
       </div>
 
       {tab === 'generales' && <Generales clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />}
-      {tab === 'perfil' && <MiPerfil />}
+      {tab === 'perfil' && <MiPerfil clinicaId={clinicaId} />}
       {tab === 'integraciones' && <Integraciones clinicaId={clinicaId} />}
     </div>
   );
@@ -85,10 +83,10 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
     const file = e.target.files[0];
     if (!file || !clinicaId) return;
     setSubiendoLogo(true);
-    const path = `logo-clinica-${clinicaId}.png`;
-    const { error: upErr } = await supabase.storage.from('imagenes').upload(path, file, { upsert: true });
+    const path = rutaLogo(clinicaId);
+    const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
     if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
-    const { data } = supabase.storage.from('imagenes').getPublicUrl(path);
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
     const url = `${data.publicUrl}?t=${Date.now()}`;
     const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: url }).eq('id', clinicaId);
     setSubiendoLogo(false);
@@ -240,7 +238,7 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
 }
 
 // ── MI PERFIL ────────────────────────────────────────────────────────────────
-function MiPerfil() {
+function MiPerfil({ clinicaId }) {
   const [loading, setLoading] = useState(true);
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -259,14 +257,16 @@ function MiPerfil() {
         setTelefono(user.user_metadata?.phone || '');
         setEmail(user.email || '');
       }
-      const { data: avatarData } = supabase.storage.from('imagenes').getPublicUrl(AVATAR_PATH);
-      if (avatarData?.publicUrl) setAvatarUrl(avatarData.publicUrl);
-      const { data: firmaData } = supabase.storage.from('imagenes').getPublicUrl(FIRMA_PATH);
-      if (firmaData?.publicUrl) setFirmaUrl(firmaData.publicUrl);
+      if (clinicaId) {
+        const { data: avatarData } = supabase.storage.from(BUCKET).getPublicUrl(rutaPerfil(clinicaId));
+        if (avatarData?.publicUrl) setAvatarUrl(avatarData.publicUrl);
+        const { data: firmaData } = supabase.storage.from(BUCKET).getPublicUrl(rutaFirma(clinicaId));
+        if (firmaData?.publicUrl) setFirmaUrl(firmaData.publicUrl);
+      }
       setLoading(false);
     };
     cargar();
-  }, []);
+  }, [clinicaId]);
 
   const guardar = async () => {
     setSaving(true);
@@ -278,22 +278,24 @@ function MiPerfil() {
 
   const subirAvatar = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !clinicaId) return;
     setSubiendoAvatar(true);
-    const { error } = await supabase.storage.from('imagenes').upload(AVATAR_PATH, file, { upsert: true });
+    const ruta = rutaPerfil(clinicaId);
+    const { error } = await supabase.storage.from(BUCKET).upload(ruta, file, { upsert: true });
     if (error) { alert('Error al subir la foto: ' + error.message); setSubiendoAvatar(false); return; }
-    const { data } = supabase.storage.from('imagenes').getPublicUrl(AVATAR_PATH);
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(ruta);
     setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`);
     setSubiendoAvatar(false);
   };
 
   const subirFirma = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !clinicaId) return;
     setSubiendoFirma(true);
-    const { error } = await supabase.storage.from('imagenes').upload(FIRMA_PATH, file, { upsert: true });
+    const ruta = rutaFirma(clinicaId);
+    const { error } = await supabase.storage.from(BUCKET).upload(ruta, file, { upsert: true });
     if (error) { alert('Error al subir la firma: ' + error.message); setSubiendoFirma(false); return; }
-    const { data } = supabase.storage.from('imagenes').getPublicUrl(FIRMA_PATH);
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(ruta);
     setFirmaUrl(`${data.publicUrl}?t=${Date.now()}`);
     setSubiendoFirma(false);
   };

@@ -12,6 +12,7 @@ import {
 } from '../../utils/constants';
 import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsAppNumber } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
+import { BUCKET, rutaFirma, rutaImagenPaciente, rutaFotoOrto, rutaDesdeUrl } from '../../utils/storage';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -716,10 +717,10 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
     setSavingFotosOrto(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `orto-${patData.id}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('imagenes').upload(fileName, file);
+      const fileName = rutaFotoOrto(clinicaId, patData.id, file.name);
+      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
       if (uploadError) throw uploadError;
-      const { data: publicUrlData } = supabase.storage.from('imagenes').getPublicUrl(fileName);
+      const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
       const nuevoObjetoFotos = { ...fotosOrto, [key]: { url: publicUrlData.publicUrl, ext: fileExt, date: new Date().toLocaleDateString('es-PE') } };
       await guardarFotografiasOrto(nuevoObjetoFotos);
       setFotosOrto(nuevoObjetoFotos);
@@ -734,8 +735,7 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
     if (!window.confirm('¿Eliminar este archivo permanentemente?')) return;
     setSavingFotosOrto(true);
     try {
-      const fileName = url.split('/').pop();
-      await supabase.storage.from('imagenes').remove([fileName]);
+      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(url)]);
       const nuevoObjetoFotos = { ...fotosOrto };
       delete nuevoObjetoFotos[key];
       await guardarFotografiasOrto(nuevoObjetoFotos);
@@ -908,15 +908,15 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   const [medDraft, setMedDraft] = useState({ med: '', dose: '', inst: '' });
   const [savingReceta, setSavingReceta] = useState(false);
 
-  // --- FIRMA Y SELLO DEL DOCTOR (global, no por paciente) ---
+  // --- FIRMA Y SELLO DEL DOCTOR (por clínica, no por paciente) ---
   // Solo lectura aquí: se sube/gestiona desde Ajustes → Mi perfil.
-  const FIRMA_DOCTOR_PATH = 'firma-doctor.png';
   const [firmaDoctorUrl, setFirmaDoctorUrl] = useState(null);
 
   useEffect(() => {
-    const { data } = supabase.storage.from('imagenes').getPublicUrl(FIRMA_DOCTOR_PATH);
+    if (!clinicaId) { setFirmaDoctorUrl(null); return; }
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(rutaFirma(clinicaId));
     if (data?.publicUrl) setFirmaDoctorUrl(data.publicUrl);
-  }, []);
+  }, [clinicaId]);
 
   useEffect(() => {
     const datosDelPaciente = patData || patient;
@@ -1238,11 +1238,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     const file = e.target.files[0];
     if (!file) return;
     setSaving(true);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${patient.id}-${Date.now()}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage.from('imagenes').upload(fileName, file);
+    const fileName = rutaImagenPaciente(clinicaId, patient.id, file.name);
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
     if (uploadError) { alert('Error al subir la imagen: ' + uploadError.message); setSaving(false); return; }
-    const { data: publicUrlData } = supabase.storage.from('imagenes').getPublicUrl(fileName);
+    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
     const nuevaImagen = { type: 'Radiografía / Foto', date: new Date().toLocaleDateString('es-PE'), url: publicUrlData.publicUrl };
     const nuevaLista = [...imagenesList, nuevaImagen];
     setImagenesList(nuevaLista);
@@ -1255,8 +1254,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     if (!window.confirm("¿Estás seguro de que deseas eliminar esta imagen permanentemente?")) return;
     setSaving(true);
     try {
-      const fileName = imageUrl.split('/').pop();
-      await supabase.storage.from('imagenes').remove([fileName]);
+      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(imageUrl)]);
       const nuevaLista = imagenesList.filter((_, i) => i !== indexToDelete);
       setImagenesList(nuevaLista);
       await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, imagenes: nuevaLista }, { onConflict: 'patient_id' });
