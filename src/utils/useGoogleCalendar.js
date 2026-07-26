@@ -5,11 +5,10 @@
 // `integraciones_google`, por clínica (clinica_id) — no en localStorage, para
 // que la conexión sea de todo el consultorio y no de un solo navegador.
 //
-// Usa el flujo OAuth "auth-code" (no el "implicit" por defecto): Google entrega
-// un refresh_token de larga duración además del access_token de ~1h. El
-// intercambio y la renovación pasan por el Edge Function `google-calendar-token`
-// (necesita el Client Secret del lado del servidor, nunca en el navegador). Así
-// la conexión se renueva sola y no hay que volver a "Conectar con Google" cada hora.
+// El refresh_token nunca pasa por el navegador: la Edge Function
+// `google-calendar-token` deduce la clínica del JWT de la sesión, lee el token
+// de la base y devuelve solo un access_token efímero. Así el client secret no
+// queda expuesto como oráculo de canje.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { supabase } from '../supabase';
@@ -30,14 +29,15 @@ export default function useGoogleCalendar(clinicaId, onConnected) {
     const cargar = async () => {
       if (!clinicaId) { filaRef.current = null; setConnected(false); setLoading(false); return; }
       setLoading(true);
+      // No se pide refresh_token: el cliente no lo necesita para nada.
       const { data, error } = await supabase
         .from('integraciones_google')
-        .select('access_token, refresh_token, token_expires_at')
+        .select('access_token, token_expires_at, connected_at')
         .eq('clinica_id', clinicaId)
         .limit(1);
       if (!error && data && data.length > 0) {
         filaRef.current = data[0];
-        setConnected(!!data[0].refresh_token);
+        setConnected(true);
       } else {
         filaRef.current = null;
         setConnected(false);
@@ -59,26 +59,17 @@ export default function useGoogleCalendar(clinicaId, onConnected) {
     scope: GOOGLE_CALENDAR_SCOPE,
     onSuccess: async ({ code }) => {
       try {
+        // La función canjea el código y guarda ella misma los tokens.
         const { data, error } = await supabase.functions.invoke('google-calendar-token', {
           body: { action: 'exchange', code },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        if (!data.refresh_token) {
-          throw new Error('Google no entregó un refresh_token. Revoca el acceso de la app en myaccount.google.com/permissions e inténtalo de nuevo.');
-        }
 
-        const token_expires_at = new Date(Date.now() + data.expires_in * 1000).toISOString();
-        const fila = {
-          clinica_id: clinicaId,
+        filaRef.current = {
           access_token: data.access_token,
-          refresh_token: data.refresh_token,
-          token_expires_at,
-          connected_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          token_expires_at: new Date(Date.now() + (data.expires_in ?? 3600) * 1000).toISOString(),
         };
-        await supabase.from('integraciones_google').upsert(fila, { onConflict: 'clinica_id' });
-        filaRef.current = fila;
         setConnected(true);
         onConnected?.(data.access_token);
       } catch (err) {
@@ -91,13 +82,13 @@ export default function useGoogleCalendar(clinicaId, onConnected) {
   // Devuelve null si no hay conexión o si la renovación falla.
   const getToken = useCallback(async () => {
     const fila = filaRef.current;
-    if (!fila || !fila.refresh_token) return null;
+    if (!fila) return null;
 
     const vigente = fila.token_expires_at && new Date(fila.token_expires_at).getTime() - REFRESH_MARGIN_MS > Date.now();
     if (vigente) return fila.access_token;
 
     const { data, error } = await supabase.functions.invoke('google-calendar-token', {
-      body: { action: 'refresh', refreshToken: fila.refresh_token },
+      body: { action: 'refresh' },
     });
     if (error || data?.error || !data?.access_token) {
       // Solo se borra la conexión guardada si Google dice que el permiso ya no
@@ -107,13 +98,13 @@ export default function useGoogleCalendar(clinicaId, onConnected) {
       return null;
     }
 
-    const token_expires_at = new Date(Date.now() + data.expires_in * 1000).toISOString();
-    await supabase.from('integraciones_google').update({
-      access_token: data.access_token, token_expires_at, updated_at: new Date().toISOString(),
-    }).eq('clinica_id', clinicaId);
-    filaRef.current = { ...fila, access_token: data.access_token, token_expires_at };
+    filaRef.current = {
+      ...fila,
+      access_token: data.access_token,
+      token_expires_at: new Date(Date.now() + (data.expires_in ?? 3600) * 1000).toISOString(),
+    };
     return data.access_token;
-  }, [clinicaId, disconnect]);
+  }, [disconnect]);
 
   return { connected, loading, connect, disconnect, getToken };
 }

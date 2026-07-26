@@ -88,6 +88,13 @@ function DocModal({ doc, patient, onClose, onGuardar, saved }) {
   };
 
   const imprimir = () => {
+    // Todo dato variable se escapa antes de entrar al HTML: el nombre y el DNI
+    // del paciente son texto libre, y sin escapar permitirían inyectar markup
+    // que se ejecutaría en la ventana de impresión con la sesión activa.
+    // Escapa también comillas porque firmaP/firmaDr se interpolan en src="...".
+    const esc = s => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const w = window.open('', '_blank');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       *{margin:0;padding:0;box-sizing:border-box}
@@ -130,15 +137,15 @@ function DocModal({ doc, patient, onClose, onGuardar, saved }) {
             <div class="header-right-text">Consultorio Sol Vargas</div>
           </div>
         </div>
-        <div class="title">${doc.title}</div>
-        <div class="body-text">${texto.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        <div class="title">${esc(doc.title)}</div>
+        <div class="body-text">${esc(texto)}</div>
         <div class="firma-section">
           <div class="firma-box">
-            <div class="firma-line">${firmaP ? `<img src="${firmaP}"/>` : '&nbsp;'}</div>
-            <div class="firma-name">${labelFirmaP}<br><strong>${nameFirmaP}</strong><br>DNI: ${dniFirmaP}</div>
+            <div class="firma-line">${firmaP ? `<img src="${esc(firmaP)}"/>` : '&nbsp;'}</div>
+            <div class="firma-name">${esc(labelFirmaP)}<br><strong>${esc(nameFirmaP)}</strong><br>DNI: ${esc(dniFirmaP)}</div>
           </div>
           <div class="firma-box">
-            <div class="firma-line">${firmaDr ? `<img src="${firmaDr}"/>` : '&nbsp;'}</div>
+            <div class="firma-line">${firmaDr ? `<img src="${esc(firmaDr)}"/>` : '&nbsp;'}</div>
             <div class="firma-name">El Odontólogo / Estomatólogo<br><strong>Dra. Sol Vargas</strong><br>COP 12345</div>
           </div>
         </div>

@@ -112,16 +112,44 @@ function reducer(st, action) {
 const jp = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } };
 const sp = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* almacenamiento no disponible (privado/cuota llena) — se ignora */ } };
 
+// Claves de localStorage con datos clínicos (odontogramas y lista de pacientes).
+// Se borran al cerrar sesión y al detectar otro usuario: en la computadora
+// compartida de recepción, si no, el siguiente en entrar —incluso de otra
+// clínica— se queda con los datos del anterior.
+const CLAVES_PHI = ["dentalOS_odontograma", "dentalOS_odontograma_evo", "dentalOS_patients"];
+const limpiarPHILocal = () => {
+  try { CLAVES_PHI.forEach(k => localStorage.removeItem(k)); } catch { /* almacenamiento no disponible */ }
+};
+const USER_KEY = "dentalOS_ultimo_usuario";
+
 // ─── HOOK SESIÓN ──────────────────────────────────────────────────────────────
 function useSession() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((evento, s) => {
+      // Al salir, o si entra un usuario distinto al de la sesión anterior en
+      // este navegador, se descartan los datos clínicos cacheados.
+      const anterior = (() => { try { return localStorage.getItem(USER_KEY); } catch { return null; } })();
+      if (evento === "SIGNED_OUT" || (s?.user?.id && anterior && anterior !== s.user.id)) limpiarPHILocal();
+      try {
+        if (s?.user?.id) localStorage.setItem(USER_KEY, s.user.id);
+        else localStorage.removeItem(USER_KEY);
+      } catch { /* almacenamiento no disponible */ }
+      setSession(s);
+    });
     return () => subscription.unsubscribe();
   }, []);
-  return { session, loading, logout: useCallback(() => supabase.auth.signOut(), []) };
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    limpiarPHILocal();
+    // Recarga completa a propósito: borrar localStorage no alcanza, porque el
+    // odontograma y la lista de pacientes siguen en el estado de React. Sin
+    // esto, quien inicie sesión después en el mismo equipo los seguiría viendo.
+    window.location.reload();
+  }, []);
+  return { session, loading, logout };
 }
 
 // ─── MAPA DE VISTAS ───────────────────────────────────────────────────────────

@@ -1143,7 +1143,11 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   const imprimirPresupuesto = () => {
     if (plan.length === 0) { alert('No hay tratamientos en el plan para generar un presupuesto.'); return; }
 
-    const esc = s => String(s ?? '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Escapa también & y comillas: hay valores que se interpolan dentro de
+    // atributos (src="..."), donde escapar solo < y > no alcanza.
+    const esc = s => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const nombre = esc(patData?.name || patient.name);
     const totalCosto = plan.reduce((a, c) => a + c.cost, 0);
     const totalPagado = plan.reduce((a, c) => a + c.paid, 0);
@@ -1317,7 +1321,11 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
   const imprimirReceta = (receta) => {
     if (!receta || receta.meds.length === 0) { alert('Esta receta no tiene medicamentos.'); return; }
-    const esc = s => String(s ?? '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Escapa también & y comillas: hay valores que se interpolan dentro de
+    // atributos (src="..."), donde escapar solo < y > no alcanza.
+    const esc = s => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const nombre = esc(patData?.name || patient.name);
 
     const w = window.open('', '_blank');
@@ -1357,7 +1365,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         <div class="rp">Rp:</div>
         ${receta.meds.map(m => `<div class="med"><div class="name">${esc(m.med)}</div>${m.dose ? `<div class="dose">${esc(m.dose)}</div>` : ''}${m.inst ? `<div class="inst">${esc(m.inst)}</div>` : ''}</div>`).join('')}
         <div class="firma">
-          ${firmaDoctorUrl ? `<img src="${firmaDoctorUrl}" alt="Firma y sello" />` : ''}
+          ${firmaDoctorUrl ? `<img src="${esc(firmaDoctorUrl)}" alt="Firma y sello" />` : ''}
           <div class="line">Firma y sello · Dra. Sol Vargas</div>
         </div>
       </div>
