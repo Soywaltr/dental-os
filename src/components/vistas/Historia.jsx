@@ -568,6 +568,43 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 }
 
 // ============================================================================
+// 3.5 SUB-COMPONENTES ANAMNESIS: par de checkboxes No/Sí (con o sin detalle)
+// ============================================================================
+function AnamnesisSiNo({ label, value, onChange }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '5px 0' }}>
+      <span style={{ fontSize: 11.5, color: DN }}>{label}</span>
+      <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+          <input type="checkbox" checked={value === 'no'} onChange={() => onChange(value === 'no' ? '' : 'no')} style={{ accentColor: P, cursor: 'pointer' }} /> No
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+          <input type="checkbox" checked={value === 'si'} onChange={() => onChange(value === 'si' ? '' : 'si')} style={{ accentColor: P, cursor: 'pointer' }} /> Sí
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function AnamnesisSiNoDetalle({ label, value, detalle, onChange, onChangeDetalle }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '5px 0', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 11.5, color: DN, flex: '1 1 240px' }}>{label}</span>
+      <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+          <input type="checkbox" checked={value === 'no'} onChange={() => onChange(value === 'no' ? '' : 'no')} style={{ accentColor: P, cursor: 'pointer' }} /> No
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+          <input type="checkbox" checked={value === 'si'} onChange={() => onChange(value === 'si' ? '' : 'si')} style={{ accentColor: P, cursor: 'pointer' }} /> Sí
+        </label>
+      </div>
+      <input value={detalle || ''} onChange={e => onChangeDetalle(e.target.value)} placeholder="Detalle (opcional)"
+        style={{ flex: '1 1 180px', border: `1px solid ${BD}`, borderRadius: 6, padding: '4px 8px', fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' }} />
+    </div>
+  );
+}
+
+// ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
 export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId }) {
@@ -2020,26 +2057,106 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         {/* --- PESTAÑA ANAMNESIS --- */}
         {tab === 'anamnesis' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%' }}>
-              {[
-                { title: 'Motivo de consulta', fields: ['Motivo principal', 'Tiempo con el síntoma', 'Intensidad del dolor (1-10)', 'Tratamientos previos para este problema'] },
-                { title: 'Antecedentes médicos generales', fields: ['Enfermedades sistémicas', 'Medicamentos actuales', 'Alergias (medicamentos/materiales)', 'Cirugías o hospitalizaciones', 'Embarazo / lactancia'] },
-                { title: 'Antecedentes estomatológicos', fields: ['Última visita dental', 'Tratamientos previos recibidos', 'Experiencias traumáticas dentales', 'Hábitos: bruxismo, succión, otros', 'Higiene oral: frecuencia de cepillado'] },
-                { title: 'Signos vitales', fields: ['Presión arterial', 'Frecuencia cardíaca', 'Temperatura', 'Peso / Talla'] },
-              ].map((sec, si) => (
-                <div key={si} style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}` }}>{sec.title}</div>
-                  {sec.fields.map((f, fi) => (
-                    <div key={fi} style={{ marginBottom: 9 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 1000, margin: '0 auto' }}>
+
+              {/* Motivo de consulta */}
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
+                <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Motivo de consulta</label>
+                <textarea value={anamnesisData['Motivo de consulta'] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, 'Motivo de consulta': e.target.value })}
+                  style={{ width: '100%', minHeight: 44, border: `1px solid ${BD}`, borderRadius: 7, padding: '7px 10px', fontSize: 12, outline: 'none', color: DN, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+              </div>
+
+              {/* Enfermedad actual */}
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: P, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}`, textTransform: 'uppercase', letterSpacing: .3 }}>Enfermedad actual</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {['Tiempo de enfermedad', 'Signos y síntomas principales', 'Relato cronológico', 'Funciones biológicas'].map(f => (
+                    <div key={f}>
                       <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
-                      <input style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }}
-                        value={anamnesisData[f] !== undefined ? anamnesisData[f] : (f.includes('Alerg') ? (patData?.allergies || patient.allergies) : f.includes('Medic') ? (patData?.meds || patient.meds) : '')}
-                        onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
-                      />
+                      <input value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
+                        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
                     </div>
                   ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Antecedentes */}
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: P, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}`, textTransform: 'uppercase', letterSpacing: .3 }}>Antecedentes</div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                  {['Antecedentes familiares', 'Antecedentes personales'].map(f => (
+                    <div key={f}>
+                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <input value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
+                        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: 10.5, color: MU, fontWeight: 700, marginBottom: 4 }}>¿Tiene o ha tenido?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${MT}` }}>
+                  {[['Presión alta', 'VIH'], ['Presión baja', 'Diabetes'], ['Hepatitis', 'Asma'], ['Gastritis', '¿Fuma?'], ['Úlceras', null]].map(([izq, der], i) => (
+                    <React.Fragment key={i}>
+                      <AnamnesisSiNo label={izq} value={anamnesisData[izq] || ''} onChange={v => setAnamnesisData({ ...anamnesisData, [izq]: v })} />
+                      {der ? <AnamnesisSiNo label={der} value={anamnesisData[der] || ''} onChange={v => setAnamnesisData({ ...anamnesisData, [der]: v })} /> : <div />}
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>Comentario adicional</label>
+                  <input value={anamnesisData['Comentario adicional'] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, 'Comentario adicional': e.target.value })}
+                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
+                </div>
+
+                <div>
+                  {[
+                    'Enfermedades sanguíneas', 'Problemas cardíacos', '¿Padece de alguna otra enfermedad?',
+                    '¿Cuántas veces al día se cepilla los dientes?', '¿Le sangra sus encías?',
+                    '¿Ha tenido hemorragias anormales después de una extracción?', '¿Hace rechinar o aprieta los dientes?',
+                    'Otras molestias en la boca', 'Alergias', '¿Ha tenido alguna operación grande en los últimos años?',
+                    '¿Toma alguna medicación de manera permanente?',
+                  ].map(f => (
+                    <AnamnesisSiNoDetalle key={f} label={f}
+                      value={anamnesisData[f] || ''}
+                      detalle={anamnesisData[`${f} (detalle)`] !== undefined ? anamnesisData[`${f} (detalle)`] : (f === 'Alergias' ? (patData?.allergies || patient.allergies) : f.includes('medicación') ? (patData?.meds || patient.meds) : '')}
+                      onChange={v => setAnamnesisData({ ...anamnesisData, [f]: v })}
+                      onChangeDetalle={v => setAnamnesisData({ ...anamnesisData, [`${f} (detalle)`]: v })}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Examen clínico */}
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: P, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}`, textTransform: 'uppercase', letterSpacing: .3 }}>Examen clínico</div>
+
+                <div style={{ fontSize: 10.5, color: MU, fontWeight: 700, marginBottom: 8 }}>Signos vitales</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                  {[['PA', 'mmHg'], ['FC', 'bpm'], ['Temperatura', '°C'], ['FR', 'r/m']].map(([f, unidad]) => (
+                    <div key={f}>
+                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <div style={{ display: 'flex' }}>
+                        <input value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
+                          style={{ flex: 1, minWidth: 0, border: `1px solid ${BD}`, borderRight: 'none', borderRadius: '6px 0 0 6px', padding: '5px 8px', fontSize: 12, outline: 'none', color: DN, boxSizing: 'border-box' }} />
+                        <span style={{ border: `1px solid ${BD}`, borderRadius: '0 6px 6px 0', padding: '5px 8px', fontSize: 10.5, color: MU, background: MT, whiteSpace: 'nowrap' }}>{unidad}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {['Examen extraoral', 'Examen intraoral', 'Resultado de exámenes auxiliares', 'Observaciones'].map(f => (
+                    <div key={f}>
+                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <textarea value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
+                        style={{ width: '100%', minHeight: 60, border: `1px solid ${BD}`, borderRadius: 7, padding: '7px 10px', fontSize: 12, outline: 'none', color: DN, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
             <button onClick={saveAllToCloud} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               <Icon name="save" size={13} /> Guardar anamnesis
