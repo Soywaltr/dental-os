@@ -7,11 +7,13 @@ import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import useMetaWhatsApp from '../../utils/useMetaWhatsApp';
 import { BD, DN, MU, MT, P, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { BUCKET, rutaPerfil, rutaFirma, rutaLogo, firmar, invalidarFirma } from '../../utils/storage';
+import Seguridad from './Seguridad';
 
 const TABS = [
   { id: 'generales', lbl: 'Generales' },
   { id: 'perfil', lbl: 'Mi perfil' },
   { id: 'integraciones', lbl: 'Integraciones' },
+  { id: 'seguridad', lbl: 'Seguridad' },
 ];
 
 const cardStyle = {
@@ -36,6 +38,7 @@ export default function Config({ clinicaId, clinica, refrescarClinica }) {
       {tab === 'generales' && <Generales clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />}
       {tab === 'perfil' && <MiPerfil clinicaId={clinicaId} />}
       {tab === 'integraciones' && <Integraciones clinicaId={clinicaId} />}
+      {tab === 'seguridad' && <Seguridad />}
     </div>
   );
 }
