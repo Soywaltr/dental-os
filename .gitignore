@@ -25,3 +25,7 @@ dist-ssr
 
 # Config MCP local (puede contener tokens de acceso — nunca subir a git)
 .mcp.json
+
+# Snapshots del codigo: redundantes con el historial de git, y meterlos en un
+# repo publico solo lo infla y crea copias que se desactualizan.
+*.zip
