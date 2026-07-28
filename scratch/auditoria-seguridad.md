@@ -60,10 +60,23 @@ Estado tras la corrección: Fase 3 aplicada y verificada. Domain afectado —
 restricción de aal2), porque hacen falta en aal1 para que la propia pantalla del
 challenge tenga contexto.
 
+**Fase 4** (`36e78f2`): Edge Function `mfa-admin-reset` desplegada — reset del
+segundo factor de otro usuario de la misma clínica, con 5 controles server-side
+(identidad desde el JWT, `rol = 'admin'`, el propio llamante en `aal2`, mismo
+`clinica_id` que el objetivo, no auto-reset). `usuarios_clinica.rol` se hila por
+primera vez desde `useClinic()` hasta las vistas — existía en la tabla, nada lo
+usaba. UI en `Ajustes → Seguridad` (`GestionMFA`, solo visible si `rol==='admin'`).
+
+Con esto, las 4 fases del plan de MFA quedan completas y desplegadas:
+enrolamiento → challenge en el login → RLS aal2 incremental → reset por admin.
+
 **Pendiente, sin aplicar todavía (requiere aviso previo, no automático):**
 endurecer las 8 políticas a `= 'aal2'` seco (quitar la rama `aal1` del `CASE`) una
-vez que todo el personal haya enrolado su factor. Fase 4 (reset de MFA por admin,
-con aislamiento multi-tenant) sigue pendiente también.
+vez que todo el personal haya enrolado su factor.
+
+**Deuda anotada (fuera de alcance de este bloque, explícita por el usuario):**
+control de acceso por rol — hoy `rol` no restringe ninguna lectura de PHI;
+recepción ve exactamente las mismas historias clínicas que un admin/doctor.
 
 ## Corregido
 
