@@ -20,6 +20,7 @@ import useAAL from "./utils/useAAL";
 import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
+import { rutaPerfil } from "./utils/storage";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -284,11 +285,17 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
 });
 
 // ─── COMPONENTE: SIDEBAR ─────────────────────────────────────────────────────
-const Sidebar = memo(({ state, dispatch, onLogout, clinica }) => {
+const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
   const { sidebarCollapsed: col, view } = state;
   // El bucket es privado: el logo se sirve con una URL firmada, no con la
   // pública que quedó guardada en clinicas.logo_url.
   const logoUrl = useSignedUrl(clinica?.logo_url);
+  // Antes decía "Dra. Sol Vargas" fijo en el código — cualquier cuenta que
+  // entrara veía ese mismo nombre. Se muestra el nombre real de la sesión
+  // (o el correo si todavía no lo configuró en Mi perfil), y la foto de
+  // perfil de SU clínica (nunca la de otra).
+  const nombreUsuario = session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario";
+  const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
   const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
   const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
   const W = col ? 60 : 220;
@@ -461,13 +468,13 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica }) => {
         >
           <div style={{
             width: 28, height: 28, borderRadius: "50%",
-            background: `${C.brandSoft} url(/drasolvargas.jpeg) center/cover no-repeat`,
+            background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : C.brandSoft,
             border: `1.5px solid ${C.border}`, flexShrink: 0,
           }} />
           {!col && (
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Dra. Sol Vargas
+                {nombreUsuario}
               </div>
               <div style={{ fontSize: 11, color: C.inkMute }}>Cerrar sesión</div>
             </div>
@@ -479,8 +486,11 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica }) => {
 });
 
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
-const TopHeader = memo(({ state, dispatch, onLogout }) => {
+const TopHeader = memo(({ state, dispatch, onLogout, clinica }) => {
   const label = VIEW_LABELS[state.view] ?? state.view;
+  // Mismo motivo que en el Sidebar: antes era una foto fija, ajena a quién
+  // tuviera la sesión abierta.
+  const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
 
   return (
     <header style={{
@@ -553,7 +563,7 @@ const TopHeader = memo(({ state, dispatch, onLogout }) => {
           title="Cerrar sesión"
           style={{
             width: 32, height: 32, borderRadius: "50%", padding: 0,
-            background: `${C.brandSoft} url(/drasolvargas.jpeg) center/cover no-repeat`,
+            background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : C.brandSoft,
             border: `2px solid ${C.border}`, cursor: "pointer", outline: "none",
             transition: "border-color 0.12s",
           }}
@@ -822,12 +832,12 @@ export default function App() {
         }} />
 
         {/* Sidebar izquierdo */}
-        <Sidebar state={state} dispatch={dispatch} onLogout={logout} clinica={clinica} />
+        <Sidebar state={state} dispatch={dispatch} onLogout={logout} clinica={clinica} session={session} />
 
         {/* Columna derecha */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
           {/* Header con breadcrumb */}
-          <TopHeader state={state} dispatch={dispatch} onLogout={logout} />
+          <TopHeader state={state} dispatch={dispatch} onLogout={logout} clinica={clinica} />
 
           {/* Contenido */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "16px 16px 32px" : "24px 24px 48px", background: "transparent" }}>
