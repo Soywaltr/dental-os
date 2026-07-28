@@ -11,10 +11,12 @@ import React, {
 } from "react";
 import { supabase } from "./supabase";
 import Login from "./Login";
+import MFAChallenge from "./MFAChallenge";
 import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
 import useResponsive from "./utils/useResponsive";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
+import useAAL from "./utils/useAAL";
 import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
@@ -712,6 +714,7 @@ const Splash = () => (
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
   const { session, loading, logout } = useSession();
+  const { currentLevel: aalActual, nextLevel: aalSiguiente, loading: aalLoading } = useAAL(session);
   const [state, dispatch] = useReducer(reducer, INIT);
   const { isTablet } = useResponsive();
   const { clinicaId, clinica, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
@@ -763,6 +766,11 @@ export default function App() {
 
   if (loading)  return <Splash />;
   if (!session) return <Login onLogin={() => {}} />;
+  if (aalLoading) return <Splash />;
+  // El usuario tiene un factor MFA verificado (nextLevel llegaría a 'aal2') pero
+  // esta sesión todavía está en 'aal1' — se acaba de loguear solo con su
+  // contraseña. Se lo intercepta antes de dejarlo entrar a la app.
+  if (aalSiguiente === "aal2" && aalActual !== "aal2") return <MFAChallenge onLogout={logout} />;
 
   return (
     <AppContext.Provider value={ctxValue}>
