@@ -10,6 +10,7 @@ export default function useClinic() {
   const [userId, setUserId] = useState(null);
   const [clinicaId, setClinicaId] = useState(null);
   const [clinica, setClinica] = useState(null);
+  const [rol, setRol] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reloadTick, setReloadTick] = useState(0);
 
@@ -31,7 +32,7 @@ export default function useClinic() {
     let cancelado = false;
 
     const cargar = async () => {
-      if (!userId) { setClinicaId(null); setClinica(null); setLoading(false); return; }
+      if (!userId) { setClinicaId(null); setClinica(null); setRol(null); setLoading(false); return; }
       setLoading(true);
 
       const { data, error } = await supabase
@@ -44,9 +45,11 @@ export default function useClinic() {
       if (!error && data && data.length > 0) {
         setClinicaId(data[0].clinica_id);
         setClinica(data[0].clinicas);
+        setRol(data[0].rol);
       } else {
         setClinicaId(null);
         setClinica(null);
+        setRol(null);
       }
       setLoading(false);
     };
@@ -57,5 +60,5 @@ export default function useClinic() {
 
   const refrescar = useCallback(() => setReloadTick(t => t + 1), []);
 
-  return { clinicaId, clinica, loading, refrescar };
+  return { clinicaId, clinica, rol, loading, refrescar };
 }

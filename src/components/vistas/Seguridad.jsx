@@ -25,7 +25,7 @@ const IcShield = ({ size = 19, color = 'currentColor' }) => (
   </svg>
 );
 
-export default function Seguridad() {
+export default function Seguridad({ rol }) {
   const [factores, setFactores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inscribiendo, setInscribiendo] = useState(false);
@@ -190,6 +190,83 @@ export default function Seguridad() {
           </form>
         )}
       </div>
+
+      {rol === 'admin' && <GestionMFA />}
+    </div>
+  );
+}
+
+// ── GESTIÓN DE MFA DEL PERSONAL (solo admin) ─────────────────────────────────
+// Vía la Edge Function mfa-admin-reset, que en el servidor exige que quien
+// llama sea admin de la clínica, esté el mismo en aal2, y que el objetivo
+// pertenezca a esa misma clínica. Es la segunda vía de recuperación (la
+// primera es enrolar un segundo dispositivo; la tercera, break-glass, es que
+// el dueño del proyecto borre el factor desde el dashboard de Supabase).
+function GestionMFA() {
+  const [miembros, setMiembros] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [reseteando, setReseteando] = useState(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  useEffect(() => {
+    const cargar = async () => {
+      setLoading(true);
+      setError('');
+      const { data, error: err } = await supabase.functions.invoke('mfa-admin-reset', { body: { action: 'list' } });
+      const mensajeError = err?.message || data?.error || null;
+      if (mensajeError) setError(mensajeError);
+      else setMiembros(data?.miembros || []);
+      setLoading(false);
+    };
+    cargar();
+  }, [reloadTick]);
+
+  const resetear = async (userId, email) => {
+    if (!window.confirm(`¿Restablecer la verificación en dos pasos de ${email || 'este usuario'}? Va a perder el acceso con su dispositivo actual y tendrá que enrolar uno nuevo.`)) return;
+    setReseteando(userId);
+    const { data, error: err } = await supabase.functions.invoke('mfa-admin-reset', { body: { action: 'reset', targetUserId: userId } });
+    setReseteando(null);
+    if (err) { alert('Error: ' + err.message); return; }
+    if (data?.error) { alert('Error: ' + data.error); return; }
+    setReloadTick(t => t + 1);
+  };
+
+  if (loading) return <div style={{ ...cardStyle, color: MU, fontSize: 12 }}>Cargando personal…</div>;
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 6 }}>Verificación en dos pasos del personal</div>
+      <p style={{ fontSize: 11.5, color: MU, margin: '0 0 14px', lineHeight: 1.5 }}>
+        Si alguien de tu clínica pierde su dispositivo, restablécelo aquí para que pueda enrolar uno nuevo.
+      </p>
+
+      {error && (
+        <div style={{ padding: '8px 10px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 11, marginBottom: 12 }}>
+          {error}
+        </div>
+      )}
+
+      {miembros.map(m => {
+        const verificados = m.factores.filter(f => f.status === 'verified');
+        return (
+          <div key={m.userId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${MT}` }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: DN }}>
+                {m.email || m.userId}{m.esUnoMismo ? ' (tú)' : ''}
+              </div>
+              <div style={{ fontSize: 10, color: MU, textTransform: 'capitalize' }}>
+                {m.rol} · {verificados.length > 0 ? `${verificados.length} dispositivo${verificados.length > 1 ? 's' : ''} verificado${verificados.length > 1 ? 's' : ''}` : 'sin MFA configurado'}
+              </div>
+            </div>
+            {!m.esUnoMismo && verificados.length > 0 && (
+              <Button variant="danger" onClick={() => resetear(m.userId, m.email)} disabled={reseteando === m.userId} style={{ fontSize: 10.5, padding: '5px 10px' }}>
+                {reseteando === m.userId ? 'Restableciendo…' : 'Restablecer'}
+              </Button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

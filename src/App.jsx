@@ -637,7 +637,7 @@ const Loader = () => (
   </div>
 );
 
-const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaLoading, refrescarClinica }) => {
+const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaRol, clinicaLoading, refrescarClinica }) => {
   // Aseguramos que si alguna vista vieja llama a 'historia', renderice 'expediente'
   const currentViewKey = state.view === 'historia' ? 'expediente' : state.view;
   const ActiveView = VIEWS[currentViewKey] ?? Dashboard;
@@ -659,6 +659,7 @@ const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaLoading, 
     setPatientsList,
     clinicaId,
     clinica,
+    clinicaRol,
     clinicaLoading,
     refrescarClinica,
   };
@@ -717,7 +718,7 @@ export default function App() {
   const { currentLevel: aalActual, nextLevel: aalSiguiente, loading: aalLoading } = useAAL(session);
   const [state, dispatch] = useReducer(reducer, INIT);
   const { isTablet } = useResponsive();
-  const { clinicaId, clinica, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
+  const { clinicaId, clinica, rol: clinicaRol, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
   const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp(clinicaId);
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
@@ -831,7 +832,7 @@ export default function App() {
           {/* Contenido */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "16px 16px 32px" : "24px 24px 48px", background: "transparent" }}>
             <div style={{ maxWidth: 1480, margin: "0 auto" }}>
-              <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
+              <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
             </div>
           </main>
         </div>

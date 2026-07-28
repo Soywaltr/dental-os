@@ -21,7 +21,7 @@ const cardStyle = {
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
 
-export default function Config({ clinicaId, clinica, refrescarClinica }) {
+export default function Config({ clinicaId, clinica, clinicaRol, refrescarClinica }) {
   const [tab, setTab] = useState('generales');
 
   return (
@@ -38,7 +38,7 @@ export default function Config({ clinicaId, clinica, refrescarClinica }) {
       {tab === 'generales' && <Generales clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />}
       {tab === 'perfil' && <MiPerfil clinicaId={clinicaId} />}
       {tab === 'integraciones' && <Integraciones clinicaId={clinicaId} />}
-      {tab === 'seguridad' && <Seguridad />}
+      {tab === 'seguridad' && <Seguridad clinicaId={clinicaId} rol={clinicaRol} />}
     </div>
   );
 }
