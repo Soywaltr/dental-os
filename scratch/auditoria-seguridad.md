@@ -94,6 +94,31 @@ ella misma — necesitaría el break-glass del dashboard de Supabase. Vale la
 pena que agregue el segundo dispositivo ahora que el modo estricto ya no
 tiene red de respaldo alternativa.
 
+**Revertido a incremental** (migración `mfa_rls_aal2_revertir_a_incremental`,
+mismo día). Motivo: al dar de alta la primera clínica adicional (Vitadent), el
+usuario pidió explícitamente que una cuenta nueva pueda entrar con solo
+correo+contraseña y usar la app con normalidad, con el MFA como algo opcional
+que cada quien activa o desactiva desde Ajustes → Seguridad (el
+enroll/unenroll ya existía) — no obligatorio desde el primer login. Confirmado
+explícitamente antes de aplicar, porque revertía una decisión de endurecimiento
+tomada momentos antes en la misma sesión.
+
+Vuelve exactamente al patrón de `mfa_rls_aal2_incremental_v2`: aal2 exigido
+solo a quien ya tiene un factor verificado; sin factor, aal1 alcanza. Verificado
+después: usuario real (con factor) en aal1 → sigue bloqueado; en aal2 → normal
+(11 pacientes). La condición de la política probada de forma aislada para un
+usuario sin ningún factor → `true` (pasa). *Nota del propio proceso: la primera
+verificación de este caso se hizo por error contra `pacientes` con un
+`user_id` que no existe en `usuarios_clinica`, dando un falso "bloqueado" — el
+motivo real era `clinic_isolation` (no pertenece a ninguna clínica), no el MFA.
+Corregido probando la condición de la política aal2 aislada, sin arrastrar esa
+variable.*
+
+**Estado final (vigente):** MFA opcional/incremental en las 8 tablas +
+`storage.objects`. Sigue pendiente, sin decidir todavía, si en algún momento se
+vuelve a endurecer (por ejemplo cuando haya más de una clínica y más de un
+usuario activo) — evaluarlo de nuevo en ese momento, con la misma cautela.
+
 **Deuda anotada (fuera de alcance de este bloque, explícita por el usuario):**
 control de acceso por rol — hoy `rol` no restringe ninguna lectura de PHI;
 recepción ve exactamente las mismas historias clínicas que un admin/doctor.
