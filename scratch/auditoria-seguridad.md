@@ -3,6 +3,68 @@
 App multi-tenant con datos de salud (React + Vite + Supabase). 16 hallazgos,
 14 corregidos. Commits: `866fcd3`, `9946af8`, `d5053d4`, `1a58605`.
 
+## Adenda — 27/07/2026: MFA para usuarios de la app + incidente de producción
+
+Plan aparte (bloque propio, no parte de los 16 hallazgos originales): MFA obligatorio
+para todos los roles con patrón incremental (`as restrictive`, nadie bloqueado hasta
+que enrole su propio factor). Sin códigos de respaldo — Supabase no los ofrece
+("Supabase does not return recovery codes"); la recuperación se apoya en 2
+dispositivos + reset por admin de la misma clínica (Fase 4, pendiente) + break-glass
+del dashboard (el dueño del proyecto borra el factor desde Authentication → Users).
+
+**Fase 1** (`fe63c4b`): `Ajustes → Seguridad` — enrolar/listar/quitar factores TOTP.
+**Fase 2** (`d4e452c`): `MFAChallenge.jsx` + gate en `App.jsx` (después del login, no
+lo toca). Corregida una condición de carrera real en `useAAL()` antes de commitear:
+sin ella, un frame entre el login y el recálculo del AAL dejaba pasar el árbol
+completo de la app. **Checkpoint del usuario confirmado en vivo antes de la Fase 3.**
+
+**Fase 3 — incidente real, corregido en la misma sesión.** Las 8 políticas
+`as restrictive` (patrón oficial de Supabase para exigir aal2 solo a quien ya tiene
+un factor verificado) consultan `auth.mfa_factors` en la subconsulta. Al aplicarlas,
+**el rol `authenticated` no tenía `GRANT SELECT` sobre esa tabla en este proyecto** —
+un error de permiso en una política rompe la consulta completa (no se evalúa como
+"false"), así que las 8 tablas + `storage.objects` quedaron **inaccesibles para
+cualquier usuario autenticado, en producción**, hasta el rollback.
+
+Secuencia real: aplicar → error detectado al verificar (`permission denied for
+table mfa_factors`) → rollback inmediato de las 8 políticas → verificado que el
+acceso normal volvió (conteos reales de `pacientes`/`historias`/etc.) → corregida
+la causa raíz → **verificado el fix aislado antes de reintentar** → reaplicadas las
+8 políticas → verificado aal1 (bloqueado) vs aal2 (normal) para el usuario real, que
+ya tiene MFA verificado → verificado que un usuario sin ningún factor sigue
+funcionando en aal1 (rama "grandfather" del patrón incremental).
+
+Causa raíz corregida:
+```sql
+grant select on auth.mfa_factors to authenticated;
+
+create policy "usuarios ven sus propios factores mfa" on auth.mfa_factors
+  for select to authenticated
+  using (user_id = auth.uid());
+```
+`auth.mfa_factors` tiene RLS activado sin ninguna policy propia — el `GRANT` solo no
+alcanzaba, porque sin una policy el RLS deniega todo a quien no sea el dueño de la
+tabla. La policy nueva es estrictamente auto-limitada (`user_id = auth.uid()`):
+ningún usuario puede ver los factores de otro con esto.
+
+**Lección para la próxima vez que se agregue una política que consulte una tabla
+fuera de `public`:** simular el `USING` de la política de forma aislada (como se
+hizo después, no antes) contra el usuario real, **antes** de aplicarla sobre las
+tablas de negocio — habría detectado este error de permisos sin pasar por
+producción en absoluto.
+
+Estado tras la corrección: Fase 3 aplicada y verificada. Domain afectado —
+`pacientes`, `historias`, `ortodoncia`, `laboratorio_ordenes`, `gastos`,
+`integraciones_google`, `integraciones_whatsapp`, `storage.objects` (bucket
+`imagenes`). `clinicas` y `usuarios_clinica` quedan fuera a propósito (sin
+restricción de aal2), porque hacen falta en aal1 para que la propia pantalla del
+challenge tenga contexto.
+
+**Pendiente, sin aplicar todavía (requiere aviso previo, no automático):**
+endurecer las 8 políticas a `= 'aal2'` seco (quitar la rama `aal1` del `CASE`) una
+vez que todo el personal haya enrolado su factor. Fase 4 (reset de MFA por admin,
+con aislamiento multi-tenant) sigue pendiente también.
+
 ## Corregido
 
 | # | Sev | Hallazgo | Corrección | Verificación |
