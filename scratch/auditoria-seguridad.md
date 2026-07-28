@@ -70,9 +70,29 @@ usaba. UI en `Ajustes → Seguridad` (`GestionMFA`, solo visible si `rol==='admi
 Con esto, las 4 fases del plan de MFA quedan completas y desplegadas:
 enrolamiento → challenge en el login → RLS aal2 incremental → reset por admin.
 
-**Pendiente, sin aplicar todavía (requiere aviso previo, no automático):**
-endurecer las 8 políticas a `= 'aal2'` seco (quitar la rama `aal1` del `CASE`) una
-vez que todo el personal haya enrolado su factor.
+**Endurecido a `aal2` estricto** (migración `mfa_rls_aal2_estricto`, aplicada
+directo en Supabase — sin cambios de código, no requirió commit). Se quitó la
+rama de gracia de las 8 políticas: ya no aceptan `aal1` para nadie, tengan o no
+un factor MFA. Verificada la precondición antes de aplicar —
+`select u.email, count(f.id) filter (where f.status='verified') from auth.users u left join auth.mfa_factors f on f.user_id=u.id group by u.id, u.email`
+— un solo usuario en todo el sistema, con 1 factor verificado (cobertura 100%).
+Verificado después: usuario real en aal1 → bloqueado (igual que antes); en aal2
+→ normal; usuario simulado **sin ningún factor** en aal1 → ahora bloqueado
+también (esto sí cambió respecto al modo incremental, es el efecto esperado).
+
+**Consecuencia permanente a tener presente:** cualquier usuario nuevo que se
+agregue a `usuarios_clinica` de aquí en adelante (personal nuevo, o una
+clínica B) va a ver el Dashboard vacío/roto hasta que enrole su propio factor
+en Ajustes → Seguridad — ya no hay periodo de gracia. Vale la pena avisarle a
+cualquier persona nueva que lo primero que tiene que hacer al entrar es
+configurar la verificación en dos pasos, antes de que note que "no ve nada".
+
+**Riesgo con el que queda la única cuenta admin:** tiene un solo dispositivo
+enrolado (el propio Ajustes → Seguridad se lo recomendó agregar un segundo,
+todavía no lo hizo). Si lo pierde, el reset por admin (Fase 4) no le sirve a
+ella misma — necesitaría el break-glass del dashboard de Supabase. Vale la
+pena que agregue el segundo dispositivo ahora que el modo estricto ya no
+tiene red de respaldo alternativa.
 
 **Deuda anotada (fuera de alcance de este bloque, explícita por el usuario):**
 control de acceso por rol — hoy `rol` no restringe ninguna lectura de PHI;
