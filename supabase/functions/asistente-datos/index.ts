@@ -5,9 +5,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 // EL DOCTOR/ADMIN, no para pacientes. Responde preguntas sobre los propios
 // datos de la clinica en lenguaje natural.
 //
-// Decision de diseno clave: el modelo NUNCA escribe SQL. Solo puede llamar a
-// un set fijo de funciones (mas abajo), cada una escrita a mano por nosotros.
-// Y esas funciones corren con un cliente de Supabase ligado al JWT de quien
+// El modelo tiene 5 herramientas puntuales mas una generica ("consulta_sql")
+// para todo lo demas. La generica NUNCA puede escribir: pasa por la funcion
+// de Postgres `ejecutar_consulta_solo_lectura`, que rechaza cualquier cosa
+// que no sea un SELECT sobre las tablas de negocio permitidas. Todas las
+// herramientas corren con un cliente de Supabase ligado al JWT de quien
 // pregunta -- el mismo patron que google-calendar-token/mfa-admin-reset --
 // asi que el RLS de aislamiento por clinica sigue aplicando solo, sin que el
 // modelo pueda ver nada fuera de la clinica de quien pregunta.
@@ -48,13 +50,15 @@ async function resumenFinanciero(supabase: any, mes?: string) {
   const ultimoDia = new Date(anio, mesNum, 0).getDate()
   const fin = `${anio}-${String(mesNum).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`
 
-  const { data: historias } = await supabase.from('historias').select('plan_tratamiento')
+  const { data: historias, error: errHistorias } = await supabase.from('historias').select('plan_tratamiento')
+  if (errHistorias) throw new Error('No se pudo leer historias: ' + errHistorias.message)
   const items = (historias || []).flatMap((h: any) => h.plan_tratamiento || [])
   const delMes = items.filter((i: any) => i.date >= inicio && i.date <= fin)
   const facturado = delMes.reduce((s: number, i: any) => s + (i.cost || 0), 0)
   const cobrado = delMes.reduce((s: number, i: any) => s + (i.paid || 0), 0)
 
-  const { data: gastosData } = await supabase.from('gastos').select('monto').gte('fecha', inicio).lte('fecha', fin)
+  const { data: gastosData, error: errGastos } = await supabase.from('gastos').select('monto').gte('fecha', inicio).lte('fecha', fin)
+  if (errGastos) throw new Error('No se pudo leer gastos: ' + errGastos.message)
   const gastos = (gastosData || []).reduce((s: number, g: any) => s + (g.monto || 0), 0)
 
   return {
@@ -65,8 +69,10 @@ async function resumenFinanciero(supabase: any, mes?: string) {
 }
 
 async function pacientesConSaldoPendiente(supabase: any) {
-  const { data: historias } = await supabase.from('historias').select('patient_id, plan_tratamiento')
-  const { data: pacientes } = await supabase.from('pacientes').select('id, name')
+  const { data: historias, error: errHistorias } = await supabase.from('historias').select('patient_id, plan_tratamiento')
+  if (errHistorias) throw new Error('No se pudo leer historias: ' + errHistorias.message)
+  const { data: pacientes, error: errPacientes } = await supabase.from('pacientes').select('id, name')
+  if (errPacientes) throw new Error('No se pudo leer pacientes: ' + errPacientes.message)
   const nombrePorId: Record<string, string> = Object.fromEntries((pacientes || []).map((p: any) => [String(p.id), p.name]))
 
   const resultado = []
@@ -82,10 +88,11 @@ async function citasProximas(supabase: any, dias = 7) {
   const hoy = new Date()
   const hoyStr = hoy.toISOString().slice(0, 10)
   const limite = new Date(hoy.getTime() + dias * 86400000).toISOString().slice(0, 10)
-  const { data } = await supabase.from('pacientes')
+  const { data, error } = await supabase.from('pacientes')
     .select('name, fecha, hora_cita, reason, treatment')
     .gte('fecha', hoyStr).lte('fecha', limite)
     .order('fecha').order('hora_cita')
+  if (error) throw new Error('No se pudo leer citas: ' + error.message)
   return (data || []).map((p: any) => ({ paciente: p.name, fecha: p.fecha, hora: p.hora_cita, motivo: p.treatment || p.reason }))
 }
 
@@ -96,22 +103,34 @@ async function buscarPaciente(supabase: any, texto: string) {
   // acotando a la propia clínica pase lo que pase), pero evita filtros raros.
   const limpio = (texto || '').replace(/[,()]/g, '').slice(0, 100)
   if (!limpio) return []
-  const { data } = await supabase.from('pacientes')
+  const { data, error } = await supabase.from('pacientes')
     .select('name, doc, phone, email, treatment, fecha, hora_cita')
     .or(`name.ilike.%${limpio}%,doc.ilike.%${limpio}%`)
     .limit(10)
+  if (error) throw new Error('No se pudo buscar el paciente: ' + error.message)
   return data || []
 }
 
 async function resumenLaboratorio(supabase: any) {
-  const { data } = await supabase.from('laboratorio_ordenes')
+  const { data, error } = await supabase.from('laboratorio_ordenes')
     .select('patient_name, type, lab, status, eta').order('eta')
+  if (error) throw new Error('No se pudo leer laboratorio: ' + error.message)
   const porEstado: Record<string, any[]> = { en_proceso: [], listo: [], entregado: [] }
   for (const o of data || []) {
     const lista = porEstado[o.status] || (porEstado[o.status] = [])
     lista.push({ paciente: o.patient_name, tipo: o.type, laboratorio: o.lab, fecha_estimada: o.eta })
   }
   return porEstado
+}
+
+async function consultaSQL(supabase: any, sql: string) {
+  if (!sql || typeof sql !== 'string') throw new Error('Falta la consulta SQL.')
+  // La funcion de Postgres valida (solo SELECT, sin escrituras, tablas permitidas)
+  // y aplica el RLS del que pregunta -- ver migracion asistente_datos_consulta_solo_lectura.
+  const { data, error } = await supabase.rpc('ejecutar_consulta_solo_lectura', { consulta: sql })
+  if (error) throw new Error('No se pudo ejecutar la consulta: ' + error.message)
+  if (data?.error) throw new Error(data.error)
+  return data
 }
 
 const HERRAMIENTAS = [
@@ -152,6 +171,29 @@ const HERRAMIENTAS = [
     description: 'Lista las órdenes de laboratorio agrupadas por estado (en proceso, listo, entregado).',
     parameters: { type: 'object', properties: {}, required: [] },
   },
+  {
+    type: 'function', name: 'consulta_sql',
+    description: `Ejecuta una consulta SELECT de solo lectura contra la base de datos de la clínica,
+para cualquier pregunta que las otras herramientas no cubran. Solo puede leer (nunca escribir),
+solo sobre estas tablas y columnas:
+
+- pacientes(id, name, doc, phone, treatment, age, tag, reason, "birthDate", fecha, hora_cita, sexo,
+  direccion, email, allergies, blood, tipo_doc, num_hc, fuente_captacion, linea_negocio, ocupacion)
+- historias(id, patient_id, odontograma, plan_tratamiento, evolucion, anamnesis, recetas, periodontal)
+  -- plan_tratamiento es un jsonb: arreglo de items con {date, cost, paid, ...}
+- ortodoncia(id, paciente_id, examen_clinico, plan_trabajo, plan_tratamiento, resumen)
+- laboratorio_ordenes(id, patient_id, patient_name, type, tooth, lab, cost, sent, eta, status)
+- gastos(id, categoria, monto, fecha, nota)
+
+Reglas: una sola sentencia SELECT (sin ";"), sin CTEs (nada de "with"), sin funciones de escritura
+ni de sistema. El resultado se limita automáticamente a 200 filas. El aislamiento por clínica se
+aplica solo (no hace falta filtrar por clínica en el SQL).`,
+    parameters: {
+      type: 'object',
+      properties: { sql: { type: 'string', description: 'La consulta SELECT a ejecutar.' } },
+      required: ['sql'],
+    },
+  },
 ]
 
 async function ejecutarHerramienta(nombre: string, args: any, supabase: any) {
@@ -161,20 +203,33 @@ async function ejecutarHerramienta(nombre: string, args: any, supabase: any) {
     case 'citas_proximas': return await citasProximas(supabase, args?.dias)
     case 'buscar_paciente': return await buscarPaciente(supabase, args?.texto)
     case 'resumen_laboratorio': return await resumenLaboratorio(supabase)
+    case 'consulta_sql': return await consultaSQL(supabase, args?.sql)
     default: return { error: 'Herramienta no reconocida: ' + nombre }
   }
 }
 
-const SYSTEM_PROMPT = `Eres el asistente de datos interno de DentalOS. Le respondes al doctor o
+function construirSystemPrompt() {
+  const hoy = new Date().toISOString().slice(0, 10)
+  return `Eres el asistente de datos interno de DentalOS. Le respondes al doctor o
 administrador del consultorio (nunca a pacientes) preguntas sobre SU PROPIA clínica:
 finanzas, pacientes, citas y laboratorio.
 
+Hoy es ${hoy} (formato YYYY-MM-DD). Cuando te pregunten por "este mes", "esta semana",
+"hoy" u otra referencia relativa, resuélvela vos mismo usando esta fecha — no le pidas
+al usuario que te aclare la fecha, y no dudes del resultado de la herramienta si te
+devuelve el mes que corresponde.
+
 Reglas:
 - Usa siempre las herramientas disponibles para obtener datos reales; nunca inventes cifras.
+- Para preguntas frecuentes (facturación del mes, saldos pendientes, próximas citas, buscar un
+  paciente, estado de laboratorio) usa la herramienta específica correspondiente.
+- Para cualquier otra pregunta sobre pacientes, historias, ortodoncia, laboratorio o gastos que
+  las herramientas específicas no cubran, usa "consulta_sql" armando un SELECT sobre esas tablas.
 - Responde en español, breve y directo, con los números relevantes.
-- Si la pregunta no tiene que ver con los datos de la clínica, dilo con honestidad y redirige
-  a las herramientas que sí tenés disponibles.
+- Si la pregunta no tiene nada que ver con los datos de la clínica (ni con las herramientas
+  específicas ni con consulta_sql), dilo con honestidad.
 - Los montos son en soles (S/).`
+}
 
 serve(async (req: Request) => {
   const corsHeaders = corsFor(req)
@@ -204,7 +259,7 @@ serve(async (req: Request) => {
     }
 
     const input: any[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: construirSystemPrompt() },
       ...((Array.isArray(history) ? history : []).map((h: { from: string; txt: string }) => ({
         role: h.from === 'bot' ? 'assistant' : 'user',
         content: h.txt,
@@ -234,8 +289,16 @@ serve(async (req: Request) => {
       for (const llamada of llamadas) {
         let args: any = {}
         try { args = JSON.parse(llamada.arguments || '{}') } catch { /* args inválidos: se usa {} */ }
-        const resultado = await ejecutarHerramienta(llamada.name, args, supabase)
-        input.push({ type: 'function_call', call_id: llamada.call_id, name: llamada.name, arguments: llamada.arguments })
+        let resultado: any
+        try {
+          resultado = await ejecutarHerramienta(llamada.name, args, supabase)
+        } catch (err) {
+          // Se le pasa el error real al modelo como resultado de la herramienta,
+          // en vez de reventar toda la solicitud: así puede explicarle al usuario
+          // qué falló en vez de inventar una excusa genérica.
+          resultado = { error: err instanceof Error ? err.message : 'Error al ejecutar la herramienta.' }
+        }
+        input.push(llamada)
         input.push({ type: 'function_call_output', call_id: llamada.call_id, output: JSON.stringify(resultado) })
       }
 
