@@ -41,7 +41,14 @@ export default function AsistenteDatos() {
     setEnviando(false);
 
     if (err || data?.error) {
-      setError((err && err.message) || data?.error || 'No se pudo obtener respuesta.');
+      // supabase-js solo da un mensaje generico en `err.message` para
+      // respuestas no-2xx; el cuerpo real (con el motivo especifico) viaja
+      // en `err.context`, una Response que hay que leer aparte.
+      let mensaje = data?.error || err?.message || 'No se pudo obtener respuesta.';
+      if (err?.context) {
+        try { mensaje = (await err.context.json())?.error || mensaje; } catch { /* cuerpo no era JSON */ }
+      }
+      setError(mensaje);
       return;
     }
     setHistorial([...nuevoHistorial, { from: 'bot', txt: data.reply }]);

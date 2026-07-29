@@ -298,7 +298,10 @@ serve(async (req: Request) => {
           // qué falló en vez de inventar una excusa genérica.
           resultado = { error: err instanceof Error ? err.message : 'Error al ejecutar la herramienta.' }
         }
-        input.push(llamada)
+        // Se reenvia solo lo que la API espera como input -- el objeto que
+        // devuelve OpenAI trae ademas campos de salida (ej. "status") que
+        // esta misma API rechaza con 400 si se los reenvia tal cual.
+        input.push({ type: 'function_call', call_id: llamada.call_id, name: llamada.name, arguments: llamada.arguments })
         input.push({ type: 'function_call_output', call_id: llamada.call_id, output: JSON.stringify(resultado) })
       }
 
