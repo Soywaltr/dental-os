@@ -29,7 +29,7 @@ const Expediente  = lazy(() => import("./components/vistas/Expediente"));
 const Caja        = lazy(() => import("./components/vistas/Caja"));
 const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
 const Reportes    = lazy(() => import("./components/vistas/Reportes"));
-const WhatsApp    = lazy(() => import("./components/vistas/WhatsApp"));
+const AsistenteDatos = lazy(() => import("./components/vistas/AsistenteDatos"));
 const Config      = lazy(() => import("./components/vistas/Config"));
 
 // ─── FONDO DECORATIVO (glassmorphism) ─────────────────────────────────────────
@@ -160,7 +160,7 @@ function useSession() {
 const VIEWS = {
   dashboard: Dashboard, agenda: Agenda, expediente: Expediente,
   caja: Caja, laboratorio: Laboratorio, reportes: Reportes,
-  whatsapp: WhatsApp, config: Config,
+  whatsapp: AsistenteDatos, config: Config,
 };
 
 // ─── ESTRUCTURA SIDEBAR ───────────────────────────────────────────────────────
