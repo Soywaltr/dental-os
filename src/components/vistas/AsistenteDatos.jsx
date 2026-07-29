@@ -1,9 +1,11 @@
 // src/components/vistas/AsistenteDatos.jsx
 // Reemplaza el placeholder "Muy pronto" que tenía WhatsApp.jsx. Es un chat
 // para EL DOCTOR/ADMIN (no para pacientes): pregunta en lenguaje natural
-// sobre la propia clínica (finanzas, pacientes, citas, laboratorio) y la
+// sobre la propia clínica (finanzas, pacientes, citas y laboratorio) y la
 // Edge Function `asistente-datos` responde consultando la base real, con el
-// mismo RLS de aislamiento por clínica que el resto de la app.
+// mismo RLS de aislamiento por clínica que el resto de la app. Cada
+// conversación se guarda en `asistente_conversaciones` (aislada por usuario,
+// no solo por clínica: es un asistente personal) para poder retomarla luego.
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
@@ -17,14 +19,123 @@ const SUGERENCIAS = [
   '¿Cómo van las órdenes de laboratorio?',
 ];
 
-export default function AsistenteDatos() {
+const TITULO_MAX = 42;
+const tituloDesde = (texto) => (texto.length > TITULO_MAX ? texto.slice(0, TITULO_MAX - 1).trimEnd() + '…' : texto);
+
+const fechaRelativa = (iso) => {
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Ayer';
+  if (dias < 7) return `Hace ${dias} días`;
+  return new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+};
+
+// Formato minimo y seguro (sin dangerouslySetInnerHTML): negritas **texto** y
+// listas "- item", que es todo lo que el asistente usa en sus respuestas.
+const conNegritas = (linea, keyPrefix) =>
+  linea.split(/\*\*(.+?)\*\*/g).map((parte, i) => (
+    i % 2 === 1 ? <strong key={`${keyPrefix}-${i}`}>{parte}</strong> : <React.Fragment key={`${keyPrefix}-${i}`}>{parte}</React.Fragment>
+  ));
+
+function renderMensaje(texto) {
+  const bloques = [];
+  let listaActual = [];
+  const cerrarLista = () => {
+    if (listaActual.length) {
+      bloques.push(<ul key={`ul-${bloques.length}`} style={{ margin: '2px 0 6px', paddingLeft: 18 }}>{listaActual}</ul>);
+      listaActual = [];
+    }
+  };
+  texto.split('\n').forEach((linea, i) => {
+    const matchItem = linea.match(/^\s*[-*]\s+(.*)$/);
+    if (matchItem) {
+      listaActual.push(<li key={`li-${i}`} style={{ marginBottom: 2 }}>{conNegritas(matchItem[1], `li-${i}`)}</li>);
+      return;
+    }
+    cerrarLista();
+    if (linea.trim() === '') bloques.push(<div key={`br-${i}`} style={{ height: 6 }} />);
+    else bloques.push(<div key={`p-${i}`}>{conNegritas(linea, `p-${i}`)}</div>);
+  });
+  cerrarLista();
+  return bloques;
+}
+
+export default function AsistenteDatos({ clinicaId }) {
+  const [conversaciones, setConversaciones] = useState([]);
+  const [conversacionActivaId, setConversacionActivaId] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const finRef = useRef(null);
+  const userIdRef = useRef(null);
 
   useEffect(() => { finRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [historial, enviando]);
+
+  useEffect(() => {
+    let vivo = true;
+    const cargar = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!vivo) return;
+      userIdRef.current = userData?.user?.id ?? null;
+
+      const { data, error: err } = await supabase
+        .from('asistente_conversaciones')
+        .select('id, titulo, mensajes, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(30);
+      if (vivo && !err) setConversaciones(data || []);
+    };
+    cargar();
+    return () => { vivo = false; };
+  }, []);
+
+  const abrirConversacion = (conv) => {
+    setConversacionActivaId(conv.id);
+    setHistorial(conv.mensajes || []);
+    setError('');
+  };
+
+  const nuevaConversacion = () => {
+    setConversacionActivaId(null);
+    setHistorial([]);
+    setError('');
+  };
+
+  const eliminarConversacion = async (id, e) => {
+    e.stopPropagation();
+    const { error: err } = await supabase.from('asistente_conversaciones').delete().eq('id', id);
+    if (err) return;
+    setConversaciones((prev) => prev.filter((c) => c.id !== id));
+    if (id === conversacionActivaId) nuevaConversacion();
+  };
+
+  // Guarda (inserta o actualiza) la conversacion despues de cada intercambio.
+  // No bloquea la respuesta al usuario si falla -- el historial en pantalla
+  // ya se actualizo, solo se pierde el guardado para retomarla despues.
+  const guardarConversacion = async (mensajes) => {
+    if (!clinicaId || !userIdRef.current) return;
+    if (conversacionActivaId) {
+      await supabase.from('asistente_conversaciones')
+        .update({ mensajes, updated_at: new Date().toISOString() })
+        .eq('id', conversacionActivaId);
+      setConversaciones((prev) => {
+        const resto = prev.filter((c) => c.id !== conversacionActivaId);
+        const actual = prev.find((c) => c.id === conversacionActivaId);
+        return [{ ...actual, mensajes, updated_at: new Date().toISOString() }, ...resto];
+      });
+    } else {
+      const primerMensaje = mensajes.find((m) => m.from === 'user')?.txt || 'Nueva conversación';
+      const { data, error: err } = await supabase.from('asistente_conversaciones')
+        .insert({ clinica_id: clinicaId, user_id: userIdRef.current, titulo: tituloDesde(primerMensaje), mensajes })
+        .select('id, titulo, mensajes, updated_at')
+        .single();
+      if (!err && data) {
+        setConversacionActivaId(data.id);
+        setConversaciones((prev) => [data, ...prev]);
+      }
+    }
+  };
 
   const enviar = async (mensaje) => {
     const texto_ = (mensaje ?? texto).trim();
@@ -41,23 +152,68 @@ export default function AsistenteDatos() {
     setEnviando(false);
 
     if (err || data?.error) {
-      // supabase-js solo da un mensaje generico en `err.message` para
-      // respuestas no-2xx; el cuerpo real (con el motivo especifico) viaja
-      // en `err.context`, una Response que hay que leer aparte.
-      let mensaje = data?.error || err?.message || 'No se pudo obtener respuesta.';
+      let mensajeError = data?.error || err?.message || 'No se pudo obtener respuesta.';
       if (err?.context) {
-        try { mensaje = (await err.context.json())?.error || mensaje; } catch { /* cuerpo no era JSON */ }
+        try { mensajeError = (await err.context.json())?.error || mensajeError; } catch { /* cuerpo no era JSON */ }
       }
-      setError(mensaje);
+      setError(mensajeError);
       return;
     }
-    setHistorial([...nuevoHistorial, { from: 'bot', txt: data.reply }]);
+    const historialFinal = [...nuevoHistorial, { from: 'bot', txt: data.reply }];
+    setHistorial(historialFinal);
+    guardarConversacion(historialFinal);
   };
 
   const onSubmit = (e) => { e.preventDefault(); enviar(); };
 
   return (
-    <div style={{ padding: 18, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div style={{ padding: 18, display: 'flex', gap: 14, flex: 1, minHeight: 0 }}>
+      <div style={{
+        width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10,
+        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12,
+        backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
+        padding: 12, overflow: 'hidden',
+      }}>
+        <Button onClick={nuevaConversacion} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, padding: '8px 10px' }}>
+          <Icon name="plus" size={14} /> Nueva conversación
+        </Button>
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: MU, textTransform: 'uppercase', letterSpacing: 0.4, padding: '2px 2px 0' }}>
+          Historial
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {conversaciones.length === 0 && (
+            <div style={{ fontSize: 11.5, color: MU, padding: '6px 2px' }}>Todavía no hay conversaciones guardadas.</div>
+          )}
+          {conversaciones.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => abrirConversacion(conv)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 8px', borderRadius: 8, cursor: 'pointer',
+                background: conv.id === conversacionActivaId ? '#ede9fe' : 'transparent',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 11.5, fontWeight: 600, color: conv.id === conversacionActivaId ? '#7c3aed' : DN,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {conv.titulo}
+                </div>
+                <div style={{ fontSize: 10, color: MU }}>{fechaRelativa(conv.updated_at)}</div>
+              </div>
+              <button
+                onClick={(e) => eliminarConversacion(conv.id, e)}
+                title="Eliminar conversación"
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: MU, padding: 2, flexShrink: 0 }}
+              >
+                <Icon name="trash" size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{
         background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12,
         backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
@@ -98,9 +254,9 @@ export default function AsistenteDatos() {
                 background: h.from === 'user' ? P : '#fff',
                 color: h.from === 'user' ? '#fff' : DN,
                 border: h.from === 'user' ? 'none' : `1px solid ${BD}`,
-                fontSize: 12.5, lineHeight: 1.5, whiteSpace: 'pre-wrap',
+                fontSize: 12.5, lineHeight: 1.5,
               }}>
-                {h.txt}
+                {h.from === 'bot' ? renderMensaje(h.txt) : h.txt}
               </div>
             </div>
           ))}
