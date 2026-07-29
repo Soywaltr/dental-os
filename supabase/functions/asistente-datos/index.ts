@@ -84,16 +84,52 @@ async function pacientesConSaldoPendiente(supabase: any) {
   return resultado.sort((a, b) => b.saldo_pendiente - a.saldo_pendiente).slice(0, 30)
 }
 
+// Las citas agendadas directo en Google Calendar (no en DentalOS) nunca tocan
+// la base de datos -- Agenda.jsx las trae en vivo desde la API de Google y
+// las mezcla solo en pantalla. Para que el asistente las vea igual, se pide
+// un access_token fresco a la Edge Function `google-calendar-token` (ya
+// existente, misma que usa Agenda.jsx) y se consulta la API de Google desde
+// aca tambien. Si la clinica no conecto Google, esto simplemente no aporta
+// nada -- nunca es un error fatal para la pregunta del usuario.
+async function citasDesdeGoogleCalendar(supabase: any, citasDB: any[], dias: number) {
+  try {
+    const { data: refresco } = await supabase.functions.invoke('google-calendar-token', { body: { action: 'refresh' } })
+    if (!refresco?.access_token) return []
+
+    const timeMin = new Date().toISOString()
+    const timeMax = new Date(Date.now() + dias * 86400000).toISOString()
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`,
+      { headers: { Authorization: `Bearer ${refresco.access_token}` } },
+    )
+    if (!res.ok) return []
+    const gData = await res.json()
+
+    const idsYaEnDB = new Set(citasDB.map((c: any) => c.google_event_id).filter(Boolean))
+    return (gData.items || [])
+      .filter((e: any) => e.start?.dateTime && !idsYaEnDB.has(e.id))
+      .map((e: any) => {
+        const [fecha, horaCompleta] = e.start.dateTime.split('T')
+        return { paciente: e.summary || 'Cita de Google Calendar', fecha, hora: horaCompleta.slice(0, 5), motivo: e.description || 'Agendada desde Google Calendar' }
+      })
+  } catch {
+    return []
+  }
+}
+
 async function citasProximas(supabase: any, dias = 7) {
   const hoy = new Date()
   const hoyStr = hoy.toISOString().slice(0, 10)
   const limite = new Date(hoy.getTime() + dias * 86400000).toISOString().slice(0, 10)
   const { data, error } = await supabase.from('pacientes')
-    .select('name, fecha, hora_cita, reason, treatment')
+    .select('name, fecha, hora_cita, reason, treatment, google_event_id')
     .gte('fecha', hoyStr).lte('fecha', limite)
     .order('fecha').order('hora_cita')
   if (error) throw new Error('No se pudo leer citas: ' + error.message)
-  return (data || []).map((p: any) => ({ paciente: p.name, fecha: p.fecha, hora: p.hora_cita, motivo: p.treatment || p.reason }))
+
+  const citasDB = (data || []).map((p: any) => ({ paciente: p.name, fecha: p.fecha, hora: p.hora_cita, motivo: p.treatment || p.reason }))
+  const citasGoogle = await citasDesdeGoogleCalendar(supabase, data || [], dias)
+  return [...citasDB, ...citasGoogle].sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora))
 }
 
 async function buscarPaciente(supabase: any, texto: string) {
@@ -150,7 +186,7 @@ const HERRAMIENTAS = [
   },
   {
     type: 'function', name: 'citas_proximas',
-    description: 'Lista las citas agendadas en los próximos días.',
+    description: 'Lista las citas agendadas en los próximos días, incluyendo tanto las de DentalOS como las agendadas directo en Google Calendar (si la clínica lo tiene conectado).',
     parameters: {
       type: 'object',
       properties: { dias: { type: 'number', description: 'Cuántos días hacia adelante mirar. Por defecto 7.' } },
