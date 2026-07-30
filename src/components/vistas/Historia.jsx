@@ -610,7 +610,7 @@ function AnamnesisSiNoDetalle({ label, value, detalle, onChange, onChangeDetalle
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
-export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId }) {
+export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId, clinica }) {
   const { isTablet } = useResponsive();
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
@@ -2674,7 +2674,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
         {/* --- PESTAÑA CONSENTIMIENTOS --- */}
         {tab === 'consentimientos' && (
-          <Consentimientos patient={patData || patient} />
+          <Consentimientos patient={patData || patient} clinica={clinica} />
         )}
 
       </div>
