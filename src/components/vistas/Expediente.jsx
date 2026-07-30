@@ -57,6 +57,107 @@ const IcFolder = () => (
     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
   </svg>
 );
+const IcUpload = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>
+);
+const IcDownload = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+);
+
+// ─── IMPORTAR / EXPORTAR CSV ──────────────────────────────────────────────────
+// Mismas columnas para exportar e importar: lo que se descarga sirve de
+// plantilla para volver a subirlo. Solo name/doc son obligatorios al importar.
+const COLUMNAS_PACIENTE = [
+  { key: 'name', label: 'Nombre' },
+  { key: 'doc', label: 'DNI' },
+  { key: 'tipo_doc', label: 'Tipo Doc' },
+  { key: 'phone', label: 'Celular' },
+  { key: 'email', label: 'Email' },
+  { key: 'birthDate', label: 'Fecha Nacimiento' },
+  { key: 'age', label: 'Edad' },
+  { key: 'sexo', label: 'Sexo' },
+  { key: 'direccion', label: 'Direccion' },
+  { key: 'treatment', label: 'Tratamiento' },
+  { key: 'reason', label: 'Motivo' },
+  { key: 'allergies', label: 'Alergias' },
+  { key: 'blood', label: 'Grupo Sanguineo' },
+];
+
+function filasACSV(filas) {
+  return filas.map(fila => fila.map(val => {
+    const s = String(val ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(',')).join('\r\n');
+}
+
+// Parser CSV mínimo (soporta campos entre comillas con comas/saltos de línea
+// adentro) -- no hace falta una librería para esto.
+function parseCSV(texto) {
+  const filas = [];
+  let fila = [];
+  let campo = '';
+  let dentroComillas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (dentroComillas) {
+      if (c === '"') {
+        if (texto[i + 1] === '"') { campo += '"'; i++; } else dentroComillas = false;
+      } else campo += c;
+    } else if (c === '"') dentroComillas = true;
+    else if (c === ',') { fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && texto[i + 1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (!(fila.length === 1 && fila[0] === '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if (campo !== '' || fila.length > 0) { fila.push(campo); filas.push(fila); }
+  return filas;
+}
+
+function descargarArchivo(nombre, contenido, tipo) {
+  const blob = new Blob([contenido], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportarPacientesCSV(patientsList) {
+  const encabezado = COLUMNAS_PACIENTE.map(c => c.label);
+  const filas = patientsList.map(p => COLUMNAS_PACIENTE.map(c => p[c.key] ?? ''));
+  // BOM al inicio para que Excel detecte UTF-8 y no rompa las tildes.
+  descargarArchivo('pacientes.csv', '﻿' + filasACSV([encabezado, ...filas]), 'text/csv;charset=utf-8');
+}
+
+// Convierte las filas crudas del CSV (ya parseadas) en objetos { name, doc, ... },
+// usando los encabezados de la primera fila para mapear columnas (sin importar
+// el orden en que vengan, siempre que el nombre de columna coincida).
+function filasCSVaPacientes(filas) {
+  if (filas.length < 2) return [];
+  const encabezados = filas[0].map(h => normalizarTexto(h.trim()));
+  const indicePorClave = {};
+  COLUMNAS_PACIENTE.forEach(c => {
+    const idx = encabezados.indexOf(normalizarTexto(c.label));
+    if (idx !== -1) indicePorClave[c.key] = idx;
+  });
+  return filas.slice(1)
+    .filter(fila => fila.some(v => v.trim() !== ''))
+    .map(fila => {
+      const obj = {};
+      COLUMNAS_PACIENTE.forEach(c => {
+        const idx = indicePorClave[c.key];
+        obj[c.key] = idx !== undefined ? (fila[idx] || '').trim() : '';
+      });
+      return obj;
+    });
+}
 
 // ─── HOOK: LÓGICA DE PACIENTES ────────────────────────────────────────────────
 // Toda la lógica de negocio separada del JSX
@@ -141,7 +242,47 @@ function usePatientsDirectory(clinicaId) {
     setPatientsList(prev => prev.filter(p => p.id !== id));
   }, []);
 
-  return { patientsList, loading, upsertPatient, deletePatient };
+  // Importación en bloque: a diferencia de upsertPatient, nunca fusiona por
+  // nombre -- cada fila ya llegó etiquetada como "nueva" o "duplicado
+  // aprobado por el usuario" desde el modal de importación, así que acá
+  // siempre se inserta como paciente nuevo (evita mezclar por error a dos
+  // personas distintas que comparten nombre).
+  const importarPacientes = useCallback(async (filas) => {
+    const { data: hcData } = await supabase
+      .from('pacientes').select('num_hc').not('num_hc', 'is', null)
+      .order('id', { ascending: false }).limit(1);
+    let next = 1;
+    if (hcData?.[0]?.num_hc) {
+      const match = hcData[0].num_hc.match(/\d+/);
+      if (match) next = parseInt(match[0], 10) + 1;
+    }
+
+    const datos = filas.map(f => ({
+      name: f.name.trim().replace(/\s+/g, ' '),
+      doc: f.doc || null,
+      phone: f.phone || null,
+      treatment: f.treatment || null,
+      reason: f.reason || null,
+      birthDate: f.birthDate || null,
+      age: f.age || null,
+      sexo: f.sexo || null,
+      direccion: f.direccion || null,
+      email: f.email || null,
+      allergies: f.allergies || null,
+      blood: f.blood || null,
+      tipo_doc: f.tipo_doc || null,
+      tag: 'nuevo',
+      num_hc: String(next++).padStart(4, '0'),
+      clinica_id: clinicaId,
+    }));
+
+    const { data, error } = await supabase.from('pacientes').insert(datos).select();
+    if (error) throw error;
+    setPatientsList(prev => [...data, ...prev]);
+    return data;
+  }, [clinicaId]);
+
+  return { patientsList, loading, upsertPatient, deletePatient, importarPacientes };
 }
 
 // ─── HOOK: FORMULARIO DE PACIENTE ────────────────────────────────────────────
@@ -488,14 +629,186 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
   );
 });
 
+// ─── SUB-COMPONENTE: MODAL IMPORTAR PACIENTES (CSV) ──────────────────────────
+const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
+  const [filas, setFilas] = useState(null); // null = todavía no se eligió archivo
+  const [seleccionDuplicados, setSeleccionDuplicados] = useState({}); // { indice: boolean }
+  const [importando, setImportando] = useState(false);
+  const [resultado, setResultado] = useState(null); // { insertados, omitidos }
+  const [error, setError] = useState('');
+
+  const docsExistentes = new Set(
+    patientsList.map(p => normalizarTexto(p.doc || '')).filter(Boolean)
+  );
+
+  const onFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    try {
+      const texto = await file.text();
+      const crudo = parseCSV(texto);
+      const pacientesCSV = filasCSVaPacientes(crudo);
+      if (pacientesCSV.length === 0) {
+        setError('El archivo no tiene filas con datos, o no coinciden los encabezados esperados.');
+        return;
+      }
+      const docsVistos = new Set();
+      const evaluadas = pacientesCSV.map(p => {
+        if (!p.name || !p.doc) return { ...p, estado: 'error', motivo: 'Falta Nombre o DNI' };
+        const docNorm = normalizarTexto(p.doc);
+        const esDuplicado = docsExistentes.has(docNorm) || docsVistos.has(docNorm);
+        docsVistos.add(docNorm);
+        return { ...p, estado: esDuplicado ? 'duplicado' : 'nuevo' };
+      });
+      setFilas(evaluadas);
+      setSeleccionDuplicados({});
+    } catch {
+      setError('No se pudo leer el archivo. ¿Es un CSV válido?');
+    }
+  };
+
+  const confirmar = async () => {
+    const aImportar = filas.filter((f, i) =>
+      f.estado === 'nuevo' || (f.estado === 'duplicado' && seleccionDuplicados[i])
+    );
+    if (aImportar.length === 0) { onClose(); return; }
+    setImportando(true);
+    try {
+      await onImportar(aImportar);
+      setResultado({
+        insertados: aImportar.length,
+        omitidos: filas.length - aImportar.length,
+      });
+    } catch (err) {
+      setError('Error al importar: ' + err.message);
+    } finally {
+      setImportando(false);
+    }
+  };
+
+  const nuevos = filas?.filter(f => f.estado === 'nuevo').length || 0;
+  const duplicados = filas?.filter(f => f.estado === 'duplicado').length || 0;
+  const errores = filas?.filter(f => f.estado === 'error').length || 0;
+
+  return (
+    <Modal
+      background="rgba(17,24,39,0.45)"
+      overlayStyle={{ padding: 24 }}
+      cardStyle={{
+        background: C.surface, borderRadius: C.rx,
+        width: '100%', maxWidth: 640, maxHeight: '85vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+        border: `1px solid ${C.border}`, overflow: 'hidden',
+      }}>
+      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font }}>Importar pacientes desde CSV</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, fontSize: 18 }}>×</button>
+      </div>
+
+      <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+        {resultado ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.green, marginBottom: 6 }}>
+              ✓ {resultado.insertados} paciente{resultado.insertados !== 1 ? 's' : ''} importado{resultado.insertados !== 1 ? 's' : ''}
+            </div>
+            {resultado.omitidos > 0 && (
+              <div style={{ fontSize: 12.5, color: C.inkMute }}>{resultado.omitidos} fila{resultado.omitidos !== 1 ? 's' : ''} omitida{resultado.omitidos !== 1 ? 's' : ''} (duplicado no confirmado, o con error)</div>
+            )}
+          </div>
+        ) : !filas ? (
+          <div>
+            <p style={{ fontSize: 12.5, color: C.inkMid, lineHeight: 1.6, marginBottom: 14 }}>
+              El archivo debe ser un CSV con encabezados. Las columnas <strong>Nombre</strong> y <strong>DNI</strong> son obligatorias
+              (el resto son opcionales). Si no tienes un archivo todavía, descarga tu lista actual como plantilla y edítala.
+            </p>
+            <button
+              onClick={() => exportarPacientesCSV(patientsList)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surfaceAlt, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: C.inkMid, marginBottom: 16 }}>
+              <IcDownload /> Descargar plantilla / lista actual
+            </button>
+            <input type="file" accept=".csv,text/csv" onChange={onFileChange} style={{ display: 'block', fontSize: 13 }} />
+            {error && <div style={{ marginTop: 10, fontSize: 12, color: C.red }}>{error}</div>}
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14, fontSize: 12 }}>
+              <span style={{ color: C.green, fontWeight: 700 }}>{nuevos} nuevo{nuevos !== 1 ? 's' : ''}</span>
+              <span style={{ color: C.amber, fontWeight: 700 }}>{duplicados} duplicado{duplicados !== 1 ? 's' : ''}</span>
+              {errores > 0 && <span style={{ color: C.red, fontWeight: 700 }}>{errores} con error</span>}
+            </div>
+            {duplicados > 0 && (
+              <p style={{ fontSize: 11.5, color: C.inkMute, marginBottom: 10 }}>
+                Ya existe un paciente con ese DNI. Marca la casilla si igual quieres importarlo como un paciente nuevo y separado.
+              </p>
+            )}
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: C.r, overflow: 'hidden' }}>
+              {filas.map((f, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                  borderBottom: i < filas.length - 1 ? `1px solid ${C.border}` : 'none',
+                  background: f.estado === 'error' ? C.redSoft : f.estado === 'duplicado' ? C.amberSoft : 'transparent',
+                }}>
+                  {f.estado === 'duplicado' ? (
+                    <input
+                      type="checkbox"
+                      checked={!!seleccionDuplicados[i]}
+                      onChange={e => setSeleccionDuplicados(prev => ({ ...prev, [i]: e.target.checked }))}
+                    />
+                  ) : (
+                    <span style={{ width: 13, textAlign: 'center', color: f.estado === 'error' ? C.red : C.green, fontWeight: 700 }}>
+                      {f.estado === 'error' ? '!' : '✓'}
+                    </span>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {f.name || '(sin nombre)'}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: C.inkMute }}>
+                      {f.estado === 'error' ? f.motivo : `DNI ${f.doc || '---'}`}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!resultado && filas && (
+        <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 9, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surface, cursor: 'pointer', fontWeight: 600, color: C.inkMid, fontSize: 13 }}>
+            Cancelar
+          </button>
+          <button
+            onClick={confirmar}
+            disabled={importando || nuevos + Object.values(seleccionDuplicados).filter(Boolean).length === 0}
+            style={{ flex: 1, padding: 9, borderRadius: C.r, border: 'none', background: importando ? C.inkMute : C.brand, color: '#fff', cursor: importando ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13 }}>
+            {importando ? 'Importando…' : 'Confirmar importación'}
+          </button>
+        </div>
+      )}
+      {resultado && (
+        <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ width: '100%', padding: 9, borderRadius: C.r, border: 'none', background: C.brand, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+            Cerrar
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+});
+
 // ─── COMPONENTE PRINCIPAL: EXPEDIENTE ────────────────────────────────────────
 export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView, clinicaId }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [patSeleccionado, setPatSeleccionado] = useState(null);
 
-  const { patientsList, loading, upsertPatient, deletePatient } = usePatientsDirectory(clinicaId);
+  const { patientsList, loading, upsertPatient, deletePatient, importarPacientes } = usePatientsDirectory(clinicaId);
 
   const handleDeleteWrapper = async (id) => {
     try {
@@ -552,21 +865,51 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
             }}>
               Directorio
             </span>
-            <button
-              onClick={() => setShowModal(true)}
-              aria-label="Nuevo paciente"
-              style={{
-                width: 30, height: 30, borderRadius: C.r,
-                background: C.brand, color: '#fff',
-                border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: C.shadowSm, transition: 'background 0.12s', outline: 'none',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = C.brandText; }}
-              onMouseLeave={e => { e.currentTarget.style.background = C.brand; }}
-            >
-              <IcPlus />
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => exportarPacientesCSV(patientsList)}
+                aria-label="Exportar pacientes a CSV"
+                title="Exportar a CSV"
+                style={{
+                  width: 30, height: 30, borderRadius: C.r,
+                  background: C.surfaceAlt, color: C.inkMid,
+                  border: `1px solid ${C.border}`, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 0.12s', outline: 'none',
+                }}
+              >
+                <IcDownload />
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                aria-label="Importar pacientes desde CSV"
+                title="Importar desde CSV"
+                style={{
+                  width: 30, height: 30, borderRadius: C.r,
+                  background: C.surfaceAlt, color: C.inkMid,
+                  border: `1px solid ${C.border}`, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 0.12s', outline: 'none',
+                }}
+              >
+                <IcUpload />
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                aria-label="Nuevo paciente"
+                style={{
+                  width: 30, height: 30, borderRadius: C.r,
+                  background: C.brand, color: '#fff',
+                  border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: C.shadowSm, transition: 'background 0.12s', outline: 'none',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.brandText; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.brand; }}
+              >
+                <IcPlus />
+              </button>
+            </div>
           </div>
 
           {/* Buscador */}
@@ -661,6 +1004,15 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         <NewPatientModal
           onClose={() => setShowModal(false)}
           onSave={handleSave}
+          patientsList={patientsList}
+        />
+      )}
+
+      {/* Modal importar pacientes desde CSV */}
+      {showImportModal && (
+        <ImportarPacientesModal
+          onClose={() => setShowImportModal(false)}
+          onImportar={importarPacientes}
           patientsList={patientsList}
         />
       )}
