@@ -11,6 +11,7 @@ import Historia from './Historia';
 import Modal from '../ui/Modal';
 import { BD, P, DN, MU, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { normalizarTexto, ini, findPatientByDoc, findPatientByName, estadoPaciente } from '../../utils/helpers';
+import useResponsive from '../../utils/useResponsive';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
 const C = {
@@ -408,6 +409,8 @@ const FilterPills = memo(({ active, onChange }) => (
 // ─── SUB-COMPONENTE: TARJETA DE PACIENTE ─────────────────────────────────────
 const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
   const [hov, setHov] = useState(false);
+  const { isTablet } = useResponsive();
+  const mostrarEliminar = hov || isTablet; // en tablet/iPad no hay "hover" real, asi que se muestra siempre
   const estado = estadoPaciente(patient);
 
   return (
@@ -427,8 +430,8 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
         transition: 'all 0.12s', outline: 'none',
       }}
     >
-      {/* Botón Eliminar (Solo aparece al pasar el mouse por encima) */}
-      {hov && !isSelected && (
+      {/* Botón Eliminar: al pasar el mouse en escritorio, siempre visible en tablet/iPad */}
+      {mostrarEliminar && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -468,7 +471,7 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
       </div>
 
       {/* Indicador de estado (nuevo / inactivo) */}
-      {!hov && estado !== 'activo' && (
+      {!mostrarEliminar && estado !== 'activo' && (
         <span
           title={estado === 'nuevo' ? 'Paciente nuevo (≤30 días)' : 'Sin actividad hace más de 6 meses'}
           style={{ width: 7, height: 7, borderRadius: '50%', background: estado === 'nuevo' ? C.blue : '#9CA3AF', flexShrink: 0 }}
@@ -974,6 +977,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [patSeleccionado, setPatSeleccionado] = useState(null);
+  const { isNarrow } = useResponsive();
 
   const { patientsList, loading, upsertPatient, deletePatient, importarPacientes } = usePatientsDirectory(clinicaId);
 
@@ -1004,12 +1008,12 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   return (
     <div style={{
       display: 'flex', height: 'calc(100vh - 100px)',
-      gap: 20, minHeight: 0,
+      gap: isNarrow ? 10 : 20, minHeight: 0,
     }}>
 
       {/* ─── PANEL IZQUIERDO: DIRECTORIO ─── */}
       <aside style={{
-        width: 300, minWidth: 280,
+        width: isNarrow ? 230 : 300, minWidth: isNarrow ? 210 : 280,
         display: 'flex', flexDirection: 'column',
         background: GLASS_BG,
         backdropFilter: GLASS_BLUR,

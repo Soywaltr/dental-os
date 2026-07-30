@@ -11,13 +11,13 @@ export const TODAS_NACIONES = [
 ].sort((a, b) => a.n.localeCompare(b.n));
 
 export const labelStyleDoc = {
-  fontSize: '12px', fontWeight: '500', color: '#64748b', display: 'block', marginBottom: '6px'
+  fontSize: '10px', fontWeight: '600', color: '#64748b', display: 'block', marginBottom: '4px'
 };
 
 export const inputStyleDoc = {
-  width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1',
-  fontSize: '13.5px', color: '#334155', background: '#fff', boxSizing: 'border-box',
-  outline: 'none', height: '42px', transition: 'border-color 0.2s ease',
+  width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1',
+  fontSize: '12px', color: '#334155', background: '#fff', boxSizing: 'border-box',
+  outline: 'none', height: '36px', transition: 'border-color 0.2s ease',
 };
 
 export const CLIENT_ID = "849091491290-t1h1q1p8j40rhndjlosh0e0dsokm5907.apps.googleusercontent.com";

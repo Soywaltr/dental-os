@@ -1485,7 +1485,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 {ORTO_TABS.map(t => (
                   <div key={t.id} onClick={() => setSubTabOrto(t.id)}
                     style={{
-                      padding: '18px 4px', cursor: 'pointer', fontSize: '13.5px',
+                      padding: '14px 4px', cursor: 'pointer', fontSize: '11px',
                       fontWeight: subTabOrto === t.id ? '700' : '500',
                       color: subTabOrto === t.id ? '#0087b3' : '#64748b',
                       borderBottom: subTabOrto === t.id ? `2px solid #0087b3` : '2px solid transparent',
@@ -1505,7 +1505,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {['Motivo de consulta', 'Historia médica', 'Historia odontológica', 'Historia Familiar'].map(f => (
                         <div key={f} style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '250px 1fr', alignItems: 'center', gap: '20px' }}>
-                          <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>{f}</label>
+                          <label style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>{f}</label>
                           <input disabled={!isEditingOrtoExamen} value={ortoForm[f] || ''} onChange={e => handleOrto(f, e.target.value)} style={getOrtoStyle(isEditingOrtoExamen)} />
                         </div>
                       ))}
@@ -1535,22 +1535,22 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '120px 100px 250px 150px', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                      <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Filtrum</div>
-                      <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_alineado || false} onChange={e => handleOrto('filtrum_alineado', e.target.checked)} /> Alineado</label>
-                      <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Desviación lateral del filtrum</div>
+                      <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Filtrum</div>
+                      <label style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_alineado || false} onChange={e => handleOrto('filtrum_alineado', e.target.checked)} /> Alineado</label>
+                      <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Desviación lateral del filtrum</div>
                       <div style={{ display: 'flex', gap: '15px' }}>
-                        <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_izq || false} onChange={e => handleOrto('filtrum_izq', e.target.checked)} /> Izquierdo</label>
-                        <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_der || false} onChange={e => handleOrto('filtrum_der', e.target.checked)} /> Derecha</label>
+                        <label style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_izq || false} onChange={e => handleOrto('filtrum_izq', e.target.checked)} /> Izquierdo</label>
+                        <label style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.filtrum_der || false} onChange={e => handleOrto('filtrum_der', e.target.checked)} /> Derecha</label>
                       </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '120px 100px 250px 150px', gap: '15px', alignItems: 'center' }}>
-                      <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Mentón</div>
-                      <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_alineado || false} onChange={e => handleOrto('menton_alineado', e.target.checked)} /> Alineado</label>
-                      <div style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Desviación lateral del mentón</div>
+                      <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Mentón</div>
+                      <label style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_alineado || false} onChange={e => handleOrto('menton_alineado', e.target.checked)} /> Alineado</label>
+                      <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Desviación lateral del mentón</div>
                       <div style={{ display: 'flex', gap: '15px' }}>
-                        <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_izq || false} onChange={e => handleOrto('menton_izq', e.target.checked)} /> Izquierdo</label>
-                        <label style={{ fontSize: '13px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_der || false} onChange={e => handleOrto('menton_der', e.target.checked)} /> Derecha</label>
+                        <label style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_izq || false} onChange={e => handleOrto('menton_izq', e.target.checked)} /> Izquierdo</label>
+                        <label style={{ fontSize: '11px', color: '#475569', display: 'flex', gap: '6px', opacity: isEditingOrtoExamen ? 1 : 0.6 }}><input disabled={!isEditingOrtoExamen} type="checkbox" checked={ortoForm.menton_der || false} onChange={e => handleOrto('menton_der', e.target.checked)} /> Derecha</label>
                       </div>
                     </div>
                     <textarea disabled={!isEditingOrtoExamen} placeholder="Notas de asimetría..." value={ortoForm.asimetria_notas || ''} onChange={e => handleOrto('asimetria_notas', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoExamen), height: '80px', marginTop: '20px', resize: 'none' }} />
@@ -1645,7 +1645,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {['Error molar derecho', 'Error molar izquierdo', 'Dientes ausentes', 'Alteraciones de número, forma y tamaño de dientes'].map(f => (
                         <div key={f} style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '250px 1fr', alignItems: 'center', gap: '20px' }}>
-                          <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>{f}</label>
+                          <label style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>{f}</label>
                           <input disabled={!isEditingOrtoExamen} value={ortoForm[f] || ''} onChange={e => handleOrto(f, e.target.value)} style={getOrtoStyle(isEditingOrtoExamen)} />
                         </div>
                       ))}
@@ -1682,7 +1682,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>
                       {['Observaciones', 'Maloclusión'].map(f => (
                         <div key={f} style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '150px 1fr', alignItems: 'center', gap: '20px' }}>
-                          <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>{f}</label>
+                          <label style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>{f}</label>
                           <input disabled={!isEditingOrtoExamen} value={ortoForm[f] || ''} onChange={e => handleOrto(f, e.target.value)} placeholder="Anotaciones adicionales..." style={getOrtoStyle(isEditingOrtoExamen)} />
                         </div>
                       ))}
@@ -1698,21 +1698,21 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Fotografías set ortodóntico', 'Fotografías set quirúrgico'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Modelos de estudio con alginato', 'Modelos de estudio con silicona'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['TAC de volumen completo con protocolo Morzán', 'TAC de volumen completo sin informe', 'TAC de campo pequeño'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
@@ -1724,21 +1724,21 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Postero anterior', 'Periapicales de incisivos superiores', 'Periapicales de incisivos inferiores'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Bitewing de molares', 'Bitewing de molares y premolares', 'Bitewing de premolares'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Carpal', 'Oclusal superior', 'Oclusal inferior', 'Panorámica'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
@@ -1750,21 +1750,21 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Otorrinolaringólogo', 'Odontopediatra', 'Odontólogo General'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Cirujano Máxilo facial', 'Periodoncista', 'Médica'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                         {['Fisioterapeuta Oral', 'Psicólogo', 'Encerado diagnóstico', 'Exámenes auxiliares'].map(opt => (
-                          <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
+                          <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrabajo ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrabajo ? 1 : 0.6 }}>
                             <input disabled={!isEditingOrtoTrabajo} type="checkbox" checked={planTrabajoForm[opt] || false} onChange={e => handlePlanTrabajo(opt, e.target.checked)} /> {opt}
                           </label>
                         ))}
@@ -1773,17 +1773,17 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <textarea disabled={!isEditingOrtoTrabajo} placeholder="Notas de interconsultas..." value={planTrabajoForm.notas_inter || ''} onChange={e => handlePlanTrabajo('notas_inter', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrabajo), height: '100px', resize: 'none', marginBottom: '30px' }} />
 
                     <div style={{ marginBottom: '20px' }}>
-                      <label style={{ ...labelStyleDoc, fontSize: '14px', marginBottom: '8px' }}>Informes</label>
+                      <label style={{ ...labelStyleDoc, fontSize: '12px', marginBottom: '8px' }}>Informes</label>
                       <textarea disabled={!isEditingOrtoTrabajo} value={planTrabajoForm.informes || ''} onChange={e => handlePlanTrabajo('informes', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrabajo), height: '80px', resize: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '20px' }}>
-                      <label style={{ ...labelStyleDoc, fontSize: '14px', marginBottom: '8px' }}>Diagnóstico definitivo</label>
+                      <label style={{ ...labelStyleDoc, fontSize: '12px', marginBottom: '8px' }}>Diagnóstico definitivo</label>
                       <textarea disabled={!isEditingOrtoTrabajo} value={planTrabajoForm.diag_definitivo || ''} onChange={e => handlePlanTrabajo('diag_definitivo', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrabajo), height: '80px', resize: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '40px' }}>
-                      <label style={{ ...labelStyleDoc, fontSize: '14px', marginBottom: '8px' }}>Objetivo</label>
+                      <label style={{ ...labelStyleDoc, fontSize: '12px', marginBottom: '8px' }}>Objetivo</label>
                       <textarea disabled={!isEditingOrtoTrabajo} value={planTrabajoForm.objetivo || ''} onChange={e => handlePlanTrabajo('objetivo', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrabajo), height: '80px', resize: 'none' }} />
                     </div>
                   </div>
@@ -1795,21 +1795,21 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Fecha inicial</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Fecha inicial</label>
                         <input disabled={!isEditingOrtoTrata} type="date" value={planTrataForm.fecha_inicial || ''} onChange={e => handlePlanTrata('fecha_inicial', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Tiempo estimado <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>(meses)</span></label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Tiempo estimado <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>(meses)</span></label>
                         <input disabled={!isEditingOrtoTrata} type="number" placeholder="Ej: 18" value={planTrataForm.tiempo_estimado || ''} onChange={e => handlePlanTrata('tiempo_estimado', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Fecha final</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Fecha final</label>
                         <input disabled={!isEditingOrtoTrata} type="date" value={planTrataForm.fecha_final || ''} onChange={e => handlePlanTrata('fecha_final', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)} />
                       </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '100px 1fr 1fr 1fr 1fr', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                      <span style={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}>Tipo</span>
+                      <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>Tipo</span>
                       <select disabled={!isEditingOrtoTrata} value={planTrataForm.tipo_1 || ''} onChange={e => handlePlanTrata('tipo_1', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)}>
                         <option value="">Seleccionar</option>
                         {['Interceptivo', 'Guía de oclusión', 'Ortodóntico', 'Ortopédico', 'Ortodóntico - Ortopédico', 'Ortodóntico interdisciplinario', 'Ortodóntico interprofesional'].map(o => <option key={o} value={o}>{o}</option>)}
@@ -1832,7 +1832,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <SectionHeader title="Aparatos Ortopédicos" />
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', rowGap: '15px', marginBottom: '15px' }}>
                       {['AEO', 'Hiperpropulsión con bloques gemelos', 'Hiperpropulsión con Bionator', 'ERP Haas', 'ERP Hyrax', 'ERP MARPE tipo Moon', 'ERP MARPE con acrílico', 'Máscara facial Delaire', 'Máscara facial Petit', 'Mentonera', 'Placa labio activa', 'Pantalla oral'].map(opt => (
-                        <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrata ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrata ? 1 : 0.6 }}>
+                        <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrata ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrata ? 1 : 0.6 }}>
                           <input disabled={!isEditingOrtoTrata} type="checkbox" checked={planTrataForm[opt] || false} onChange={e => handlePlanTrata(opt, e.target.checked)} /> {opt}
                         </label>
                       ))}
@@ -1842,14 +1842,14 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <SectionHeader title="Anclaje" />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '20px', maxWidth: '700px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Superior</span>
+                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Superior</span>
                         <select disabled={!isEditingOrtoTrata} value={planTrataForm.anclaje_sup || ''} onChange={e => handlePlanTrata('anclaje_sup', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrata), flex: 1 }}>
                           <option value="">Seleccionar</option>
                           {['Máximo', 'Mediano', 'Mínimo'].map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Inferior</span>
+                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Inferior</span>
                         <select disabled={!isEditingOrtoTrata} value={planTrataForm.anclaje_inf || ''} onChange={e => handlePlanTrata('anclaje_inf', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrata), flex: 1 }}>
                           <option value="">Seleccionar</option>
                           {['Máximo', 'Mediano', 'Mínimo'].map(o => <option key={o} value={o}>{o}</option>)}
@@ -1859,7 +1859,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '15px' }}>
                       {['Mini implantes', 'Bicorticales', 'Mini placas', 'Mini implantes palatinos paramediales', 'Mini implantes bicorticales paramediales'].map(opt => (
-                        <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrata ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrata ? 1 : 0.6 }}>
+                        <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrata ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrata ? 1 : 0.6 }}>
                           <input disabled={!isEditingOrtoTrata} type="checkbox" checked={planTrataForm[opt] || false} onChange={e => handlePlanTrata(opt, e.target.checked)} /> {opt}
                         </label>
                       ))}
@@ -1869,7 +1869,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <SectionHeader title="Aparatos" />
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', rowGap: '15px', marginBottom: '15px' }}>
                       {['Distal jet óseo', 'ATP semi fijo', 'Brazo de poder para tracción mesial de molar', 'Placa activa de expansión', 'Péndulo óseo', 'ATP más botón de Nance', 'Placa para levantar mordida', 'Mantenedor de espacio', 'Resorte vestibular para distalizar molar', 'ATP fijo', 'VAC modificado', 'Recuperador de espacio', 'MUST óseo', 'Arco lingual semi fijo', 'ALF', 'Rejilla lingual', 'Cantilever óseo', 'Botón de Nance óseo', 'AEO ortodóntico', 'QUAD HÉLIX'].map(opt => (
-                        <label key={opt} style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrata ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrata ? 1 : 0.6 }}>
+                        <label key={opt} style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', cursor: isEditingOrtoTrata ? 'pointer' : 'not-allowed', opacity: isEditingOrtoTrata ? 1 : 0.6 }}>
                           <input disabled={!isEditingOrtoTrata} type="checkbox" checked={planTrataForm[opt] || false} onChange={e => handlePlanTrata(opt, e.target.checked)} /> {opt}
                         </label>
                       ))}
@@ -1895,7 +1895,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     <textarea disabled={!isEditingOrtoTrata} placeholder="Notas de la sección Otros..." value={planTrataForm.notas_otros || ''} onChange={e => handlePlanTrata('notas_otros', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrata), height: '80px', resize: 'none', marginBottom: '30px' }} />
 
                     <div style={{ marginBottom: '40px' }}>
-                      <label style={{ ...labelStyleDoc, fontSize: '14px', marginBottom: '8px' }}>Descripción</label>
+                      <label style={{ ...labelStyleDoc, fontSize: '12px', marginBottom: '8px' }}>Descripción</label>
                       <textarea disabled={!isEditingOrtoTrata} value={planTrataForm.descripcion_general || ''} onChange={e => handlePlanTrata('descripcion_general', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoTrata), height: '100px', resize: 'none' }} />
                     </div>
                   </div>
@@ -1907,25 +1907,25 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Fecha inicial</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Fecha inicial</label>
                         <input disabled={!isEditingOrtoResumen} type="date" value={resumenForm.fecha_inicial || ''} onChange={e => handleResumen('fecha_inicial', e.target.value)} style={getOrtoStyle(isEditingOrtoResumen)} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Fecha final</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Fecha final</label>
                         <input disabled={!isEditingOrtoResumen} type="date" value={resumenForm.fecha_final || ''} onChange={e => handleResumen('fecha_final', e.target.value)} style={getOrtoStyle(isEditingOrtoResumen)} />
                       </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Tiempo estimado</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Tiempo estimado</label>
                         <div style={{ display: 'flex', border: '1px solid', borderColor: isEditingOrtoResumen ? '#cbd5e1' : 'transparent', borderRadius: '8px', overflow: 'hidden' }}>
                           <input disabled={!isEditingOrtoResumen} type="number" value={resumenForm.tiempo_estimado || ''} onChange={e => handleResumen('tiempo_estimado', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoResumen), border: 'none', borderRadius: 0, flex: 1 }} />
-                          <div style={{ background: '#f8fafc', padding: '0 20px', display: 'flex', alignItems: 'center', color: '#64748b', fontSize: '13px', borderLeft: isEditingOrtoResumen ? '1px solid #cbd5e1' : 'none' }}>Meses</div>
+                          <div style={{ background: '#f8fafc', padding: '0 20px', display: 'flex', alignItems: 'center', color: '#64748b', fontSize: '11px', borderLeft: isEditingOrtoResumen ? '1px solid #cbd5e1' : 'none' }}>Meses</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Tipo de Brackets</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Tipo de Brackets</label>
                         <select disabled={!isEditingOrtoResumen} value={resumenForm.tipo_brackets || ''} onChange={e => handleResumen('tipo_brackets', e.target.value)} style={getOrtoStyle(isEditingOrtoResumen)}>
                           <option value="">Seleccionar</option>
                           {['Bracket metálico', 'Bracket cerámico', 'Bracket zafiro', 'Bracket lingual', 'Bracket férulas', 'Bracket resina', 'Autoligante metálico', 'Autoligante estético', 'Iconix', 'Carriere slx 3D', 'Invisalign', 'Aliwell', 'Smartaligner', 'CCO system', 'Otros'].map(o => <option key={o} value={o}>{o}</option>)}
@@ -1934,20 +1934,20 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     </div>
 
                     <div style={{ marginBottom: '20px' }}>
-                      <label style={{ ...labelStyleDoc, fontSize: '13px', marginBottom: '8px' }}>Diagnóstico</label>
+                      <label style={{ ...labelStyleDoc, fontSize: '11px', marginBottom: '8px' }}>Diagnóstico</label>
                       <textarea disabled={!isEditingOrtoResumen} value={resumenForm.diagnostico || ''} onChange={e => handleResumen('diagnostico', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoResumen), height: '100px', resize: 'none' }} />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Anclaje superior</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Anclaje superior</label>
                         <select disabled={!isEditingOrtoResumen} value={resumenForm.anclaje_sup || ''} onChange={e => handleResumen('anclaje_sup', e.target.value)} style={getOrtoStyle(isEditingOrtoResumen)}>
                           <option value="">Seleccionar</option>
                           {['Absoluto', 'Máximo', 'Medio', 'Mínimo'].map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...labelStyleDoc, fontSize: '13px' }}>Anclaje inferior</label>
+                        <label style={{ ...labelStyleDoc, fontSize: '11px' }}>Anclaje inferior</label>
                         <select disabled={!isEditingOrtoResumen} value={resumenForm.anclaje_inf || ''} onChange={e => handleResumen('anclaje_inf', e.target.value)} style={getOrtoStyle(isEditingOrtoResumen)}>
                           <option value="">Seleccionar</option>
                           {['Absoluto', 'Máximo', 'Medio', 'Mínimo'].map(o => <option key={o} value={o}>{o}</option>)}
@@ -1956,7 +1956,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     </div>
 
                     <div style={{ marginBottom: '40px' }}>
-                      <label style={{ ...labelStyleDoc, fontSize: '13px', marginBottom: '8px' }}>Nota</label>
+                      <label style={{ ...labelStyleDoc, fontSize: '11px', marginBottom: '8px' }}>Nota</label>
                       <textarea disabled={!isEditingOrtoResumen} value={resumenForm.notas || ''} onChange={e => handleResumen('notas', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoResumen), height: '80px', resize: 'none' }} />
                     </div>
                   </div>
@@ -1965,10 +1965,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 {subTabOrto === 'fotografias' && (
                   <div style={{ animation: 'fadeIn 0.3s ease' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', marginTop: '10px' }}>
-                      <h3 style={{ color: '#0f172a', fontSize: '18px', fontWeight: 700, margin: 0 }}>Archivos Clínicos Iniciales</h3>
+                      <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Archivos Clínicos Iniciales</h3>
                       <div>
                         {savingFotosOrto && <span style={{ fontSize: '12px', color: '#0087b3', fontWeight: 600, marginRight: 10 }}>Subiendo...</span>}
-                        <button onClick={() => setIsEditingOrtoFotos(!isEditingOrtoFotos)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isEditingOrtoFotos ? '#fff' : '#f1f5f9', color: isEditingOrtoFotos ? '#ef4444' : '#475569', border: `1px solid ${isEditingOrtoFotos ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
+                        <button onClick={() => setIsEditingOrtoFotos(!isEditingOrtoFotos)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isEditingOrtoFotos ? '#fff' : '#f1f5f9', color: isEditingOrtoFotos ? '#ef4444' : '#475569', border: `1px solid ${isEditingOrtoFotos ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '11px' }}>
                           {isEditingOrtoFotos ? 'Cerrar Edición' : <><Icon name="edit" size={13} /> Editar Fotografías</>}
                         </button>
                       </div>
@@ -2014,7 +2014,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                             </div>
 
                             <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0', background: hasFile ? '#f0f9ff' : '#fff' }}>
-                              <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#0f172a' }}>{item.key}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 600, color: '#0f172a' }}>{item.key}</div>
                               <div style={{ fontSize: '10px', color: hasFile ? '#0087b3' : '#94a3b8', marginTop: '4px', fontWeight: hasFile ? 600 : 400 }}>
                                 {hasFile ? `✓ Subido el ${fileData.date}` : 'Pendiente'}
                               </div>
