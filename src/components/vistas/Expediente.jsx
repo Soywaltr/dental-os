@@ -159,6 +159,60 @@ function filasCSVaPacientes(filas) {
     });
 }
 
+// Columnas propias del historial de tratamientos (plan_tratamiento de
+// `historias`) -- se agregan a las de COLUMNAS_PACIENTE cuando se exporta
+// "con historial". Cada tratamiento produce su propia fila (no cabe uno por
+// paciente: un paciente puede tener varios tratamientos con distinta fecha).
+const COLUMNAS_TRATAMIENTO = [
+  { key: '_fecha', label: 'Fecha Tratamiento' },
+  { key: '_tratamiento', label: 'Tratamiento' },
+  { key: '_pieza', label: 'Pieza' },
+  { key: '_estado', label: 'Estado' },
+  { key: '_costo', label: 'Costo' },
+  { key: '_pagado', label: 'Pagado' },
+  { key: '_saldo', label: 'Saldo' },
+];
+
+// Descarga un CSV con una fila por tratamiento (no por paciente): cada fila
+// repite los datos del paciente + los datos de ese tratamiento puntual.
+// Si hay rango de fechas, solo entran los tratamientos con fecha dentro del
+// rango -- un paciente sin tratamientos en ese rango simplemente no aparece.
+// Si un paciente no tiene ningún tratamiento y no hay filtro de fecha, igual
+// aparece una fila suya con las columnas de tratamiento vacías.
+function exportarHistorialCompletoCSV(pacientes, historiasPorPacienteId, fechaDesde, fechaHasta) {
+  const encabezado = [...COLUMNAS_PACIENTE.map(c => c.label), ...COLUMNAS_TRATAMIENTO.map(c => c.label)];
+  const filas = [];
+
+  pacientes.forEach(p => {
+    const items = (historiasPorPacienteId[p.id]?.plan_tratamiento || [])
+      .filter(i => {
+        if (!fechaDesde && !fechaHasta) return true;
+        if (!i.date) return false;
+        if (fechaDesde && i.date < fechaDesde) return false;
+        if (fechaHasta && i.date > fechaHasta) return false;
+        return true;
+      });
+
+    const baseCols = COLUMNAS_PACIENTE.map(c => p[c.key] ?? '');
+
+    if (items.length === 0) {
+      if (!fechaDesde && !fechaHasta) filas.push([...baseCols, '', '', '', '', '', '', '']);
+      return;
+    }
+    items.forEach(item => {
+      const costo = Number(item.cost) || 0;
+      const pagado = Number(item.paid) || 0;
+      filas.push([
+        ...baseCols,
+        item.date || '', item.name || '', item.tooth || '', item.status || '',
+        costo.toFixed(2), pagado.toFixed(2), (costo - pagado).toFixed(2),
+      ]);
+    });
+  });
+
+  descargarArchivo('pacientes_historial.csv', '﻿' + filasACSV([encabezado, ...filas]), 'text/csv;charset=utf-8');
+}
+
 // ─── HOOK: LÓGICA DE PACIENTES ────────────────────────────────────────────────
 // Toda la lógica de negocio separada del JSX
 function usePatientsDirectory(clinicaId) {
@@ -629,6 +683,124 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
   );
 });
 
+// ─── SUB-COMPONENTE: MODAL EXPORTAR PACIENTES (CSV) ──────────────────────────
+const ExportarPacientesModal = memo(({ onClose, patientsList }) => {
+  const [seleccionados, setSeleccionados] = useState(() => new Set(patientsList.map(p => p.id)));
+  const [conHistorial, setConHistorial] = useState(false);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [descargando, setDescargando] = useState(false);
+
+  const todosMarcados = seleccionados.size === patientsList.length;
+  const toggleTodos = () => setSeleccionados(todosMarcados ? new Set() : new Set(patientsList.map(p => p.id)));
+  const toggleUno = (id) => setSeleccionados(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const descargar = async () => {
+    const pacientesElegidos = patientsList.filter(p => seleccionados.has(p.id));
+    if (pacientesElegidos.length === 0) return;
+
+    if (!conHistorial) {
+      exportarPacientesCSV(pacientesElegidos);
+      onClose();
+      return;
+    }
+
+    setDescargando(true);
+    try {
+      const ids = pacientesElegidos.map(p => p.id);
+      const { data, error } = await supabase
+        .from('historias').select('patient_id, plan_tratamiento').in('patient_id', ids);
+      if (error) throw error;
+      const historiasPorPacienteId = {};
+      (data || []).forEach(h => { historiasPorPacienteId[h.patient_id] = h; });
+      exportarHistorialCompletoCSV(pacientesElegidos, historiasPorPacienteId, fechaDesde, fechaHasta);
+      onClose();
+    } catch (err) {
+      alert('No se pudo exportar el historial: ' + err.message);
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  return (
+    <Modal
+      background="rgba(17,24,39,0.45)"
+      overlayStyle={{ padding: 24 }}
+      cardStyle={{
+        background: C.surface, borderRadius: C.rx,
+        width: '100%', maxWidth: 560, maxHeight: '85vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+        border: `1px solid ${C.border}`, overflow: 'hidden',
+      }}>
+      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font }}>Exportar pacientes</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, fontSize: 18 }}>×</button>
+      </div>
+
+      <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.ink, fontWeight: 600, marginBottom: 14, cursor: 'pointer' }}>
+          <input type="checkbox" checked={conHistorial} onChange={e => setConHistorial(e.target.checked)} />
+          Incluir historial de tratamientos (fechas, costos, pagos)
+        </label>
+
+        {conHistorial && (
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: C.inkMute, display: 'block', marginBottom: 4 }}>DESDE (opcional)</label>
+              <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: C.inkMute, display: 'block', marginBottom: 4 }}>HASTA (opcional)</label>
+              <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+        )}
+        {conHistorial && (fechaDesde || fechaHasta) && (
+          <p style={{ fontSize: 11, color: C.inkMute, marginTop: -8, marginBottom: 14 }}>
+            Solo se incluyen tratamientos con fecha dentro del rango. Un paciente sin tratamientos en ese rango no aparecerá.
+          </p>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: C.ink }}>Pacientes a exportar ({seleccionados.size} de {patientsList.length})</span>
+          <button onClick={toggleTodos} style={{ background: 'none', border: 'none', color: C.brand, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+            {todosMarcados ? 'Ninguno' : 'Todos'}
+          </button>
+        </div>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: C.r, maxHeight: 260, overflowY: 'auto' }}>
+          {patientsList.map((p, i) => (
+            <label key={p.id} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', cursor: 'pointer',
+              borderBottom: i < patientsList.length - 1 ? `1px solid ${C.border}` : 'none',
+            }}>
+              <input type="checkbox" checked={seleccionados.has(p.id)} onChange={() => toggleUno(p.id)} />
+              <span style={{ fontSize: 12.5, color: C.ink, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+              <span style={{ fontSize: 11, color: C.inkMute }}>DNI {p.doc || '---'}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, flexShrink: 0 }}>
+        <button onClick={onClose} style={{ flex: 1, padding: 9, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surface, cursor: 'pointer', fontWeight: 600, color: C.inkMid, fontSize: 13 }}>
+          Cancelar
+        </button>
+        <button
+          onClick={descargar}
+          disabled={descargando || seleccionados.size === 0}
+          style={{ flex: 1, padding: 9, borderRadius: C.r, border: 'none', background: descargando || seleccionados.size === 0 ? C.inkMute : C.brand, color: '#fff', cursor: descargando ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <IcDownload /> {descargando ? 'Generando…' : 'Descargar CSV'}
+        </button>
+      </div>
+    </Modal>
+  );
+});
+
 // ─── SUB-COMPONENTE: MODAL IMPORTAR PACIENTES (CSV) ──────────────────────────
 const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
   const [filas, setFilas] = useState(null); // null = todavía no se eligió archivo
@@ -806,6 +978,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   const [filter, setFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [patSeleccionado, setPatSeleccionado] = useState(null);
 
   const { patientsList, loading, upsertPatient, deletePatient, importarPacientes } = usePatientsDirectory(clinicaId);
@@ -867,7 +1040,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
-                onClick={() => exportarPacientesCSV(patientsList)}
+                onClick={() => setShowExportModal(true)}
                 aria-label="Exportar pacientes a CSV"
                 title="Exportar a CSV"
                 style={{
@@ -1013,6 +1186,14 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         <ImportarPacientesModal
           onClose={() => setShowImportModal(false)}
           onImportar={importarPacientes}
+          patientsList={patientsList}
+        />
+      )}
+
+      {/* Modal exportar pacientes (seleccion + fecha + historial) */}
+      {showExportModal && (
+        <ExportarPacientesModal
+          onClose={() => setShowExportModal(false)}
           patientsList={patientsList}
         />
       )}
