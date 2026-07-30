@@ -159,56 +159,50 @@ function filasCSVaPacientes(filas) {
     });
 }
 
-// Columnas propias del historial de tratamientos (plan_tratamiento de
+// Columnas-resumen del historial de tratamientos (plan_tratamiento de
 // `historias`) -- se agregan a las de COLUMNAS_PACIENTE cuando se exporta
-// "con historial". Cada tratamiento produce su propia fila (no cabe uno por
-// paciente: un paciente puede tener varios tratamientos con distinta fecha).
-const COLUMNAS_TRATAMIENTO = [
-  { key: '_fecha', label: 'Fecha Tratamiento' },
-  { key: '_tratamiento', label: 'Tratamiento' },
-  { key: '_pieza', label: 'Pieza' },
-  { key: '_estado', label: 'Estado' },
-  { key: '_costo', label: 'Costo' },
-  { key: '_pagado', label: 'Pagado' },
-  { key: '_saldo', label: 'Saldo' },
+// "con historial". Una sola fila por paciente: todos sus tratamientos se
+// acumulan en una celda, para no duplicar sus datos personales por cada
+// tratamiento que tenga.
+const COLUMNAS_HISTORIAL_RESUMEN = [
+  { key: '_historial', label: 'Historial de Tratamientos' },
+  { key: '_totalCosto', label: 'Total Costo' },
+  { key: '_totalPagado', label: 'Total Pagado' },
+  { key: '_totalSaldo', label: 'Total Saldo' },
 ];
 
-// Descarga un CSV con una fila por tratamiento (no por paciente): cada fila
-// repite los datos del paciente + los datos de ese tratamiento puntual.
-// Si hay rango de fechas, solo entran los tratamientos con fecha dentro del
-// rango -- un paciente sin tratamientos en ese rango simplemente no aparece.
-// Si un paciente no tiene ningún tratamiento y no hay filtro de fecha, igual
-// aparece una fila suya con las columnas de tratamiento vacías.
+// Descarga un CSV con UNA fila por paciente. Si hay rango de fechas, solo se
+// acumulan (y sólo cuentan para los totales) los tratamientos con fecha
+// dentro del rango -- un paciente sin ninguno en ese rango no aparece. Sin
+// filtro de fecha, todos los pacientes aparecen aunque no tengan tratamientos.
 function exportarHistorialCompletoCSV(pacientes, historiasPorPacienteId, fechaDesde, fechaHasta) {
-  const encabezado = [...COLUMNAS_PACIENTE.map(c => c.label), ...COLUMNAS_TRATAMIENTO.map(c => c.label)];
-  const filas = [];
+  const encabezado = [...COLUMNAS_PACIENTE.map(c => c.label), ...COLUMNAS_HISTORIAL_RESUMEN.map(c => c.label)];
+  const hayFiltroFecha = !!(fechaDesde || fechaHasta);
 
-  pacientes.forEach(p => {
+  const filas = pacientes.map(p => {
     const items = (historiasPorPacienteId[p.id]?.plan_tratamiento || [])
       .filter(i => {
-        if (!fechaDesde && !fechaHasta) return true;
+        if (!hayFiltroFecha) return true;
         if (!i.date) return false;
         if (fechaDesde && i.date < fechaDesde) return false;
         if (fechaHasta && i.date > fechaHasta) return false;
         return true;
       });
 
-    const baseCols = COLUMNAS_PACIENTE.map(c => p[c.key] ?? '');
+    if (hayFiltroFecha && items.length === 0) return null; // sin actividad en el rango: no aparece
 
-    if (items.length === 0) {
-      if (!fechaDesde && !fechaHasta) filas.push([...baseCols, '', '', '', '', '', '', '']);
-      return;
-    }
-    items.forEach(item => {
-      const costo = Number(item.cost) || 0;
-      const pagado = Number(item.paid) || 0;
-      filas.push([
-        ...baseCols,
-        item.date || '', item.name || '', item.tooth || '', item.status || '',
-        costo.toFixed(2), pagado.toFixed(2), (costo - pagado).toFixed(2),
-      ]);
-    });
-  });
+    const baseCols = COLUMNAS_PACIENTE.map(c => p[c.key] ?? '');
+    const totalCosto = items.reduce((s, i) => s + (Number(i.cost) || 0), 0);
+    const totalPagado = items.reduce((s, i) => s + (Number(i.paid) || 0), 0);
+    const historialTexto = items
+      .map(i => `${i.date || 's/f'}: ${i.name || 'Tratamiento'} (S/${(Number(i.cost) || 0).toFixed(2)}, pagado S/${(Number(i.paid) || 0).toFixed(2)})`)
+      .join(' | ');
+
+    return [
+      ...baseCols,
+      historialTexto, totalCosto.toFixed(2), totalPagado.toFixed(2), (totalCosto - totalPagado).toFixed(2),
+    ];
+  }).filter(Boolean);
 
   descargarArchivo('pacientes_historial.csv', '﻿' + filasACSV([encabezado, ...filas]), 'text/csv;charset=utf-8');
 }
