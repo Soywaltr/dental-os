@@ -189,6 +189,18 @@ export default function Agenda({ clinicaId, clinica }) {
     else { setDatosTemp(datosCita); login(); }
   };
 
+  // Efecto secundario "no bloqueante": si GHL falla o no esta configurado
+  // todavia, la cita en DentalOS ya quedo guardada de todas formas -- por
+  // eso nunca se le muestra un error al usuario por esto, solo se registra
+  // en consola para poder diagnosticarlo despues.
+  const sincronizarConGHL = (datos) => {
+    supabase.functions.invoke('ghl-sincronizar-cita', { body: datos })
+      .then(({ data, error }) => {
+        if (error || data?.error) console.error('No se pudo sincronizar con GHL:', error?.message || data?.error);
+      })
+      .catch((err) => console.error('No se pudo sincronizar con GHL:', err));
+  };
+
   const enviarAGoogleCalendar = async (accessToken, cita) => {
     try {
       const startDateTime = `${cita.fecha}T${cita.hora}:00-05:00`;
@@ -230,6 +242,10 @@ export default function Agenda({ clinicaId, clinica }) {
         }]);
       }
 
+      if (cita.celular) {
+        sincronizarConGHL({ nombre: nombreLimpio, telefono: cita.celular, fecha: cita.fecha, hora: cita.hora, motivo: cita.motivo });
+      }
+
       alert("¡Cita agendada correctamente!");
       window.location.reload();
     } catch (error) {
@@ -252,6 +268,14 @@ export default function Agenda({ clinicaId, clinica }) {
         reason: selectedCita.reason, treatment: selectedCita.treatment
       }).eq('id', selectedCita.id);
       if (error) { alert('Error: ' + error.message); setSavingEdit(false); return; }
+
+      if (selectedCita.phone) {
+        sincronizarConGHL({
+          nombre: selectedCita.name, telefono: selectedCita.phone,
+          fecha: selectedCita.fecha, hora: selectedCita.hora_cita,
+          motivo: selectedCita.treatment || selectedCita.reason,
+        });
+      }
     }
 
     const googleToken = googleConnected ? await getToken() : null;
