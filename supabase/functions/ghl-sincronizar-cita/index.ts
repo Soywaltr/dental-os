@@ -111,11 +111,15 @@ serve(async (req: Request) => {
     if (idPorClave[CLAVES_CAMPOS.hora] && hora) customFields.push({ id: idPorClave[CLAVES_CAMPOS.hora], field_value: hora })
     if (idPorClave[CLAVES_CAMPOS.motivo] && motivo) customFields.push({ id: idPorClave[CLAVES_CAMPOS.motivo], field_value: motivo })
 
+    // OJO: el campo "tags" del upsert SOBREESCRIBE todas las etiquetas del
+    // contacto (asi lo documenta el propio API de GHL) -- si el contacto ya
+    // tenia otras etiquetas puestas a mano en el CRM, se perderian. Por eso
+    // la etiqueta de recordatorio se agrega aparte, con el endpoint que
+    // suma una etiqueta sin tocar las demas.
     const body: Record<string, unknown> = {
       locationId: GHL_LOCATION_ID,
       name: nombre,
       phone: telefonoNormalizado,
-      tags: [ETIQUETA_RECORDATORIO],
       source: 'DentalOS',
     }
     if (email) body.email = email
@@ -132,6 +136,19 @@ serve(async (req: Request) => {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data?.message || 'GoHighLevel rechazó la solicitud.')
+
+    const contactId = data?.contact?.id
+    if (contactId) {
+      await fetch(`${GHL_BASE}/contacts/${contactId}/tags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GHL_API_KEY}`,
+          'Version': GHL_VERSION,
+        },
+        body: JSON.stringify({ tags: [ETIQUETA_RECORDATORIO] }),
+      }).catch(() => { /* si falla agregar la etiqueta, el contacto ya quedo sincronizado igual */ })
+    }
 
     return json({ ok: true, nuevo: data?.new ?? null }, 200, corsHeaders)
   } catch (error) {
