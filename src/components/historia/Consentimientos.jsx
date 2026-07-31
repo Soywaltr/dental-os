@@ -164,7 +164,7 @@ function DocModal({ doc, patient, clinica, nombreDoctor, onClose, onGuardar, sav
       background="rgba(0,0,0,.6)"
       zIndex={3000}
       overlayStyle={{ padding: 10 }}
-      cardStyle={{ borderRadius: 10, width: '100%', maxWidth: 820, maxHeight: '96vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.35)', position: 'relative' }}>
+      cardStyle={{ borderRadius: 10, width: '100%', maxWidth: 820, maxHeight: '96dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.35)', position: 'relative' }}>
 
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 8, display: 'flex', flexDirection: 'column', zIndex: 1 }}>
           <div style={{ flex: 1, background: P }} />

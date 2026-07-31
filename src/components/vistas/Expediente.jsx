@@ -68,6 +68,11 @@ const IcDownload = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
   </svg>
 );
+const IcTrash = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
 
 // ─── IMPORTAR / EXPORTAR CSV ──────────────────────────────────────────────────
 // Mismas columnas para exportar e importar: lo que se descarga sirve de
@@ -430,7 +435,8 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
         transition: 'all 0.12s', outline: 'none',
       }}
     >
-      {/* Botón Eliminar: al pasar el mouse en escritorio, siempre visible en tablet/iPad */}
+      {/* Botón Eliminar: discreto (icono gris) para no saturar la lista cuando
+          queda siempre visible en tablet/iPad -- se pone rojo recien al tocarlo/pasar el mouse. */}
       {mostrarEliminar && (
         <button
           onClick={(e) => {
@@ -439,14 +445,14 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
           }}
           title="Eliminar paciente"
           style={{
-            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-            width: 24, height: 24, borderRadius: '50%', background: C.redSoft, color: C.red,
-            border: `1px solid ${C.red}40`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', fontSize: 12, fontWeight: 'bold', zIndex: 10
+            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+            width: 28, height: 28, borderRadius: '50%', background: 'transparent', color: C.inkMute,
+            border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 10,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = C.red; e.currentTarget.style.color = '#fff'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = C.redSoft; e.currentTarget.style.color = C.red; }}
-        >✕</button>
+          onMouseEnter={e => { e.currentTarget.style.background = C.redSoft; e.currentTarget.style.color = C.red; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.inkMute; }}
+        ><IcTrash /></button>
       )}
 
       {/* Avatar */}
@@ -729,7 +735,7 @@ const ExportarPacientesModal = memo(({ onClose, patientsList }) => {
       overlayStyle={{ padding: 24 }}
       cardStyle={{
         background: C.surface, borderRadius: C.rx,
-        width: '100%', maxWidth: 560, maxHeight: '85vh',
+        width: '100%', maxWidth: 560, maxHeight: '85dvh',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
         border: `1px solid ${C.border}`, overflow: 'hidden',
@@ -866,7 +872,7 @@ const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
       overlayStyle={{ padding: 24 }}
       cardStyle={{
         background: C.surface, borderRadius: C.rx,
-        width: '100%', maxWidth: 640, maxHeight: '85vh',
+        width: '100%', maxWidth: 640, maxHeight: '85dvh',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
         border: `1px solid ${C.border}`, overflow: 'hidden',
