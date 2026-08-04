@@ -19,6 +19,55 @@ import { ini, normalizarTexto } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar } from '../../utils/storage';
 
+// ─── COMPARADOR DESLIZANTE (antes/después con fotos reales del paciente) ─────
+// Arrastra el separador para revelar "después" sobre "antes" -- ambas son
+// fotos reales del paciente (no hay nada generado acá), solo una forma más
+// interactiva de mostrar el mismo par de fotos que ya se ve en la grilla.
+function ComparadorDeslizante({ antes, despues, labelAntes = 'Antes', labelDespues = 'Después' }) {
+  const [pos, setPos] = useState(50);
+
+  const mover = (clientX, rect) => {
+    const pct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    setPos(pct);
+  };
+
+  const onPointerDown = (e) => {
+    e.preventDefault();
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const clientXDe = (ev) => ev.touches?.[0]?.clientX ?? ev.clientX;
+    mover(clientXDe(e), rect);
+    const onMove = (ev) => mover(clientXDe(ev), rect);
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  if (!antes || !despues) return null;
+
+  return (
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: 14, overflow: 'hidden', userSelect: 'none', background: '#000', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+      <img src={despues} alt={labelDespues} draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        <img src={antes} alt={labelAntes} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
+      <div
+        onPointerDown={onPointerDown}
+        style={{ position: 'absolute', top: 0, bottom: 0, left: `${pos}%`, width: 0, cursor: 'ew-resize', touchAction: 'none' }}
+      >
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: -1, width: 3, background: '#fff', boxShadow: '0 0 8px rgba(0,0,0,0.5)' }} />
+        <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translate(-50%, -50%)', width: 38, height: 38, borderRadius: '50%', background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0087b3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 3 12 9 6" /><polyline points="15 18 21 12 15 6" /></svg>
+        </div>
+      </div>
+      <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 10.5, fontWeight: 700, padding: '3px 10px', borderRadius: 20, pointerEvents: 'none' }}>{labelAntes}</div>
+      <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 10.5, fontWeight: 700, padding: '3px 10px', borderRadius: 20, pointerEvents: 'none' }}>{labelDespues}</div>
+    </div>
+  );
+}
+
 // ─── DETALLE DE ORTODONCIA (un paciente ya en tratamiento) ───────────────────
 function OrtodonciaDetalle({ patient, clinicaId }) {
   const { isTablet } = useResponsive();
@@ -178,7 +227,8 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
       setResumenForm({});
       setFotosOrto({});
       setControles([]);
-      
+      setVistasPrevia([]);
+
       // 2. CERRAR CUALQUIER MODO EDICIÓN QUE HAYA QUEDADO ABIERTO
       setIsEditingOrtoExamen(false);
       setIsEditingOrtoTrabajo(false);
@@ -195,6 +245,7 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
           if (data.fotografias) setFotosOrto(data.fotografias);
           if (data.resumen) setResumenForm(data.resumen);
           if (data.controles) setControles(data.controles);
+          if (data.vistas_previa) setVistasPrevia(data.vistas_previa);
         }
       };
       cargarDatosOrto();
@@ -381,12 +432,123 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     }
   };
 
-  const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Controles Mensuales' }];
+  // --- VISTA PREVIA DE SONRISA (IA) --------------------------------------
+  // OJO: esto es una aproximación ilustrativa generada por IA a partir de una
+  // sola foto -- NO es una simulación clínica real (eso requeriría un scanner
+  // 3D como iTero, no fotos de celular). Se muestra siempre con esa
+  // aclaración visible, nunca como si fuera un resultado garantizado.
+  const [vistasPrevia, setVistasPrevia] = useState([]);
+  const [vistasPreviaFirmadas, setVistasPreviaFirmadas] = useState([]);
+  const [fotoOrigenIA, setFotoOrigenIA] = useState('');
+  const [generandoIA, setGenerandoIA] = useState(false);
+  const [errorIA, setErrorIA] = useState('');
+
+  // Fotos disponibles como origen: las de Fotografías + la primera de cada control.
+  const fotosDisponiblesIA = [
+    ...Object.entries(fotosOrto || {}).map(([key, f]) => ({ ruta: f.url, etiqueta: key })),
+    ...controles.flatMap(c => (c.fotos || []).map((f, i) => ({ ruta: f.url, etiqueta: `Control ${c.fecha} · foto ${i + 1}` }))),
+  ];
+
+  useEffect(() => {
+    let vivo = true;
+    const resolver = async () => {
+      const firmadas = await Promise.all((vistasPrevia || []).map(async (v) => ({
+        ...v,
+        urlOriginal: await firmar(v.rutaOriginal),
+        urlGenerada: await firmar(v.rutaGenerada),
+      })));
+      if (vivo) setVistasPreviaFirmadas(firmadas);
+    };
+    resolver();
+    return () => { vivo = false; };
+  }, [vistasPrevia]);
+
+  const guardarVistasPrevia = async (nuevasVistas) => {
+    const { data: existe, error: fetchError } = await supabase
+      .from('ortodoncia').select('id').eq('paciente_id', patient.id).maybeSingle();
+    if (fetchError) throw fetchError;
+    if (existe) {
+      const { error } = await supabase.from('ortodoncia').update({ vistas_previa: nuevasVistas }).eq('id', existe.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('ortodoncia').insert([{ paciente_id: patient.id, clinica_id: clinicaId, vistas_previa: nuevasVistas }]);
+      if (error) throw error;
+    }
+  };
+
+  const generarVistaPreviaIA = async () => {
+    if (!fotoOrigenIA) { setErrorIA('Elige de qué foto partir.'); return; }
+    setGenerandoIA(true);
+    setErrorIA('');
+    try {
+      const { data, error } = await supabase.functions.invoke('ortodoncia-vista-previa', {
+        body: { rutaFoto: fotoOrigenIA, pacienteId: patient.id, clinicaId },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'No se pudo generar la vista previa.');
+      const nuevaVista = { id: `${Date.now()}`, fecha: new Date().toLocaleDateString('es-PE'), rutaOriginal: fotoOrigenIA, rutaGenerada: data.ruta };
+      const nuevasVistas = [...vistasPrevia, nuevaVista];
+      await guardarVistasPrevia(nuevasVistas);
+      setVistasPrevia(nuevasVistas);
+    } catch (err) {
+      setErrorIA(err.message);
+    } finally {
+      setGenerandoIA(false);
+    }
+  };
+
+  const eliminarVistaPreviaIA = async (id) => {
+    if (!window.confirm('¿Eliminar esta vista previa generada?')) return;
+    const nuevasVistas = vistasPrevia.filter(v => v.id !== id);
+    try {
+      await guardarVistasPrevia(nuevasVistas);
+      setVistasPrevia(nuevasVistas);
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  };
+
+  const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Controles Mensuales' }, { id: 'vista_previa_ia', lbl: 'Vista Previa IA' }];
   const ORTO_CAJAS = [{ key: 'Rx Panorámica', icon: '🦷', accept: 'image/*' }, { key: 'Rx Cefalométrica', icon: '📐', accept: 'image/*' }, { key: 'Rx Periapical', icon: '🔍', accept: 'image/*' }, { key: 'Foto frontal', icon: '😁', accept: 'image/*' }, { key: 'Foto lateral izquierda', icon: '📷', accept: 'image/*' }, { key: 'Foto lateral derecha', icon: '📸', accept: 'image/*' }, { key: 'Foto oclusal superior', icon: '👄', accept: 'image/*' }, { key: 'Foto oclusal inferior', icon: '👅', accept: 'image/*' }, { key: 'Modelo inicial', icon: '🧊', accept: 'image/*' }, { key: 'Plan de tratamiento', icon: '📄', accept: '.pdf,.ppt,.pptx,image/*' }];
+
+  // Progreso del tratamiento: meses transcurridos desde la fecha inicial
+  // (Plan de tratamiento o Resumen, la que exista) contra el tiempo estimado.
+  const fechaInicioTrata = planTrataForm.fecha_inicial || resumenForm.fecha_inicial || '';
+  const tiempoEstimadoMeses = Number(planTrataForm.tiempo_estimado || resumenForm.tiempo_estimado) || 0;
+  const mesesTranscurridos = fechaInicioTrata
+    ? Math.max(0, (Date.now() - new Date(fechaInicioTrata).getTime()) / (1000 * 60 * 60 * 24 * 30.44))
+    : 0;
+  const progresoPct = tiempoEstimadoMeses > 0 ? Math.min(100, (mesesTranscurridos / tiempoEstimadoMeses) * 100) : null;
+  const ultimoControl = controles.length > 0 ? controles[controles.length - 1].fecha : null;
 
   return (
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', background: '#f8fafc' }}>
             <div style={{ flex: 1, background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '12px', border: GLASS_BORDER, display: 'flex', flexDirection: 'column', boxShadow: GLASS_SHADOW, overflow: 'hidden' }}>
+
+              <div style={{ padding: '18px 24px', background: 'linear-gradient(135deg, #0f172a 0%, #0087b3 100%)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
+                    {ini(patient.name)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{patient.name}</div>
+                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.75)' }}>
+                      {controles.length} control{controles.length !== 1 ? 'es' : ''} registrado{controles.length !== 1 ? 's' : ''}
+                      {ultimoControl ? ` · Último: ${ultimoControl}` : ''}
+                    </div>
+                  </div>
+                </div>
+                {progresoPct !== null && (
+                  <div style={{ minWidth: 200, flex: '0 1 240px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.85)', marginBottom: 4, fontWeight: 700 }}>
+                      <span>Progreso del tratamiento</span>
+                      <span>{Math.round(progresoPct)}%</span>
+                    </div>
+                    <div style={{ height: 6, background: 'rgba(255,255,255,0.25)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${progresoPct}%`, background: '#fff', borderRadius: 4, transition: 'width .4s' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px', gap: '20px', background: '#fff', flexShrink: 0, overflowX: 'auto' }}>
                 {ORTO_TABS.map(t => (
@@ -954,6 +1116,24 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                             </select>
                           </div>
                         </div>
+
+                        {(() => {
+                          const cA = controlesFirmados[compararA ?? 0];
+                          const cB = controlesFirmados[compararB ?? controlesFirmados.length - 1];
+                          const fotoA = cA?.fotos?.[0]?.urlFirmada;
+                          const fotoB = cB?.fotos?.[0]?.urlFirmada;
+                          return fotoA && fotoB ? (
+                            <div style={{ marginBottom: '16px' }}>
+                              <ComparadorDeslizante antes={fotoA} despues={fotoB} labelAntes={cA.fecha} labelDespues={cB.fecha} />
+                              <div style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center', marginTop: 6 }}>Arrastra el círculo para comparar</div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '16px' }}>
+                              Para el comparador deslizante, ambos controles necesitan al menos una foto.
+                            </div>
+                          );
+                        })()}
+
                         <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: '16px' }}>
                           {[compararA ?? 0, compararB ?? controlesFirmados.length - 1].map((idx, col) => {
                             const c = controlesFirmados[idx];
@@ -1025,6 +1205,59 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                           <button onClick={() => eliminarControl(c.id)} title="Eliminar control" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', alignSelf: 'flex-start' }}>
                             <Icon name="trash" size={14} />
                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {subTabOrto === 'vista_previa_ia' && (
+                  <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <h2 style={{ margin: 0, color: '#0f172a', fontSize: '14px', fontWeight: 700 }}>Vista Previa de Sonrisa (IA)</h2>
+                    </div>
+
+                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <Icon name="warning" size={16} color="#92400e" style={{ marginTop: 2, flexShrink: 0 }} />
+                      <div style={{ fontSize: '11.5px', color: '#92400e', lineHeight: 1.5 }}>
+                        <strong>Esto es una aproximación ilustrativa generada por inteligencia artificial, no una simulación clínica.</strong> A diferencia de un scanner 3D (como iTero), se genera a partir de una sola foto y una IA de imágenes -- no calcula el movimiento dental real ni garantiza ese resultado. Úsala solo como referencia motivacional, nunca como promesa de tratamiento.
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '24px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Generar una nueva vista previa</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr auto', gap: '12px', alignItems: 'end' }}>
+                        <div>
+                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Foto de partida</label>
+                          <select value={fotoOrigenIA} onChange={e => setFotoOrigenIA(e.target.value)} style={inputStyleDoc}>
+                            <option value="">Selecciona una foto ya subida...</option>
+                            {fotosDisponiblesIA.map((f, i) => <option key={i} value={f.ruta}>{f.etiqueta}</option>)}
+                          </select>
+                        </div>
+                        <button onClick={generarVistaPreviaIA} disabled={generandoIA || !fotoOrigenIA} style={{ background: generandoIA || !fotoOrigenIA ? '#94a3b8' : '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 700, fontSize: '11.5px', cursor: generandoIA || !fotoOrigenIA ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
+                          {generandoIA ? 'Generando...' : '✨ Generar con IA'}
+                        </button>
+                      </div>
+                      {fotosDisponiblesIA.length === 0 && (
+                        <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: 8 }}>Todavía no hay fotos subidas en Fotografías ni en Controles Mensuales para usar como partida.</div>
+                      )}
+                      {errorIA && <div style={{ fontSize: '11px', color: '#ef4444', marginTop: 10 }}>{errorIA}</div>}
+                    </div>
+
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Vistas previas generadas</div>
+                    {vistasPreviaFirmadas.length === 0 && (
+                      <div style={{ fontSize: '11.5px', color: '#94a3b8', padding: '20px 0', textAlign: 'center' }}>Todavía no generaste ninguna vista previa.</div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px', marginBottom: '30px' }}>
+                      {[...vistasPreviaFirmadas].reverse().map(v => (
+                        <div key={v.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+                          <ComparadorDeslizante antes={v.urlOriginal} despues={v.urlGenerada} labelAntes="Foto real" labelDespues="Vista previa IA" />
+                          <div style={{ padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>Generada el {v.fecha}</span>
+                            <button onClick={() => eliminarVistaPreviaIA(v.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
