@@ -227,7 +227,6 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
       setResumenForm({});
       setFotosOrto({});
       setControles([]);
-      setVistasPrevia([]);
 
       // 2. CERRAR CUALQUIER MODO EDICIÓN QUE HAYA QUEDADO ABIERTO
       setIsEditingOrtoExamen(false);
@@ -245,7 +244,6 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
           if (data.fotografias) setFotosOrto(data.fotografias);
           if (data.resumen) setResumenForm(data.resumen);
           if (data.controles) setControles(data.controles);
-          if (data.vistas_previa) setVistasPrevia(data.vistas_previa);
         }
       };
       cargarDatosOrto();
@@ -346,16 +344,19 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     </div>
   );
 
-  // --- CONTROLES MENSUALES (progreso mes a mes, con fotos antes/después) ---
-  const [controles, setControles] = useState([]);
+  // --- PROGRESO DEL TRATAMIENTO (casilleros fijos por hito + comparador) ---
+  // A diferencia de la version anterior (fecha libre), acá los "casilleros"
+  // ya existen de antemano -- Inicio, 3 meses, etc. -- y cada uno recibe sus
+  // propias fotos cuando corresponda, en vez de tener que crear un control
+  // nuevo cada vez.
+  const HITOS_PROGRESO = ['Inicio', '3 meses', '6 meses', '9 meses', '1 año', '18 meses', '24 meses', 'Final'];
+
+  const [controles, setControles] = useState([]); // [{ hito, fecha, nota, fotos: [{url, nombre, date}] }]
   // Igual que fotosOrtoFirmadas: cada control con sus fotos ya con URL firmada.
   const [controlesFirmados, setControlesFirmados] = useState([]);
-  const [savingControl, setSavingControl] = useState(false);
-  const [nuevaFechaControl, setNuevaFechaControl] = useState(() => new Date().toISOString().slice(0, 10));
-  const [nuevaNotaControl, setNuevaNotaControl] = useState('');
-  const [nuevasFotosControl, setNuevasFotosControl] = useState([]);
-  const [compararA, setCompararA] = useState(null);
-  const [compararB, setCompararB] = useState(null);
+  const [subiendoHito, setSubiendoHito] = useState('');
+  const [compararA, setCompararA] = useState('');
+  const [compararB, setCompararB] = useState('');
 
   useEffect(() => {
     let vivo = true;
@@ -370,14 +371,15 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     return () => { vivo = false; };
   }, [controles]);
 
-  // Por defecto compara el primer control contra el más reciente -- el
-  // usuario puede cambiar cualquiera de los dos con los selects.
+  // Por defecto compara el primer hito con fotos contra el último con fotos.
   useEffect(() => {
-    if (controles.length >= 2) {
-      setCompararA(prev => (prev !== null && prev < controles.length ? prev : 0));
-      setCompararB(prev => (prev !== null && prev < controles.length ? prev : controles.length - 1));
+    const hitosConFotos = HITOS_PROGRESO.filter(h => controles.some(c => c.hito === h && (c.fotos || []).length > 0));
+    if (hitosConFotos.length >= 2) {
+      setCompararA(prev => (hitosConFotos.includes(prev) ? prev : hitosConFotos[0]));
+      setCompararB(prev => (hitosConFotos.includes(prev) ? prev : hitosConFotos[hitosConFotos.length - 1]));
     }
-  }, [controles.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controles]);
 
   const guardarControles = async (nuevosControles) => {
     const { data: existe, error: fetchError } = await supabase
@@ -392,145 +394,59 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     }
   };
 
-  const agregarControl = async () => {
-    if (!nuevaFechaControl) { alert('Selecciona la fecha del control.'); return; }
-    setSavingControl(true);
+  const subirFotoHito = async (hito, files) => {
+    if (!files || files.length === 0) return;
+    setSubiendoHito(hito);
     try {
       const fotosSubidas = [];
-      for (const file of nuevasFotosControl) {
+      for (const file of files) {
         const fileName = rutaFotoOrto(clinicaId, patient.id, file.name);
         const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
         if (uploadError) throw uploadError;
         fotosSubidas.push({ url: fileName, nombre: file.name, date: new Date().toLocaleDateString('es-PE') });
       }
-      const nuevoControl = { id: `${Date.now()}`, fecha: nuevaFechaControl, nota: nuevaNotaControl, fotos: fotosSubidas };
-      const nuevosControles = [...controles, nuevoControl].sort((a, b) => a.fecha.localeCompare(b.fecha));
-      await guardarControles(nuevosControles);
-      setControles(nuevosControles);
-      setNuevaFechaControl(new Date().toISOString().slice(0, 10));
-      setNuevaNotaControl('');
-      setNuevasFotosControl([]);
-    } catch (err) {
-      alert('Error al guardar el control: ' + err.message);
-    } finally {
-      setSavingControl(false);
-    }
-  };
-
-  const eliminarControl = async (id) => {
-    if (!window.confirm('¿Eliminar este control y sus fotos?')) return;
-    const control = controles.find(c => c.id === id);
-    try {
-      if (control) {
-        await Promise.all((control.fotos || []).map(f => supabase.storage.from(BUCKET).remove([rutaDesdeUrl(f.url)])));
-      }
-      const nuevosControles = controles.filter(c => c.id !== id);
+      const existente = controles.find(c => c.hito === hito);
+      const nuevosControles = existente
+        ? controles.map(c => (c.hito === hito ? { ...c, fotos: [...(c.fotos || []), ...fotosSubidas] } : c))
+        : [...controles, { hito, fecha: new Date().toISOString().slice(0, 10), nota: '', fotos: fotosSubidas }];
       await guardarControles(nuevosControles);
       setControles(nuevosControles);
     } catch (err) {
-      alert('Error al eliminar el control: ' + err.message);
-    }
-  };
-
-  // --- VISTA PREVIA DE SONRISA (IA) --------------------------------------
-  // OJO: esto es una aproximación ilustrativa generada por IA a partir de una
-  // sola foto -- NO es una simulación clínica real (eso requeriría un scanner
-  // 3D como iTero, no fotos de celular). Se muestra siempre con esa
-  // aclaración visible, nunca como si fuera un resultado garantizado.
-  const [vistasPrevia, setVistasPrevia] = useState([]);
-  const [vistasPreviaFirmadas, setVistasPreviaFirmadas] = useState([]);
-  const [fotoOrigenIA, setFotoOrigenIA] = useState('');
-  const [generandoIA, setGenerandoIA] = useState(false);
-  const [errorIA, setErrorIA] = useState('');
-  // Fotos subidas directo acá (sin pasar por Fotografías ni Controles) --
-  // se guardan en el mismo bucket, solo para no obligar a subir la foto en
-  // otra pestaña antes de poder usarla.
-  const [fotosSubidasIA, setFotosSubidasIA] = useState([]);
-  const [subiendoFotoIA, setSubiendoFotoIA] = useState(false);
-
-  // Fotos disponibles como origen: las subidas acá + las de Fotografías + la primera de cada control.
-  const fotosDisponiblesIA = [
-    ...fotosSubidasIA.map(f => ({ ruta: f.ruta, etiqueta: `Subida: ${f.nombre}` })),
-    ...Object.entries(fotosOrto || {}).map(([key, f]) => ({ ruta: f.url, etiqueta: key })),
-    ...controles.flatMap(c => (c.fotos || []).map((f, i) => ({ ruta: f.url, etiqueta: `Control ${c.fecha} · foto ${i + 1}` }))),
-  ];
-
-  const subirFotoParaIA = async (file) => {
-    if (!file) return;
-    setSubiendoFotoIA(true);
-    setErrorIA('');
-    try {
-      const ruta = rutaFotoOrto(clinicaId, patient.id, file.name);
-      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(ruta, file);
-      if (uploadError) throw uploadError;
-      setFotosSubidasIA(prev => [...prev, { ruta, nombre: file.name }]);
-      setFotoOrigenIA(ruta);
-    } catch (err) {
-      setErrorIA('No se pudo subir la foto: ' + err.message);
+      alert('Error al subir la foto: ' + err.message);
     } finally {
-      setSubiendoFotoIA(false);
+      setSubiendoHito('');
     }
   };
 
-  useEffect(() => {
-    let vivo = true;
-    const resolver = async () => {
-      const firmadas = await Promise.all((vistasPrevia || []).map(async (v) => ({
-        ...v,
-        urlOriginal: await firmar(v.rutaOriginal),
-        urlGenerada: await firmar(v.rutaGenerada),
-      })));
-      if (vivo) setVistasPreviaFirmadas(firmadas);
-    };
-    resolver();
-    return () => { vivo = false; };
-  }, [vistasPrevia]);
-
-  const guardarVistasPrevia = async (nuevasVistas) => {
-    const { data: existe, error: fetchError } = await supabase
-      .from('ortodoncia').select('id').eq('paciente_id', patient.id).maybeSingle();
-    if (fetchError) throw fetchError;
-    if (existe) {
-      const { error } = await supabase.from('ortodoncia').update({ vistas_previa: nuevasVistas }).eq('id', existe.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from('ortodoncia').insert([{ paciente_id: patient.id, clinica_id: clinicaId, vistas_previa: nuevasVistas }]);
-      if (error) throw error;
-    }
+  const actualizarNotaHito = (hito, nota) => {
+    setControles(prev => {
+      const existe = prev.find(c => c.hito === hito);
+      if (existe) return prev.map(c => (c.hito === hito ? { ...c, nota } : c));
+      return [...prev, { hito, fecha: new Date().toISOString().slice(0, 10), nota, fotos: [] }];
+    });
   };
 
-  const generarVistaPreviaIA = async () => {
-    if (!fotoOrigenIA) { setErrorIA('Elige de qué foto partir.'); return; }
-    setGenerandoIA(true);
-    setErrorIA('');
+  const guardarNotaHito = async () => {
+    try { await guardarControles(controles); } catch (err) { alert('Error al guardar la nota: ' + err.message); }
+  };
+
+  const eliminarFotoHito = async (hito, indice) => {
+    if (!window.confirm('¿Eliminar esta foto?')) return;
+    const control = controles.find(c => c.hito === hito);
+    if (!control) return;
     try {
-      const { data, error } = await supabase.functions.invoke('ortodoncia-vista-previa', {
-        body: { rutaFoto: fotoOrigenIA, pacienteId: patient.id, clinicaId },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message || 'No se pudo generar la vista previa.');
-      const nuevaVista = { id: `${Date.now()}`, fecha: new Date().toLocaleDateString('es-PE'), rutaOriginal: fotoOrigenIA, rutaGenerada: data.ruta };
-      const nuevasVistas = [...vistasPrevia, nuevaVista];
-      await guardarVistasPrevia(nuevasVistas);
-      setVistasPrevia(nuevasVistas);
+      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(control.fotos[indice].url)]);
+      const nuevosControles = controles.map(c =>
+        c.hito === hito ? { ...c, fotos: c.fotos.filter((_, i) => i !== indice) } : c
+      );
+      await guardarControles(nuevosControles);
+      setControles(nuevosControles);
     } catch (err) {
-      setErrorIA(err.message);
-    } finally {
-      setGenerandoIA(false);
+      alert('Error al eliminar la foto: ' + err.message);
     }
   };
 
-  const eliminarVistaPreviaIA = async (id) => {
-    if (!window.confirm('¿Eliminar esta vista previa generada?')) return;
-    const nuevasVistas = vistasPrevia.filter(v => v.id !== id);
-    try {
-      await guardarVistasPrevia(nuevasVistas);
-      setVistasPrevia(nuevasVistas);
-    } catch (err) {
-      alert('Error al eliminar: ' + err.message);
-    }
-  };
-
-  const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Controles Mensuales' }, { id: 'vista_previa_ia', lbl: 'Vista Previa IA' }];
+  const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Progreso del Tratamiento' }];
   const ORTO_CAJAS = [{ key: 'Rx Panorámica', icon: '🦷', accept: 'image/*' }, { key: 'Rx Cefalométrica', icon: '📐', accept: 'image/*' }, { key: 'Rx Periapical', icon: '🔍', accept: 'image/*' }, { key: 'Foto frontal', icon: '😁', accept: 'image/*' }, { key: 'Foto lateral izquierda', icon: '📷', accept: 'image/*' }, { key: 'Foto lateral derecha', icon: '📸', accept: 'image/*' }, { key: 'Foto oclusal superior', icon: '👄', accept: 'image/*' }, { key: 'Foto oclusal inferior', icon: '👅', accept: 'image/*' }, { key: 'Modelo inicial', icon: '🧊', accept: 'image/*' }, { key: 'Plan de tratamiento', icon: '📄', accept: '.pdf,.ppt,.pptx,image/*' }];
 
   // Progreso del tratamiento: meses transcurridos desde la fecha inicial
@@ -1120,187 +1036,95 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
 
                 {subTabOrto === 'controles' && (
                   <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                      <h2 style={{ margin: 0, color: '#0f172a', fontSize: '14px', fontWeight: 700 }}>Controles Mensuales</h2>
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>{controles.length} control{controles.length !== 1 ? 'es' : ''} registrado{controles.length !== 1 ? 's' : ''}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', marginTop: '10px' }}>
+                      <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Progreso del Tratamiento</h3>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        {controles.filter(c => (c.fotos || []).length > 0).length} de {HITOS_PROGRESO.length} hitos con fotos
+                      </span>
                     </div>
 
-                    {controlesFirmados.length >= 2 && (
-                      <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '18px', marginBottom: '28px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#0369a1' }}>Comparar progreso</span>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '11px' }}>
-                            <select value={compararA ?? 0} onChange={e => setCompararA(Number(e.target.value))} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                              {controlesFirmados.map((c, i) => <option key={c.id} value={i}>{c.fecha}</option>)}
-                            </select>
-                            <span style={{ color: '#64748b' }}>vs</span>
-                            <select value={compararB ?? controlesFirmados.length - 1} onChange={e => setCompararB(Number(e.target.value))} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                              {controlesFirmados.map((c, i) => <option key={c.id} value={i}>{c.fecha}</option>)}
-                            </select>
+                    {(() => {
+                      const hitosConFotos = HITOS_PROGRESO.filter(h => controlesFirmados.some(c => c.hito === h && (c.fotos || []).length > 0));
+                      if (hitosConFotos.length < 2) return null;
+                      const cA = controlesFirmados.find(c => c.hito === compararA);
+                      const cB = controlesFirmados.find(c => c.hito === compararB);
+                      const fotoA = cA?.fotos?.[0]?.urlFirmada;
+                      const fotoB = cB?.fotos?.[0]?.urlFirmada;
+                      return (
+                        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '18px', marginBottom: '28px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0369a1' }}>Comparar avance</span>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '11px' }}>
+                              <select value={compararA} onChange={e => setCompararA(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                                {hitosConFotos.map(h => <option key={h} value={h}>{h}</option>)}
+                              </select>
+                              <span style={{ color: '#64748b' }}>vs</span>
+                              <select value={compararB} onChange={e => setCompararB(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                                {hitosConFotos.map(h => <option key={h} value={h}>{h}</option>)}
+                              </select>
+                            </div>
                           </div>
-                        </div>
-
-                        {(() => {
-                          const cA = controlesFirmados[compararA ?? 0];
-                          const cB = controlesFirmados[compararB ?? controlesFirmados.length - 1];
-                          const fotoA = cA?.fotos?.[0]?.urlFirmada;
-                          const fotoB = cB?.fotos?.[0]?.urlFirmada;
-                          return fotoA && fotoB ? (
-                            <div style={{ marginBottom: '16px' }}>
-                              <ComparadorDeslizante antes={fotoA} despues={fotoB} labelAntes={cA.fecha} labelDespues={cB.fecha} />
+                          {fotoA && fotoB ? (
+                            <div>
+                              <ComparadorDeslizante antes={fotoA} despues={fotoB} labelAntes={compararA} labelDespues={compararB} />
                               <div style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center', marginTop: 6 }}>Arrastra el círculo para comparar</div>
                             </div>
                           ) : (
-                            <div style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '16px' }}>
-                              Para el comparador deslizante, ambos controles necesitan al menos una foto.
-                            </div>
-                          );
-                        })()}
+                            <div style={{ fontSize: '10.5px', color: '#94a3b8' }}>Selecciona dos hitos con fotos para comparar.</div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: '16px' }}>
-                          {[compararA ?? 0, compararB ?? controlesFirmados.length - 1].map((idx, col) => {
-                            const c = controlesFirmados[idx];
-                            if (!c) return <div key={col} />;
-                            return (
-                              <div key={col} style={{ background: '#fff', borderRadius: '10px', border: '1px solid #e0f2fe', overflow: 'hidden' }}>
-                                <div style={{ padding: '8px 12px', background: col === 0 ? '#fef3c7' : '#dcfce7', fontSize: '10.5px', fontWeight: 700, color: col === 0 ? '#92400e' : '#166534' }}>
-                                  {col === 0 ? 'ANTES' : 'DESPUÉS'} · {c.fecha}
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '6px', padding: '10px' }}>
-                                  {(c.fotos || []).length === 0 && <div style={{ fontSize: '10.5px', color: '#94a3b8', padding: '10px' }}>Sin fotos en este control.</div>}
-                                  {(c.fotos || []).map((f, i) => (
-                                    <a key={i} href={f.urlFirmada} target="_blank" rel="noreferrer">
-                                      <img src={f.urlFirmada} alt={f.nombre} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: '6px' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', paddingBottom: '40px' }}>
+                      {HITOS_PROGRESO.map(hito => {
+                        const control = controlesFirmados.find(c => c.hito === hito);
+                        const fotos = control?.fotos || [];
+                        const hasFotos = fotos.length > 0;
+                        const subiendo = subiendoHito === hito;
+                        return (
+                          <div key={hito} style={{ background: '#fff', border: `1px solid ${hasFotos ? '#0087b3' : '#e2e8f0'}`, borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: hasFotos ? '0 4px 6px rgba(0,135,179,0.1)' : '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0', background: hasFotos ? '#f0f9ff' : '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a' }}>{hito}</span>
+                              {hasFotos && <span style={{ fontSize: '9.5px', color: '#0087b3', fontWeight: 600 }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</span>}
+                            </div>
+
+                            {hasFotos ? (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))', gap: '6px', padding: '10px' }}>
+                                {fotos.map((f, i) => (
+                                  <div key={i} style={{ position: 'relative' }}>
+                                    <a href={f.urlFirmada} target="_blank" rel="noreferrer">
+                                      <img src={f.urlFirmada} alt={f.nombre} style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: '6px' }} />
                                     </a>
-                                  ))}
-                                </div>
-                                {c.nota && <div style={{ padding: '0 12px 10px', fontSize: '10.5px', color: '#475569' }}>{c.nota}</div>}
+                                    <button onClick={() => eliminarFotoHito(hito, i)} title="Eliminar foto" style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(15,23,42,0.65)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                  </div>
+                                ))}
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                            ) : (
+                              <div style={{ height: '110px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Icon name="camera" size={30} color="#cbd5e1" />
+                              </div>
+                            )}
 
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '28px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>+ Nuevo control</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '160px 1fr', gap: '14px', marginBottom: '12px' }}>
-                        <div>
-                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Fecha del control</label>
-                          <input type="date" value={nuevaFechaControl} onChange={e => setNuevaFechaControl(e.target.value)} style={inputStyleDoc} />
-                        </div>
-                        <div>
-                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Nota del control</label>
-                          <input placeholder="Ej: se ajustaron brackets, buena evolución de línea media..." value={nuevaNotaControl} onChange={e => setNuevaNotaControl(e.target.value)} style={inputStyleDoc} />
-                        </div>
-                      </div>
-                      <div style={{ marginBottom: '14px' }}>
-                        <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Fotos de este control</label>
-                        <input type="file" accept="image/*" multiple onChange={e => setNuevasFotosControl(Array.from(e.target.files || []))} style={{ fontSize: '11.5px' }} />
-                        {nuevasFotosControl.length > 0 && <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: 4 }}>{nuevasFotosControl.length} archivo(s) seleccionado(s)</div>}
-                      </div>
-                      <button onClick={agregarControl} disabled={savingControl} style={{ background: savingControl ? '#94a3b8' : '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '9px 20px', fontWeight: 700, fontSize: '11.5px', cursor: savingControl ? 'not-allowed' : 'pointer' }}>
-                        {savingControl ? 'Guardando...' : '+ Agregar control'}
-                      </button>
-                    </div>
+                            <label style={{ margin: '10px 14px 0', padding: '7px', textAlign: 'center', borderRadius: '6px', border: '1px dashed #cbd5e1', fontSize: '10.5px', color: subiendo ? '#94a3b8' : '#0087b3', fontWeight: 600, cursor: subiendo ? 'not-allowed' : 'pointer' }}>
+                              {subiendo ? 'Subiendo...' : (hasFotos ? '+ Agregar otra foto' : '+ Subir foto')}
+                              <input type="file" accept="image/*" multiple style={{ display: 'none' }} disabled={subiendo} onChange={e => { subirFotoHito(hito, Array.from(e.target.files || [])); e.target.value = ''; }} />
+                            </label>
 
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Historial de controles</div>
-                    {controlesFirmados.length === 0 && (
-                      <div style={{ fontSize: '11.5px', color: '#94a3b8', padding: '20px 0', textAlign: 'center' }}>Todavía no hay controles registrados para este paciente.</div>
-                    )}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '30px' }}>
-                      {[...controlesFirmados].reverse().map(c => (
-                        <div key={c.id} style={{ display: 'flex', gap: '14px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px' }}>
-                          <div style={{ width: '80px', flexShrink: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0087b3' }}>{c.fecha}</div>
+                            <textarea
+                              placeholder="Nota de este control..."
+                              defaultValue={control?.nota || ''}
+                              onChange={e => actualizarNotaHito(hito, e.target.value)}
+                              onBlur={guardarNotaHito}
+                              style={{ margin: '10px 14px 14px', padding: '7px 9px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '10.5px', resize: 'none', height: '44px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                            />
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            {c.nota && <div style={{ fontSize: '11.5px', color: '#334155', marginBottom: 8 }}>{c.nota}</div>}
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                              {(c.fotos || []).map((f, i) => (
-                                <a key={i} href={f.urlFirmada} target="_blank" rel="noreferrer">
-                                  <img src={f.urlFirmada} alt={f.nombre} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
-                                </a>
-                              ))}
-                              {(c.fotos || []).length === 0 && <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>Sin fotos</span>}
-                            </div>
-                          </div>
-                          <button onClick={() => eliminarControl(c.id)} title="Eliminar control" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', alignSelf: 'flex-start' }}>
-                            <Icon name="trash" size={14} />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {subTabOrto === 'vista_previa_ia' && (
-                  <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <h2 style={{ margin: 0, color: '#0f172a', fontSize: '14px', fontWeight: 700 }}>Vista Previa de Sonrisa (IA)</h2>
-                    </div>
-
-                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <Icon name="warning" size={16} color="#92400e" style={{ marginTop: 2, flexShrink: 0 }} />
-                      <div style={{ fontSize: '11.5px', color: '#92400e', lineHeight: 1.5 }}>
-                        <strong>Esto es una aproximación ilustrativa generada por inteligencia artificial, no una simulación clínica.</strong> A diferencia de un scanner 3D (como iTero), se genera a partir de una sola foto y una IA de imágenes -- no calcula el movimiento dental real ni garantiza ese resultado. Úsala solo como referencia motivacional, nunca como promesa de tratamiento.
-                      </div>
-                    </div>
-
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '24px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Generar una nueva vista previa</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr auto', gap: '12px', alignItems: 'end' }}>
-                        <div>
-                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Foto de partida</label>
-                          <select value={fotoOrigenIA} onChange={e => setFotoOrigenIA(e.target.value)} style={inputStyleDoc}>
-                            <option value="">Selecciona una foto ya subida...</option>
-                            {fotosDisponiblesIA.map((f, i) => <option key={i} value={f.ruta}>{f.etiqueta}</option>)}
-                          </select>
-                        </div>
-                        <button onClick={generarVistaPreviaIA} disabled={generandoIA || !fotoOrigenIA} style={{ background: generandoIA || !fotoOrigenIA ? '#94a3b8' : '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 700, fontSize: '11.5px', cursor: generandoIA || !fotoOrigenIA ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
-                          {generandoIA ? 'Generando...' : '✨ Generar con IA'}
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0 4px' }}>
-                        <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                        <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>O SUBE UNA FOTO NUEVA</span>
-                        <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                        <input
-                          type="file" accept="image/*" disabled={subiendoFotoIA}
-                          onChange={e => { subirFotoParaIA(e.target.files?.[0]); e.target.value = ''; }}
-                          style={{ fontSize: '11.5px' }}
-                        />
-                        {subiendoFotoIA && <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 600 }}>Subiendo...</span>}
-                      </div>
-
-                      {fotosDisponiblesIA.length === 0 && !subiendoFotoIA && (
-                        <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: 8 }}>Todavía no hay fotos disponibles -- sube una arriba, o agrega una en Fotografías/Controles Mensuales.</div>
-                      )}
-                      {errorIA && <div style={{ fontSize: '11px', color: '#ef4444', marginTop: 10 }}>{errorIA}</div>}
-                    </div>
-
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Vistas previas generadas</div>
-                    {vistasPreviaFirmadas.length === 0 && (
-                      <div style={{ fontSize: '11.5px', color: '#94a3b8', padding: '20px 0', textAlign: 'center' }}>Todavía no generaste ninguna vista previa.</div>
-                    )}
-                    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px', marginBottom: '30px' }}>
-                      {[...vistasPreviaFirmadas].reverse().map(v => (
-                        <div key={v.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-                          <ComparadorDeslizante antes={v.urlOriginal} despues={v.urlGenerada} labelAntes="Foto real" labelDespues="Vista previa IA" />
-                          <div style={{ padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>Generada el {v.fecha}</span>
-                            <button onClick={() => eliminarVistaPreviaIA(v.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-                              <Icon name="trash" size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
