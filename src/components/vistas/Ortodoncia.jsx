@@ -242,8 +242,9 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     }
   };
 
-  const handleUploadFotoOrto = async (e, key) => {
-    const file = e.target.files[0];
+  // Extraído de handleUploadFotoOrto para poder reusarlo también desde las
+  // casillas de "Inicio" en Progreso del Tratamiento (misma fuente de datos).
+  const handleUploadFotoOrtoFile = async (file, key) => {
     if (!file) return;
     setSavingFotosOrto(true);
     try {
@@ -261,6 +262,8 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
       setSavingFotosOrto(false);
     }
   };
+
+  const handleUploadFotoOrto = (e, key) => handleUploadFotoOrtoFile(e.target.files[0], key);
 
   const handleDeleteFotoOrto = async (key, url) => {
     if (!window.confirm('¿Eliminar este archivo permanentemente?')) return;
@@ -412,8 +415,18 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
   // el hito "Inicio".
   const HITOS_PROGRESO = ['Inicio', '3 meses', '6 meses', '9 meses', '1 año', '18 meses', '24 meses', 'Final'];
   const FILAS_PROGRESO = ['Frontal', 'Lateral derecho', 'Lateral izquierdo', 'Oclusal superior', 'Oclusal inferior'];
+  // La columna "Inicio" no guarda sus propias fotos -- lee y escribe directo
+  // en `fotosOrto` (la misma fuente que la pestaña Fotografías), así que subir
+  // una foto en cualquiera de las dos pestañas la refleja en la otra.
+  const FILA_A_CAJA_FOTO = {
+    'Frontal': 'Foto frontal',
+    'Lateral derecho': 'Foto lateral derecha',
+    'Lateral izquierdo': 'Foto lateral izquierda',
+    'Oclusal superior': 'Foto oclusal superior',
+    'Oclusal inferior': 'Foto oclusal inferior',
+  };
 
-  const [controles, setControles] = useState([]); // [{ hito, nota, fotos: { [fila]: {url, ext, date} } }]
+  const [controles, setControles] = useState([]); // [{ hito, nota, fotos: { [fila]: {url, ext, date} } }] -- excepto "Inicio"
   // Igual que fotosOrtoFirmadas: cada control con sus fotos ya con URL firmada.
   const [controlesFirmados, setControlesFirmados] = useState([]);
   const [subiendoCasilla, setSubiendoCasilla] = useState(''); // `${hito}::${fila}` en curso
@@ -510,7 +523,11 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     ? Math.max(0, (Date.now() - new Date(fechaInicioTrata).getTime()) / (1000 * 60 * 60 * 24 * 30.44))
     : 0;
   const progresoPct = tiempoEstimadoMeses > 0 ? Math.min(100, (mesesTranscurridos / tiempoEstimadoMeses) * 100) : null;
-  const ultimoControl = controles.length > 0 ? controles[controles.length - 1].fecha : null;
+  const inicioTieneFotos = FILAS_PROGRESO.some(fila => !!fotosOrtoFirmadas[FILA_A_CAJA_FOTO[fila]]);
+  const hitosProgresoConFotos = HITOS_PROGRESO.filter(h =>
+    h === 'Inicio' ? inicioTieneFotos : controles.some(c => c.hito === h && Object.keys(c.fotos || {}).length > 0)
+  );
+  const ultimoControl = hitosProgresoConFotos.length > 0 ? hitosProgresoConFotos[hitosProgresoConFotos.length - 1] : null;
 
   return (
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', background: '#f8fafc' }}>
@@ -524,7 +541,7 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{patient.name}</div>
                     <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.75)' }}>
-                      {controles.length} control{controles.length !== 1 ? 'es' : ''} registrado{controles.length !== 1 ? 's' : ''}
+                      {hitosProgresoConFotos.length} de {HITOS_PROGRESO.length} hitos con fotos
                       {ultimoControl ? ` · Último: ${ultimoControl}` : ''}
                     </div>
                   </div>
@@ -1092,7 +1109,7 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', marginTop: '10px' }}>
                       <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Progreso del Tratamiento</h3>
                       <span style={{ fontSize: '11px', color: '#64748b' }}>
-                        {controles.filter(c => Object.keys(c.fotos || {}).length > 0).length} de {HITOS_PROGRESO.length} hitos con fotos
+                        {hitosProgresoConFotos.length} de {HITOS_PROGRESO.length} hitos con fotos
                       </span>
                     </div>
                     <div style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '16px' }}>
@@ -1102,12 +1119,15 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                     <div style={{ overflowX: 'auto', paddingBottom: 10 }}>
                       <div style={{ display: 'flex', gap: '14px', minWidth: HITOS_PROGRESO.length * 158 }}>
                         {HITOS_PROGRESO.map(hito => {
-                          const control = controlesFirmados.find(c => c.hito === hito);
-                          const fotos = control?.fotos || {};
-                          const cantidad = Object.keys(fotos).length;
                           const esInicio = hito === 'Inicio';
-                          const inicioControl = controlesFirmados.find(c => c.hito === 'Inicio');
-                          const inicioTieneFotos = Object.keys(inicioControl?.fotos || {}).length > 0;
+                          const control = controlesFirmados.find(c => c.hito === hito);
+                          // "Inicio" no tiene su propio control -- sus fotos son las de la
+                          // pestaña Fotografías (fotosOrtoFirmadas), para que ambas pestañas
+                          // queden siempre sincronizadas sin importar por dónde se suban.
+                          const fotos = esInicio
+                            ? Object.fromEntries(FILAS_PROGRESO.map(fila => [fila, fotosOrtoFirmadas[FILA_A_CAJA_FOTO[fila]]]).filter(([, v]) => v))
+                            : (control?.fotos || {});
+                          const cantidad = Object.keys(fotos).length;
                           const mitad = Math.ceil(FILAS_PROGRESO.length / 2);
 
                           return (
@@ -1120,9 +1140,9 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                               {FILAS_PROGRESO.slice(0, mitad).map(fila => (
                                 <CasillaFotoProgreso
                                   key={fila} fila={fila} foto={fotos[fila]}
-                                  subiendo={subiendoCasilla === `${hito}::${fila}`}
-                                  onUpload={file => subirFotoCasilla(hito, fila, file)}
-                                  onDelete={() => eliminarFotoCasilla(hito, fila)}
+                                  subiendo={esInicio ? savingFotosOrto : subiendoCasilla === `${hito}::${fila}`}
+                                  onUpload={file => (esInicio ? handleUploadFotoOrtoFile(file, FILA_A_CAJA_FOTO[fila]) : subirFotoCasilla(hito, fila, file))}
+                                  onDelete={() => (esInicio ? handleDeleteFotoOrto(FILA_A_CAJA_FOTO[fila], fotosOrto[FILA_A_CAJA_FOTO[fila]]?.url) : eliminarFotoCasilla(hito, fila))}
                                 />
                               ))}
 
@@ -1148,9 +1168,9 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                               {FILAS_PROGRESO.slice(mitad).map(fila => (
                                 <CasillaFotoProgreso
                                   key={fila} fila={fila} foto={fotos[fila]}
-                                  subiendo={subiendoCasilla === `${hito}::${fila}`}
-                                  onUpload={file => subirFotoCasilla(hito, fila, file)}
-                                  onDelete={() => eliminarFotoCasilla(hito, fila)}
+                                  subiendo={esInicio ? savingFotosOrto : subiendoCasilla === `${hito}::${fila}`}
+                                  onUpload={file => (esInicio ? handleUploadFotoOrtoFile(file, FILA_A_CAJA_FOTO[fila]) : subirFotoCasilla(hito, fila, file))}
+                                  onDelete={() => (esInicio ? handleDeleteFotoOrto(FILA_A_CAJA_FOTO[fila], fotosOrto[FILA_A_CAJA_FOTO[fila]]?.url) : eliminarFotoCasilla(hito, fila))}
                                 />
                               ))}
 
@@ -1172,7 +1192,10 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                 {comparando && (
                   <ModalComparacionProgreso
                     hito={comparando}
-                    inicio={controlesFirmados.find(c => c.hito === 'Inicio')}
+                    inicio={{
+                      hito: 'Inicio',
+                      fotos: Object.fromEntries(FILAS_PROGRESO.map(fila => [fila, fotosOrtoFirmadas[FILA_A_CAJA_FOTO[fila]]]).filter(([, v]) => v)),
+                    }}
                     comparado={controlesFirmados.find(c => c.hito === comparando)}
                     filas={FILAS_PROGRESO}
                     onClose={() => setComparando(null)}
