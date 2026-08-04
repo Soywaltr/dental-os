@@ -68,6 +68,67 @@ function ComparadorDeslizante({ antes, despues, labelAntes = 'Antes', labelDespu
   );
 }
 
+// ─── CASILLA DE FOTO (una posición fija -- ej. "Frontal" -- dentro de la
+// columna de un hito, en la grilla de Progreso del Tratamiento) ──────────────
+function CasillaFotoProgreso({ fila, foto, subiendo, onUpload, onDelete }) {
+  const hasFile = !!foto;
+  return (
+    <div style={{ borderTop: `1px solid ${BD}` }}>
+      <div style={{ height: 74, background: hasFile ? '#000' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {hasFile && (
+          <>
+            <a href={foto.urlFirmada} target="_blank" rel="noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
+              <img src={foto.urlFirmada} alt={fila} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </a>
+            <button onClick={onDelete} title="Eliminar" style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(15,23,42,0.65)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </>
+        )}
+        {!hasFile && !subiendo && <Icon name="camera" size={20} color="#cbd5e1" />}
+        {subiendo && <span style={{ fontSize: 9, color: P, fontWeight: 700 }}>Subiendo...</span>}
+        {!hasFile && (
+          <label style={{ position: 'absolute', inset: 0, cursor: subiendo ? 'not-allowed' : 'pointer' }}>
+            <input type="file" accept="image/*" style={{ display: 'none' }} disabled={subiendo} onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ''; }} />
+          </label>
+        )}
+      </div>
+      <div style={{ padding: '4px 6px', fontSize: 8.5, color: hasFile ? P : MU, fontWeight: 600, textAlign: 'center', background: hasFile ? '#f0f9ff' : '#fff' }}>
+        {fila}
+      </div>
+    </div>
+  );
+}
+
+// ─── MODAL DE COMPARACIÓN (Inicio vs un hito, ángulo por ángulo) ─────────────
+function ModalComparacionProgreso({ hito, inicio, comparado, filas, onClose }) {
+  return (
+    <Modal background="rgba(15,23,42,0.75)" overlayStyle={{ padding: 20, zIndex: 1100 }}
+      cardStyle={{ background: '#0f172a', border: 'none', borderRadius: 16, width: '95%', maxWidth: 1100, maxHeight: '94dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Inicio vs {hito}</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 22, lineHeight: 1 }}>×</button>
+      </div>
+      <div style={{ padding: 22, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 26 }}>
+        {filas.map(fila => {
+          const fotoA = inicio?.fotos?.[fila]?.urlFirmada;
+          const fotoB = comparado?.fotos?.[fila]?.urlFirmada;
+          return (
+            <div key={fila}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>{fila}</div>
+              {fotoA && fotoB ? (
+                <ComparadorDeslizante antes={fotoA} despues={fotoB} labelAntes="Inicio" labelDespues={hito} />
+              ) : (
+                <div style={{ fontSize: 11, color: '#64748b', padding: '22px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 10 }}>
+                  Falta la foto de "{!fotoA ? 'Inicio' : hito}" en "{fila}" para poder comparar.
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Modal>
+  );
+}
+
 // ─── DETALLE DE ORTODONCIA (un paciente ya en tratamiento) ───────────────────
 function OrtodonciaDetalle({ patient, clinicaId }) {
   const { isTablet } = useResponsive();
@@ -344,41 +405,33 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     </div>
   );
 
-  // --- PROGRESO DEL TRATAMIENTO (casilleros fijos por hito + comparador) ---
-  // A diferencia de la version anterior (fecha libre), acá los "casilleros"
-  // ya existen de antemano -- Inicio, 3 meses, etc. -- y cada uno recibe sus
-  // propias fotos cuando corresponda, en vez de tener que crear un control
-  // nuevo cada vez.
+  // --- PROGRESO DEL TRATAMIENTO (columnas por hito, filas fijas por ángulo) ---
+  // Cada columna es un hito del tratamiento; cada columna tiene los mismos 5
+  // casilleros fijos (mismo ángulo de foto en la misma posición en todas las
+  // columnas) para que el comparador cruce siempre fotos equivalentes contra
+  // el hito "Inicio".
   const HITOS_PROGRESO = ['Inicio', '3 meses', '6 meses', '9 meses', '1 año', '18 meses', '24 meses', 'Final'];
+  const FILAS_PROGRESO = ['Frontal', 'Lateral derecho', 'Lateral izquierdo', 'Oclusal superior', 'Oclusal inferior'];
 
-  const [controles, setControles] = useState([]); // [{ hito, fecha, nota, fotos: [{url, nombre, date}] }]
+  const [controles, setControles] = useState([]); // [{ hito, nota, fotos: { [fila]: {url, ext, date} } }]
   // Igual que fotosOrtoFirmadas: cada control con sus fotos ya con URL firmada.
   const [controlesFirmados, setControlesFirmados] = useState([]);
-  const [subiendoHito, setSubiendoHito] = useState('');
-  const [compararA, setCompararA] = useState('');
-  const [compararB, setCompararB] = useState('');
+  const [subiendoCasilla, setSubiendoCasilla] = useState(''); // `${hito}::${fila}` en curso
+  const [comparando, setComparando] = useState(null); // hito comparado contra "Inicio", o null si el modal está cerrado
 
   useEffect(() => {
     let vivo = true;
     const resolver = async () => {
-      const firmados = await Promise.all((controles || []).map(async (c) => ({
-        ...c,
-        fotos: await Promise.all((c.fotos || []).map(async (f) => ({ ...f, urlFirmada: await firmar(f.url) }))),
-      })));
+      const firmados = await Promise.all((controles || []).map(async (c) => {
+        const entradas = await Promise.all(
+          Object.entries(c.fotos || {}).map(async ([fila, f]) => [fila, { ...f, urlFirmada: await firmar(f.url) }])
+        );
+        return { ...c, fotos: Object.fromEntries(entradas) };
+      }));
       if (vivo) setControlesFirmados(firmados);
     };
     resolver();
     return () => { vivo = false; };
-  }, [controles]);
-
-  // Por defecto compara el primer hito con fotos contra el último con fotos.
-  useEffect(() => {
-    const hitosConFotos = HITOS_PROGRESO.filter(h => controles.some(c => c.hito === h && (c.fotos || []).length > 0));
-    if (hitosConFotos.length >= 2) {
-      setCompararA(prev => (hitosConFotos.includes(prev) ? prev : hitosConFotos[0]));
-      setCompararB(prev => (hitosConFotos.includes(prev) ? prev : hitosConFotos[hitosConFotos.length - 1]));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controles]);
 
   const guardarControles = async (nuevosControles) => {
@@ -394,27 +447,43 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     }
   };
 
-  const subirFotoHito = async (hito, files) => {
-    if (!files || files.length === 0) return;
-    setSubiendoHito(hito);
+  const subirFotoCasilla = async (hito, fila, file) => {
+    if (!file) return;
+    const clave = `${hito}::${fila}`;
+    setSubiendoCasilla(clave);
     try {
-      const fotosSubidas = [];
-      for (const file of files) {
-        const fileName = rutaFotoOrto(clinicaId, patient.id, file.name);
-        const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
-        if (uploadError) throw uploadError;
-        fotosSubidas.push({ url: fileName, nombre: file.name, date: new Date().toLocaleDateString('es-PE') });
-      }
+      const fileExt = file.name.split('.').pop();
+      const fileName = rutaFotoOrto(clinicaId, patient.id, file.name);
+      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const nuevaFoto = { url: fileName, ext: fileExt, date: new Date().toLocaleDateString('es-PE') };
       const existente = controles.find(c => c.hito === hito);
       const nuevosControles = existente
-        ? controles.map(c => (c.hito === hito ? { ...c, fotos: [...(c.fotos || []), ...fotosSubidas] } : c))
-        : [...controles, { hito, fecha: new Date().toISOString().slice(0, 10), nota: '', fotos: fotosSubidas }];
+        ? controles.map(c => (c.hito === hito ? { ...c, fotos: { ...c.fotos, [fila]: nuevaFoto } } : c))
+        : [...controles, { hito, nota: '', fotos: { [fila]: nuevaFoto } }];
       await guardarControles(nuevosControles);
       setControles(nuevosControles);
     } catch (err) {
       alert('Error al subir la foto: ' + err.message);
     } finally {
-      setSubiendoHito('');
+      setSubiendoCasilla('');
+    }
+  };
+
+  const eliminarFotoCasilla = async (hito, fila) => {
+    if (!window.confirm('¿Eliminar esta foto?')) return;
+    const control = controles.find(c => c.hito === hito);
+    const foto = control?.fotos?.[fila];
+    if (!foto) return;
+    try {
+      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(foto.url)]);
+      const nuevasFotos = { ...control.fotos };
+      delete nuevasFotos[fila];
+      const nuevosControles = controles.map(c => (c.hito === hito ? { ...c, fotos: nuevasFotos } : c));
+      await guardarControles(nuevosControles);
+      setControles(nuevosControles);
+    } catch (err) {
+      alert('Error al eliminar la foto: ' + err.message);
     }
   };
 
@@ -422,28 +491,12 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     setControles(prev => {
       const existe = prev.find(c => c.hito === hito);
       if (existe) return prev.map(c => (c.hito === hito ? { ...c, nota } : c));
-      return [...prev, { hito, fecha: new Date().toISOString().slice(0, 10), nota, fotos: [] }];
+      return [...prev, { hito, nota, fotos: {} }];
     });
   };
 
   const guardarNotaHito = async () => {
     try { await guardarControles(controles); } catch (err) { alert('Error al guardar la nota: ' + err.message); }
-  };
-
-  const eliminarFotoHito = async (hito, indice) => {
-    if (!window.confirm('¿Eliminar esta foto?')) return;
-    const control = controles.find(c => c.hito === hito);
-    if (!control) return;
-    try {
-      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(control.fotos[indice].url)]);
-      const nuevosControles = controles.map(c =>
-        c.hito === hito ? { ...c, fotos: c.fotos.filter((_, i) => i !== indice) } : c
-      );
-      await guardarControles(nuevosControles);
-      setControles(nuevosControles);
-    } catch (err) {
-      alert('Error al eliminar la foto: ' + err.message);
-    }
   };
 
   const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Progreso del Tratamiento' }];
@@ -1036,93 +1089,94 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
 
                 {subTabOrto === 'controles' && (
                   <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', marginTop: '10px' }}>
                       <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Progreso del Tratamiento</h3>
                       <span style={{ fontSize: '11px', color: '#64748b' }}>
-                        {controles.filter(c => (c.fotos || []).length > 0).length} de {HITOS_PROGRESO.length} hitos con fotos
+                        {controles.filter(c => Object.keys(c.fotos || {}).length > 0).length} de {HITOS_PROGRESO.length} hitos con fotos
                       </span>
                     </div>
+                    <div style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '16px' }}>
+                      Cada columna es un momento del tratamiento. Sube la misma toma (frontal, lateral, oclusal...) en cada hito y usa "Comparar" para ver el avance contra el Inicio.
+                    </div>
 
-                    {(() => {
-                      const hitosConFotos = HITOS_PROGRESO.filter(h => controlesFirmados.some(c => c.hito === h && (c.fotos || []).length > 0));
-                      if (hitosConFotos.length < 2) return null;
-                      const cA = controlesFirmados.find(c => c.hito === compararA);
-                      const cB = controlesFirmados.find(c => c.hito === compararB);
-                      const fotoA = cA?.fotos?.[0]?.urlFirmada;
-                      const fotoB = cB?.fotos?.[0]?.urlFirmada;
-                      return (
-                        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '18px', marginBottom: '28px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0369a1' }}>Comparar avance</span>
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '11px' }}>
-                              <select value={compararA} onChange={e => setCompararA(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                                {hitosConFotos.map(h => <option key={h} value={h}>{h}</option>)}
-                              </select>
-                              <span style={{ color: '#64748b' }}>vs</span>
-                              <select value={compararB} onChange={e => setCompararB(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                                {hitosConFotos.map(h => <option key={h} value={h}>{h}</option>)}
-                              </select>
-                            </div>
-                          </div>
-                          {fotoA && fotoB ? (
-                            <div>
-                              <ComparadorDeslizante antes={fotoA} despues={fotoB} labelAntes={compararA} labelDespues={compararB} />
-                              <div style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center', marginTop: 6 }}>Arrastra el círculo para comparar</div>
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: '10.5px', color: '#94a3b8' }}>Selecciona dos hitos con fotos para comparar.</div>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    <div style={{ overflowX: 'auto', paddingBottom: 10 }}>
+                      <div style={{ display: 'flex', gap: '14px', minWidth: HITOS_PROGRESO.length * 158 }}>
+                        {HITOS_PROGRESO.map(hito => {
+                          const control = controlesFirmados.find(c => c.hito === hito);
+                          const fotos = control?.fotos || {};
+                          const cantidad = Object.keys(fotos).length;
+                          const esInicio = hito === 'Inicio';
+                          const inicioControl = controlesFirmados.find(c => c.hito === 'Inicio');
+                          const inicioTieneFotos = Object.keys(inicioControl?.fotos || {}).length > 0;
+                          const mitad = Math.ceil(FILAS_PROGRESO.length / 2);
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', paddingBottom: '40px' }}>
-                      {HITOS_PROGRESO.map(hito => {
-                        const control = controlesFirmados.find(c => c.hito === hito);
-                        const fotos = control?.fotos || [];
-                        const hasFotos = fotos.length > 0;
-                        const subiendo = subiendoHito === hito;
-                        return (
-                          <div key={hito} style={{ background: '#fff', border: `1px solid ${hasFotos ? '#0087b3' : '#e2e8f0'}`, borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: hasFotos ? '0 4px 6px rgba(0,135,179,0.1)' : '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0', background: hasFotos ? '#f0f9ff' : '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a' }}>{hito}</span>
-                              {hasFotos && <span style={{ fontSize: '9.5px', color: '#0087b3', fontWeight: 600 }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</span>}
-                            </div>
-
-                            {hasFotos ? (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))', gap: '6px', padding: '10px' }}>
-                                {fotos.map((f, i) => (
-                                  <div key={i} style={{ position: 'relative' }}>
-                                    <a href={f.urlFirmada} target="_blank" rel="noreferrer">
-                                      <img src={f.urlFirmada} alt={f.nombre} style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: '6px' }} />
-                                    </a>
-                                    <button onClick={() => eliminarFotoHito(hito, i)} title="Eliminar foto" style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(15,23,42,0.65)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                                  </div>
-                                ))}
+                          return (
+                            <div key={hito} style={{ flex: '0 0 150px', width: 150, background: '#fff', border: `1px solid ${cantidad > 0 ? '#0087b3' : '#e2e8f0'}`, borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: cantidad > 0 ? '0 4px 6px rgba(0,135,179,0.1)' : '0 2px 4px rgba(0,0,0,0.02)' }}>
+                              <div style={{ padding: '10px 10px', textAlign: 'center', background: cantidad > 0 ? '#f0f9ff' : '#f8fafc' }}>
+                                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a' }}>{hito}</div>
+                                <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: 2 }}>{cantidad}/{FILAS_PROGRESO.length} fotos</div>
                               </div>
-                            ) : (
-                              <div style={{ height: '110px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Icon name="camera" size={30} color="#cbd5e1" />
+
+                              {FILAS_PROGRESO.slice(0, mitad).map(fila => (
+                                <CasillaFotoProgreso
+                                  key={fila} fila={fila} foto={fotos[fila]}
+                                  subiendo={subiendoCasilla === `${hito}::${fila}`}
+                                  onUpload={file => subirFotoCasilla(hito, fila, file)}
+                                  onDelete={() => eliminarFotoCasilla(hito, fila)}
+                                />
+                              ))}
+
+                              <div style={{ padding: '8px 10px', display: 'flex', justifyContent: 'center', borderTop: `1px solid ${BD}` }}>
+                                {esInicio ? (
+                                  <span style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>Punto de partida</span>
+                                ) : (
+                                  <button
+                                    onClick={() => setComparando(hito)}
+                                    disabled={!inicioTieneFotos || cantidad === 0}
+                                    style={{
+                                      background: (!inicioTieneFotos || cantidad === 0) ? '#e2e8f0' : '#0087b3',
+                                      color: (!inicioTieneFotos || cantidad === 0) ? '#94a3b8' : '#fff',
+                                      border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '10.5px', fontWeight: 700,
+                                      cursor: (!inicioTieneFotos || cantidad === 0) ? 'not-allowed' : 'pointer', width: '100%',
+                                    }}
+                                  >
+                                    Comparar
+                                  </button>
+                                )}
                               </div>
-                            )}
 
-                            <label style={{ margin: '10px 14px 0', padding: '7px', textAlign: 'center', borderRadius: '6px', border: '1px dashed #cbd5e1', fontSize: '10.5px', color: subiendo ? '#94a3b8' : '#0087b3', fontWeight: 600, cursor: subiendo ? 'not-allowed' : 'pointer' }}>
-                              {subiendo ? 'Subiendo...' : (hasFotos ? '+ Agregar otra foto' : '+ Subir foto')}
-                              <input type="file" accept="image/*" multiple style={{ display: 'none' }} disabled={subiendo} onChange={e => { subirFotoHito(hito, Array.from(e.target.files || [])); e.target.value = ''; }} />
-                            </label>
+                              {FILAS_PROGRESO.slice(mitad).map(fila => (
+                                <CasillaFotoProgreso
+                                  key={fila} fila={fila} foto={fotos[fila]}
+                                  subiendo={subiendoCasilla === `${hito}::${fila}`}
+                                  onUpload={file => subirFotoCasilla(hito, fila, file)}
+                                  onDelete={() => eliminarFotoCasilla(hito, fila)}
+                                />
+                              ))}
 
-                            <textarea
-                              placeholder="Nota de este control..."
-                              defaultValue={control?.nota || ''}
-                              onChange={e => actualizarNotaHito(hito, e.target.value)}
-                              onBlur={guardarNotaHito}
-                              style={{ margin: '10px 14px 14px', padding: '7px 9px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '10.5px', resize: 'none', height: '44px', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                            />
-                          </div>
-                        );
-                      })}
+                              <textarea
+                                placeholder="Nota..."
+                                defaultValue={control?.nota || ''}
+                                onChange={e => actualizarNotaHito(hito, e.target.value)}
+                                onBlur={guardarNotaHito}
+                                style={{ margin: '8px 10px 10px', padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: '6px', fontSize: '9.5px', resize: 'none', height: '36px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
+                )}
+
+                {comparando && (
+                  <ModalComparacionProgreso
+                    hito={comparando}
+                    inicio={controlesFirmados.find(c => c.hito === 'Inicio')}
+                    comparado={controlesFirmados.find(c => c.hito === comparando)}
+                    filas={FILAS_PROGRESO}
+                    onClose={() => setComparando(null)}
+                  />
                 )}
 
               </div>
