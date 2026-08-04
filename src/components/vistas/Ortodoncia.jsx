@@ -442,12 +442,35 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
   const [fotoOrigenIA, setFotoOrigenIA] = useState('');
   const [generandoIA, setGenerandoIA] = useState(false);
   const [errorIA, setErrorIA] = useState('');
+  // Fotos subidas directo acá (sin pasar por Fotografías ni Controles) --
+  // se guardan en el mismo bucket, solo para no obligar a subir la foto en
+  // otra pestaña antes de poder usarla.
+  const [fotosSubidasIA, setFotosSubidasIA] = useState([]);
+  const [subiendoFotoIA, setSubiendoFotoIA] = useState(false);
 
-  // Fotos disponibles como origen: las de Fotografías + la primera de cada control.
+  // Fotos disponibles como origen: las subidas acá + las de Fotografías + la primera de cada control.
   const fotosDisponiblesIA = [
+    ...fotosSubidasIA.map(f => ({ ruta: f.ruta, etiqueta: `Subida: ${f.nombre}` })),
     ...Object.entries(fotosOrto || {}).map(([key, f]) => ({ ruta: f.url, etiqueta: key })),
     ...controles.flatMap(c => (c.fotos || []).map((f, i) => ({ ruta: f.url, etiqueta: `Control ${c.fecha} · foto ${i + 1}` }))),
   ];
+
+  const subirFotoParaIA = async (file) => {
+    if (!file) return;
+    setSubiendoFotoIA(true);
+    setErrorIA('');
+    try {
+      const ruta = rutaFotoOrto(clinicaId, patient.id, file.name);
+      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(ruta, file);
+      if (uploadError) throw uploadError;
+      setFotosSubidasIA(prev => [...prev, { ruta, nombre: file.name }]);
+      setFotoOrigenIA(ruta);
+    } catch (err) {
+      setErrorIA('No se pudo subir la foto: ' + err.message);
+    } finally {
+      setSubiendoFotoIA(false);
+    }
+  };
 
   useEffect(() => {
     let vivo = true;
@@ -1238,8 +1261,23 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                           {generandoIA ? 'Generando...' : '✨ Generar con IA'}
                         </button>
                       </div>
-                      {fotosDisponiblesIA.length === 0 && (
-                        <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: 8 }}>Todavía no hay fotos subidas en Fotografías ni en Controles Mensuales para usar como partida.</div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0 4px' }}>
+                        <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                        <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>O SUBE UNA FOTO NUEVA</span>
+                        <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                        <input
+                          type="file" accept="image/*" disabled={subiendoFotoIA}
+                          onChange={e => { subirFotoParaIA(e.target.files?.[0]); e.target.value = ''; }}
+                          style={{ fontSize: '11.5px' }}
+                        />
+                        {subiendoFotoIA && <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 600 }}>Subiendo...</span>}
+                      </div>
+
+                      {fotosDisponiblesIA.length === 0 && !subiendoFotoIA && (
+                        <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: 8 }}>Todavía no hay fotos disponibles -- sube una arriba, o agrega una en Fotografías/Controles Mensuales.</div>
                       )}
                       {errorIA && <div style={{ fontSize: '11px', color: '#ef4444', marginTop: 10 }}>{errorIA}</div>}
                     </div>
