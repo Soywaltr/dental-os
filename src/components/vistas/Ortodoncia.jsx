@@ -94,28 +94,36 @@ const mismoMesQueHoy = (s) => {
 // congelada al cargar el módulo terminaría ofreciendo el día de ayer.
 const controlVacio = () => ({ fecha: hoyISO(), procedimiento: '', observaciones: '', proxima_cita: '' });
 const abonoVacio = () => ({ fecha: hoyISO(), monto: '', metodo: 'Efectivo', concepto: '', tipo: 'cuota' });
-const PAGOS_VACIO = { costo_total: '', cuota_mensual: '', abonos: [] };
+const PAGOS_VACIO = { pago_inicial: '', cuota_mensual: '', abonos: [] };
 
-// Resumen de pagos de un paciente: total pagado, saldo y si está al día con las
-// cuotas esperadas hasta hoy (se usa tanto en el detalle como en la galería).
+const TIPOS_ABONO = [
+  { id: 'inicial', lbl: 'Cuota inicial', corto: 'Inicial', bg: '#ede9fe', color: '#6d28d9' },
+  { id: 'cuota', lbl: 'Cuota mensual', corto: 'Cuota', bg: '#e0f2fe', color: '#0369a1' },
+  { id: 'extra', lbl: 'Extra / adicional', corto: 'Extra', bg: '#fef3c7', color: '#92400e' },
+];
+const tipoAbono = (id) => TIPOS_ABONO.find(t => t.id === id) || TIPOS_ABONO[1];
+
+// Resumen de pagos de un paciente. No hay un costo total pactado de antemano:
+// el histórico se va acumulando control a control (cuota inicial + cuotas
+// mensuales + extras), y lo adeudado se calcula contra lo que debería estar
+// cobrado a la fecha: la inicial una sola vez, más una cuota por mes cumplido.
 function resumenPagos(pagos, fechaInicio) {
   const abonos = pagos?.abonos || [];
-  const pagado = abonos.reduce((s, a) => s + (Number(a.monto) || 0), 0);
-  const costoTotal = Number(pagos?.costo_total) || 0;
+  const acumulado = abonos.reduce((s, a) => s + (Number(a.monto) || 0), 0);
+  // `costo_total` es el nombre viejo del campo, se lee por compatibilidad.
+  const pagoInicial = Number(pagos?.pago_inicial || pagos?.costo_total) || 0;
   const cuota = Number(pagos?.cuota_mensual) || 0;
-  const saldo = costoTotal > 0 ? costoTotal - pagado : null;
 
-  // Cuotas que ya deberían estar cubiertas según los meses transcurridos.
-  let cuotasVencidas = null;
-  if (cuota > 0 && fechaInicio) {
+  let esperado = null, deuda = null, meses = null;
+  if (fechaInicio && (pagoInicial > 0 || cuota > 0)) {
     const inicio = new Date(`${fechaInicio}T00:00:00`);
     if (!isNaN(inicio.getTime())) {
-      const meses = Math.floor((Date.now() - inicio.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
-      const esperado = Math.min(costoTotal > 0 ? costoTotal : Infinity, Math.max(0, meses) * cuota);
-      cuotasVencidas = Math.max(0, Math.round(((esperado - pagado) / cuota) * 10) / 10);
+      meses = Math.max(0, Math.floor((Date.now() - inicio.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+      esperado = pagoInicial + meses * cuota;
+      deuda = Math.max(0, esperado - acumulado);
     }
   }
-  return { pagado, costoTotal, cuota, saldo, cuotasVencidas, abonos };
+  return { acumulado, pagoInicial, cuota, esperado, deuda, meses, abonos };
 }
 
 // ─── COMPARADOR DESLIZANTE (antes/después con fotos reales del paciente) ─────
@@ -1525,23 +1533,23 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                     <div style={{ animation: 'fadeIn 0.3s ease', paddingBottom: 30 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', marginTop: '10px' }}>
                         <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Pagos del tratamiento</h3>
-                        {r.cuotasVencidas !== null && (
+                        {r.deuda !== null && (
                           <span style={{
                             fontSize: '10.5px', fontWeight: 700, padding: '4px 12px', borderRadius: 20,
-                            background: r.cuotasVencidas > 0.2 ? '#fee2e2' : '#dcfce7',
-                            color: r.cuotasVencidas > 0.2 ? '#dc2626' : '#16a34a',
+                            background: r.deuda > 0 ? '#fee2e2' : '#dcfce7',
+                            color: r.deuda > 0 ? '#dc2626' : '#16a34a',
                           }}>
-                            {r.cuotasVencidas > 0.2 ? `Debe ${fmtSoles(r.cuotasVencidas * r.cuota)}` : 'Al día'}
+                            {r.deuda > 0 ? `Debe ${fmtSoles(r.deuda)}` : 'Al día'}
                           </span>
                         )}
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '22px' }}>
                         {[
-                          { lbl: 'Costo total', val: r.costoTotal > 0 ? fmtSoles(r.costoTotal) : '—', col: '#0f172a' },
+                          { lbl: 'Pago inicial', val: r.pagoInicial > 0 ? fmtSoles(r.pagoInicial) : '—', col: '#6d28d9' },
                           { lbl: 'Cuota mensual', val: r.cuota > 0 ? fmtSoles(r.cuota) : '—', col: '#0087b3' },
-                          { lbl: 'Pagado', val: fmtSoles(r.pagado), col: '#16a34a' },
-                          { lbl: 'Saldo', val: r.saldo !== null ? fmtSoles(r.saldo) : '—', col: r.saldo > 0 ? '#dc2626' : '#16a34a' },
+                          { lbl: 'Costo total acumulado', val: fmtSoles(r.acumulado), col: '#0f172a' },
+                          { lbl: 'Por cobrar', val: r.deuda !== null ? fmtSoles(r.deuda) : '—', col: r.deuda > 0 ? '#dc2626' : '#16a34a' },
                         ].map(s => (
                           <div key={s.lbl} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '10px', padding: '12px 14px' }}>
                             <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, letterSpacing: 0.3, marginBottom: 5 }}>{s.lbl.toUpperCase()}</div>
@@ -1551,12 +1559,15 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                       </div>
 
                       <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '12px', padding: '16px', marginBottom: '22px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Condiciones del tratamiento</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Condiciones del tratamiento</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '14px' }}>
+                          No se pacta un costo total de entrada: se va acumulando control a control. El pago inicial se cobra una sola vez, el mes que arranca el tratamiento.
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: '14px' }}>
                           <div>
-                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Costo total (S/)</label>
-                            <input type="number" min="0" step="0.01" placeholder="0.00" value={pagos.costo_total}
-                              onChange={e => setPagos(p => ({ ...p, costo_total: e.target.value }))}
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Pago inicial (S/)</label>
+                            <input type="number" min="0" step="0.01" placeholder="0.00" value={pagos.pago_inicial}
+                              onChange={e => setPagos(p => ({ ...p, pago_inicial: e.target.value }))}
                               onBlur={() => guardarConfigPagos(pagos)} style={inputStyleDoc} />
                           </div>
                           <div>
@@ -1566,6 +1577,12 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                               onBlur={() => guardarConfigPagos(pagos)} style={inputStyleDoc} />
                           </div>
                         </div>
+                        {r.esperado !== null && (
+                          <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BD}` }}>
+                            A la fecha debería estar cobrado <strong style={{ color: '#0f172a' }}>{fmtSoles(r.esperado)}</strong>
+                            {' '}— pago inicial + {r.meses} {r.meses === 1 ? 'cuota' : 'cuotas'} desde el {fmtFecha(fechaInicioTrata)}.
+                          </div>
+                        )}
                       </div>
 
                       <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
@@ -1581,9 +1598,15 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                           </div>
                           <div>
                             <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Tipo</label>
-                            <select value={nuevoAbono.tipo} onChange={e => setNuevoAbono(p => ({ ...p, tipo: e.target.value }))} style={inputStyleDoc}>
-                              <option value="cuota">Cuota mensual</option>
-                              <option value="extra">Extra / adicional</option>
+                            {/* Al elegir el tipo se propone el monto pactado, para no
+                                tener que recordarlo en cada control. */}
+                            <select value={nuevoAbono.tipo} style={inputStyleDoc}
+                              onChange={e => {
+                                const tipo = e.target.value;
+                                const sugerido = tipo === 'inicial' ? r.pagoInicial : tipo === 'cuota' ? r.cuota : 0;
+                                setNuevoAbono(p => ({ ...p, tipo, monto: sugerido > 0 ? String(sugerido) : p.monto }));
+                              }}>
+                              {TIPOS_ABONO.map(t => <option key={t.id} value={t.id}>{t.lbl}</option>)}
                             </select>
                           </div>
                           <div>
@@ -1595,7 +1618,11 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         </div>
                         <div style={{ marginBottom: '14px' }}>
                           <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Concepto {nuevoAbono.tipo === 'extra' ? '(qué extra se cobró)' : '(opcional)'}</label>
-                          <input placeholder={nuevoAbono.tipo === 'extra' ? 'Ej: reposición de bracket, aparato de contención...' : 'Ej: cuota de agosto'} value={nuevoAbono.concepto} onChange={e => setNuevoAbono(p => ({ ...p, concepto: e.target.value }))} style={inputStyleDoc} />
+                          <input
+                            placeholder={nuevoAbono.tipo === 'extra' ? 'Ej: reposición de bracket, aparato de contención...'
+                              : nuevoAbono.tipo === 'inicial' ? 'Ej: cuota inicial del tratamiento'
+                              : 'Ej: cuota de agosto'}
+                            value={nuevoAbono.concepto} onChange={e => setNuevoAbono(p => ({ ...p, concepto: e.target.value }))} style={inputStyleDoc} />
                         </div>
                         <button onClick={agregarAbono} disabled={savingAbono} style={{ background: savingAbono ? '#94a3b8' : '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', padding: '9px 20px', fontWeight: 700, fontSize: '11.5px', cursor: savingAbono ? 'not-allowed' : 'pointer' }}>
                           {savingAbono ? 'Guardando...' : '+ Registrar pago'}
@@ -1611,8 +1638,8 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                           <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#fff', border: `1px solid ${BD}`, borderRadius: '10px', padding: '11px 15px' }}>
                             <div style={{ width: 74, flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#475569' }}>{fmtFecha(a.fecha)}</div>
                             <div style={{ fontSize: '13px', fontWeight: 800, color: '#16a34a', width: 100, flexShrink: 0 }}>{fmtSoles(a.monto)}</div>
-                            <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: a.tipo === 'extra' ? '#fef3c7' : '#e0f2fe', color: a.tipo === 'extra' ? '#92400e' : '#0369a1', flexShrink: 0 }}>
-                              {a.tipo === 'extra' ? 'Extra' : 'Cuota'}
+                            <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: tipoAbono(a.tipo).bg, color: tipoAbono(a.tipo).color, flexShrink: 0 }}>
+                              {tipoAbono(a.tipo).corto}
                             </span>
                             <div style={{ flex: 1, minWidth: 0, fontSize: '10.5px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {a.metodo}{a.concepto ? ` · ${a.concepto}` : ''}
@@ -1623,6 +1650,13 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                           </div>
                         ))}
                       </div>
+                      {r.abonos.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 15px', marginTop: 4, borderTop: `2px solid ${BD}` }}>
+                          <div style={{ width: 74, flexShrink: 0, fontSize: '10px', fontWeight: 800, color: '#94a3b8', letterSpacing: 0.3 }}>TOTAL</div>
+                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{fmtSoles(r.acumulado)}</div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>en {r.abonos.length} pago{r.abonos.length !== 1 ? 's' : ''}</div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -1732,15 +1766,15 @@ export default function Ortodoncia({ clinicaId }) {
     normalizarTexto(p.name).includes(normalizarTexto(busqueda)) || (p.doc || '').includes(busqueda)
   );
 
-  // Ingresos de ortodoncia: lo que se espera cobrar al mes (suma de cuotas
-  // fijas), lo efectivamente cobrado en el mes en curso, y el saldo total.
-  const ingresoMensualEstimado = pacientesOrto.reduce((s, p) => s + (Number(p.pagos?.cuota_mensual) || 0), 0);
+  // Ingresos de ortodoncia del mes en curso. "Cobrado" suma todos los pagos
+  // fechados este mes sin importar el tipo, así que una cuota inicial se suma a
+  // las cuotas mensuales del mismo mes, y lo mismo con los extras.
+  const resumenes = pacientesOrto.map(p => resumenPagos(p.pagos, p.fechaInicio));
+  const cuotasDelMes = resumenes.reduce((s, r) => s + r.cuota, 0);
   const cobradoEsteMes = pacientesOrto.reduce((s, p) =>
     s + (p.pagos?.abonos || []).filter(a => mismoMesQueHoy(a.fecha)).reduce((t, a) => t + (Number(a.monto) || 0), 0), 0);
-  const saldoPorCobrar = pacientesOrto.reduce((s, p) => {
-    const r = resumenPagos(p.pagos, p.fechaInicio);
-    return s + (r.saldo > 0 ? r.saldo : 0);
-  }, 0);
+  const porCobrar = resumenes.reduce((s, r) => s + (r.deuda || 0), 0);
+  const mesActualNombre = new Date().toLocaleDateString('es-PE', { month: 'long' });
 
   // ── MOMENTO 2: detalle completo del paciente ──
   if (seleccionado) {
@@ -1780,14 +1814,15 @@ export default function Ortodoncia({ clinicaId }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 22 }}>
         {[
-          { lbl: 'En tratamiento', val: String(pacientesOrto.length), col: DN },
-          { lbl: 'Ingreso mensual estimado', val: fmtSoles(ingresoMensualEstimado), col: P },
-          { lbl: 'Cobrado este mes', val: fmtSoles(cobradoEsteMes), col: '#16a34a' },
-          { lbl: 'Saldo por cobrar', val: fmtSoles(saldoPorCobrar), col: saldoPorCobrar > 0 ? '#dc2626' : '#16a34a' },
+          { lbl: 'En tratamiento', val: String(pacientesOrto.length), col: DN, sub: 'pacientes activos' },
+          { lbl: `Cobrado en ${mesActualNombre}`, val: fmtSoles(cobradoEsteMes), col: '#16a34a', sub: 'cuotas iniciales + mensuales + extras' },
+          { lbl: 'Cuotas mensuales', val: fmtSoles(cuotasDelMes), col: P, sub: 'lo recurrente pactado por mes' },
+          { lbl: 'Por cobrar', val: fmtSoles(porCobrar), col: porCobrar > 0 ? '#dc2626' : '#16a34a', sub: 'atrasos acumulados a la fecha' },
         ].map(s => (
           <div key={s.lbl} style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 12, padding: '14px 16px' }}>
             <div style={{ fontSize: 9.5, color: MU, fontWeight: 700, letterSpacing: 0.3, marginBottom: 6 }}>{s.lbl.toUpperCase()}</div>
             <div style={{ fontSize: 17, fontWeight: 800, color: s.col }}>{s.val}</div>
+            <div style={{ fontSize: 9, color: MU, marginTop: 4 }}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -1818,7 +1853,6 @@ export default function Ortodoncia({ clinicaId }) {
       <div style={{ display: 'grid', gridTemplateColumns: isTablet ? 'repeat(auto-fill, minmax(150px, 1fr))' : 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, paddingBottom: 30 }}>
         {visibles.map(p => {
           const r = resumenPagos(p.pagos, p.fechaInicio);
-          const atrasado = r.cuotasVencidas !== null && r.cuotasVencidas > 0.2;
           return (
             <div
               key={p.id}
@@ -1839,23 +1873,21 @@ export default function Ortodoncia({ clinicaId }) {
               <div style={{ padding: '11px 13px 13px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                 <div style={{ fontSize: 10, color: MU, marginTop: 2 }}>DNI {p.doc || '---'}</div>
-                <div style={{ marginTop: 8 }}>
-                  {/* Solo se puede afirmar "Al día" si hay cuota mensual y fecha
-                      de inicio; con costo total pero sin cuota, lo honesto es
-                      mostrar el saldo en vez de un estado que no se sabe. */}
-                  {atrasado ? (
-                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>
-                      Debe {fmtSoles(r.cuotasVencidas * r.cuota)}
-                    </span>
-                  ) : r.cuotasVencidas !== null ? (
-                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>Al día</span>
-                  ) : r.saldo !== null ? (
-                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: r.saldo > 0 ? '#fef3c7' : '#dcfce7', color: r.saldo > 0 ? '#92400e' : '#16a34a' }}>
-                      {r.saldo > 0 ? `Saldo ${fmtSoles(r.saldo)}` : 'Pagado'}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#f1f5f9', color: MU }}>Sin plan de pago</span>
-                  )}
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {/* "Al día" solo se puede afirmar si hay fecha de inicio y algo
+                      pactado; sin eso, lo honesto es no arriesgar un estado. */}
+                  <div>
+                    {r.deuda === null ? (
+                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#f1f5f9', color: MU }}>Sin plan de pago</span>
+                    ) : r.deuda > 0 ? (
+                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>Debe {fmtSoles(r.deuda)}</span>
+                    ) : (
+                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>Al día</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 9.5, color: MU }}>
+                    Histórico: <strong style={{ color: DN, fontWeight: 700 }}>{fmtSoles(r.acumulado)}</strong>
+                  </div>
                 </div>
               </div>
             </div>
