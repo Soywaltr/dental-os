@@ -19,6 +19,48 @@ import { ini, normalizarTexto } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar } from '../../utils/storage';
 
+// Mismos métodos de pago que usa Caja.jsx, para que el historial sea coherente
+// entre la caja general y los pagos de ortodoncia.
+const METODOS_PAGO = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
+
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+const fmtFecha = (s) => { if (!s) return '—'; const d = new Date(`${s}T00:00:00`); return isNaN(d.getTime()) ? s : d.toLocaleDateString('es-PE'); };
+const fmtSoles = (n) => `S/${(Number(n) || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const mismoMesQueHoy = (s) => {
+  if (!s) return false;
+  const d = new Date(`${s}T00:00:00`);
+  const hoy = new Date();
+  return !isNaN(d.getTime()) && d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth();
+};
+
+// Funciones y no constantes: la app queda abierta días enteros, y una fecha
+// congelada al cargar el módulo terminaría ofreciendo el día de ayer.
+const controlVacio = () => ({ fecha: hoyISO(), procedimiento: '', observaciones: '', proxima_cita: '' });
+const abonoVacio = () => ({ fecha: hoyISO(), monto: '', metodo: 'Efectivo', concepto: '', tipo: 'cuota' });
+const PAGOS_VACIO = { costo_total: '', cuota_mensual: '', abonos: [] };
+
+// Resumen de pagos de un paciente: total pagado, saldo y si está al día con las
+// cuotas esperadas hasta hoy (se usa tanto en el detalle como en la galería).
+function resumenPagos(pagos, fechaInicio) {
+  const abonos = pagos?.abonos || [];
+  const pagado = abonos.reduce((s, a) => s + (Number(a.monto) || 0), 0);
+  const costoTotal = Number(pagos?.costo_total) || 0;
+  const cuota = Number(pagos?.cuota_mensual) || 0;
+  const saldo = costoTotal > 0 ? costoTotal - pagado : null;
+
+  // Cuotas que ya deberían estar cubiertas según los meses transcurridos.
+  let cuotasVencidas = null;
+  if (cuota > 0 && fechaInicio) {
+    const inicio = new Date(`${fechaInicio}T00:00:00`);
+    if (!isNaN(inicio.getTime())) {
+      const meses = Math.floor((Date.now() - inicio.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
+      const esperado = Math.min(costoTotal > 0 ? costoTotal : Infinity, Math.max(0, meses) * cuota);
+      cuotasVencidas = Math.max(0, Math.round(((esperado - pagado) / cuota) * 10) / 10);
+    }
+  }
+  return { pagado, costoTotal, cuota, saldo, cuotasVencidas, abonos };
+}
+
 // ─── COMPARADOR DESLIZANTE (antes/después con fotos reales del paciente) ─────
 // Arrastra el separador para revelar "después" sobre "antes" -- ambas son
 // fotos reales del paciente (no hay nada generado acá), solo una forma más
@@ -130,7 +172,7 @@ function ModalComparacionProgreso({ hito, inicio, comparado, filas, onClose }) {
 }
 
 // ─── DETALLE DE ORTODONCIA (un paciente ya en tratamiento) ───────────────────
-function OrtodonciaDetalle({ patient, clinicaId }) {
+function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
   const { isTablet } = useResponsive();
  // --- ESTADOS DE ORTODONCIA ---
   const [subTabOrto, setSubTabOrto] = useState('examen');
@@ -224,8 +266,9 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
   const handleSavePlanTrata = () => genericSaveOrto('plan_tratamiento', planTrataForm, setSavingTrata, setIsEditingOrtoTrata, 'Plan de Tratamiento');
   const handleSaveResumen = () => genericSaveOrto('resumen', resumenForm, setSavingResumen, setIsEditingOrtoResumen, 'Resumen');
 
-  // Guarda el objeto completo de fotografías de ortodoncia (mismo patrón sin-UNIQUE que genericSaveOrto)
-  const guardarFotografiasOrto = async (nuevoObjetoFotos) => {
+  // Guarda una sola columna del registro de ortodoncia, sin alertas ni bloqueos
+  // (mismo patrón sin-UNIQUE que genericSaveOrto: busca la fila, si no existe la crea).
+  const guardarColumnaOrto = async (columna, valor) => {
     const { data: existe, error: fetchError } = await supabase
       .from('ortodoncia')
       .select('id')
@@ -234,13 +277,15 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     if (fetchError) throw fetchError;
 
     if (existe) {
-      const { error } = await supabase.from('ortodoncia').update({ fotografias: nuevoObjetoFotos }).eq('id', existe.id);
+      const { error } = await supabase.from('ortodoncia').update({ [columna]: valor }).eq('id', existe.id);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from('ortodoncia').insert([{ paciente_id: patient.id, clinica_id: clinicaId, fotografias: nuevoObjetoFotos }]);
+      const { error } = await supabase.from('ortodoncia').insert([{ paciente_id: patient.id, clinica_id: clinicaId, [columna]: valor }]);
       if (error) throw error;
     }
   };
+
+  const guardarFotografiasOrto = (nuevoObjetoFotos) => guardarColumnaOrto('fotografias', nuevoObjetoFotos);
 
   // Extraído de handleUploadFotoOrto para poder reusarlo también desde las
   // casillas de "Inicio" en Progreso del Tratamiento (misma fuente de datos).
@@ -291,6 +336,11 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
       setResumenForm({});
       setFotosOrto({});
       setControles([]);
+      setBitacora([]);
+      setPagos(PAGOS_VACIO);
+      setNuevoControl(controlVacio());
+      setEditandoControl(null);
+      setNuevoAbono(abonoVacio());
 
       // 2. CERRAR CUALQUIER MODO EDICIÓN QUE HAYA QUEDADO ABIERTO
       setIsEditingOrtoExamen(false);
@@ -308,6 +358,8 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
           if (data.fotografias) setFotosOrto(data.fotografias);
           if (data.resumen) setResumenForm(data.resumen);
           if (data.controles) setControles(data.controles);
+          if (data.bitacora) setBitacora(data.bitacora);
+          if (data.pagos) setPagos({ ...PAGOS_VACIO, ...data.pagos });
         }
       };
       cargarDatosOrto();
@@ -447,18 +499,7 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     return () => { vivo = false; };
   }, [controles]);
 
-  const guardarControles = async (nuevosControles) => {
-    const { data: existe, error: fetchError } = await supabase
-      .from('ortodoncia').select('id').eq('paciente_id', patient.id).maybeSingle();
-    if (fetchError) throw fetchError;
-    if (existe) {
-      const { error } = await supabase.from('ortodoncia').update({ controles: nuevosControles }).eq('id', existe.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from('ortodoncia').insert([{ paciente_id: patient.id, clinica_id: clinicaId, controles: nuevosControles }]);
-      if (error) throw error;
-    }
-  };
+  const guardarControles = (nuevosControles) => guardarColumnaOrto('controles', nuevosControles);
 
   const subirFotoCasilla = async (hito, fila, file) => {
     if (!file) return;
@@ -512,7 +553,110 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
     try { await guardarControles(controles); } catch (err) { alert('Error al guardar la nota: ' + err.message); }
   };
 
-  const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Progreso del Tratamiento' }];
+  // --- CONTROLES MENSUALES (bitácora clínica: qué se hizo en cada cita) ------
+  // Aparte de las fotos por hito: acá se registra el procedimiento de cada
+  // control para que en la cita siguiente se sepa qué se hizo el mes anterior.
+  const [bitacora, setBitacora] = useState([]); // [{id, fecha, procedimiento, observaciones, proxima_cita}]
+  const [savingBitacora, setSavingBitacora] = useState(false);
+  const [nuevoControl, setNuevoControl] = useState(controlVacio());
+  const [editandoControl, setEditandoControl] = useState(null); // id en edición
+
+  const agregarControlMensual = async () => {
+    if (!nuevoControl.fecha) { alert('Indica la fecha del control.'); return; }
+    if (!nuevoControl.procedimiento.trim()) { alert('Describe qué se hizo en este control.'); return; }
+    setSavingBitacora(true);
+    try {
+      const entrada = {
+        id: editandoControl || `${Date.now()}`,
+        fecha: nuevoControl.fecha,
+        procedimiento: nuevoControl.procedimiento.trim(),
+        observaciones: nuevoControl.observaciones.trim(),
+        proxima_cita: nuevoControl.proxima_cita || '',
+      };
+      const sinLaEntrada = editandoControl ? bitacora.filter(b => b.id !== editandoControl) : bitacora;
+      // Más reciente primero: es el orden en que se lee una bitácora clínica.
+      const nueva = [...sinLaEntrada, entrada].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+      await guardarColumnaOrto('bitacora', nueva);
+      setBitacora(nueva);
+      setNuevoControl(controlVacio());
+      setEditandoControl(null);
+    } catch (err) {
+      alert('Error al guardar el control: ' + err.message);
+    } finally {
+      setSavingBitacora(false);
+    }
+  };
+
+  const editarControlMensual = (entrada) => {
+    setEditandoControl(entrada.id);
+    setNuevoControl({
+      fecha: entrada.fecha || '',
+      procedimiento: entrada.procedimiento || '',
+      observaciones: entrada.observaciones || '',
+      proxima_cita: entrada.proxima_cita || '',
+    });
+  };
+
+  const eliminarControlMensual = async (id) => {
+    if (!window.confirm('¿Eliminar este control de la bitácora?')) return;
+    try {
+      const nueva = bitacora.filter(b => b.id !== id);
+      await guardarColumnaOrto('bitacora', nueva);
+      setBitacora(nueva);
+      if (editandoControl === id) { setEditandoControl(null); setNuevoControl(controlVacio()); }
+    } catch (err) {
+      alert('Error al eliminar el control: ' + err.message);
+    }
+  };
+
+  // --- PAGOS (cuota mensual fija + extras) ----------------------------------
+  const [pagos, setPagos] = useState(PAGOS_VACIO);
+  const [savingAbono, setSavingAbono] = useState(false);
+  const [nuevoAbono, setNuevoAbono] = useState(abonoVacio());
+
+  const guardarConfigPagos = async (nuevosPagos) => {
+    try { await guardarColumnaOrto('pagos', nuevosPagos); } catch (err) { alert('Error al guardar los datos de pago: ' + err.message); }
+  };
+
+  const agregarAbono = async () => {
+    const monto = parseFloat(nuevoAbono.monto);
+    if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
+    if (!nuevoAbono.fecha) { alert('Indica la fecha del pago.'); return; }
+    setSavingAbono(true);
+    try {
+      const entrada = {
+        id: `${Date.now()}`,
+        fecha: nuevoAbono.fecha,
+        monto,
+        metodo: nuevoAbono.metodo,
+        concepto: nuevoAbono.concepto.trim(),
+        tipo: nuevoAbono.tipo,
+      };
+      const nuevosPagos = { ...pagos, abonos: [...(pagos.abonos || []), entrada].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')) };
+      await guardarColumnaOrto('pagos', nuevosPagos);
+      setPagos(nuevosPagos);
+      setNuevoAbono({ ...abonoVacio(), fecha: nuevoAbono.fecha });
+      onPagosActualizados?.(patient.id, nuevosPagos);
+    } catch (err) {
+      alert('Error al registrar el pago: ' + err.message);
+    } finally {
+      setSavingAbono(false);
+    }
+  };
+
+  const eliminarAbono = async (id) => {
+    if (!window.confirm('¿Eliminar este pago del historial?')) return;
+    try {
+      const nuevosPagos = { ...pagos, abonos: (pagos.abonos || []).filter(a => a.id !== id) };
+      await guardarColumnaOrto('pagos', nuevosPagos);
+      setPagos(nuevosPagos);
+      onPagosActualizados?.(patient.id, nuevosPagos);
+    } catch (err) {
+      alert('Error al eliminar el pago: ' + err.message);
+    }
+  };
+
+  const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Progreso del Tratamiento' }, { id: 'bitacora', lbl: 'Controles Mensuales' }, { id: 'pagos', lbl: 'Pagos' }];
   const ORTO_CAJAS = [{ key: 'Rx Panorámica', icon: '🦷', accept: 'image/*' }, { key: 'Rx Cefalométrica', icon: '📐', accept: 'image/*' }, { key: 'Rx Periapical', icon: '🔍', accept: 'image/*' }, { key: 'Foto frontal', icon: '😁', accept: 'image/*' }, { key: 'Foto lateral izquierda', icon: '📷', accept: 'image/*' }, { key: 'Foto lateral derecha', icon: '📸', accept: 'image/*' }, { key: 'Foto oclusal superior', icon: '👄', accept: 'image/*' }, { key: 'Foto oclusal inferior', icon: '👅', accept: 'image/*' }, { key: 'Modelo inicial', icon: '🧊', accept: 'image/*' }, { key: 'Plan de tratamiento', icon: '📄', accept: '.pdf,.ppt,.pptx,image/*' }];
 
   // Progreso del tratamiento: meses transcurridos desde la fecha inicial
@@ -1189,6 +1333,197 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
                   </div>
                 )}
 
+                {subTabOrto === 'bitacora' && (
+                  <div style={{ animation: 'fadeIn 0.3s ease', paddingBottom: 30 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', marginTop: '10px' }}>
+                      <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Controles Mensuales</h3>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>{bitacora.length} control{bitacora.length !== 1 ? 'es' : ''} registrado{bitacora.length !== 1 ? 's' : ''}</span>
+                    </div>
+
+                    {/* Lo primero que se necesita al atender: qué se hizo la vez anterior. */}
+                    {bitacora.length > 0 && (
+                      <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
+                        <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#0369a1', letterSpacing: 0.4, marginBottom: 6 }}>ÚLTIMO CONTROL · {fmtFecha(bitacora[0].fecha)}</div>
+                        <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 600, lineHeight: 1.5 }}>{bitacora[0].procedimiento}</div>
+                        {bitacora[0].observaciones && <div style={{ fontSize: '11px', color: '#475569', marginTop: 5, lineHeight: 1.5 }}>{bitacora[0].observaciones}</div>}
+                        {bitacora[0].proxima_cita && <div style={{ fontSize: '10.5px', color: '#0369a1', marginTop: 7, fontWeight: 700 }}>Próxima cita: {fmtFecha(bitacora[0].proxima_cita)}</div>}
+                      </div>
+                    )}
+
+                    <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>
+                        {editandoControl ? 'Editar control' : 'Registrar control del mes'}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '150px 1fr 150px', gap: '12px', marginBottom: '12px' }}>
+                        <div>
+                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Fecha del control</label>
+                          <input type="date" value={nuevoControl.fecha} onChange={e => setNuevoControl(p => ({ ...p, fecha: e.target.value }))} style={inputStyleDoc} />
+                        </div>
+                        <div>
+                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>¿Qué se hizo?</label>
+                          <input placeholder="Ej: cambio de ligas, activación de arco superior 016..." value={nuevoControl.procedimiento} onChange={e => setNuevoControl(p => ({ ...p, procedimiento: e.target.value }))} style={inputStyleDoc} />
+                        </div>
+                        <div>
+                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Próxima cita</label>
+                          <input type="date" value={nuevoControl.proxima_cita} onChange={e => setNuevoControl(p => ({ ...p, proxima_cita: e.target.value }))} style={inputStyleDoc} />
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: '14px' }}>
+                        <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Observaciones (opcional)</label>
+                        <textarea placeholder="Evolución, indicaciones al paciente, pendientes para el próximo control..." value={nuevoControl.observaciones} onChange={e => setNuevoControl(p => ({ ...p, observaciones: e.target.value }))} style={{ ...inputStyleDoc, height: '60px', resize: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={agregarControlMensual} disabled={savingBitacora} style={{ background: savingBitacora ? '#94a3b8' : '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '9px 20px', fontWeight: 700, fontSize: '11.5px', cursor: savingBitacora ? 'not-allowed' : 'pointer' }}>
+                          {savingBitacora ? 'Guardando...' : (editandoControl ? 'Guardar cambios' : '+ Agregar control')}
+                        </button>
+                        {editandoControl && (
+                          <button onClick={() => { setEditandoControl(null); setNuevoControl(controlVacio()); }} style={{ background: '#fff', color: '#64748b', border: `1px solid ${BD}`, borderRadius: '6px', padding: '9px 16px', fontWeight: 600, fontSize: '11.5px', cursor: 'pointer' }}>
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Historial de controles</div>
+                    {bitacora.length === 0 && (
+                      <div style={{ fontSize: '11.5px', color: '#94a3b8', padding: '24px 0', textAlign: 'center' }}>
+                        Todavía no hay controles registrados. Registra el primero para ir llevando mes a mes lo que se hace.
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {bitacora.map((b, i) => (
+                        <div key={b.id} style={{ display: 'flex', gap: '14px', background: '#fff', border: `1px solid ${BD}`, borderRadius: '10px', padding: '13px 15px' }}>
+                          <div style={{ width: 74, flexShrink: 0 }}>
+                            <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#0087b3' }}>{fmtFecha(b.fecha)}</div>
+                            <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: 2 }}>Control {bitacora.length - i}</div>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '11.5px', color: '#0f172a', fontWeight: 600, lineHeight: 1.5 }}>{b.procedimiento}</div>
+                            {b.observaciones && <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: 4, lineHeight: 1.5 }}>{b.observaciones}</div>}
+                            {b.proxima_cita && <div style={{ fontSize: '10px', color: '#0369a1', marginTop: 5, fontWeight: 600 }}>Próxima cita: {fmtFecha(b.proxima_cita)}</div>}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                            <button onClick={() => editarControlMensual(b)} title="Editar" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 2 }}>
+                              <Icon name="edit" size={13} />
+                            </button>
+                            <button onClick={() => eliminarControlMensual(b.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 2 }}>
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {subTabOrto === 'pagos' && (() => {
+                  const r = resumenPagos(pagos, fechaInicioTrata);
+                  return (
+                    <div style={{ animation: 'fadeIn 0.3s ease', paddingBottom: 30 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', marginTop: '10px' }}>
+                        <h3 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 700, margin: 0 }}>Pagos del tratamiento</h3>
+                        {r.cuotasVencidas !== null && (
+                          <span style={{
+                            fontSize: '10.5px', fontWeight: 700, padding: '4px 12px', borderRadius: 20,
+                            background: r.cuotasVencidas > 0.2 ? '#fee2e2' : '#dcfce7',
+                            color: r.cuotasVencidas > 0.2 ? '#dc2626' : '#16a34a',
+                          }}>
+                            {r.cuotasVencidas > 0.2 ? `Debe ${fmtSoles(r.cuotasVencidas * r.cuota)}` : 'Al día'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '22px' }}>
+                        {[
+                          { lbl: 'Costo total', val: r.costoTotal > 0 ? fmtSoles(r.costoTotal) : '—', col: '#0f172a' },
+                          { lbl: 'Cuota mensual', val: r.cuota > 0 ? fmtSoles(r.cuota) : '—', col: '#0087b3' },
+                          { lbl: 'Pagado', val: fmtSoles(r.pagado), col: '#16a34a' },
+                          { lbl: 'Saldo', val: r.saldo !== null ? fmtSoles(r.saldo) : '—', col: r.saldo > 0 ? '#dc2626' : '#16a34a' },
+                        ].map(s => (
+                          <div key={s.lbl} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '10px', padding: '12px 14px' }}>
+                            <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, letterSpacing: 0.3, marginBottom: 5 }}>{s.lbl.toUpperCase()}</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: s.col }}>{s.val}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '12px', padding: '16px', marginBottom: '22px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Condiciones del tratamiento</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: '14px' }}>
+                          <div>
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Costo total (S/)</label>
+                            <input type="number" min="0" step="0.01" placeholder="0.00" value={pagos.costo_total}
+                              onChange={e => setPagos(p => ({ ...p, costo_total: e.target.value }))}
+                              onBlur={() => guardarConfigPagos(pagos)} style={inputStyleDoc} />
+                          </div>
+                          <div>
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Cuota mensual fija (S/)</label>
+                            <input type="number" min="0" step="0.01" placeholder="0.00" value={pagos.cuota_mensual}
+                              onChange={e => setPagos(p => ({ ...p, cuota_mensual: e.target.value }))}
+                              onBlur={() => guardarConfigPagos(pagos)} style={inputStyleDoc} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Registrar pago</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '140px 130px 1fr 150px', gap: '12px', marginBottom: '12px' }}>
+                          <div>
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Fecha</label>
+                            <input type="date" value={nuevoAbono.fecha} onChange={e => setNuevoAbono(p => ({ ...p, fecha: e.target.value }))} style={inputStyleDoc} />
+                          </div>
+                          <div>
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Monto (S/)</label>
+                            <input type="number" min="0" step="0.01" placeholder="0.00" value={nuevoAbono.monto} onChange={e => setNuevoAbono(p => ({ ...p, monto: e.target.value }))} style={inputStyleDoc} />
+                          </div>
+                          <div>
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Tipo</label>
+                            <select value={nuevoAbono.tipo} onChange={e => setNuevoAbono(p => ({ ...p, tipo: e.target.value }))} style={inputStyleDoc}>
+                              <option value="cuota">Cuota mensual</option>
+                              <option value="extra">Extra / adicional</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Método</label>
+                            <select value={nuevoAbono.metodo} onChange={e => setNuevoAbono(p => ({ ...p, metodo: e.target.value }))} style={inputStyleDoc}>
+                              {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: '14px' }}>
+                          <label style={{ ...labelStyleDoc, marginBottom: 4 }}>Concepto {nuevoAbono.tipo === 'extra' ? '(qué extra se cobró)' : '(opcional)'}</label>
+                          <input placeholder={nuevoAbono.tipo === 'extra' ? 'Ej: reposición de bracket, aparato de contención...' : 'Ej: cuota de agosto'} value={nuevoAbono.concepto} onChange={e => setNuevoAbono(p => ({ ...p, concepto: e.target.value }))} style={inputStyleDoc} />
+                        </div>
+                        <button onClick={agregarAbono} disabled={savingAbono} style={{ background: savingAbono ? '#94a3b8' : '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', padding: '9px 20px', fontWeight: 700, fontSize: '11.5px', cursor: savingAbono ? 'not-allowed' : 'pointer' }}>
+                          {savingAbono ? 'Guardando...' : '+ Registrar pago'}
+                        </button>
+                      </div>
+
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Historial de pagos</div>
+                      {r.abonos.length === 0 && (
+                        <div style={{ fontSize: '11.5px', color: '#94a3b8', padding: '24px 0', textAlign: 'center' }}>Todavía no hay pagos registrados para este tratamiento.</div>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {r.abonos.map(a => (
+                          <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#fff', border: `1px solid ${BD}`, borderRadius: '10px', padding: '11px 15px' }}>
+                            <div style={{ width: 74, flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#475569' }}>{fmtFecha(a.fecha)}</div>
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#16a34a', width: 100, flexShrink: 0 }}>{fmtSoles(a.monto)}</div>
+                            <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: a.tipo === 'extra' ? '#fef3c7' : '#e0f2fe', color: a.tipo === 'extra' ? '#92400e' : '#0369a1', flexShrink: 0 }}>
+                              {a.tipo === 'extra' ? 'Extra' : 'Cuota'}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0, fontSize: '10.5px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {a.metodo}{a.concepto ? ` · ${a.concepto}` : ''}
+                            </div>
+                            <button onClick={() => eliminarAbono(a.id)} title="Eliminar pago" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', flexShrink: 0, padding: 2 }}>
+                              <Icon name="trash" size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {comparando && (
                   <ModalComparacionProgreso
                     hito={comparando}
@@ -1208,14 +1543,19 @@ function OrtodonciaDetalle({ patient, clinicaId }) {
   );
 }
 
-// ─── VISTA PRINCIPAL: directorio de pacientes en tratamiento ─────────────────
+// ─── VISTA PRINCIPAL: galería de pacientes en tratamiento ────────────────────
+// Dos momentos: primero la galería (foto + nombre + estado de pago de cada
+// paciente, más los ingresos del mes de toda la ortodoncia); al hacer click en
+// una tarjeta se abre el detalle con todas las secciones del paciente.
 export default function Ortodoncia({ clinicaId }) {
+  const { isTablet } = useResponsive();
   const [pacientesOrto, setPacientesOrto] = useState([]);
   const [todosPacientes, setTodosPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [seleccionado, setSeleccionado] = useState(null);
   const [showIniciar, setShowIniciar] = useState(false);
   const [busquedaIniciar, setBusquedaIniciar] = useState('');
+  const [busqueda, setBusqueda] = useState('');
   const [iniciando, setIniciando] = useState(false);
 
   useEffect(() => {
@@ -1223,14 +1563,29 @@ export default function Ortodoncia({ clinicaId }) {
     const cargarTodo = async () => {
       setLoading(true);
       const [{ data: ortoRows }, { data: pacientes }] = await Promise.all([
-        supabase.from('ortodoncia').select('id, paciente_id'),
+        supabase.from('ortodoncia').select('id, paciente_id, fotografias, pagos, plan_tratamiento, resumen'),
         supabase.from('pacientes').select('id, name, doc'),
       ]);
       if (!vivo) return;
+
       const pacientesPorId = Object.fromEntries((pacientes || []).map(p => [p.id, p]));
-      const conTratamiento = (ortoRows || [])
-        .map(o => (pacientesPorId[o.paciente_id] ? { ...pacientesPorId[o.paciente_id], ortodonciaId: o.id } : null))
-        .filter(Boolean);
+      // La foto de la tarjeta es la "Foto frontal" del expediente de ortodoncia
+      // (la misma que se ve en Fotografías y en el hito Inicio).
+      const conTratamiento = await Promise.all(
+        (ortoRows || [])
+          .filter(o => pacientesPorId[o.paciente_id])
+          .map(async (o) => {
+            const rutaFrontal = o.fotografias?.['Foto frontal']?.url;
+            return {
+              ...pacientesPorId[o.paciente_id],
+              ortodonciaId: o.id,
+              pagos: o.pagos || {},
+              fechaInicio: o.plan_tratamiento?.fecha_inicial || o.resumen?.fecha_inicial || '',
+              fotoFrontal: rutaFrontal ? await firmar(rutaFrontal) : null,
+            };
+          })
+      );
+      if (!vivo) return;
       setPacientesOrto(conTratamiento);
       setTodosPacientes(pacientes || []);
       setLoading(false);
@@ -1247,8 +1602,9 @@ export default function Ortodoncia({ clinicaId }) {
         .insert([{ paciente_id: paciente.id, clinica_id: clinicaId }])
         .select().single();
       if (error) throw error;
-      setPacientesOrto(prev => [...prev, { ...paciente, ortodonciaId: data.id }]);
-      setSeleccionado(paciente);
+      const nuevo = { ...paciente, ortodonciaId: data.id, pagos: {}, fechaInicio: '', fotoFrontal: null };
+      setPacientesOrto(prev => [...prev, nuevo]);
+      setSeleccionado(nuevo);
       setShowIniciar(false);
       setBusquedaIniciar('');
     } catch (err) {
@@ -1258,75 +1614,151 @@ export default function Ortodoncia({ clinicaId }) {
     }
   }, [clinicaId]);
 
+  // El detalle avisa cuando cambian los pagos para que los totales del mes de
+  // la galería no queden desactualizados hasta el próximo refresh.
+  const onPagosActualizados = useCallback((pacienteId, nuevosPagos) => {
+    setPacientesOrto(prev => prev.map(p => (p.id === pacienteId ? { ...p, pagos: nuevosPagos } : p)));
+  }, []);
+
   const disponibles = todosPacientes.filter(p =>
     !pacientesOrto.some(o => o.id === p.id) &&
     (normalizarTexto(p.name).includes(normalizarTexto(busquedaIniciar)) || (p.doc || '').includes(busquedaIniciar))
   );
 
-  return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 100px)', gap: 20, minHeight: 0, padding: 20, boxSizing: 'border-box' }}>
-      <aside style={{
-        width: 280, minWidth: 260, display: 'flex', flexDirection: 'column',
-        background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-        borderRadius: 14, border: GLASS_BORDER, boxShadow: GLASS_SHADOW, overflow: 'hidden', flexShrink: 0,
-      }}>
-        <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${BD}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: DN }}>En tratamiento</span>
+  const visibles = pacientesOrto.filter(p =>
+    normalizarTexto(p.name).includes(normalizarTexto(busqueda)) || (p.doc || '').includes(busqueda)
+  );
+
+  // Ingresos de ortodoncia: lo que se espera cobrar al mes (suma de cuotas
+  // fijas), lo efectivamente cobrado en el mes en curso, y el saldo total.
+  const ingresoMensualEstimado = pacientesOrto.reduce((s, p) => s + (Number(p.pagos?.cuota_mensual) || 0), 0);
+  const cobradoEsteMes = pacientesOrto.reduce((s, p) =>
+    s + (p.pagos?.abonos || []).filter(a => mismoMesQueHoy(a.fecha)).reduce((t, a) => t + (Number(a.monto) || 0), 0), 0);
+  const saldoPorCobrar = pacientesOrto.reduce((s, p) => {
+    const r = resumenPagos(p.pagos, p.fechaInicio);
+    return s + (r.saldo > 0 ? r.saldo : 0);
+  }, 0);
+
+  // ── MOMENTO 2: detalle completo del paciente ──
+  if (seleccionado) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', minHeight: 0 }}>
+        <div style={{ padding: '14px 24px 0', flexShrink: 0 }}>
           <button
-            onClick={() => setShowIniciar(true)}
-            title="Iniciar tratamiento de ortodoncia"
-            style={{ width: 28, height: 28, borderRadius: 8, background: P, color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setSeleccionado(null)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: '7px 14px', fontSize: 11.5, fontWeight: 700, color: DN, cursor: 'pointer' }}
           >
-            <Icon name="plus" size={13} />
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Volver a pacientes
           </button>
         </div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <OrtodonciaDetalle patient={seleccionado} clinicaId={clinicaId} onPagosActualizados={onPagosActualizados} />
+        </div>
+      </div>
+    );
+  }
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: 10 }}>
-          {loading && <div style={{ fontSize: 11.5, color: MU, textAlign: 'center', padding: 20 }}>Cargando...</div>}
-          {!loading && pacientesOrto.length === 0 && (
-            <div style={{ fontSize: 11.5, color: MU, textAlign: 'center', padding: '20px 10px' }}>
-              Ningún paciente en tratamiento todavía. Usa "+" para iniciar el de alguien.
-            </div>
-          )}
-          {pacientesOrto.map(p => {
-            const isSel = seleccionado?.id === p.id;
-            return (
-              <div
-                key={p.id}
-                onClick={() => setSeleccionado(p)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 10px', borderRadius: 10, cursor: 'pointer', marginBottom: 4,
-                  background: isSel ? P + '18' : 'transparent',
-                  border: `1px solid ${isSel ? P + '40' : 'transparent'}`,
-                }}
-              >
-                <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: isSel ? P : '#fff', color: isSel ? '#fff' : P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
-                  {ini(p.name)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-                  <div style={{ fontSize: 10.5, color: MU }}>DNI {p.doc || '---'}</div>
+  // ── MOMENTO 1: galería de pacientes ──
+  return (
+    <div style={{ padding: 24, boxSizing: 'border-box', height: 'calc(100vh - 100px)', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: DN }}>Pacientes en ortodoncia</div>
+          <div style={{ fontSize: 11, color: MU, marginTop: 2 }}>Selecciona un paciente para ver todo su tratamiento</div>
+        </div>
+        <button
+          onClick={() => setShowIniciar(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
+        >
+          <Icon name="plus" size={13} /> Iniciar tratamiento
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 22 }}>
+        {[
+          { lbl: 'En tratamiento', val: String(pacientesOrto.length), col: DN },
+          { lbl: 'Ingreso mensual estimado', val: fmtSoles(ingresoMensualEstimado), col: P },
+          { lbl: 'Cobrado este mes', val: fmtSoles(cobradoEsteMes), col: '#16a34a' },
+          { lbl: 'Saldo por cobrar', val: fmtSoles(saldoPorCobrar), col: saldoPorCobrar > 0 ? '#dc2626' : '#16a34a' },
+        ].map(s => (
+          <div key={s.lbl} style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 9.5, color: MU, fontWeight: 700, letterSpacing: 0.3, marginBottom: 6 }}>{s.lbl.toUpperCase()}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: s.col }}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {pacientesOrto.length > 0 && (
+        <input
+          placeholder="Buscar paciente por nombre o DNI..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          style={{ width: '100%', maxWidth: 340, padding: '9px 12px', borderRadius: 8, border: `1px solid ${BD}`, fontSize: 12, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }}
+        />
+      )}
+
+      {loading && <div style={{ fontSize: 12, color: MU, textAlign: 'center', padding: 40 }}>Cargando pacientes...</div>}
+
+      {!loading && pacientesOrto.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '50px 20px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 14 }}>
+          <Icon name="camera" size={34} color="#cbd5e1" />
+          <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginTop: 12, marginBottom: 5 }}>Ningún paciente en tratamiento</div>
+          <div style={{ fontSize: 11.5, color: MU }}>Usa "Iniciar tratamiento" para agregar el primero.</div>
+        </div>
+      )}
+
+      {!loading && pacientesOrto.length > 0 && visibles.length === 0 && (
+        <div style={{ fontSize: 11.5, color: MU, textAlign: 'center', padding: 30 }}>Ningún paciente coincide con la búsqueda.</div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? 'repeat(auto-fill, minmax(150px, 1fr))' : 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, paddingBottom: 30 }}>
+        {visibles.map(p => {
+          const r = resumenPagos(p.pagos, p.fechaInicio);
+          const atrasado = r.cuotasVencidas !== null && r.cuotasVencidas > 0.2;
+          return (
+            <div
+              key={p.id}
+              onClick={() => setSeleccionado(p)}
+              style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 14, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', transition: 'transform .15s, box-shadow .15s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 18px rgba(0,0,0,0.10)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)'; }}
+            >
+              <div style={{ aspectRatio: '1 / 1', background: p.fotoFrontal ? '#000' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {p.fotoFrontal ? (
+                  <img src={p.fotoFrontal} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#fff', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18 }}>
+                    {ini(p.name)}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: '11px 13px 13px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                <div style={{ fontSize: 10, color: MU, marginTop: 2 }}>DNI {p.doc || '---'}</div>
+                <div style={{ marginTop: 8 }}>
+                  {/* Solo se puede afirmar "Al día" si hay cuota mensual y fecha
+                      de inicio; con costo total pero sin cuota, lo honesto es
+                      mostrar el saldo en vez de un estado que no se sabe. */}
+                  {atrasado ? (
+                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>
+                      Debe {fmtSoles(r.cuotasVencidas * r.cuota)}
+                    </span>
+                  ) : r.cuotasVencidas !== null ? (
+                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>Al día</span>
+                  ) : r.saldo !== null ? (
+                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: r.saldo > 0 ? '#fef3c7' : '#dcfce7', color: r.saldo > 0 ? '#92400e' : '#16a34a' }}>
+                      {r.saldo > 0 ? `Saldo ${fmtSoles(r.saldo)}` : 'Pagado'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: '#f1f5f9', color: MU }}>Sin plan de pago</span>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-        {seleccionado ? (
-          <OrtodonciaDetalle patient={seleccionado} clinicaId={clinicaId} />
-        ) : (
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-            borderRadius: 14, border: GLASS_BORDER,
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 6 }}>Ortodoncia</div>
-            <div style={{ fontSize: 11.5, color: MU }}>Selecciona un paciente en tratamiento, o inicia uno nuevo con "+".</div>
-          </div>
-        )}
-      </main>
+            </div>
+          );
+        })}
+      </div>
 
       {showIniciar && (
         <Modal background="rgba(17,24,39,0.45)" overlayStyle={{ padding: 24 }}
