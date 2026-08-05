@@ -15,7 +15,7 @@ import {
   labelStyleDoc, inputStyleDoc, P, BD, DN, MU,
   GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW
 } from '../../utils/constants';
-import { ini, normalizarTexto } from '../../utils/helpers';
+import { ini, normalizarTexto, resumenPagosOrtodoncia } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar, firmarVarias, invalidarFirma } from '../../utils/storage';
 import { generarMiniatura, rutaMiniatura } from '../../utils/imagen';
@@ -100,28 +100,7 @@ const TIPOS_ABONO = [
 ];
 const tipoAbono = (id) => TIPOS_ABONO.find(t => t.id === id) || TIPOS_ABONO[1];
 
-// Resumen de pagos de un paciente. No hay un costo total pactado de antemano:
-// el histórico se va acumulando control a control (cuota inicial + cuotas
-// mensuales + extras), y lo adeudado se calcula contra lo que debería estar
-// cobrado a la fecha: la inicial una sola vez, más una cuota por mes cumplido.
-function resumenPagos(pagos, fechaInicio) {
-  const abonos = pagos?.abonos || [];
-  const acumulado = abonos.reduce((s, a) => s + (Number(a.monto) || 0), 0);
-  // `costo_total` es el nombre viejo del campo, se lee por compatibilidad.
-  const pagoInicial = Number(pagos?.pago_inicial || pagos?.costo_total) || 0;
-  const cuota = Number(pagos?.cuota_mensual) || 0;
-
-  let esperado = null, deuda = null, meses = null;
-  if (fechaInicio && (pagoInicial > 0 || cuota > 0)) {
-    const inicio = new Date(`${fechaInicio}T00:00:00`);
-    if (!isNaN(inicio.getTime())) {
-      meses = Math.max(0, Math.floor((Date.now() - inicio.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
-      esperado = pagoInicial + meses * cuota;
-      deuda = Math.max(0, esperado - acumulado);
-    }
-  }
-  return { acumulado, pagoInicial, cuota, esperado, deuda, meses, abonos };
-}
+const resumenPagos = resumenPagosOrtodoncia;
 
 // ─── COMPARADOR DESLIZANTE (antes/después con fotos reales del paciente) ─────
 // Arrastra el separador para revelar "después" sobre "antes" -- ambas son

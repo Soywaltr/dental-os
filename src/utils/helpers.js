@@ -1,5 +1,5 @@
 // src/utils/helpers.js
-import { MT, P, RJ, TOOLS } from './constants';
+import { MT, P, RJ, TOOLS, GL, AZ, WA, CAT_ACCENT } from './constants';
 
 export const normalizarTexto = (texto) => {
   if (!texto) return '';
@@ -63,6 +63,43 @@ export const estadoPaciente = (p) => {
   }
 
   return 'activo';
+};
+
+// Resumen de pagos de un tratamiento de ortodoncia. No hay un costo total
+// pactado de antemano: el histórico se va acumulando control a control (cuota
+// inicial + cuotas mensuales + extras), y lo adeudado se calcula contra lo que
+// debería estar cobrado a la fecha: la inicial una sola vez, más una cuota por
+// mes cumplido. Compartida entre Ortodoncia.jsx (detalle del paciente) y
+// Dashboard.jsx (deuda consolidada de toda la clínica).
+export const resumenPagosOrtodoncia = (pagos, fechaInicio) => {
+  const abonos = pagos?.abonos || [];
+  const acumulado = abonos.reduce((s, a) => s + (Number(a.monto) || 0), 0);
+  // `costo_total` es el nombre viejo del campo, se lee por compatibilidad.
+  const pagoInicial = Number(pagos?.pago_inicial || pagos?.costo_total) || 0;
+  const cuota = Number(pagos?.cuota_mensual) || 0;
+
+  let esperado = null, deuda = null, meses = null;
+  if (fechaInicio && (pagoInicial > 0 || cuota > 0)) {
+    const inicio = new Date(`${fechaInicio}T00:00:00`);
+    if (!isNaN(inicio.getTime())) {
+      meses = Math.max(0, Math.floor((Date.now() - inicio.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+      esperado = pagoInicial + meses * cuota;
+      deuda = Math.max(0, esperado - acumulado);
+    }
+  }
+  return { acumulado, pagoInicial, cuota, esperado, deuda, meses, abonos };
+};
+
+// Paleta categórica validada (contraste + separación CVD, ver utils/constants.js)
+// para identidad de tratamientos/categorías de gasto. El color se asigna por
+// hash del nombre, no por ranking, para que una misma categoría conserve
+// siempre el mismo color aunque cambie de posición o de vista (Reportes,
+// Dashboard). Orden fijo: nunca se cicla ni se reordena por valor.
+export const CAT_COLORS = [CAT_ACCENT, GL, AZ, WA, RJ];
+export const colorPorNombre = (name) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return CAT_COLORS[hash % CAT_COLORS.length];
 };
 
 export const getPreamble = (p) => {

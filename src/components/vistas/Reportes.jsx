@@ -3,20 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Stat from '../ui/Stat';
 import Icon from '../ui/Icon';
-import { BD, P, PD, GL, MU, DN, MT, WA, AZ, RJ, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
-import { sc, estadoPaciente } from '../../utils/helpers';
+import { BD, P, PD, MU, DN, MT, WA, AZ, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { sc, estadoPaciente, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
-// Paleta categórica validada (contraste + separación CVD) para identidad de tratamientos.
-// El color se asigna por hash del nombre, no por ranking, para que un tratamiento
-// conserve siempre el mismo color aunque cambie de posición.
-const CAT_COLORS = [CAT_ACCENT, GL, AZ, WA, RJ];
 const OTROS_COLOR = MU;
-const colorPorNombre = (name) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  return CAT_COLORS[hash % CAT_COLORS.length];
-};
 
 const parseFecha = (s) => {
   if (!s) return null;
