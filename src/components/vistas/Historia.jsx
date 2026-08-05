@@ -609,14 +609,26 @@ function AnamnesisSiNoDetalle({ label, value, detalle, onChange, onChangeDetalle
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
-export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId, clinica }) {
+export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId, clinica, setView }) {
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
-  
+
   useEffect(() => {
     setPatData(patient);
   }, [patient]);
-  
+
+  // El acceso directo a Ortodoncia solo se ofrece si el paciente ya tiene un
+  // tratamiento iniciado: mandarlo si no lo tiene lo dejaría en una sección
+  // donde no aparece, que es peor que no mostrar el botón.
+  const [tieneOrtodoncia, setTieneOrtodoncia] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    if (!patient?.id) return;
+    supabase.from('ortodoncia').select('id').eq('paciente_id', patient.id).maybeSingle()
+      .then(({ data }) => { if (vivo) setTieneOrtodoncia(!!data); });
+    return () => { vivo = false; };
+  }, [patient?.id]);
+
   
   // --- ESTADOS GENERALES DE HISTORIA ---
   const [isEditingFiliacion, setIsEditingFiliacion] = useState(false);
@@ -1180,6 +1192,16 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
           </span>
         )}
         <div style={{ textAlign: 'right' }}><div style={{ fontSize: 9, color: MU }}>Próx. cita</div><div style={{ fontSize: 12, fontWeight: 700, color: P }}>{patData?.nextVisit || '---'}</div></div>
+
+        {tieneOrtodoncia && (
+          <button
+            onClick={() => setView?.('ortodoncia', patData || patient)}
+            title={`Ver el tratamiento de ortodoncia de ${patData?.name || patient.name}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: P, border: `1px solid ${BD}`, borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+          >
+            <Icon name="tooth" size={13} /> Ortodoncia
+          </button>
+        )}
 
         <button onClick={saveAllToCloud} style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
           <Icon name="save" size={13} /> {saving ? 'Guardando...' : 'Guardar en Nube'}

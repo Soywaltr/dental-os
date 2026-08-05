@@ -681,9 +681,15 @@ const ViewRouter = memo(({ state, dispatch, clinicaId, clinica, clinicaRol, clin
     refrescarClinica,
   };
 
-  // 3. Props específicas para el Expediente Clínico (Historia)
+  // 3. Vistas que pueden abrirse "en" un paciente concreto: reciben con quién
+  // las abrieron, para no obligar a buscarlo de nuevo a mano. Ortodoncia e
+  // Historial se enlazan mutuamente con esto.
+  if (currentViewKey === "expediente" || currentViewKey === "ortodoncia") {
+    viewProps.patient = state.selectedPat;
+  }
+
+  // 4. Props específicas del Expediente Clínico (Historia)
   if (currentViewKey === "expediente") {
-    viewProps.patient            = state.selectedPat; // ¡ESTE ERA EL DATO FALTANTE CRÍTICO!
     viewProps.teeth              = state.teeth;
     viewProps.setTeeth           = setTeeth;
     viewProps.teethEvolucion     = state.teethEvolucion;

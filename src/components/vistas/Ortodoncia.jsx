@@ -1718,12 +1718,14 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 // Dos momentos: primero la galería (foto + nombre + estado de pago de cada
 // paciente, más los ingresos del mes de toda la ortodoncia); al hacer click en
 // una tarjeta se abre el detalle con todas las secciones del paciente.
-export default function Ortodoncia({ clinicaId, setView }) {
+export default function Ortodoncia({ clinicaId, setView, patient }) {
   const { isTablet } = useResponsive();
   const [pacientesOrto, setPacientesOrto] = useState([]);
   const [todosPacientes, setTodosPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [seleccionado, setSeleccionado] = useState(null);
+  // `undefined` = todavía no eligió nada acá (vale el paciente con el que
+  // abrieron la vista, si vino uno); `null` = volvió a propósito a la galería.
+  const [seleccionado, setSeleccionado] = useState(undefined);
   const [showIniciar, setShowIniciar] = useState(false);
   const [busquedaIniciar, setBusquedaIniciar] = useState('');
   const [busqueda, setBusqueda] = useState('');
@@ -1823,8 +1825,15 @@ export default function Ortodoncia({ clinicaId, setView }) {
   // de nuevo a mano cuando hace falta ver su historia odontológica completa.
   const irAHistoriaClinica = (paciente) => setView?.('expediente', paciente);
 
+  // Si llegaron acá desde el botón "Ortodoncia" del Historial, se abre directo
+  // su tratamiento. Se resuelve contra `pacientesOrto` porque las tarjetas
+  // llevan datos que la otra vista no tiene (pagos, fecha de inicio, foto).
+  const pacienteActivo = seleccionado !== undefined
+    ? seleccionado
+    : (patient?.id ? pacientesOrto.find(p => p.id === patient.id) ?? null : null);
+
   // ── MOMENTO 2: detalle completo del paciente ──
-  if (seleccionado) {
+  if (pacienteActivo) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', minHeight: 0 }}>
         <div style={{ padding: '14px 24px 0', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -1836,8 +1845,8 @@ export default function Ortodoncia({ clinicaId, setView }) {
             Volver a pacientes
           </button>
           <button
-            onClick={() => irAHistoriaClinica(seleccionado)}
-            title={`Abrir la historia odontológica de ${seleccionado.name} en Historial`}
+            onClick={() => irAHistoriaClinica(pacienteActivo)}
+            title={`Abrir la historia odontológica de ${pacienteActivo.name} en Historial`}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: '7px 14px', fontSize: 11.5, fontWeight: 700, color: P, cursor: 'pointer' }}
           >
             <Icon name="document" size={13} />
@@ -1845,7 +1854,7 @@ export default function Ortodoncia({ clinicaId, setView }) {
           </button>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <OrtodonciaDetalle patient={seleccionado} clinicaId={clinicaId} onPacienteActualizado={onPacienteActualizado} />
+          <OrtodonciaDetalle patient={pacienteActivo} clinicaId={clinicaId} onPacienteActualizado={onPacienteActualizado} />
         </div>
       </div>
     );
