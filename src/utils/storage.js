@@ -28,6 +28,9 @@ export const rutaImagenPaciente = (clinicaId, pacienteId, nombreArchivo) =>
 export const rutaFotoOrto = (clinicaId, pacienteId, nombreArchivo) =>
   `${clinicaId}/ortodoncia/${pacienteId}-${Date.now()}.${extensionDe(nombreArchivo)}`;
 
+export const rutaComprobante = (clinicaId, pacienteId, nombreArchivo) =>
+  `${clinicaId}/comprobantes/${pacienteId}-${Date.now()}.${extensionDe(nombreArchivo, 'pdf')}`;
+
 // Deriva la ruta dentro del bucket a partir de una URL pública guardada.
 // Hace falta para borrar: antes se usaba `url.split('/').pop()`, que devuelve
 // solo el último segmento — con rutas anidadas el borrado fallaba en silencio y

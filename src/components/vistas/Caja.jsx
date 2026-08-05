@@ -8,6 +8,7 @@ import Modal from '../ui/Modal';
 import Icon from '../ui/Icon';
 import { BD, P, GL, MU, DN, MT, LT, WA, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { sc } from '../../utils/helpers';
+import { BUCKET, rutaComprobante, firmar } from '../../utils/storage';
 
 const METODOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
 const CATEGORIAS_GASTO = ['Materiales', 'Laboratorio', 'Servicios', 'Sueldos', 'Otros'];
@@ -59,8 +60,9 @@ export default function Caja({ clinicaId }) {
   const [savingGasto, setSavingGasto] = useState(false);
 
   const [expandidosPacientes, setExpandidosPacientes] = useState(new Set());
-  const [emitirDraft, setEmitirDraft] = useState(null); // { patientId, tipo, grupos, monto }
+  const [emitirDraft, setEmitirDraft] = useState(null); // { patientId, tipo, grupos, monto, serie, numero, fecha, archivoFile, archivoExistente }
   const [copiado, setCopiado] = useState(false);
+  const [savingComprobante, setSavingComprobante] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
@@ -93,8 +95,68 @@ export default function Caja({ clinicaId }) {
 
   const abrirEmitir = (patientId, grupos) => {
     const monto = grupos.reduce((s, g) => s + g.cost, 0);
-    setEmitirDraft({ patientId, tipo: 'boleta', grupos, monto: String(monto) });
+    // Si es un solo tratamiento y ya tiene comprobante guardado, se precarga
+    // para poder verlo o corregirlo -- si son varios, siempre se parte en blanco.
+    const existente = grupos.length === 1 ? grupos[0].comprobante : null;
+    setEmitirDraft({
+      patientId, grupos, monto: String(monto),
+      tipo: existente?.tipo || 'boleta',
+      serie: existente?.serie || '',
+      numero: existente?.numero || '',
+      fecha: existente?.fecha || hoyISO(),
+      archivoFile: null,
+      archivoExistente: existente?.archivo || null,
+    });
     setCopiado(false);
+  };
+
+  const verComprobante = async (path) => {
+    const url = await firmar(path);
+    if (url) window.open(url, '_blank', 'noopener');
+    else alert('No se pudo abrir el archivo adjunto.');
+  };
+
+  const guardarComprobante = async () => {
+    const d = emitirDraft;
+    const serie = d.serie.trim();
+    const numero = d.numero.trim();
+    if (!serie && !numero && !d.archivoFile && !d.archivoExistente) {
+      alert('Ingresa la serie y número del comprobante, o adjunta el archivo emitido en SUNAT.');
+      return;
+    }
+    setSavingComprobante(true);
+    try {
+      let archivo = d.archivoExistente;
+      if (d.archivoFile) {
+        const ruta = rutaComprobante(clinicaId, d.patientId, d.archivoFile.name);
+        const { error: upErr } = await supabase.storage.from(BUCKET).upload(ruta, d.archivoFile);
+        if (upErr) throw upErr;
+        archivo = ruta;
+      }
+      const comprobante = { tipo: d.tipo, serie, numero, fecha: d.fecha, archivo };
+      const idsCubiertos = new Set(d.grupos.flatMap(g => g.items.map(i => i.id)));
+
+      const itemsDelPaciente = facturas.filter(f => String(f.patient_id) === String(d.patientId));
+      const planActualizado = itemsDelPaciente.map(f => {
+        const rest = { ...f };
+        delete rest.patient_id;
+        return idsCubiertos.has(rest.id) ? { ...rest, comprobante } : rest;
+      });
+
+      const { error } = await supabase.from('historias').upsert({ patient_id: d.patientId, clinica_id: clinicaId, plan_tratamiento: planActualizado }, { onConflict: 'patient_id' });
+      if (error) throw error;
+
+      setFacturas(prev => prev.map(f => {
+        if (String(f.patient_id) !== String(d.patientId)) return f;
+        const actualizado = planActualizado.find(x => String(x.id) === String(f.id));
+        return actualizado ? { ...actualizado, patient_id: f.patient_id } : f;
+      }));
+      setEmitirDraft(null);
+    } catch (err) {
+      alert('Error al guardar el comprobante: ' + err.message);
+    } finally {
+      setSavingComprobante(false);
+    }
   };
 
   const textoParaCopiar = (d) => {
@@ -227,6 +289,9 @@ export default function Caja({ clinicaId }) {
       toothLabel: g.teeth.length > 0 ? g.teeth.join(', ') : '—',
       metodo: g.metodos.size === 1 ? [...g.metodos][0] : (g.metodos.size > 1 ? 'Mixto' : null),
       status: g.items.every(i => i.status === 'completado') ? 'completado' : (g.items.some(i => i.status === 'pendiente') ? 'pendiente' : 'en_curso'),
+      // El comprobante se guarda por ítem (un mismo documento puede cubrir
+      // varias piezas emitidas juntas); alcanza con el del primero que lo tenga.
+      comprobante: g.items.find(i => i.comprobante)?.comprobante || null,
     }))
     .sort((a, b) => nombrePaciente(a.patient_id).localeCompare(nombrePaciente(b.patient_id)) || String(b.date).localeCompare(String(a.date)));
 
@@ -250,6 +315,7 @@ export default function Caja({ clinicaId }) {
       ...p,
       saldo: p.cost - p.paid,
       estado: p.grupos.every(g => g.status === 'completado') ? 'completado' : (p.grupos.some(g => g.status === 'pendiente') ? 'pendiente' : 'en_curso'),
+      comprobantesEmitidos: p.grupos.filter(g => g.comprobante).length,
     }))
     .sort((a, b) => nombrePaciente(a.patient_id).localeCompare(nombrePaciente(b.patient_id)));
 
@@ -300,12 +366,17 @@ export default function Caja({ clinicaId }) {
                       <div style={{ fontSize: 13, fontWeight: 700, color: p.saldo > 0 ? RJ : WA }}>S/{p.saldo.toLocaleString()}</div>
                     </div>
                     <Badge bg={b.bg} color={b.c} style={{ fontSize: 9, padding: '3px 9px', flexShrink: 0 }}>{p.estado}</Badge>
-                    <button
-                      onClick={e => { e.stopPropagation(); abrirEmitir(p.patient_id, p.grupos); }}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff', border: `1px solid ${BD}`, borderRadius: 7, padding: '6px 12px', fontSize: 10.5, fontWeight: 700, color: P, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
-                      <Icon name="document" size={11} /> Emitir comprobante
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); abrirEmitir(p.patient_id, p.grupos); }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff', border: `1px solid ${BD}`, borderRadius: 7, padding: '6px 12px', fontSize: 10.5, fontWeight: 700, color: P, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        <Icon name="document" size={11} /> Emitir comprobante
+                      </button>
+                      {p.comprobantesEmitidos > 0 && (
+                        <span style={{ fontSize: 9, color: '#16a34a', fontWeight: 600 }}>{p.comprobantesEmitidos}/{p.grupos.length} emitidos</span>
+                      )}
+                    </div>
                   </div>
 
                   {abierto && (
@@ -328,7 +399,16 @@ export default function Caja({ clinicaId }) {
                                 <td style={{ padding: '8px 12px' }}><Badge bg={bg.bg} color={bg.c} style={{ fontSize: 9, padding: '2px 8px' }}>{g.status}</Badge></td>
                                 <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
                                   {saldoG > 0 && <span onClick={() => irAPagar(g)} style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600, marginRight: 12 }}>registrar pago →</span>}
-                                  <span onClick={() => abrirEmitir(p.patient_id, [g])} style={{ fontSize: 10, color: MU, cursor: 'pointer', fontWeight: 600 }}>emitir →</span>
+                                  {g.comprobante ? (
+                                    <span onClick={() => abrirEmitir(p.patient_id, [g])} style={{ fontSize: 10, color: '#16a34a', cursor: 'pointer', fontWeight: 700, marginRight: g.comprobante.archivo ? 10 : 0 }}>
+                                      {g.comprobante.tipo === 'rxh' ? 'RxH' : 'Boleta'}{(g.comprobante.serie || g.comprobante.numero) ? ` ${g.comprobante.serie}${g.comprobante.numero ? '-' + g.comprobante.numero : ''}` : ' guardada'}
+                                    </span>
+                                  ) : (
+                                    <span onClick={() => abrirEmitir(p.patient_id, [g])} style={{ fontSize: 10, color: MU, cursor: 'pointer', fontWeight: 600, marginRight: g.comprobante?.archivo ? 10 : 0 }}>emitir →</span>
+                                  )}
+                                  {g.comprobante?.archivo && (
+                                    <span onClick={() => verComprobante(g.comprobante.archivo)} style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600 }}>ver</span>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -536,12 +616,51 @@ export default function Caja({ clinicaId }) {
               {GUIA_SOL[emitirDraft.tipo]} La ruta exacta del menú puede variar según cómo esté configurado tu RUC en SUNAT; si no la encuentras igual, usa el buscador dentro de SOL.
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
               <Button variant="secondary" onClick={() => copiarDatos(textoParaCopiar(emitirDraft))} style={{ flex: 1, padding: 10, fontSize: 11.5 }}>
                 {copiado ? '✓ Copiado' : 'Copiar datos'}
               </Button>
               <Button onClick={() => window.open(SOL_LOGIN_URL, '_blank', 'noopener')} style={{ flex: 1, padding: 10, fontSize: 11.5 }}>
                 Abrir SUNAT SOL ↗
+              </Button>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${BD}`, paddingTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: DN, marginBottom: 4 }}>Ya lo emitiste en SUNAT? Guárdalo aquí</div>
+              <div style={{ fontSize: 10, color: MU, marginBottom: 12 }}>Queda asociado a este tratamiento, para tener el registro sin volver a entrar a SOL.</div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div>
+                  <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Serie</label>
+                  <input placeholder="E001" value={emitirDraft.serie} onChange={e => setEmitirDraft(d => ({ ...d, serie: e.target.value }))}
+                    style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Número</label>
+                  <input placeholder="749" value={emitirDraft.numero} onChange={e => setEmitirDraft(d => ({ ...d, numero: e.target.value }))}
+                    style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Fecha</label>
+                  <input type="date" value={emitirDraft.fecha} onChange={e => setEmitirDraft(d => ({ ...d, fecha: e.target.value }))}
+                    style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Adjuntar comprobante (PDF o imagen, opcional)</label>
+                {emitirDraft.archivoExistente && !emitirDraft.archivoFile && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 10.5, color: '#16a34a' }}>
+                    <Icon name="document" size={12} /> Ya hay un archivo guardado
+                    <span onClick={() => verComprobante(emitirDraft.archivoExistente)} style={{ color: P, cursor: 'pointer', fontWeight: 600 }}>ver</span>
+                  </div>
+                )}
+                <input type="file" accept="application/pdf,image/*" onChange={e => setEmitirDraft(d => ({ ...d, archivoFile: e.target.files?.[0] || null }))}
+                  style={{ fontSize: 11 }} />
+              </div>
+
+              <Button onClick={guardarComprobante} disabled={savingComprobante} style={{ width: '100%', padding: 10, fontSize: 11.5, background: '#16a34a' }}>
+                {savingComprobante ? 'Guardando...' : 'Guardar comprobante'}
               </Button>
             </div>
           </div>
