@@ -113,6 +113,32 @@ const PATHS = {
       <circle cx="12" cy="13" r="4" />
     </>
   ),
+  // Radiografías: marco de escaneo con la línea del haz.
+  scan: (
+    <>
+      <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+      <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+      <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+      <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+      <line x1="7" y1="12" x2="17" y2="12" />
+    </>
+  ),
+  tooth: (
+    <path d="M12 3C9.2 3 7 4.9 7 7.6c0 1.4.3 2.5.6 3.6.4 1.5.4 2.6.4 4.3 0 2.3.5 5.5 1.7 5.5 1 0 1.1-3 1.6-3s.6 3 1.6 3c1.2 0 1.7-3.2 1.7-5.5 0-1.7 0-2.8.4-4.3.3-1.1.6-2.2.6-3.6C17 4.9 14.8 3 12 3Z" />
+  ),
+  user: (
+    <>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </>
+  ),
+  cube: (
+    <>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+      <polyline points="3.3 7 12 12 20.7 7" />
+      <line x1="12" y1="22" x2="12" y2="12" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 14, color = 'currentColor', strokeWidth = 2, style }) {

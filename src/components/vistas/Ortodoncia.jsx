@@ -23,6 +23,63 @@ import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar } from '../../utils/storage'
 // entre la caja general y los pagos de ortodoncia.
 const METODOS_PAGO = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
 
+// Casilleros de Fotografías, agrupados por tipo de registro. Todos escriben en
+// las mismas claves de `ortodoncia.fotografias`, así que agregar un grupo no
+// migra nada: los casilleros nuevos simplemente aparecen vacíos.
+const CLAVE_FOTO_PERFIL = 'Foto de perfil';
+
+const ORTO_GRUPOS_FOTOS = [
+  {
+    titulo: 'Radiografías',
+    cajas: [
+      { key: 'Rx Panorámica', icon: 'scan', accept: 'image/*' },
+      { key: 'Rx Cefalométrica', icon: 'scan', accept: 'image/*' },
+      { key: 'Rx Periapical', icon: 'scan', accept: 'image/*' },
+    ],
+  },
+  {
+    titulo: 'Fotos intraorales',
+    cajas: [
+      { key: 'Foto frontal', icon: 'tooth', accept: 'image/*' },
+      { key: 'Foto lateral izquierda', icon: 'tooth', accept: 'image/*' },
+      { key: 'Foto lateral derecha', icon: 'tooth', accept: 'image/*' },
+      { key: 'Foto oclusal superior', icon: 'tooth', accept: 'image/*' },
+      { key: 'Foto oclusal inferior', icon: 'tooth', accept: 'image/*' },
+    ],
+  },
+  {
+    titulo: 'Fotos de estudio (extraorales)',
+    cajas: [
+      { key: CLAVE_FOTO_PERFIL, icon: 'user', accept: 'image/*', nota: 'Es la foto que se ve en la ficha del paciente' },
+      { key: 'Frontal en reposo', icon: 'user', accept: 'image/*' },
+      { key: 'Frontal sonriendo', icon: 'user', accept: 'image/*' },
+      { key: 'Perfil derecho', icon: 'user', accept: 'image/*' },
+      { key: 'Perfil izquierdo', icon: 'user', accept: 'image/*' },
+      { key: 'Tres cuartos derecho', icon: 'user', accept: 'image/*' },
+      { key: 'Tres cuartos izquierdo', icon: 'user', accept: 'image/*' },
+      { key: 'Sonrisa de cerca', icon: 'user', accept: 'image/*' },
+    ],
+  },
+  {
+    titulo: 'Otros documentos',
+    cajas: [
+      { key: 'Modelo inicial', icon: 'cube', accept: 'image/*' },
+      { key: 'Plan de tratamiento', icon: 'document', accept: '.pdf,.ppt,.pptx,image/*' },
+    ],
+  },
+];
+
+// La foto de la ficha: la elegida a mano si existe, y si no la mejor extraoral
+// disponible antes de caer a las iniciales.
+const rutaFotoFicha = (fotografias) => {
+  const orden = [CLAVE_FOTO_PERFIL, 'Frontal sonriendo', 'Frontal en reposo', 'Tres cuartos derecho'];
+  for (const clave of orden) {
+    const url = fotografias?.[clave]?.url;
+    if (url) return url;
+  }
+  return null;
+};
+
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 const fmtFecha = (s) => { if (!s) return '—'; const d = new Date(`${s}T00:00:00`); return isNaN(d.getTime()) ? s : d.toLocaleDateString('es-PE'); };
 const fmtSoles = (n) => `S/${(Number(n) || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -172,7 +229,7 @@ function ModalComparacionProgreso({ hito, inicio, comparado, filas, onClose }) {
 }
 
 // ─── DETALLE DE ORTODONCIA (un paciente ya en tratamiento) ───────────────────
-function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
+function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   const { isTablet } = useResponsive();
  // --- ESTADOS DE ORTODONCIA ---
   const [subTabOrto, setSubTabOrto] = useState('examen');
@@ -325,6 +382,18 @@ function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
       setSavingFotosOrto(false);
     }
   };
+
+  // Mantiene sincronizada la foto de la ficha en la galería, sin importar si
+  // cambió por una subida, un reemplazo o un borrado.
+  useEffect(() => {
+    let vivo = true;
+    const ruta = rutaFotoFicha(fotosOrto);
+    (async () => {
+      const url = ruta ? await firmar(ruta) : null;
+      if (vivo) onPacienteActualizado?.(patient.id, { fotoPerfil: url });
+    })();
+    return () => { vivo = false; };
+  }, [fotosOrto, patient.id, onPacienteActualizado]);
 
   // ⚡ CARGA Y BARRIDO DE MEMORIA DE ORTODONCIA ⚡
   useEffect(() => {
@@ -636,7 +705,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
       await guardarColumnaOrto('pagos', nuevosPagos);
       setPagos(nuevosPagos);
       setNuevoAbono({ ...abonoVacio(), fecha: nuevoAbono.fecha });
-      onPagosActualizados?.(patient.id, nuevosPagos);
+      onPacienteActualizado?.(patient.id, { pagos: nuevosPagos });
     } catch (err) {
       alert('Error al registrar el pago: ' + err.message);
     } finally {
@@ -650,14 +719,13 @@ function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
       const nuevosPagos = { ...pagos, abonos: (pagos.abonos || []).filter(a => a.id !== id) };
       await guardarColumnaOrto('pagos', nuevosPagos);
       setPagos(nuevosPagos);
-      onPagosActualizados?.(patient.id, nuevosPagos);
+      onPacienteActualizado?.(patient.id, { pagos: nuevosPagos });
     } catch (err) {
       alert('Error al eliminar el pago: ' + err.message);
     }
   };
 
   const ORTO_TABS = [{ id: 'examen', lbl: 'Examen clínico' }, { id: 'trabajo', lbl: 'Plan de Trabajo' }, { id: 'tratamiento', lbl: 'Plan de tratamiento' }, { id: 'resumen', lbl: 'Resumen' }, { id: 'fotografias', lbl: 'Fotografías' }, { id: 'controles', lbl: 'Progreso del Tratamiento' }, { id: 'bitacora', lbl: 'Controles Mensuales' }, { id: 'pagos', lbl: 'Pagos' }];
-  const ORTO_CAJAS = [{ key: 'Rx Panorámica', icon: '🦷', accept: 'image/*' }, { key: 'Rx Cefalométrica', icon: '📐', accept: 'image/*' }, { key: 'Rx Periapical', icon: '🔍', accept: 'image/*' }, { key: 'Foto frontal', icon: '😁', accept: 'image/*' }, { key: 'Foto lateral izquierda', icon: '📷', accept: 'image/*' }, { key: 'Foto lateral derecha', icon: '📸', accept: 'image/*' }, { key: 'Foto oclusal superior', icon: '👄', accept: 'image/*' }, { key: 'Foto oclusal inferior', icon: '👅', accept: 'image/*' }, { key: 'Modelo inicial', icon: '🧊', accept: 'image/*' }, { key: 'Plan de tratamiento', icon: '📄', accept: '.pdf,.ppt,.pptx,image/*' }];
 
   // Progreso del tratamiento: meses transcurridos desde la fecha inicial
   // (Plan de tratamiento o Resumen, la que exista) contra el tiempo estimado.
@@ -668,6 +736,9 @@ function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
     : 0;
   const progresoPct = tiempoEstimadoMeses > 0 ? Math.min(100, (mesesTranscurridos / tiempoEstimadoMeses) * 100) : null;
   const inicioTieneFotos = FILAS_PROGRESO.some(fila => !!fotosOrtoFirmadas[FILA_A_CAJA_FOTO[fila]]);
+  // Misma prioridad que rutaFotoFicha, pero sobre las URLs ya firmadas.
+  const fotoFichaFirmada = [CLAVE_FOTO_PERFIL, 'Frontal sonriendo', 'Frontal en reposo', 'Tres cuartos derecho']
+    .map(clave => fotosOrtoFirmadas[clave]?.urlFirmada).find(Boolean) || null;
   const hitosProgresoConFotos = HITOS_PROGRESO.filter(h =>
     h === 'Inicio' ? inicioTieneFotos : controles.some(c => c.hito === h && Object.keys(c.fotos || {}).length > 0)
   );
@@ -679,9 +750,23 @@ function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
 
               <div style={{ padding: '18px 24px', background: 'linear-gradient(135deg, #0f172a 0%, #0087b3 100%)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
-                    {ini(patient.name)}
-                  </div>
+                  {/* La foto de perfil se cambia desde acá mismo: escribe en la
+                      misma casilla "Foto de perfil" de la pestaña Fotografías. */}
+                  <label
+                    title={savingFotosOrto ? 'Subiendo...' : 'Cambiar foto de perfil'}
+                    style={{ position: 'relative', width: 48, height: 48, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0, overflow: 'hidden', cursor: savingFotosOrto ? 'wait' : 'pointer' }}
+                    onMouseEnter={e => { const o = e.currentTarget.querySelector('[data-overlay]'); if (o) o.style.opacity = 1; }}
+                    onMouseLeave={e => { const o = e.currentTarget.querySelector('[data-overlay]'); if (o) o.style.opacity = 0; }}
+                  >
+                    {fotoFichaFirmada
+                      ? <img src={fotoFichaFirmada} alt={patient.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : ini(patient.name)}
+                    <span data-overlay style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity .15s' }}>
+                      <Icon name="camera" size={16} color="#fff" />
+                    </span>
+                    <input type="file" accept="image/*" style={{ display: 'none' }} disabled={savingFotosOrto}
+                      onChange={e => handleUploadFotoOrto(e, CLAVE_FOTO_PERFIL)} />
+                  </label>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{patient.name}</div>
                     <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.75)' }}>
@@ -1196,55 +1281,73 @@ function OrtodonciaDetalle({ patient, clinicaId, onPagosActualizados }) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px', paddingBottom: '40px' }}>
-                      {ORTO_CAJAS.map(item => {
-                        // fotosOrtoFirmadas trae la urlFirmada para mostrar;
-                        // fileData.url sigue siendo el localizador para borrar.
-                        const fileData = fotosOrtoFirmadas[item.key];
-                        const hasFile = !!fileData;
-
-                        return (
-                          <div key={item.key} style={{ background: '#fff', border: `1px solid ${hasFile ? '#0087b3' : '#e2e8f0'}`, borderRadius: '12px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: hasFile ? '0 4px 6px rgba(0,135,179,0.1)' : '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }}>
-                            {hasFile && isEditingOrtoFotos && (
-                              <button onClick={() => handleDeleteFotoOrto(item.key, fileData.url)} style={{ position: 'absolute', top: 8, right: 8, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, fontSize: 11, fontWeight: 'bold', cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} title="Eliminar">✕</button>
-                            )}
-
-                            <div style={{ height: '140px', background: hasFile ? '#000' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                              {hasFile ? (
-                                fileData.ext.match(/(pdf|ppt|pptx)/i) ? (
-                                  <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                                    <Icon name="document" size={40} />
-                                    <span style={{ fontSize: '10px', color: '#cbd5e1' }}>Abrir {fileData.ext.toUpperCase()}</span>
-                                  </a>
-                                ) : (
-                                  <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%', display: 'block' }}>
-                                    <img src={fileData.urlFirmada} alt={item.key} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                  </a>
-                                )
-                              ) : (
-                                <div style={{ fontSize: '50px', opacity: 0.3, filter: 'grayscale(100%)' }}>{item.icon}</div>
-                              )}
-
-                              {!hasFile && isEditingOrtoFotos && (
-                                <label style={{ position: 'absolute', inset: 0, cursor: savingFotosOrto ? 'not-allowed' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'all 0.2s', background: 'rgba(241, 245, 249, 0.9)' }}
-                                  onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#0087b3', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '8px', boxShadow: '0 4px 6px rgba(0,135,179,0.3)' }}>+</div>
-                                  <span style={{ fontSize: '12px', color: '#0087b3', fontWeight: 700 }}>Subir {item.key}</span>
-                                  <input type="file" accept={item.accept} style={{ display: 'none' }} disabled={savingFotosOrto} onChange={e => handleUploadFotoOrto(e, item.key)} />
-                                </label>
-                              )}
-                            </div>
-
-                            <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0', background: hasFile ? '#f0f9ff' : '#fff' }}>
-                              <div style={{ fontSize: '11px', fontWeight: 600, color: '#0f172a' }}>{item.key}</div>
-                              <div style={{ fontSize: '10px', color: hasFile ? '#0087b3' : '#94a3b8', marginTop: '4px', fontWeight: hasFile ? 600 : 400 }}>
-                                {hasFile ? `✓ Subido el ${fileData.date}` : 'Pendiente'}
-                              </div>
-                            </div>
+                    {ORTO_GRUPOS_FOTOS.map(grupo => {
+                      const subidas = grupo.cajas.filter(c => !!fotosOrtoFirmadas[c.key]).length;
+                      return (
+                        <div key={grupo.titulo} style={{ marginBottom: 30 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                            <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#0f172a' }}>{grupo.titulo}</span>
+                            <span style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 600 }}>{subidas}/{grupo.cajas.length}</span>
+                            <div style={{ flex: 1, height: 1, background: BD }} />
                           </div>
-                        );
-                      })}
-                    </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+                            {grupo.cajas.map(item => {
+                              // fotosOrtoFirmadas trae la urlFirmada para mostrar;
+                              // fileData.url sigue siendo el localizador para borrar.
+                              const fileData = fotosOrtoFirmadas[item.key];
+                              const hasFile = !!fileData;
+                              const esPerfil = item.key === CLAVE_FOTO_PERFIL;
+
+                              return (
+                                <div key={item.key} style={{ background: '#fff', border: `1px solid ${hasFile ? '#0087b3' : '#e2e8f0'}`, borderRadius: '12px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: hasFile ? '0 4px 6px rgba(0,135,179,0.1)' : '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }}>
+                                  {hasFile && isEditingOrtoFotos && (
+                                    <button onClick={() => handleDeleteFotoOrto(item.key, fileData.url)} style={{ position: 'absolute', top: 8, right: 8, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, fontSize: 11, fontWeight: 'bold', cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} title="Eliminar">✕</button>
+                                  )}
+
+                                  <div style={{ height: '130px', background: hasFile ? '#000' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                    {hasFile ? (
+                                      fileData.ext?.match(/(pdf|ppt|pptx)/i) ? (
+                                        <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                                          <Icon name="document" size={38} />
+                                          <span style={{ fontSize: '10px', color: '#cbd5e1' }}>Abrir {fileData.ext.toUpperCase()}</span>
+                                        </a>
+                                      ) : (
+                                        <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%', display: 'block' }}>
+                                          <img src={fileData.urlFirmada} alt={item.key} style={{ width: '100%', height: '100%', objectFit: esPerfil ? 'cover' : 'contain' }} />
+                                        </a>
+                                      )
+                                    ) : (
+                                      <Icon name={item.icon} size={34} color="#cbd5e1" />
+                                    )}
+
+                                    {/* Reemplazar sin borrar primero: en modo edición, una foto ya
+                                        subida también acepta un archivo nuevo encima. */}
+                                    {isEditingOrtoFotos && (
+                                      <label style={{ position: 'absolute', inset: 0, cursor: savingFotosOrto ? 'not-allowed' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'all 0.2s', background: 'rgba(241, 245, 249, 0.92)' }}
+                                        onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#0087b3', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '21px', marginBottom: '7px', boxShadow: '0 4px 6px rgba(0,135,179,0.3)' }}>+</div>
+                                        <span style={{ fontSize: '11px', color: '#0087b3', fontWeight: 700, textAlign: 'center', padding: '0 8px' }}>
+                                          {hasFile ? 'Reemplazar' : 'Subir'} {item.key}
+                                        </span>
+                                        <input type="file" accept={item.accept} style={{ display: 'none' }} disabled={savingFotosOrto} onChange={e => handleUploadFotoOrto(e, item.key)} />
+                                      </label>
+                                    )}
+                                  </div>
+
+                                  <div style={{ padding: '11px 13px', borderTop: '1px solid #e2e8f0', background: hasFile ? '#f0f9ff' : '#fff' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#0f172a' }}>{item.key}</div>
+                                    <div style={{ fontSize: '10px', color: hasFile ? '#0087b3' : '#94a3b8', marginTop: '4px', fontWeight: hasFile ? 600 : 400 }}>
+                                      {hasFile ? `✓ Subido el ${fileData.date}` : (item.nota || 'Pendiente')}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1569,19 +1672,19 @@ export default function Ortodoncia({ clinicaId }) {
       if (!vivo) return;
 
       const pacientesPorId = Object.fromEntries((pacientes || []).map(p => [p.id, p]));
-      // La foto de la tarjeta es la "Foto frontal" del expediente de ortodoncia
-      // (la misma que se ve en Fotografías y en el hito Inicio).
+      // La foto de la tarjeta es la "Foto de perfil" del expediente, o la mejor
+      // extraoral disponible si todavía no se eligió una (ver rutaFotoFicha).
       const conTratamiento = await Promise.all(
         (ortoRows || [])
           .filter(o => pacientesPorId[o.paciente_id])
           .map(async (o) => {
-            const rutaFrontal = o.fotografias?.['Foto frontal']?.url;
+            const rutaFicha = rutaFotoFicha(o.fotografias);
             return {
               ...pacientesPorId[o.paciente_id],
               ortodonciaId: o.id,
               pagos: o.pagos || {},
               fechaInicio: o.plan_tratamiento?.fecha_inicial || o.resumen?.fecha_inicial || '',
-              fotoFrontal: rutaFrontal ? await firmar(rutaFrontal) : null,
+              fotoPerfil: rutaFicha ? await firmar(rutaFicha) : null,
             };
           })
       );
@@ -1602,7 +1705,7 @@ export default function Ortodoncia({ clinicaId }) {
         .insert([{ paciente_id: paciente.id, clinica_id: clinicaId }])
         .select().single();
       if (error) throw error;
-      const nuevo = { ...paciente, ortodonciaId: data.id, pagos: {}, fechaInicio: '', fotoFrontal: null };
+      const nuevo = { ...paciente, ortodonciaId: data.id, pagos: {}, fechaInicio: '', fotoPerfil: null };
       setPacientesOrto(prev => [...prev, nuevo]);
       setSeleccionado(nuevo);
       setShowIniciar(false);
@@ -1614,10 +1717,10 @@ export default function Ortodoncia({ clinicaId }) {
     }
   }, [clinicaId]);
 
-  // El detalle avisa cuando cambian los pagos para que los totales del mes de
-  // la galería no queden desactualizados hasta el próximo refresh.
-  const onPagosActualizados = useCallback((pacienteId, nuevosPagos) => {
-    setPacientesOrto(prev => prev.map(p => (p.id === pacienteId ? { ...p, pagos: nuevosPagos } : p)));
+  // El detalle avisa cuando cambia algo que la galería muestra (pagos, foto de
+  // perfil) para que no quede desactualizada hasta el próximo refresh.
+  const onPacienteActualizado = useCallback((pacienteId, parcial) => {
+    setPacientesOrto(prev => prev.map(p => (p.id === pacienteId ? { ...p, ...parcial } : p)));
   }, []);
 
   const disponibles = todosPacientes.filter(p =>
@@ -1653,7 +1756,7 @@ export default function Ortodoncia({ clinicaId }) {
           </button>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <OrtodonciaDetalle patient={seleccionado} clinicaId={clinicaId} onPagosActualizados={onPagosActualizados} />
+          <OrtodonciaDetalle patient={seleccionado} clinicaId={clinicaId} onPacienteActualizado={onPacienteActualizado} />
         </div>
       </div>
     );
@@ -1724,9 +1827,9 @@ export default function Ortodoncia({ clinicaId }) {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 18px rgba(0,0,0,0.10)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)'; }}
             >
-              <div style={{ aspectRatio: '1 / 1', background: p.fotoFrontal ? '#000' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {p.fotoFrontal ? (
-                  <img src={p.fotoFrontal} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ aspectRatio: '1 / 1', background: p.fotoPerfil ? '#000' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {p.fotoPerfil ? (
+                  <img src={p.fotoPerfil} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#fff', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18 }}>
                     {ini(p.name)}
