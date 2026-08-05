@@ -26,7 +26,14 @@ const GASTO_VACIO = { categoria: 'Materiales', monto: '', fecha: hoyISO(), nota:
 // tanto, este botón deja los datos listos para copiar y abre SUNAT SOL en una
 // pestaña nueva -- SOL bloquea ser embebido en un iframe (X-Frame-Options), así
 // que no es posible mostrarlo dentro de DentalOS.
-const SOL_LOGIN_URL = 'https://www.sunat.gob.pe/ol-ti-itmenu/MenuInternet.htm';
+//
+// Esta es la misma URL que enlaza la propia portada de sunat.gob.pe ("Buzón
+// electrónico SOL"): un client_id de OAuth fijo de SUNAT (NO es una sesión de
+// un usuario particular) más `originalUrl` para volver al menú tras loguearse.
+// Verificado: sirve el formulario real de login (RUC/usuario/clave). El
+// `ol-ti-itmenu/MenuInternet.htm` que se usaba antes ya da 404 -- SUNAT lo dio
+// de baja.
+const SOL_LOGIN_URL = 'https://api-seguridad.sunat.gob.pe/v1/clientessol/4f3b88b3-d9d6-402a-b85d-6a0bc857746a/oauth2/loginMenuSol?originalUrl=https://e-menu.sunat.gob.pe/cl-ti-itmenu/AutenticaMenuInternet.htm';
 const GUIA_SOL = {
   boleta: 'En SOL: Empresas → Comprobantes de pago → SEE - SOL → Emitir Boleta de Venta / Factura Electrónica.',
   rxh: 'En SOL: Comprobantes de pago → Recibos por Honorarios → Emisión de Recibos por Honorarios.',
