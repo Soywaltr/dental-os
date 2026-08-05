@@ -17,7 +17,8 @@ import {
 } from '../../utils/constants';
 import { ini, normalizarTexto } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
-import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar } from '../../utils/storage';
+import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar, firmarVarias, invalidarFirma } from '../../utils/storage';
+import { generarMiniatura, rutaMiniatura } from '../../utils/imagen';
 
 // Mismos métodos de pago que usa Caja.jsx, para que el historial sea coherente
 // entre la caja general y los pagos de ortodoncia.
@@ -71,14 +72,10 @@ const ORTO_GRUPOS_FOTOS = [
 
 // La foto de la ficha: la elegida a mano si existe, y si no la mejor extraoral
 // disponible antes de caer a las iniciales.
-const rutaFotoFicha = (fotografias) => {
-  const orden = [CLAVE_FOTO_PERFIL, 'Frontal sonriendo', 'Frontal en reposo', 'Tres cuartos derecho'];
-  for (const clave of orden) {
-    const url = fotografias?.[clave]?.url;
-    if (url) return url;
-  }
-  return null;
-};
+const ORDEN_FOTO_FICHA = [CLAVE_FOTO_PERFIL, 'Frontal sonriendo', 'Frontal en reposo', 'Tres cuartos derecho'];
+
+const fotoFicha = (fotografias) =>
+  ORDEN_FOTO_FICHA.map(clave => fotografias?.[clave]).find(f => f?.url) || null;
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 const fmtFecha = (s) => { if (!s) return '—'; const d = new Date(`${s}T00:00:00`); return isNaN(d.getTime()) ? s : d.toLocaleDateString('es-PE'); };
@@ -185,7 +182,7 @@ function CasillaFotoProgreso({ fila, foto, subiendo, onUpload, onDelete }) {
         {hasFile && (
           <>
             <a href={foto.urlFirmada} target="_blank" rel="noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
-              <img src={foto.urlFirmada} alt={fila} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={foto.miniFirmada || foto.urlFirmada} alt={fila} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </a>
             <button onClick={onDelete} title="Eliminar" style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(15,23,42,0.65)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </>
@@ -254,12 +251,17 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   useEffect(() => {
     let vivo = true;
     const resolver = async () => {
-      const entradas = await Promise.all(
-        Object.entries(fotosOrto || {}).map(async ([clave, dato]) =>
-          [clave, { ...dato, urlFirmada: await firmar(dato.url) }]
-        )
-      );
-      if (vivo) setFotosOrtoFirmadas(Object.fromEntries(entradas));
+      const datos = Object.entries(fotosOrto || {});
+      // Una sola petición para todas las fotos (original + miniatura) en vez de
+      // una por cada una: es la diferencia entre ~20 viajes y uno.
+      const firmas = await firmarVarias(datos.flatMap(([, d]) => [d.url, d.thumb]));
+      if (!vivo) return;
+      setFotosOrtoFirmadas(Object.fromEntries(datos.map(([clave, dato]) => [clave, {
+        ...dato,
+        urlFirmada: firmas.get(rutaDesdeUrl(dato.url)) || null,
+        // La grilla usa la miniatura; al abrir la foto se va a la original.
+        miniFirmada: (dato.thumb && firmas.get(dato.thumb)) || firmas.get(rutaDesdeUrl(dato.url)) || null,
+      }])));
     };
     resolver();
     return () => { vivo = false; };
@@ -352,6 +354,16 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 
   const guardarFotografiasOrto = (nuevoObjetoFotos) => guardarColumnaOrto('fotografias', nuevoObjetoFotos);
 
+  // Sube junto a la original una versión liviana para las grillas. Si el
+  // navegador no puede generarla, devuelve null y las grillas usan la original.
+  const subirMiniatura = async (file, rutaOriginal) => {
+    const mini = await generarMiniatura(file);
+    if (!mini) return null;
+    const ruta = rutaMiniatura(rutaOriginal);
+    const { error } = await supabase.storage.from(BUCKET).upload(ruta, mini, { contentType: 'image/jpeg' });
+    return error ? null : ruta;
+  };
+
   // Extraído de handleUploadFotoOrto para poder reusarlo también desde las
   // casillas de "Inicio" en Progreso del Tratamiento (misma fuente de datos).
   const handleUploadFotoOrtoFile = async (file, key) => {
@@ -362,10 +374,20 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       const fileName = rutaFotoOrto(clinicaId, patient.id, file.name);
       const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
       if (uploadError) throw uploadError;
+      const thumb = await subirMiniatura(file, fileName);
       // Igual que en las imágenes de historia: se guarda la ruta, no la URL.
-      const nuevoObjetoFotos = { ...fotosOrto, [key]: { url: fileName, ext: fileExt, date: new Date().toLocaleDateString('es-PE') } };
+      const nuevoObjetoFotos = { ...fotosOrto, [key]: { url: fileName, thumb, ext: fileExt, date: new Date().toLocaleDateString('es-PE') } };
       await guardarFotografiasOrto(nuevoObjetoFotos);
       setFotosOrto(nuevoObjetoFotos);
+
+      // Si era un reemplazo, la foto anterior ya no se referencia: sin esto se
+      // quedaría ocupando el bucket para siempre.
+      const anterior = fotosOrto[key];
+      if (anterior?.url) {
+        const viejas = [rutaDesdeUrl(anterior.url), anterior.thumb].filter(Boolean);
+        await supabase.storage.from(BUCKET).remove(viejas);
+        viejas.forEach(invalidarFirma);
+      }
     } catch (err) {
       alert('Error al subir el archivo: ' + err.message);
     } finally {
@@ -379,7 +401,9 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
     if (!window.confirm('¿Eliminar este archivo permanentemente?')) return;
     setSavingFotosOrto(true);
     try {
-      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(url)]);
+      const rutas = [rutaDesdeUrl(url), fotosOrto[key]?.thumb].filter(Boolean);
+      await supabase.storage.from(BUCKET).remove(rutas);
+      rutas.forEach(invalidarFirma);
       const nuevoObjetoFotos = { ...fotosOrto };
       delete nuevoObjetoFotos[key];
       await guardarFotografiasOrto(nuevoObjetoFotos);
@@ -395,9 +419,10 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   // cambió por una subida, un reemplazo o un borrado.
   useEffect(() => {
     let vivo = true;
-    const ruta = rutaFotoFicha(fotosOrto);
+    const foto = fotoFicha(fotosOrto);
     (async () => {
-      const url = ruta ? await firmar(ruta) : null;
+      // La galería muestra recuadros chicos: le basta la miniatura.
+      const url = foto ? await firmar(foto.thumb || foto.url) : null;
       if (vivo) onPacienteActualizado?.(patient.id, { fotoPerfil: url });
     })();
     return () => { vivo = false; };
@@ -564,13 +589,18 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   useEffect(() => {
     let vivo = true;
     const resolver = async () => {
-      const firmados = await Promise.all((controles || []).map(async (c) => {
-        const entradas = await Promise.all(
-          Object.entries(c.fotos || {}).map(async ([fila, f]) => [fila, { ...f, urlFirmada: await firmar(f.url) }])
-        );
-        return { ...c, fotos: Object.fromEntries(entradas) };
-      }));
-      if (vivo) setControlesFirmados(firmados);
+      // Todas las fotos de todos los hitos en una sola petición de firmado.
+      const firmas = await firmarVarias(
+        (controles || []).flatMap(c => Object.values(c.fotos || {}).flatMap(f => [f.url, f.thumb]))
+      );
+      if (!vivo) return;
+      setControlesFirmados((controles || []).map(c => ({
+        ...c,
+        fotos: Object.fromEntries(Object.entries(c.fotos || {}).map(([fila, f]) => {
+          const original = firmas.get(rutaDesdeUrl(f.url)) || null;
+          return [fila, { ...f, urlFirmada: original, miniFirmada: (f.thumb && firmas.get(f.thumb)) || original }];
+        })),
+      })));
     };
     resolver();
     return () => { vivo = false; };
@@ -587,7 +617,8 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       const fileName = rutaFotoOrto(clinicaId, patient.id, file.name);
       const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
       if (uploadError) throw uploadError;
-      const nuevaFoto = { url: fileName, ext: fileExt, date: new Date().toLocaleDateString('es-PE') };
+      const thumb = await subirMiniatura(file, fileName);
+      const nuevaFoto = { url: fileName, thumb, ext: fileExt, date: new Date().toLocaleDateString('es-PE') };
       const existente = controles.find(c => c.hito === hito);
       const nuevosControles = existente
         ? controles.map(c => (c.hito === hito ? { ...c, fotos: { ...c.fotos, [fila]: nuevaFoto } } : c))
@@ -607,7 +638,9 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
     const foto = control?.fotos?.[fila];
     if (!foto) return;
     try {
-      await supabase.storage.from(BUCKET).remove([rutaDesdeUrl(foto.url)]);
+      const rutas = [rutaDesdeUrl(foto.url), foto.thumb].filter(Boolean);
+      await supabase.storage.from(BUCKET).remove(rutas);
+      rutas.forEach(invalidarFirma);
       const nuevasFotos = { ...control.fotos };
       delete nuevasFotos[fila];
       const nuevosControles = controles.map(c => (c.hito === hito ? { ...c, fotos: nuevasFotos } : c));
@@ -744,9 +777,10 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
     : 0;
   const progresoPct = tiempoEstimadoMeses > 0 ? Math.min(100, (mesesTranscurridos / tiempoEstimadoMeses) * 100) : null;
   const inicioTieneFotos = FILAS_PROGRESO.some(fila => !!fotosOrtoFirmadas[FILA_A_CAJA_FOTO[fila]]);
-  // Misma prioridad que rutaFotoFicha, pero sobre las URLs ya firmadas.
-  const fotoFichaFirmada = [CLAVE_FOTO_PERFIL, 'Frontal sonriendo', 'Frontal en reposo', 'Tres cuartos derecho']
-    .map(clave => fotosOrtoFirmadas[clave]?.urlFirmada).find(Boolean) || null;
+  // Misma prioridad que fotoFicha, pero sobre las URLs ya firmadas. El avatar
+  // es diminuto, así que va con la miniatura.
+  const fotoFichaFirmada = ORDEN_FOTO_FICHA
+    .map(clave => fotosOrtoFirmadas[clave]?.miniFirmada).find(Boolean) || null;
   const hitosProgresoConFotos = HITOS_PROGRESO.filter(h =>
     h === 'Inicio' ? inicioTieneFotos : controles.some(c => c.hito === h && Object.keys(c.fotos || {}).length > 0)
   );
@@ -1322,7 +1356,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                                         </a>
                                       ) : (
                                         <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%', display: 'block' }}>
-                                          <img src={fileData.urlFirmada} alt={item.key} style={{ width: '100%', height: '100%', objectFit: esPerfil ? 'cover' : 'contain' }} />
+                                          <img src={fileData.miniFirmada || fileData.urlFirmada} alt={item.key} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: esPerfil ? 'cover' : 'contain' }} />
                                         </a>
                                       )
                                     ) : (
@@ -1707,25 +1741,34 @@ export default function Ortodoncia({ clinicaId }) {
 
       const pacientesPorId = Object.fromEntries((pacientes || []).map(p => [p.id, p]));
       // La foto de la tarjeta es la "Foto de perfil" del expediente, o la mejor
-      // extraoral disponible si todavía no se eligió una (ver rutaFotoFicha).
-      const conTratamiento = await Promise.all(
-        (ortoRows || [])
-          .filter(o => pacientesPorId[o.paciente_id])
-          .map(async (o) => {
-            const rutaFicha = rutaFotoFicha(o.fotografias);
-            return {
-              ...pacientesPorId[o.paciente_id],
-              ortodonciaId: o.id,
-              pagos: o.pagos || {},
-              fechaInicio: o.plan_tratamiento?.fecha_inicial || o.resumen?.fecha_inicial || '',
-              fotoPerfil: rutaFicha ? await firmar(rutaFicha) : null,
-            };
-          })
-      );
-      if (!vivo) return;
+      // extraoral disponible si todavía no se eligió una (ver fotoFicha).
+      const conTratamiento = (ortoRows || [])
+        .filter(o => pacientesPorId[o.paciente_id])
+        .map(o => {
+          const foto = fotoFicha(o.fotografias);
+          return {
+            ...pacientesPorId[o.paciente_id],
+            ortodonciaId: o.id,
+            pagos: o.pagos || {},
+            fechaInicio: o.plan_tratamiento?.fecha_inicial || o.resumen?.fecha_inicial || '',
+            rutaFoto: foto ? (foto.thumb || foto.url) : null,
+            fotoPerfil: null,
+          };
+        });
+
+      // Se pinta la lista ya, con nombres, pagos e iniciales: firmar las fotos
+      // son viajes extra a Storage y antes la galería entera los esperaba.
       setPacientesOrto(conTratamiento);
       setTodosPacientes(pacientes || []);
       setLoading(false);
+
+      const rutas = conTratamiento.map(p => p.rutaFoto).filter(Boolean);
+      if (rutas.length === 0) return;
+      const firmas = await firmarVarias(rutas);
+      if (!vivo) return;
+      setPacientesOrto(prev => prev.map(p => (
+        p.rutaFoto ? { ...p, fotoPerfil: firmas.get(rutaDesdeUrl(p.rutaFoto)) || null } : p
+      )));
     };
     cargarTodo();
     return () => { vivo = false; };
@@ -1739,7 +1782,7 @@ export default function Ortodoncia({ clinicaId }) {
         .insert([{ paciente_id: paciente.id, clinica_id: clinicaId }])
         .select().single();
       if (error) throw error;
-      const nuevo = { ...paciente, ortodonciaId: data.id, pagos: {}, fechaInicio: '', fotoPerfil: null };
+      const nuevo = { ...paciente, ortodonciaId: data.id, pagos: {}, fechaInicio: '', rutaFoto: null, fotoPerfil: null };
       setPacientesOrto(prev => [...prev, nuevo]);
       setSeleccionado(nuevo);
       setShowIniciar(false);
@@ -1863,7 +1906,7 @@ export default function Ortodoncia({ clinicaId }) {
             >
               <div style={{ aspectRatio: '1 / 1', background: p.fotoPerfil ? '#000' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {p.fotoPerfil ? (
-                  <img src={p.fotoPerfil} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={p.fotoPerfil} alt={p.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#fff', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18 }}>
                     {ini(p.name)}

@@ -73,6 +73,38 @@ export async function firmar(rutaOUrl, segundos = VIGENCIA_SEGUNDOS) {
   return data.signedUrl;
 }
 
+// Firma muchas rutas de una sola vez. Las vistas de Ortodoncia muestran hasta
+// ~20 fotos juntas: pedir una firma por foto son ~20 viajes de ida y vuelta y la
+// grilla no se pinta hasta que termina el más lento. `createSignedUrls` resuelve
+// todas en una sola petición.
+//
+// Devuelve un Map ruta -> URL firmada. Las rutas que fallen (archivo borrado,
+// por ejemplo) simplemente no aparecen en el Map, igual que `firmar` devuelve
+// null: quien llama muestra su estado vacío.
+export async function firmarVarias(rutasOUrls, segundos = VIGENCIA_SEGUNDOS) {
+  const rutas = [...new Set((rutasOUrls || []).map(rutaDesdeUrl).filter(Boolean))];
+  const resultado = new Map();
+  const faltantes = [];
+
+  for (const ruta of rutas) {
+    const enCache = cacheFirmas.get(ruta);
+    if (enCache && enCache.expiraEn - MARGEN_MS > Date.now()) resultado.set(ruta, enCache.url);
+    else faltantes.push(ruta);
+  }
+  if (faltantes.length === 0) return resultado;
+
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(faltantes, segundos);
+  if (error || !data) return resultado;
+
+  const expiraEn = Date.now() + segundos * 1000;
+  for (const fila of data) {
+    if (!fila?.signedUrl || fila.error || !fila.path) continue;
+    cacheFirmas.set(fila.path, { url: fila.signedUrl, expiraEn });
+    resultado.set(fila.path, fila.signedUrl);
+  }
+  return resultado;
+}
+
 // Se llama tras subir o reemplazar un archivo: si no, la firma vieja seguiría
 // sirviendo la versión anterior desde la caché.
 export function invalidarFirma(rutaOUrl) {
