@@ -27,13 +27,16 @@ const GASTO_VACIO = { categoria: 'Materiales', monto: '', fecha: hoyISO(), nota:
 // pestaña nueva -- SOL bloquea ser embebido en un iframe (X-Frame-Options), así
 // que no es posible mostrarlo dentro de DentalOS.
 //
-// Esta es la misma URL que enlaza la propia portada de sunat.gob.pe ("Buzón
-// electrónico SOL"): un client_id de OAuth fijo de SUNAT (NO es una sesión de
-// un usuario particular) más `originalUrl` para volver al menú tras loguearse.
-// Verificado: sirve el formulario real de login (RUC/usuario/clave). El
-// `ol-ti-itmenu/MenuInternet.htm` que se usaba antes ya da 404 -- SUNAT lo dio
-// de baja.
-const SOL_LOGIN_URL = 'https://api-seguridad.sunat.gob.pe/v1/clientessol/4f3b88b3-d9d6-402a-b85d-6a0bc857746a/oauth2/loginMenuSol?originalUrl=https://e-menu.sunat.gob.pe/cl-ti-itmenu/AutenticaMenuInternet.htm';
+// URL verificada rastreando el botón "Ingresar" de MIS TRÁMITES Y CONSULTAS en
+// sunat.gob.pe/sol.html: su JS (`tramiteConsulta()`) abre
+// cl-ti-itmenucabina/MenuInternet.htm, que redirige a
+// api-seguridad.sunat.gob.pe/.../oauth2/authen, que a su vez redirige (302) a
+// esta URL con estos mismos parámetros -- son necesarios los 5 (lang, showDni,
+// showLanguages, originalUrl, state); quitar alguno hace que SUNAT muestre una
+// pantalla intermedia de selección en vez del formulario de login. El `state`
+// no es una sesión de un usuario particular: es un hash fijo que depende solo
+// del `originalUrl`, así que es seguro dejarlo hardcodeado.
+const SOL_LOGIN_URL = 'https://api-seguridad.sunat.gob.pe/v1/clientessol/4f3b88b3-d9d6-402a-b85d-6a0bc857746a/oauth2/loginMenuSol?lang=es-PE&showDni=true&showLanguages=false&originalUrl=https://e-menu.sunat.gob.pe/cl-ti-itmenu/AutenticaMenuInternet.htm&state=rO0ABXNyABFqYXZhLnV0aWwuSGFzaE1hcAUH2sHDFmDRAwACRgAKbG9hZEZhY3RvckkACXRocmVzaG9sZHhwP0AAAAAAAAx3CAAAABAAAAADdAADZXhlcHQABnBhcmFtc3QASyomKiYvY2wtdGktaXRtZW51L01lbnVJbnRlcm5ldC5odG0mYjY0ZDI2YThiNWFmMDkxOTIzYjIzYjY0MDdhMWMxZGI0MWU3MzNhNnQABGV4ZWNweA==';
 const GUIA_SOL = {
   boleta: 'En SOL: Empresas → Comprobantes de pago → SEE - SOL → Emitir Boleta de Venta / Factura Electrónica.',
   rxh: 'En SOL: Comprobantes de pago → Recibos por Honorarios → Emisión de Recibos por Honorarios.',
