@@ -976,21 +976,32 @@ const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
 });
 
 // ─── COMPONENTE PRINCIPAL: EXPEDIENTE ────────────────────────────────────────
-export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView, clinicaId }) {
+export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView, clinicaId, patient }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [patSeleccionado, setPatSeleccionado] = useState(null);
+  // `undefined` = todavía no eligió nada en esta vista (vale el paciente con el
+  // que la abrieron, si vino uno); `null` = eligió no tener ninguno abierto.
+  const [patSeleccionado, setPatSeleccionado] = useState(undefined);
   const { isNarrow } = useResponsive();
 
   const { patientsList, loading, upsertPatient, deletePatient, importarPacientes } = usePatientsDirectory(clinicaId);
 
+  // Permite entrar directo a la historia de un paciente desde otra vista (por
+  // ejemplo el botón "Historia odontológica" de Ortodoncia). Se resuelve la fila
+  // completa del directorio, porque la vista que navega puede traer solo unos
+  // pocos campos del paciente. Es un valor derivado y no un efecto: en cuanto el
+  // usuario elige (o cierra) un paciente acá, manda su elección.
+  const patActivo = patSeleccionado !== undefined
+    ? patSeleccionado
+    : (patient?.id ? patientsList.find(p => p.id === patient.id) ?? null : null);
+
   const handleDeleteWrapper = async (id) => {
     try {
       await deletePatient(id);
-      if (patSeleccionado?.id === id) setPatSeleccionado(null);
+      if (patActivo?.id === id) setPatSeleccionado(null);
     } catch (err) {
       alert("Error al eliminar: " + err.message);
     }
@@ -1008,8 +1019,8 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   const handleSave = useCallback(async (form) => {
     const saved = await upsertPatient(form);
     // Si el paciente seleccionado fue editado, actualizarlo
-    if (patSeleccionado?.id === saved.id) setPatSeleccionado(saved);
-  }, [upsertPatient, patSeleccionado]);
+    if (patActivo?.id === saved.id) setPatSeleccionado(saved);
+  }, [upsertPatient, patActivo]);
 
   return (
     <div style={{
@@ -1126,7 +1137,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
             <PatientCard
               key={p.id}
               patient={p}
-              isSelected={patSeleccionado?.id === p.id}
+              isSelected={patActivo?.id === p.id}
               onClick={() => setPatSeleccionado(p)}
               onDelete={handleDeleteWrapper}
             />
@@ -1161,9 +1172,9 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
       }}>
-        {patSeleccionado ? (
+        {patActivo ? (
           <Historia
-            patient={patSeleccionado}
+            patient={patActivo}
             teeth={teeth}
             setTeeth={setTeeth}
             teethEvolucion={teethEvolucion}

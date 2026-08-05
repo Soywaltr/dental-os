@@ -1718,7 +1718,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 // Dos momentos: primero la galería (foto + nombre + estado de pago de cada
 // paciente, más los ingresos del mes de toda la ortodoncia); al hacer click en
 // una tarjeta se abre el detalle con todas las secciones del paciente.
-export default function Ortodoncia({ clinicaId }) {
+export default function Ortodoncia({ clinicaId, setView }) {
   const { isTablet } = useResponsive();
   const [pacientesOrto, setPacientesOrto] = useState([]);
   const [todosPacientes, setTodosPacientes] = useState([]);
@@ -1819,17 +1819,29 @@ export default function Ortodoncia({ clinicaId }) {
   const porCobrar = resumenes.reduce((s, r) => s + (r.deuda || 0), 0);
   const mesActualNombre = new Date().toLocaleDateString('es-PE', { month: 'long' });
 
+  // Salta al Historial con este paciente ya abierto, para no tener que buscarlo
+  // de nuevo a mano cuando hace falta ver su historia odontológica completa.
+  const irAHistoriaClinica = (paciente) => setView?.('expediente', paciente);
+
   // ── MOMENTO 2: detalle completo del paciente ──
   if (seleccionado) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', minHeight: 0 }}>
-        <div style={{ padding: '14px 24px 0', flexShrink: 0 }}>
+        <div style={{ padding: '14px 24px 0', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
             onClick={() => setSeleccionado(null)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: '7px 14px', fontSize: 11.5, fontWeight: 700, color: DN, cursor: 'pointer' }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Volver a pacientes
+          </button>
+          <button
+            onClick={() => irAHistoriaClinica(seleccionado)}
+            title={`Abrir la historia odontológica de ${seleccionado.name} en Historial`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: '7px 14px', fontSize: 11.5, fontWeight: 700, color: P, cursor: 'pointer' }}
+          >
+            <Icon name="document" size={13} />
+            Historia odontológica
           </button>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -1931,6 +1943,18 @@ export default function Ortodoncia({ clinicaId }) {
                   <div style={{ fontSize: 9.5, color: MU }}>
                     Histórico: <strong style={{ color: DN, fontWeight: 700 }}>{fmtSoles(r.acumulado)}</strong>
                   </div>
+                  {/* stopPropagation: la tarjeta entera abre el expediente de
+                      ortodoncia, este botón lleva al historial general. */}
+                  <button
+                    onClick={e => { e.stopPropagation(); irAHistoriaClinica(p); }}
+                    title={`Abrir la historia odontológica de ${p.name} en Historial`}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 2, background: '#f8fafc', border: `1px solid ${BD}`, borderRadius: 7, padding: '6px 8px', fontSize: 9.5, fontWeight: 700, color: P, cursor: 'pointer', width: '100%' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f0f9ff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; }}
+                  >
+                    <Icon name="document" size={11} />
+                    Historia odontológica
+                  </button>
                 </div>
               </div>
             </div>

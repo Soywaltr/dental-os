@@ -92,7 +92,11 @@ const INIT = {
 
 function reducer(st, action) {
   switch (action.type) {
-    case "SET_VIEW":        return { ...st, view: action.payload.view, selectedPat: action.payload.pat ?? st.selectedPat };
+    // `selectedPat` es un argumento de navegación, no estado que se arrastra:
+    // quien navega sin indicar paciente (el menú, por ejemplo) llega sin
+    // ninguno abierto. Si se conservara, entrar al Historial desde el menú
+    // reabriría solo al último paciente que se vio desde otra vista.
+    case "SET_VIEW":        return { ...st, view: action.payload.view, selectedPat: action.payload.pat ?? null };
     case "SET_SUB_ACCOUNT": return { ...st, subAccount: action.payload };
     case "SET_TEETH": {
       // SOLUCIÓN: Si payload es una función, la ejecutamos pasando el estado anterior
