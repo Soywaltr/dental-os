@@ -20,6 +20,18 @@ const mismoMes = (d, ref) => d && d.getFullYear() === ref.getFullYear() && d.get
 const PAGO_VACIO = { patientId: '', grupoKey: '', monto: '', metodo: 'Efectivo', referencia: '' };
 const GASTO_VACIO = { categoria: 'Materiales', monto: '', fecha: hoyISO(), nota: '' };
 
+// Emisión de comprobantes: no hay integración con una API de SUNAT (ese servicio
+// solo permite CONSULTAR comprobantes ya emitidos, no crearlos -- emitir de verdad
+// exige un certificado digital propio o un proveedor OSE/PSE de pago). Mientras
+// tanto, este botón deja los datos listos para copiar y abre SUNAT SOL en una
+// pestaña nueva -- SOL bloquea ser embebido en un iframe (X-Frame-Options), así
+// que no es posible mostrarlo dentro de DentalOS.
+const SOL_LOGIN_URL = 'https://www.sunat.gob.pe/ol-ti-itmenu/MenuInternet.htm';
+const GUIA_SOL = {
+  boleta: 'En SOL: Empresas → Comprobantes de pago → SEE - SOL → Emitir Boleta de Venta / Factura Electrónica.',
+  rxh: 'En SOL: Comprobantes de pago → Recibos por Honorarios → Emisión de Recibos por Honorarios.',
+};
+
 export default function Caja({ clinicaId }) {
   const [tab, setTab] = useState('facturas');
   const [loading, setLoading] = useState(true);
@@ -36,12 +48,16 @@ export default function Caja({ clinicaId }) {
   const [gastoDraft, setGastoDraft] = useState(GASTO_VACIO);
   const [savingGasto, setSavingGasto] = useState(false);
 
+  const [expandidosPacientes, setExpandidosPacientes] = useState(new Set());
+  const [emitirDraft, setEmitirDraft] = useState(null); // { patientId, tipo, grupos, monto }
+  const [copiado, setCopiado] = useState(false);
+
   useEffect(() => {
     const cargar = async () => {
       setLoading(true);
       setErrorMsg(null);
       const [{ data: pacientesData, error: errP }, { data: historiasData, error: errH }, { data: gastosData, error: errG }] = await Promise.all([
-        supabase.from('pacientes').select('id, name'),
+        supabase.from('pacientes').select('id, name, doc'),
         supabase.from('historias').select('patient_id, plan_tratamiento'),
         supabase.from('gastos').select('*').order('fecha', { ascending: false }),
       ]);
@@ -57,6 +73,36 @@ export default function Caja({ clinicaId }) {
   }, []);
 
   const nombrePaciente = (id) => pacientes.find(p => String(p.id) === String(id))?.name || '—';
+  const docPaciente = (id) => pacientes.find(p => String(p.id) === String(id))?.doc || '';
+
+  const toggleExpandido = (id) => setExpandidosPacientes(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const abrirEmitir = (patientId, grupos) => {
+    const monto = grupos.reduce((s, g) => s + g.cost, 0);
+    setEmitirDraft({ patientId, tipo: 'boleta', grupos, monto: String(monto) });
+    setCopiado(false);
+  };
+
+  const textoParaCopiar = (d) => {
+    const conceptos = d.grupos
+      .map(g => `- ${g.name}${g.toothLabel !== '—' ? ` (pieza ${g.toothLabel})` : ''}: S/${g.cost}`)
+      .join('\n');
+    return `Paciente: ${nombrePaciente(d.patientId)}\nDNI: ${docPaciente(d.patientId) || '(sin DNI registrado)'}\nMonto: S/${d.monto}\nConceptos:\n${conceptos}`;
+  };
+
+  const copiarDatos = async (texto) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      alert('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
+    }
+  };
 
   const irAPagar = (grupo) => {
     setPagoDraft({ patientId: String(grupo.patient_id), grupoKey: grupo.key, monto: '', metodo: 'Efectivo', referencia: '' });
@@ -176,6 +222,27 @@ export default function Caja({ clinicaId }) {
 
   const gruposDelPacienteSeleccionado = facturasAgrupadas.filter(g => String(g.patient_id) === String(pagoDraft.patientId) && (g.cost - g.paid) > 0);
 
+  // Una fila por paciente en vez de una por tratamiento -- el detalle por
+  // tratamiento se ve al desplegar. Antes cada tratamiento de un mismo
+  // paciente ensuciaba la tabla con una fila propia.
+  const facturasPorPacienteMap = new Map();
+  facturasAgrupadas.forEach(g => {
+    if (!facturasPorPacienteMap.has(g.patient_id)) {
+      facturasPorPacienteMap.set(g.patient_id, { patient_id: g.patient_id, grupos: [], cost: 0, paid: 0 });
+    }
+    const p = facturasPorPacienteMap.get(g.patient_id);
+    p.grupos.push(g);
+    p.cost += g.cost;
+    p.paid += g.paid;
+  });
+  const facturasPorPaciente = Array.from(facturasPorPacienteMap.values())
+    .map(p => ({
+      ...p,
+      saldo: p.cost - p.paid,
+      estado: p.grupos.every(g => g.status === 'completado') ? 'completado' : (p.grupos.some(g => g.status === 'pendiente') ? 'pendiente' : 'en_curso'),
+    }))
+    .sort((a, b) => nombrePaciente(a.patient_id).localeCompare(nombrePaciente(b.patient_id)));
+
   return (
     <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
       <div style={{ display: 'flex', gap: 11, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -198,38 +265,71 @@ export default function Caja({ clinicaId }) {
             Aún no hay tratamientos facturados. Se agregan desde la pestaña "Plan trat." de cada paciente.
           </div>
         ) : (
-          <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
-            <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
-              <thead><tr style={{ background: LT }}>
-                {['Paciente', 'Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 10, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
-              </tr></thead>
-              <tbody>
-                {facturasAgrupadas.map((g, i) => {
-                  const b = sc(g.status); const saldo = g.cost - g.paid;
-                  return (
-                    <tr key={`${g.patient_id}-${g.date}-${g.name}-${i}`} style={{ borderBottom: `1px solid ${MT}` }}
-                      onMouseEnter={e => e.currentTarget.style.background = LT}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '9px 12px', color: DN, fontWeight: 500 }}>{nombrePaciente(g.patient_id)}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{formatFecha(g.date)}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{g.name}{g.items.length > 1 ? ` (x${g.items.length})` : ''}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{g.toothLabel}</td>
-                      <td style={{ padding: '9px 12px', color: MU }}>{g.metodo || '—'}</td>
-                      <td style={{ padding: '9px 12px', color: DN, fontWeight: 600 }}>S/{g.cost}</td>
-                      <td style={{ padding: '9px 12px', color: g.paid < g.cost ? GL : WA }}>S/{g.paid}</td>
-                      <td style={{ padding: '9px 12px' }}><Badge bg={b.bg} color={b.c} style={{ fontSize: 9, padding: '2px 8px' }}>{g.status}</Badge></td>
-                      <td style={{ padding: '9px 12px' }}>
-                        {saldo > 0 && (
-                          <span onClick={() => irAPagar(g)} style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600 }}>registrar pago →</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {facturasPorPaciente.map(p => {
+              const abierto = expandidosPacientes.has(p.patient_id);
+              const b = sc(p.estado);
+              return (
+                <div key={p.patient_id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+                  <div onClick={() => toggleExpandido(p.patient_id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 16px', cursor: 'pointer' }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={MU} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: abierto ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}>
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: DN }}>{nombrePaciente(p.patient_id)}</div>
+                      <div style={{ fontSize: 10, color: MU, marginTop: 2 }}>
+                        {p.grupos.length} tratamiento{p.grupos.length !== 1 ? 's' : ''} · {docPaciente(p.patient_id) ? `DNI ${docPaciente(p.patient_id)}` : 'sin DNI registrado'}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 9.5, color: MU }}>Total</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>S/{p.cost.toLocaleString()}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 9.5, color: MU }}>Saldo</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: p.saldo > 0 ? RJ : WA }}>S/{p.saldo.toLocaleString()}</div>
+                    </div>
+                    <Badge bg={b.bg} color={b.c} style={{ fontSize: 9, padding: '3px 9px', flexShrink: 0 }}>{p.estado}</Badge>
+                    <button
+                      onClick={e => { e.stopPropagation(); abrirEmitir(p.patient_id, p.grupos); }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff', border: `1px solid ${BD}`, borderRadius: 7, padding: '6px 12px', fontSize: 10.5, fontWeight: 700, color: P, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
+                      <Icon name="document" size={11} /> Emitir comprobante
+                    </button>
+                  </div>
+
+                  {abierto && (
+                    <div style={{ borderTop: `1px solid ${BD}`, overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead><tr style={{ background: LT }}>
+                          {['Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '7px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 10, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
+                        </tr></thead>
+                        <tbody>
+                          {p.grupos.map(g => {
+                            const bg = sc(g.status); const saldoG = g.cost - g.paid;
+                            return (
+                              <tr key={g.key} style={{ borderBottom: `1px solid ${MT}` }}>
+                                <td style={{ padding: '8px 12px', color: MU }}>{formatFecha(g.date)}</td>
+                                <td style={{ padding: '8px 12px', color: MU }}>{g.name}{g.items.length > 1 ? ` (x${g.items.length})` : ''}</td>
+                                <td style={{ padding: '8px 12px', color: MU }}>{g.toothLabel}</td>
+                                <td style={{ padding: '8px 12px', color: MU }}>{g.metodo || '—'}</td>
+                                <td style={{ padding: '8px 12px', color: DN, fontWeight: 600 }}>S/{g.cost}</td>
+                                <td style={{ padding: '8px 12px', color: g.paid < g.cost ? GL : WA }}>S/{g.paid}</td>
+                                <td style={{ padding: '8px 12px' }}><Badge bg={bg.bg} color={bg.c} style={{ fontSize: 9, padding: '2px 8px' }}>{g.status}</Badge></td>
+                                <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                                  {saldoG > 0 && <span onClick={() => irAPagar(g)} style={{ fontSize: 10, color: P, cursor: 'pointer', fontWeight: 600, marginRight: 12 }}>registrar pago →</span>}
+                                  <span onClick={() => abrirEmitir(p.patient_id, [g])} style={{ fontSize: 10, color: MU, cursor: 'pointer', fontWeight: 600 }}>emitir →</span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )
       )}
@@ -369,6 +469,71 @@ export default function Caja({ clinicaId }) {
             <Button onClick={registrarGasto} disabled={savingGasto} style={{ flex: 1, padding: 10, fontSize: 12 }}>
               {savingGasto ? 'Guardando...' : 'Registrar gasto'}
             </Button>
+          </div>
+        </Modal>
+      )}
+
+      {emitirDraft && (
+        <Modal cardStyle={{ padding: 0, width: 460, maxHeight: '88vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.15)' }}>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BD}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: DN }}>Emitir comprobante</div>
+              <div style={{ fontSize: 11, color: MU, marginTop: 2 }}>{nombrePaciente(emitirDraft.patientId)}</div>
+            </div>
+            <button onClick={() => setEmitirDraft(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: MU, fontSize: 20 }}>×</button>
+          </div>
+
+          <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 6 }}>Tipo de comprobante</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[['boleta', 'Boleta / Factura'], ['rxh', 'Recibo por Honorarios']].map(([id, lbl]) => (
+                  <button key={id} onClick={() => setEmitirDraft(d => ({ ...d, tipo: id }))}
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: `1px solid ${emitirDraft.tipo === id ? P : BD}`, background: emitirDraft.tipo === id ? P : '#fff', color: emitirDraft.tipo === id ? '#fff' : DN, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 6 }}>Incluye</label>
+              <div style={{ background: LT, borderRadius: 8, padding: '8px 10px', fontSize: 11, color: DN }}>
+                {emitirDraft.grupos.map(g => (
+                  <div key={g.key} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                    <span>{g.name}{g.toothLabel !== '—' ? ` (${g.toothLabel})` : ''}</span>
+                    <span style={{ fontWeight: 600 }}>S/{g.cost}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+              <div>
+                <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>DNI del paciente</label>
+                <div style={{ padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: docPaciente(emitirDraft.patientId) ? DN : RJ, background: '#f8fafc' }}>
+                  {docPaciente(emitirDraft.patientId) || 'Sin DNI en Historial'}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Monto (S/)</label>
+                <input type="number" min="0" step="0.01" value={emitirDraft.monto} onChange={e => setEmitirDraft(d => ({ ...d, monto: e.target.value }))}
+                  style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, boxSizing: 'border-box' }} />
+              </div>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 12px', fontSize: 10.5, color: '#1e40af', marginBottom: 16, lineHeight: 1.5 }}>
+              {GUIA_SOL[emitirDraft.tipo]} La ruta exacta del menú puede variar según cómo esté configurado tu RUC en SUNAT; si no la encuentras igual, usa el buscador dentro de SOL.
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Button variant="secondary" onClick={() => copiarDatos(textoParaCopiar(emitirDraft))} style={{ flex: 1, padding: 10, fontSize: 11.5 }}>
+                {copiado ? '✓ Copiado' : 'Copiar datos'}
+              </Button>
+              <Button onClick={() => window.open(SOL_LOGIN_URL, '_blank', 'noopener')} style={{ flex: 1, padding: 10, fontSize: 11.5 }}>
+                Abrir SUNAT SOL ↗
+              </Button>
+            </div>
           </div>
         </Modal>
       )}
