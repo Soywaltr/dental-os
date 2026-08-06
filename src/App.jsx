@@ -86,12 +86,15 @@ const C = {
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
-// Arranca colapsado si la ventana ya es angosta (iPad y menor) al cargar la app.
+// El riel arranca colapsado (solo iconos) en cualquier tamaño de pantalla: es la
+// forma en que se diseñó. El nombre de cada sección aparece en el tooltip, y el
+// botón de abajo lo expande con etiquetas cuando hace falta. No se persiste, así
+// que cada carga vuelve al riel angosto.
 const INIT = {
   view: "dashboard", selectedPat: null, subAccount: "Sede Principal",
   teeth: {}, teethEvolucion: {}, patientsList: [],
   globalSearch: "", notifCount: 3,
-  sidebarCollapsed: typeof window !== "undefined" && window.innerWidth <= 1180,
+  sidebarCollapsed: true,
 };
 
 function reducer(st, action) {
@@ -244,7 +247,9 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        width: "100%", height: 42,
+        position: "relative",
+        width: collapsed ? 42 : "100%", height: 42,
+        margin: collapsed ? "0 auto" : 0,
         display: "flex", alignItems: "center",
         gap: 11,
         padding: collapsed ? 0 : "0 12px",
@@ -264,6 +269,17 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
       <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0 }}>
         {IC[item.id]}
       </span>
+
+      {/* Colapsado no hay lugar para la píldora del badge: se reduce a un punto,
+          que igual comunica "acá hay algo distinto". */}
+      {collapsed && item.badge && (
+        <span style={{
+          position: "absolute", top: 7, right: 7,
+          width: 6, height: 6, borderRadius: "50%",
+          background: C.green,
+          border: `1.5px solid ${isActive ? "#fff" : "#26262a"}`,
+        }} />
+      )}
 
       {!collapsed && (
         <>
@@ -298,31 +314,33 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
   const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
   const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
   const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 74 : 226;
+  const W = col ? 68 : 226;
 
   return (
     <aside style={{
       width: W, minWidth: W,
-      height: "calc(100vh - 20px)",
-      margin: "10px 0 10px 10px",
+      height: "calc(100vh - 26px)",
+      margin: "13px 0",
       display: "flex", flexDirection: "column",
       background: GRAD_SIDEBAR,
-      borderRadius: 22,
-      boxShadow: "0 18px 44px rgba(15,23,42,0.24)",
+      // Pegado al borde izquierdo y curvo sólo del lado interno: el contenido
+      // "envuelve" el riel en vez de que el riel sea una tarjeta más.
+      borderRadius: "0 30px 30px 0",
+      boxShadow: "0 18px 44px rgba(15,23,42,0.22)",
       transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
       overflow: "hidden", flexShrink: 0, zIndex: 100,
     }}>
 
       {/* ── Logo ── */}
       <div style={{
-        height: 62, flexShrink: 0,
+        height: 58, flexShrink: 0,
         display: "flex", alignItems: "center",
         padding: col ? 0 : "0 14px",
         justifyContent: col ? "center" : "flex-start",
         gap: 10,
       }}>
         <div style={{
-          width: 34, height: 34, borderRadius: 11,
+          width: 30, height: 30, borderRadius: 10,
           background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "#fff", flexShrink: 0, overflow: "hidden",
@@ -345,9 +363,9 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
       </div>
 
       {/* ── Secciones de Nav ── */}
-      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "4px 10px" }}>
+      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: col ? "6px 0" : "4px 10px" }}>
         {SIDEBAR_SECTIONS.map((section, si) => (
-          <div key={si} style={{ marginBottom: 6 }}>
+          <div key={si} style={{ marginBottom: col ? 10 : 6 }}>
             {section.label && !col && (
               <div style={{
                 fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.4)",
@@ -359,9 +377,9 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
             )}
             {/* Colapsado no hay espacio para el rótulo: una línea fina hace de separador. */}
             {section.label && col && si > 0 && (
-              <div style={{ height: 1, background: "rgba(255,255,255,0.14)", margin: "9px 6px" }} />
+              <div style={{ height: 1, background: "rgba(255,255,255,0.13)", margin: "0 16px 10px" }} />
             )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: col ? 5 : 3 }}>
               {section.items.map(item => (
                 <SidebarItem
                   key={item.id}
@@ -377,7 +395,7 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
       </nav>
 
       {/* ── Footer: usuario + colapsar ── */}
-      <div style={{ padding: 10, flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
+      <div style={{ padding: col ? "10px 13px" : 10, flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
         <div
           onClick={onLogout}
           title={`${nombreUsuario} — cerrar sesión`}
