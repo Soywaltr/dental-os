@@ -36,14 +36,18 @@ const Config      = lazy(() => import("./components/vistas/Config"));
 // ─── FONDO DECORATIVO (glassmorphism) ─────────────────────────────────────────
 // Compartido con Login.jsx vía utils/backdrop.js (evita import circular App<->Login).
 
+// Riel de navegación: grafito oscuro, el mismo primario que ya usan los botones.
+// El violeta del referente de diseño no se usa acá a propósito -- está reservado
+// para la serie "Ingresos" de los gráficos, y repetirlo como color de marca haría
+// que el mismo color signifique dos cosas distintas en la misma pantalla.
+const GRAD_SIDEBAR = "linear-gradient(170deg, #2f2f33 0%, #1c1c1f 100%)";
+
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
-  // Fondos
-  sidebarBg:   "rgba(255,255,255,0.42)",
+  // Fondos. El sidebar ya no es de vidrio claro (ver GRAD_SIDEBAR), así que
+  // sidebarBg/cardBg/activeBg se quitaron al quedar sin uso.
   pageBg:      "#e1e4e1",
-  cardBg:      "rgba(255,255,255,0.42)",
   hoverBg:     "rgba(15,23,42,0.05)",
-  activeBg:    "rgba(240,240,239,0.85)",
   glassBlur:   "blur(26px) saturate(180%)",
   glassBorder: "1px solid rgba(255,255,255,0.75)",
   glassShadow: "0 12px 40px rgba(30,35,33,0.14)",
@@ -207,7 +211,6 @@ const IC = {
   reportes:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   whatsapp:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   config:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-  home:       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   chevRight:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
   chevLeft:   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>,
   chevDown:   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
@@ -226,6 +229,11 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: SIDEBAR ITEM ─────────────────────────────────────────────────
+// Vive sobre el riel oscuro, así que los colores van invertidos: el item activo
+// es una pastilla blanca (no una barra lateral fina) y el inactivo es blanco
+// translúcido. Colapsado usa el `title` nativo para el label en vez de un
+// tooltip propio: el riel necesita `overflow` recortado para el scroll y un
+// tooltip absoluto quedaría cortado.
 const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
   const [hov, setHov] = useState(false);
   return (
@@ -236,51 +244,36 @@ const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        width: "100%",
+        width: "100%", height: 42,
         display: "flex", alignItems: "center",
-        gap: 10,
-        padding: collapsed ? "9px 0" : "8px 12px",
+        gap: 11,
+        padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
-        borderRadius: C.r,
+        borderRadius: 13,
         border: "none",
-        background: isActive ? C.activeBg : hov ? C.hoverBg : "transparent",
-        color: isActive ? C.brand : hov ? C.ink : C.inkMid,
-        fontFamily: C.font, fontSize: 13.5,
-        fontWeight: isActive ? 600 : 450,
+        background: isActive ? "#fff" : hov ? "rgba(255,255,255,0.13)" : "transparent",
+        color: isActive ? C.ink : hov ? "#fff" : "rgba(255,255,255,0.66)",
+        fontFamily: C.font, fontSize: 13,
+        fontWeight: isActive ? 700 : 500,
         cursor: "pointer", outline: "none",
-        transition: "background 0.12s, color 0.12s",
+        transition: "background 0.14s, color 0.14s",
         letterSpacing: "-0.1px",
-        position: "relative",
+        flexShrink: 0,
       }}
     >
-      {/* Barra activa izquierda */}
-      {isActive && !collapsed && (
-        <span style={{
-          position: "absolute", left: 0, top: "20%", bottom: "20%",
-          width: 3, borderRadius: "0 3px 3px 0",
-          background: C.brand,
-        }} />
-      )}
-
-      {/* Ícono */}
-      <span style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        width: 20, height: 20, flexShrink: 0,
-        color: isActive ? C.brand : hov ? C.ink : C.inkMute,
-      }}>
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0 }}>
         {IC[item.id]}
       </span>
 
-      {/* Label + badge */}
       {!collapsed && (
         <>
-          <span style={{ flex: 1, textAlign: "left" }}>{item.label}</span>
+          <span style={{ flex: 1, textAlign: "left", whiteSpace: "nowrap" }}>{item.label}</span>
           {item.badge && (
             <span style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.2px",
-              padding: "2px 7px", borderRadius: 100,
-              background: isActive ? C.brand : C.brandSoft,
-              color: isActive ? "#fff" : C.brand,
+              fontSize: 9, fontWeight: 800, letterSpacing: "0.3px",
+              padding: "2px 6px", borderRadius: 100,
+              background: isActive ? C.ink : "rgba(255,255,255,0.18)",
+              color: "#fff",
             }}>
               {item.badge}
             </span>
@@ -305,132 +298,70 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
   const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
   const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
   const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 60 : 220;
+  const W = col ? 74 : 226;
 
   return (
     <aside style={{
       width: W, minWidth: W,
-      height: "100vh",
+      height: "calc(100vh - 20px)",
+      margin: "10px 0 10px 10px",
       display: "flex", flexDirection: "column",
-      background: C.sidebarBg,
-      backdropFilter: C.glassBlur, WebkitBackdropFilter: C.glassBlur,
-      borderRight: `1px solid rgba(255,255,255,0.4)`,
-      boxShadow: C.glassShadow,
+      background: GRAD_SIDEBAR,
+      borderRadius: 22,
+      boxShadow: "0 18px 44px rgba(15,23,42,0.24)",
       transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
       overflow: "hidden", flexShrink: 0, zIndex: 100,
     }}>
 
       {/* ── Logo ── */}
       <div style={{
-        height: 56,
+        height: 62, flexShrink: 0,
         display: "flex", alignItems: "center",
-        padding: col ? "0" : "0 16px",
-        justifyContent: col ? "center" : "space-between",
-        borderBottom: `1px solid ${C.border}`,
-        flexShrink: 0,
+        padding: col ? 0 : "0 14px",
+        justifyContent: col ? "center" : "flex-start",
+        gap: 10,
       }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 11,
+          background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", flexShrink: 0, overflow: "hidden",
+        }}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={clinica?.nombre || "Logo del consultorio"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          )}
+        </div>
         {!col && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 8,
-              background: logoUrl ? "transparent" : GRAD_PRIMARY,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", flexShrink: 0, overflow: "hidden",
-            }}>
-              {logoUrl ? (
-                <img src={logoUrl} alt={clinica?.nombre || "Logo del consultorio"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                  <path d="M2 17l10 5 10-5"/>
-                  <path d="M2 12l10 5 10-5"/>
-                </svg>
-              )}
-            </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font, letterSpacing: "-0.3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {clinica?.nombre || "DentalOS"}
-            </span>
-          </div>
-        )}
-        <button
-          onClick={toggle}
-          aria-label={col ? "Expandir menú" : "Colapsar menú"}
-          style={{
-            width: 24, height: 24, borderRadius: 6,
-            border: `1px solid ${C.border}`,
-            background: C.hoverBg,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: C.inkMute,
-            outline: "none", transition: "background 0.12s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = C.border; }}
-          onMouseLeave={e => { e.currentTarget.style.background = C.hoverBg; }}
-        >
-          {col ? IC.chevRight : IC.chevLeft}
-        </button>
-      </div>
-
-      {/* ── Search ── */}
-      <div style={{ padding: col ? "10px 8px" : "10px 12px", flexShrink: 0 }}>
-        {col ? (
-          <button onClick={() => {}} style={{
-            width: "100%", height: 32, borderRadius: C.r,
-            border: `1px solid ${C.border}`, background: C.hoverBg,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: C.inkMute, outline: "none",
-          }}>
-            {IC.search}
-          </button>
-        ) : (
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: C.inkMute, display: "flex" }}>
-              {IC.search}
-            </span>
-            <input
-              type="search"
-              value={state.globalSearch}
-              onChange={e => dispatch({ type: "SET_SEARCH", payload: e.target.value })}
-              placeholder="Buscar..."
-              style={{
-                width: "100%", padding: "7px 28px 7px 28px",
-                borderRadius: C.r, border: `1px solid ${C.border}`,
-                background: C.hoverBg, fontSize: 13,
-                fontFamily: C.font, color: C.ink, outline: "none",
-                transition: "border-color 0.12s",
-              }}
-              onFocus={e => { e.target.style.borderColor = C.brand; }}
-              onBlur={e  => { e.target.style.borderColor = C.border; }}
-            />
-            <kbd style={{
-              position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-              fontSize: 10, color: C.inkFaint, fontFamily: C.fontMono,
-              background: "#fff", padding: "1px 4px", borderRadius: 4,
-              border: `1px solid ${C.border}`,
-            }}>
-              /
-            </kbd>
-          </div>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {clinica?.nombre || "DentalOS"}
+          </span>
         )}
       </div>
 
       {/* ── Secciones de Nav ── */}
-      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: col ? "0 8px" : "0 8px" }}>
+      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "4px 10px" }}>
         {SIDEBAR_SECTIONS.map((section, si) => (
-          <div key={si} style={{ marginBottom: 8 }}>
+          <div key={si} style={{ marginBottom: 6 }}>
             {section.label && !col && (
               <div style={{
-                fontSize: 11, fontWeight: 600, color: C.inkFaint,
-                letterSpacing: "0.6px", textTransform: "uppercase",
-                padding: "10px 12px 4px",
-                fontFamily: C.font,
+                fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.4)",
+                letterSpacing: "0.7px", textTransform: "uppercase",
+                padding: "12px 12px 6px",
               }}>
                 {section.label}
               </div>
             )}
+            {/* Colapsado no hay espacio para el rótulo: una línea fina hace de separador. */}
             {section.label && col && si > 0 && (
-              <div style={{ height: "1px", background: C.border, margin: "8px 4px" }} />
+              <div style={{ height: 1, background: "rgba(255,255,255,0.14)", margin: "9px 6px" }} />
             )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {section.items.map(item => (
                 <SidebarItem
                   key={item.id}
@@ -445,55 +376,191 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
         ))}
       </nav>
 
-      {/* ── Footer sidebar ── */}
-      <div style={{
-        borderTop: `1px solid ${C.border}`,
-        padding: col ? "8px" : "8px",
-        flexShrink: 0, display: "flex", flexDirection: "column", gap: 1,
-      }}>
-        {/* Soporte */}
-        <SidebarItem
-          item={{ id: "support_fake", label: "Soporte" }}
-          isActive={false}
-          collapsed={col}
-          onClick={() => {}}
-        />
-
-        {/* Usuario */}
-        <div style={{
-          display: "flex", alignItems: "center",
-          gap: 8, padding: col ? "8px 0" : "8px 12px",
-          justifyContent: col ? "center" : "flex-start",
-          borderRadius: C.r, marginTop: 4,
-          cursor: "pointer",
-          transition: "background 0.12s",
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = C.hoverBg; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+      {/* ── Footer: usuario + colapsar ── */}
+      <div style={{ padding: 10, flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
+        <div
           onClick={onLogout}
-          title="Cerrar sesión"
+          title={`${nombreUsuario} — cerrar sesión`}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: col ? 0 : "7px 8px",
+            height: 42,
+            justifyContent: col ? "center" : "flex-start",
+            borderRadius: 13, cursor: "pointer", transition: "background 0.14s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.13)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
         >
           <div style={{
             width: 28, height: 28, borderRadius: "50%",
-            background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : C.brandSoft,
-            border: `1.5px solid ${C.border}`, flexShrink: 0,
+            background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(255,255,255,0.18)",
+            border: "1.5px solid rgba(255,255,255,0.28)", flexShrink: 0,
           }} />
           {!col && (
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {nombreUsuario}
               </div>
-              <div style={{ fontSize: 11, color: C.inkMute }}>Cerrar sesión</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Cerrar sesión</div>
             </div>
           )}
         </div>
+
+        <button
+          onClick={toggle}
+          aria-label={col ? "Expandir menú" : "Colapsar menú"}
+          title={col ? "Expandir menú" : "Colapsar menú"}
+          style={{
+            width: "100%", height: 30, marginTop: 6,
+            borderRadius: 10, border: "none",
+            background: "rgba(255,255,255,0.09)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "rgba(255,255,255,0.6)", outline: "none",
+            transition: "background 0.14s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; }}
+        >
+          {col ? IC.chevRight : IC.chevLeft}
+        </button>
       </div>
     </aside>
   );
 });
 
+// ─── COMPONENTE: BUSCADOR GLOBAL ──────────────────────────────────────────────
+// Antes el buscador guardaba texto en el estado y NADA lo leía -- era decorativo,
+// igual que el hint "/" del teclado. Ahora busca pacientes de verdad por nombre o
+// documento y abre su historial. El RLS acota el resultado a la propia clínica,
+// así que no hace falta filtrar por clinica_id acá.
+const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
+  // Se guarda la consulta JUNTO a sus resultados: si sólo se guardaran los
+  // resultados, al reescribir se mostrarían los de la búsqueda anterior hasta
+  // que llegara la nueva.
+  const [res, setRes] = useState({ q: "", items: [] });
+  const [abierto, setAbierto] = useState(false);
+  const cajaRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  // El atajo "/" que el teclado ya prometía en la UI.
+  useEffect(() => {
+    const alTeclear = (e) => {
+      const enCampo = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+      if (e.key === "/" && !enCampo) { e.preventDefault(); inputRef.current?.focus(); }
+      if (e.key === "Escape") setAbierto(false);
+    };
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, []);
+
+  useEffect(() => {
+    const alApretar = (e) => { if (cajaRef.current && !cajaRef.current.contains(e.target)) setAbierto(false); };
+    window.addEventListener("mousedown", alApretar);
+    return () => window.removeEventListener("mousedown", alApretar);
+  }, []);
+
+  useEffect(() => {
+    const texto = (valor || "").trim();
+    if (texto.length < 2) return;
+    let vivo = true;
+    // Toda la escritura de estado ocurre dentro del timeout, nunca en el cuerpo
+    // del efecto: así no se disparan renders en cascada. La espera además evita
+    // una consulta por cada tecla.
+    const t = setTimeout(async () => {
+      // Se limpian comas y paréntesis: tienen significado especial en el filtro
+      // .or() de PostgREST.
+      const limpio = texto.replace(/[,()]/g, "").slice(0, 60);
+      const { data } = await supabase
+        .from("pacientes")
+        .select("id, name, doc, phone, treatment")
+        .or(`name.ilike.%${limpio}%,doc.ilike.%${limpio}%`)
+        .limit(6);
+      if (!vivo) return;
+      setRes({ q: texto, items: data || [] });
+      setAbierto(true);
+    }, 220);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [valor]);
+
+  const texto = (valor || "").trim();
+  const hayTexto = texto.length >= 2;
+  // Sólo se muestran resultados que correspondan al texto actual.
+  const buscando = hayTexto && res.q !== texto;
+  const resultados = buscando ? [] : res.items;
+
+  return (
+    <div ref={cajaRef} style={{ position: "relative", flex: 1, maxWidth: 430, minWidth: 0 }}>
+      <span style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: C.inkMute, display: "flex", pointerEvents: "none" }}>
+        {IC.search}
+      </span>
+      <input
+        ref={inputRef}
+        type="search"
+        value={valor}
+        onChange={e => onCambio(e.target.value)}
+        onFocus={() => { if (hayTexto) setAbierto(true); }}
+        placeholder="Buscar paciente por nombre o documento…"
+        style={{
+          width: "100%", padding: "9px 34px 9px 36px",
+          borderRadius: 12, border: `1px solid ${C.border}`,
+          background: "#fff", fontSize: 13,
+          fontFamily: C.font, color: C.ink, outline: "none",
+          transition: "border-color 0.12s, box-shadow 0.12s",
+        }}
+        onMouseEnter={e => { e.target.style.borderColor = C.borderStrong; }}
+        onMouseLeave={e => { if (document.activeElement !== e.target) e.target.style.borderColor = C.border; }}
+      />
+      <kbd style={{
+        position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+        fontSize: 10, color: C.inkMute, fontFamily: C.fontMono,
+        background: C.brandSoft, padding: "2px 6px", borderRadius: 5,
+        pointerEvents: "none",
+      }}>
+        /
+      </kbd>
+
+      {abierto && hayTexto && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 7px)", left: 0, right: 0,
+          background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`,
+          boxShadow: "0 18px 40px rgba(15,23,42,0.16)", overflow: "hidden", zIndex: 200,
+        }}>
+          {buscando && <div style={{ padding: "14px 15px", fontSize: 12, color: C.inkMute }}>Buscando…</div>}
+          {!buscando && resultados.length === 0 && (
+            <div style={{ padding: "14px 15px", fontSize: 12, color: C.inkMute }}>Ningún paciente coincide.</div>
+          )}
+          {!buscando && resultados.map(p => (
+            <div
+              key={p.id}
+              onClick={() => { onAbrirPaciente(p); setAbierto(false); onCambio(""); }}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid ${C.brandSoft}` }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.brandSoft; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%", background: C.brandSoft,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 10.5, fontWeight: 700, color: C.ink, flexShrink: 0,
+              }}>
+                {(p.name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                <div style={{ fontSize: 10.5, color: C.inkMute }}>
+                  DNI {p.doc || "—"}{p.treatment ? ` · ${p.treatment}` : ""}
+                </div>
+              </div>
+              <span style={{ fontSize: 11, color: C.inkMute, flexShrink: 0 }}>abrir →</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
+
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
-const TopHeader = memo(({ state, dispatch, onLogout, clinica }) => {
+const TopHeader = memo(({ state, dispatch, onLogout, clinica, onAbrirPaciente }) => {
   const label = VIEW_LABELS[state.view] ?? state.view;
   // Mismo motivo que en el Sidebar: antes era una foto fija, ajena a quién
   // tuviera la sesión abierta.
@@ -501,25 +568,25 @@ const TopHeader = memo(({ state, dispatch, onLogout, clinica }) => {
 
   return (
     <header style={{
-      height: 56,
+      height: 62,
       display: "flex", alignItems: "center",
-      padding: "0 24px",
-      background: "rgba(255,255,255,0.35)",
-      backdropFilter: C.glassBlur, WebkitBackdropFilter: C.glassBlur,
-      borderBottom: `1px solid rgba(255,255,255,0.4)`,
-      gap: 12, flexShrink: 0, zIndex: 90, position: "relative",
+      padding: "0 4px 0 22px",
+      gap: 16, flexShrink: 0, zIndex: 90, position: "relative",
     }}>
-      {/* Breadcrumb */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
-        <span style={{ color: C.inkMute, display: "flex" }}>{IC.home}</span>
-        <span style={{ color: C.inkFaint, display: "flex" }}>{IC.chevRight}</span>
-        <span style={{ fontSize: 13.5, fontWeight: 600, color: C.ink, fontFamily: C.font }}>
-          {label}
-        </span>
-      </div>
+      {/* Título de la vista */}
+      <span style={{ fontSize: 17, fontWeight: 700, color: C.ink, fontFamily: C.font, letterSpacing: "-0.4px", flexShrink: 0 }}>
+        {label}
+      </span>
+
+      {/* Buscador global */}
+      <BuscadorGlobal
+        valor={state.globalSearch}
+        onCambio={v => dispatch({ type: "SET_SEARCH", payload: v })}
+        onAbrirPaciente={onAbrirPaciente}
+      />
 
       {/* Grupo derecho */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: "auto" }}>
 
         {/* Selector sede */}
         <div style={{
@@ -849,11 +916,14 @@ export default function App() {
 
         {/* Columna derecha */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
-          {/* Header con breadcrumb */}
-          <TopHeader state={state} dispatch={dispatch} onLogout={logout} clinica={clinica} />
+          {/* Header: título de vista + buscador + acciones */}
+          <TopHeader
+            state={state} dispatch={dispatch} onLogout={logout} clinica={clinica}
+            onAbrirPaciente={p => dispatch({ type: "SET_VIEW", payload: { view: "expediente", pat: p } })}
+          />
 
           {/* Contenido */}
-          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "16px 16px 32px" : "24px 24px 48px", background: "transparent" }}>
+          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "4px 14px 32px" : "4px 22px 44px", background: "transparent" }}>
             <div style={{ maxWidth: 1480, margin: "0 auto" }}>
               <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
             </div>
