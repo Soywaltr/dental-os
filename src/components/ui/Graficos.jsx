@@ -52,6 +52,30 @@ export function Sparkline({ valores, color, colorTenue = '#CBD5E1', ancho = 92, 
   );
 }
 
+// Anillo de progreso (medidor). La pista sin llenar va en un paso claro del
+// MISMO color del relleno, no en gris neutro: así el estado se lee a lo largo de
+// todo el anillo y no sólo en el tramo lleno.
+export function Anillo({ pct, color, tamano = 92, grosor = 9, children }) {
+  const valor = Math.max(0, Math.min(100, pct || 0));
+  const r = (tamano - grosor) / 2;
+  const circ = 2 * Math.PI * r;
+  return (
+    <div style={{ position: 'relative', width: tamano, height: tamano, flexShrink: 0 }}>
+      <svg width={tamano} height={tamano} style={{ transform: 'rotate(-90deg)', display: 'block' }} aria-hidden="true">
+        <circle cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={`${color}26`} strokeWidth={grosor} />
+        <circle
+          cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={color} strokeWidth={grosor}
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - valor / 100)} strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset .5s ease' }}
+        />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const VB_W = 720;
 const PAD = { l: 54, r: 18, t: 14, b: 26 };
 
