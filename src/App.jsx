@@ -234,47 +234,52 @@ const VIEW_LABELS = {
 
 // ─── COMPONENTE: BOTÓN DEL RIEL ───────────────────────────────────────────────
 // Vive en el riel negro angosto: sólo icono, con el nombre en el tooltip nativo.
-const RailBtn = memo(({ children, label, onClick, badge, activo }) => {
+// Activo = pastilla blanca con el icono en oscuro, igual que el item activo del
+// panel de secciones, para que se lea como el mismo estado en los dos niveles.
+const RailBtn = memo(({ children, label, onClick, activo, punto }) => {
   const [hov, setHov] = useState(false);
   return (
     <button
       onClick={onClick}
       aria-label={label}
+      aria-current={activo ? "page" : undefined}
       title={label}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
         width: 36, height: 36, borderRadius: 11, border: "none",
-        background: activo ? "rgba(255,255,255,0.16)" : hov ? "rgba(255,255,255,0.10)" : "transparent",
-        color: activo || hov ? "#fff" : "rgba(255,255,255,0.55)",
+        background: activo ? "#fff" : hov ? "rgba(255,255,255,0.13)" : "transparent",
+        color: activo ? C.ink : hov ? "#fff" : "rgba(255,255,255,0.55)",
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer", outline: "none", flexShrink: 0,
         transition: "background 0.14s, color 0.14s",
       }}
     >
       {children}
-      {badge > 0 && (
+      {/* En 36px no cabe la píldora "IA": se reduce a un punto, que igual avisa
+          que esa sección tiene algo distinto. */}
+      {punto && (
         <span style={{
-          position: "absolute", top: 5, right: 5,
-          minWidth: 14, height: 14, padding: "0 3px", borderRadius: 100,
-          background: C.red, color: "#fff", fontSize: 8, fontWeight: 800,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          border: `1.5px solid ${RAIL_BG}`, fontFamily: C.font,
-        }}>
-          {badge}
-        </span>
+          position: "absolute", top: 6, right: 6,
+          width: 6, height: 6, borderRadius: "50%",
+          background: C.green,
+          border: `1.5px solid ${activo ? "#fff" : RAIL_BG}`,
+        }} />
       )}
     </button>
   );
 });
 
 // ─── COMPONENTE: RIEL NEGRO ───────────────────────────────────────────────────
-// Nivel 1 de la navegación: acciones globales, no secciones. Las secciones viven
-// en el panel claro de al lado, así que acá no se repite ninguna -- si estuvieran
-// en los dos lugares no quedaría claro cuál manda.
-const RailIzquierdo = memo(({ dispatch, onLogout, clinica, avatarUrl, notifCount, panelAbierto }) => {
+// Nivel 1: las secciones como iconos, siempre visibles. Con el panel plegado el
+// riel sigue alcanzando para navegar; con el panel abierto, los dos niveles
+// marcan la misma sección activa. Las acciones globales (nueva cita,
+// notificaciones, ajustes, salir) NO se repiten acá: viven en la barra superior.
+const RailIzquierdo = memo(({ view, dispatch, clinica, panelAbierto }) => {
   const logoUrl = useSignedUrl(clinica?.logo_url);
+  const goTo = useCallback(id => dispatch({ type: "SET_VIEW", payload: { view: id } }), [dispatch]);
+
   return (
     <div style={{
       width: 52, minWidth: 52,
@@ -283,7 +288,7 @@ const RailIzquierdo = memo(({ dispatch, onLogout, clinica, avatarUrl, notifCount
       background: RAIL_BG,
       borderRadius: 18,
       display: "flex", flexDirection: "column", alignItems: "center",
-      padding: "10px 0", gap: 6,
+      padding: "10px 0",
       flexShrink: 0, zIndex: 101,
       boxShadow: "0 16px 40px rgba(15,23,42,0.24)",
     }}>
@@ -302,27 +307,41 @@ const RailIzquierdo = memo(({ dispatch, onLogout, clinica, avatarUrl, notifCount
         )}
       </div>
 
-      <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.14)", margin: "4px 0", flexShrink: 0 }} />
+      <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.14)", margin: "10px 0 8px", flexShrink: 0 }} />
 
-      <RailBtn label="Nueva cita" onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "agenda" } })}>
-        {IC.plus}
-      </RailBtn>
-      <RailBtn label={`${notifCount} notificaciones`} badge={notifCount} onClick={() => {}}>
-        {IC.bell}
-      </RailBtn>
+      {/* Secciones. Con scroll propio: en una pantalla baja el riel no debe
+          empujar afuera el rótulo ni recortar iconos. */}
+      <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: "100%" }}>
+        {SIDEBAR_SECTIONS.map((section, si) => (
+          <React.Fragment key={si}>
+            {si > 0 && <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.14)", margin: "4px 0", flexShrink: 0 }} />}
+            {section.items.map(item => (
+              <RailBtn
+                key={item.id}
+                label={item.label}
+                activo={view === item.id}
+                punto={!!item.badge}
+                onClick={() => goTo(item.id)}
+              >
+                {IC[item.id]}
+              </RailBtn>
+            ))}
+          </React.Fragment>
+        ))}
+      </nav>
 
       {/* Etiqueta rotada que abre/cierra el panel de secciones. En el diseño de
           referencia estos rótulos verticales son paneles plegados; acá hace ese
           mismo trabajo en vez de ser sólo decoración. */}
       <button
         onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
-        title={panelAbierto ? "Ocultar secciones" : "Mostrar secciones"}
+        title={panelAbierto ? "Ocultar nombres de las secciones" : "Mostrar nombres de las secciones"}
         style={{
-          flex: 1, width: 36, marginTop: 4,
+          width: 36, height: 84, marginTop: 8, flexShrink: 0,
           background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 11,
           color: "rgba(255,255,255,0.42)", cursor: "pointer", outline: "none",
           display: "flex", alignItems: "center", justifyContent: "center",
-          minHeight: 90, transition: "background 0.14s, color 0.14s",
+          transition: "background 0.14s, color 0.14s",
         }}
         onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
         onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.42)"; }}
@@ -335,21 +354,6 @@ const RailIzquierdo = memo(({ dispatch, onLogout, clinica, avatarUrl, notifCount
           Secciones
         </span>
       </button>
-
-      <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.14)", margin: "4px 0", flexShrink: 0 }} />
-
-      <RailBtn label="Ajustes" onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "config" } })}>
-        {IC.settings}
-      </RailBtn>
-      <button
-        onClick={onLogout}
-        title="Cerrar sesión"
-        style={{
-          width: 30, height: 30, borderRadius: "50%", padding: 0, flexShrink: 0,
-          background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(255,255,255,0.18)",
-          border: "1.5px solid rgba(255,255,255,0.3)", cursor: "pointer", outline: "none",
-        }}
-      />
     </div>
   );
 });
@@ -604,11 +608,8 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
 });
 
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
-const TopHeader = memo(({ state, dispatch, onLogout, clinica, onAbrirPaciente }) => {
+const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, onAbrirPaciente }) => {
   const label = VIEW_LABELS[state.view] ?? state.view;
-  // Mismo motivo que en el Sidebar: antes era una foto fija, ajena a quién
-  // tuviera la sesión abierta.
-  const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
 
   return (
     <header style={{
@@ -962,8 +963,7 @@ export default function App() {
         {/* Navegación en dos niveles: riel negro (acciones globales) + panel de
             secciones. El panel se puede plegar con el rótulo vertical del riel. */}
         <RailIzquierdo
-          dispatch={dispatch} onLogout={logout} clinica={clinica}
-          avatarUrl={avatarUrl} notifCount={state.notifCount}
+          view={state.view} dispatch={dispatch} clinica={clinica}
           panelAbierto={!state.sidebarCollapsed}
         />
         {!state.sidebarCollapsed && (
@@ -977,7 +977,7 @@ export default function App() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
           {/* Header: título de vista + buscador + acciones */}
           <TopHeader
-            state={state} dispatch={dispatch} onLogout={logout} clinica={clinica}
+            state={state} dispatch={dispatch} onLogout={logout} avatarUrl={avatarUrl}
             onAbrirPaciente={p => dispatch({ type: "SET_VIEW", payload: { view: "expediente", pat: p } })}
           />
 
