@@ -1,8 +1,9 @@
 // src/App.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// DentalOS · Shell · Layout Taskk-style
-// Sidebar izquierdo fijo con secciones · Header breadcrumb · FAB · Search
-// Context + Reducer · Lazy views · Rules of Hooks 100% correctas
+// DentalOS · Shell
+// Navegación en dos niveles: riel negro angosto (acciones globales) + panel de
+// secciones agrupadas con contadores · Header con título de vista y buscador
+// global · Context + Reducer · Lazy views · Rules of Hooks 100% correctas
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, {
@@ -17,6 +18,7 @@ import useResponsive from "./utils/useResponsive";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
 import useAAL from "./utils/useAAL";
+import useContadoresNav from "./utils/useContadoresNav";
 import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
@@ -36,15 +38,15 @@ const Config      = lazy(() => import("./components/vistas/Config"));
 // ─── FONDO DECORATIVO (glassmorphism) ─────────────────────────────────────────
 // Compartido con Login.jsx vía utils/backdrop.js (evita import circular App<->Login).
 
-// Riel de navegación: grafito oscuro, el mismo primario que ya usan los botones.
-// El violeta del referente de diseño no se usa acá a propósito -- está reservado
-// para la serie "Ingresos" de los gráficos, y repetirlo como color de marca haría
-// que el mismo color signifique dos cosas distintas en la misma pantalla.
-const GRAD_SIDEBAR = "linear-gradient(170deg, #2f2f33 0%, #1c1c1f 100%)";
+// Riel de navegación (nivel 1): casi negro, plano. El violeta del referente de
+// diseño no se usa acá a propósito -- está reservado para la serie "Ingresos" de
+// los gráficos, y repetirlo como color de marca haría que el mismo color
+// signifique dos cosas distintas en la misma pantalla.
+const RAIL_BG = "#141416";
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
-  // Fondos. El sidebar ya no es de vidrio claro (ver GRAD_SIDEBAR), así que
+  // Fondos. El riel de navegación es casi negro (ver RAIL_BG), así que
   // sidebarBg/cardBg/activeBg se quitaron al quedar sin uso.
   pageBg:      "#e1e4e1",
   hoverBg:     "rgba(15,23,42,0.05)",
@@ -86,15 +88,14 @@ const C = {
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
-// El riel arranca colapsado (solo iconos) en cualquier tamaño de pantalla: es la
-// forma en que se diseñó. El nombre de cada sección aparece en el tooltip, y el
-// botón de abajo lo expande con etiquetas cuando hace falta. No se persiste, así
-// que cada carga vuelve al riel angosto.
+// `sidebarCollapsed` ahora significa "panel de secciones plegado": el riel negro
+// siempre está. Arranca desplegado, salvo en pantallas de iPad o menores, donde
+// 278px de navegación se comen la vista (ver el efecto en App).
 const INIT = {
   view: "dashboard", selectedPat: null, subAccount: "Sede Principal",
   teeth: {}, teethEvolucion: {}, patientsList: [],
   globalSearch: "", notifCount: 3,
-  sidebarCollapsed: true,
+  sidebarCollapsed: typeof window !== "undefined" && window.innerWidth <= 1180,
 };
 
 function reducer(st, action) {
@@ -231,161 +232,236 @@ const VIEW_LABELS = {
   ortodoncia: "Ortodoncia", whatsapp: "Chat IA", config: "Ajustes",
 };
 
-// ─── COMPONENTE: SIDEBAR ITEM ─────────────────────────────────────────────────
-// Vive sobre el riel oscuro, así que los colores van invertidos: el item activo
-// es una pastilla blanca (no una barra lateral fina) y el inactivo es blanco
-// translúcido. Colapsado usa el `title` nativo para el label en vez de un
-// tooltip propio: el riel necesita `overflow` recortado para el scroll y un
-// tooltip absoluto quedaría cortado.
-const SidebarItem = memo(({ item, isActive, collapsed, onClick }) => {
+// ─── COMPONENTE: BOTÓN DEL RIEL ───────────────────────────────────────────────
+// Vive en el riel negro angosto: sólo icono, con el nombre en el tooltip nativo.
+const RailBtn = memo(({ children, label, onClick, badge, activo }) => {
   const [hov, setHov] = useState(false);
   return (
     <button
-      onClick={() => onClick(item.id)}
-      aria-current={isActive ? "page" : undefined}
-      title={collapsed ? item.label : undefined}
+      onClick={onClick}
+      aria-label={label}
+      title={label}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
-        width: collapsed ? 42 : "100%", height: 42,
-        margin: collapsed ? "0 auto" : 0,
-        display: "flex", alignItems: "center",
-        gap: 11,
-        padding: collapsed ? 0 : "0 12px",
-        justifyContent: collapsed ? "center" : "flex-start",
-        borderRadius: 13,
-        border: "none",
-        background: isActive ? "#fff" : hov ? "rgba(255,255,255,0.13)" : "transparent",
-        color: isActive ? C.ink : hov ? "#fff" : "rgba(255,255,255,0.66)",
-        fontFamily: C.font, fontSize: 13,
-        fontWeight: isActive ? 700 : 500,
-        cursor: "pointer", outline: "none",
+        width: 36, height: 36, borderRadius: 11, border: "none",
+        background: activo ? "rgba(255,255,255,0.16)" : hov ? "rgba(255,255,255,0.10)" : "transparent",
+        color: activo || hov ? "#fff" : "rgba(255,255,255,0.55)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", outline: "none", flexShrink: 0,
         transition: "background 0.14s, color 0.14s",
-        letterSpacing: "-0.1px",
-        flexShrink: 0,
       }}
     >
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0 }}>
-        {IC[item.id]}
-      </span>
-
-      {/* Colapsado no hay lugar para la píldora del badge: se reduce a un punto,
-          que igual comunica "acá hay algo distinto". */}
-      {collapsed && item.badge && (
+      {children}
+      {badge > 0 && (
         <span style={{
-          position: "absolute", top: 7, right: 7,
-          width: 6, height: 6, borderRadius: "50%",
-          background: C.green,
-          border: `1.5px solid ${isActive ? "#fff" : "#26262a"}`,
-        }} />
-      )}
-
-      {!collapsed && (
-        <>
-          <span style={{ flex: 1, textAlign: "left", whiteSpace: "nowrap" }}>{item.label}</span>
-          {item.badge && (
-            <span style={{
-              fontSize: 9, fontWeight: 800, letterSpacing: "0.3px",
-              padding: "2px 6px", borderRadius: 100,
-              background: isActive ? C.ink : "rgba(255,255,255,0.18)",
-              color: "#fff",
-            }}>
-              {item.badge}
-            </span>
-          )}
-        </>
+          position: "absolute", top: 5, right: 5,
+          minWidth: 14, height: 14, padding: "0 3px", borderRadius: 100,
+          background: C.red, color: "#fff", fontSize: 8, fontWeight: 800,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: `1.5px solid ${RAIL_BG}`, fontFamily: C.font,
+        }}>
+          {badge}
+        </span>
       )}
     </button>
   );
 });
 
-// ─── COMPONENTE: SIDEBAR ─────────────────────────────────────────────────────
-const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
-  const { sidebarCollapsed: col, view } = state;
-  // El bucket es privado: el logo se sirve con una URL firmada, no con la
-  // pública que quedó guardada en clinicas.logo_url.
+// ─── COMPONENTE: RIEL NEGRO ───────────────────────────────────────────────────
+// Nivel 1 de la navegación: acciones globales, no secciones. Las secciones viven
+// en el panel claro de al lado, así que acá no se repite ninguna -- si estuvieran
+// en los dos lugares no quedaría claro cuál manda.
+const RailIzquierdo = memo(({ dispatch, onLogout, clinica, avatarUrl, notifCount, panelAbierto }) => {
   const logoUrl = useSignedUrl(clinica?.logo_url);
-  // Antes decía "Dra. Sol Vargas" fijo en el código — cualquier cuenta que
-  // entrara veía ese mismo nombre. Se muestra el nombre real de la sesión
-  // (o el correo si todavía no lo configuró en Mi perfil), y la foto de
-  // perfil de SU clínica (nunca la de otra).
-  const nombreUsuario = session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario";
-  const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
-  const goTo   = useCallback(id => dispatch({ type: "SET_VIEW",       payload: { view: id } }), [dispatch]);
-  const toggle = useCallback(()  => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 68 : 226;
-
   return (
-    <aside style={{
-      width: W, minWidth: W,
+    <div style={{
+      width: 52, minWidth: 52,
+      margin: "13px 0 13px 10px",
       height: "calc(100vh - 26px)",
-      margin: "13px 0",
-      display: "flex", flexDirection: "column",
-      background: GRAD_SIDEBAR,
-      // Pegado al borde izquierdo y curvo sólo del lado interno: el contenido
-      // "envuelve" el riel en vez de que el riel sea una tarjeta más.
-      borderRadius: "0 30px 30px 0",
-      boxShadow: "0 18px 44px rgba(15,23,42,0.22)",
-      transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
-      overflow: "hidden", flexShrink: 0, zIndex: 100,
+      background: RAIL_BG,
+      borderRadius: 18,
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "10px 0", gap: 6,
+      flexShrink: 0, zIndex: 101,
+      boxShadow: "0 16px 40px rgba(15,23,42,0.24)",
     }}>
-
-      {/* ── Logo ── */}
+      {/* Marca */}
       <div style={{
-        height: 58, flexShrink: 0,
-        display: "flex", alignItems: "center",
-        padding: col ? 0 : "0 14px",
-        justifyContent: col ? "center" : "flex-start",
-        gap: 10,
+        width: 32, height: 32, borderRadius: 10, overflow: "hidden", flexShrink: 0,
+        background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
+        display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
       }}>
-        <div style={{
-          width: 30, height: 30, borderRadius: 10,
-          background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#fff", flexShrink: 0, overflow: "hidden",
-        }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={clinica?.nombre || "Logo del consultorio"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
-          )}
-        </div>
-        {!col && (
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {clinica?.nombre || "DentalOS"}
-          </span>
+        {logoUrl ? (
+          <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+          </svg>
         )}
       </div>
 
-      {/* ── Secciones de Nav ── */}
-      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: col ? "6px 0" : "4px 10px" }}>
+      <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.14)", margin: "4px 0", flexShrink: 0 }} />
+
+      <RailBtn label="Nueva cita" onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "agenda" } })}>
+        {IC.plus}
+      </RailBtn>
+      <RailBtn label={`${notifCount} notificaciones`} badge={notifCount} onClick={() => {}}>
+        {IC.bell}
+      </RailBtn>
+
+      {/* Etiqueta rotada que abre/cierra el panel de secciones. En el diseño de
+          referencia estos rótulos verticales son paneles plegados; acá hace ese
+          mismo trabajo en vez de ser sólo decoración. */}
+      <button
+        onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
+        title={panelAbierto ? "Ocultar secciones" : "Mostrar secciones"}
+        style={{
+          flex: 1, width: 36, marginTop: 4,
+          background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 11,
+          color: "rgba(255,255,255,0.42)", cursor: "pointer", outline: "none",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          minHeight: 90, transition: "background 0.14s, color 0.14s",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.42)"; }}
+      >
+        <span style={{
+          writingMode: "vertical-rl", transform: "rotate(180deg)",
+          fontSize: 8.5, fontWeight: 800, letterSpacing: "1.4px",
+          textTransform: "uppercase", whiteSpace: "nowrap",
+        }}>
+          Secciones
+        </span>
+      </button>
+
+      <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.14)", margin: "4px 0", flexShrink: 0 }} />
+
+      <RailBtn label="Ajustes" onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "config" } })}>
+        {IC.settings}
+      </RailBtn>
+      <button
+        onClick={onLogout}
+        title="Cerrar sesión"
+        style={{
+          width: 30, height: 30, borderRadius: "50%", padding: 0, flexShrink: 0,
+          background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(255,255,255,0.18)",
+          border: "1.5px solid rgba(255,255,255,0.3)", cursor: "pointer", outline: "none",
+        }}
+      />
+    </div>
+  );
+});
+
+// ─── COMPONENTE: ITEM DE SECCIÓN ──────────────────────────────────────────────
+// Nivel 2: vive en el panel claro. Lleva un contador a la derecha cuando hay un
+// número real que mostrar (ver useContadoresNav) -- si no, no muestra nada, en
+// vez de un 0 que sería mentira.
+const NavItem = memo(({ item, isActive, contador, onClick }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={() => onClick(item.id)}
+      aria-current={isActive ? "page" : undefined}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: "100%", height: 36,
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "0 10px",
+        borderRadius: 10, border: "none",
+        background: isActive ? "#fff" : hov ? "rgba(15,23,42,0.05)" : "transparent",
+        boxShadow: isActive ? "0 1px 3px rgba(15,23,42,0.10)" : "none",
+        color: isActive ? C.ink : hov ? C.ink : C.inkMid,
+        fontFamily: C.font, fontSize: 12.5,
+        fontWeight: isActive ? 650 : 500,
+        cursor: "pointer", outline: "none", textAlign: "left",
+        transition: "background 0.13s, color 0.13s",
+      }}
+    >
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 17, height: 17, flexShrink: 0, color: isActive ? C.ink : C.inkMute }}>
+        {IC[item.id]}
+      </span>
+      <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
+      {item.badge && (
+        <span style={{
+          fontSize: 8.5, fontWeight: 800, letterSpacing: "0.3px",
+          padding: "2px 6px", borderRadius: 100,
+          background: C.brandSoft, color: C.brandText, flexShrink: 0,
+        }}>
+          {item.badge}
+        </span>
+      )}
+      {typeof contador === "number" && (
+        <span style={{
+          fontSize: 10.5, fontWeight: 700, color: isActive ? C.ink : C.inkMute,
+          minWidth: 16, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums",
+        }}>
+          {contador}
+        </span>
+      )}
+    </button>
+  );
+});
+
+// ─── COMPONENTE: PANEL DE SECCIONES ───────────────────────────────────────────
+const PanelSecciones = memo(({ state, dispatch, clinica, session, avatarUrl, contadores }) => {
+  const { view } = state;
+  // Antes decía "Dra. Sol Vargas" fijo en el código — cualquier cuenta que
+  // entrara veía ese mismo nombre. Se muestra el de la sesión real.
+  const nombreUsuario = session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario";
+  const correo = session?.user?.email || "";
+  const goTo = useCallback(id => dispatch({ type: "SET_VIEW", payload: { view: id } }), [dispatch]);
+
+  return (
+    <aside style={{
+      width: 226, minWidth: 226,
+      margin: "13px 0 13px 8px",
+      height: "calc(100vh - 26px)",
+      background: "rgba(255,255,255,0.55)",
+      backdropFilter: C.glassBlur, WebkitBackdropFilter: C.glassBlur,
+      border: C.glassBorder,
+      borderRadius: 18,
+      display: "flex", flexDirection: "column",
+      flexShrink: 0, zIndex: 100, overflow: "hidden",
+      boxShadow: C.glassShadow,
+    }}>
+      {/* Perfil */}
+      <div style={{ padding: "16px 14px 12px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+          background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : C.brandSoft,
+          border: `1.5px solid ${C.border}`,
+        }} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {clinica?.nombre || nombreUsuario}
+          </div>
+          <div style={{ fontSize: 10, color: C.inkMute, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {correo}
+          </div>
+        </div>
+      </div>
+
+      {/* Secciones agrupadas */}
+      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "0 10px 12px" }}>
         {SIDEBAR_SECTIONS.map((section, si) => (
-          <div key={si} style={{ marginBottom: col ? 10 : 6 }}>
-            {section.label && !col && (
-              <div style={{
-                fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.4)",
-                letterSpacing: "0.7px", textTransform: "uppercase",
-                padding: "12px 12px 6px",
-              }}>
-                {section.label}
-              </div>
-            )}
-            {/* Colapsado no hay espacio para el rótulo: una línea fina hace de separador. */}
-            {section.label && col && si > 0 && (
-              <div style={{ height: 1, background: "rgba(255,255,255,0.13)", margin: "0 16px 10px" }} />
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: col ? 5 : 3 }}>
+          <div key={si} style={{ marginBottom: 10 }}>
+            <div style={{
+              fontSize: 9.5, fontWeight: 700, color: C.inkMute,
+              letterSpacing: "0.6px", textTransform: "uppercase",
+              padding: si === 0 ? "2px 10px 6px" : "10px 10px 6px",
+            }}>
+              {section.label || "Principal"}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {section.items.map(item => (
-                <SidebarItem
+                <NavItem
                   key={item.id}
                   item={item}
                   isActive={view === item.id}
-                  collapsed={col}
+                  contador={contadores[item.id]}
                   onClick={goTo}
                 />
               ))}
@@ -393,59 +469,9 @@ const Sidebar = memo(({ state, dispatch, onLogout, clinica, session }) => {
           </div>
         ))}
       </nav>
-
-      {/* ── Footer: usuario + colapsar ── */}
-      <div style={{ padding: col ? "10px 13px" : 10, flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
-        <div
-          onClick={onLogout}
-          title={`${nombreUsuario} — cerrar sesión`}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: col ? 0 : "7px 8px",
-            height: 42,
-            justifyContent: col ? "center" : "flex-start",
-            borderRadius: 13, cursor: "pointer", transition: "background 0.14s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.13)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <div style={{
-            width: 28, height: 28, borderRadius: "50%",
-            background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(255,255,255,0.18)",
-            border: "1.5px solid rgba(255,255,255,0.28)", flexShrink: 0,
-          }} />
-          {!col && (
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {nombreUsuario}
-              </div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Cerrar sesión</div>
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={toggle}
-          aria-label={col ? "Expandir menú" : "Colapsar menú"}
-          title={col ? "Expandir menú" : "Colapsar menú"}
-          style={{
-            width: "100%", height: 30, marginTop: 6,
-            borderRadius: 10, border: "none",
-            background: "rgba(255,255,255,0.09)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "rgba(255,255,255,0.6)", outline: "none",
-            transition: "background 0.14s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; }}
-        >
-          {col ? IC.chevRight : IC.chevLeft}
-        </button>
-      </div>
     </aside>
   );
 });
-
 // ─── COMPONENTE: BUSCADOR GLOBAL ──────────────────────────────────────────────
 // Antes el buscador guardaba texto en el estado y NADA lo leía -- era decorativo,
 // igual que el hint "/" del teclado. Ahora busca pacientes de verdad por nombre o
@@ -828,6 +854,10 @@ export default function App() {
   const { isTablet } = useResponsive();
   const { clinicaId, clinica, rol: clinicaRol, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
   const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp(clinicaId);
+  // Compartido por el riel y el panel de secciones: el bucket es privado, así que
+  // la foto va por URL firmada y no por la pública guardada en la tabla.
+  const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
+  const contadores = useContadoresNav(clinicaId);
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
   // No pelea con un re-expandido manual del usuario mientras siga en ese ancho
@@ -929,8 +959,19 @@ export default function App() {
           filter: "blur(50px)", transform: "scale(1.15)",
         }} />
 
-        {/* Sidebar izquierdo */}
-        <Sidebar state={state} dispatch={dispatch} onLogout={logout} clinica={clinica} session={session} />
+        {/* Navegación en dos niveles: riel negro (acciones globales) + panel de
+            secciones. El panel se puede plegar con el rótulo vertical del riel. */}
+        <RailIzquierdo
+          dispatch={dispatch} onLogout={logout} clinica={clinica}
+          avatarUrl={avatarUrl} notifCount={state.notifCount}
+          panelAbierto={!state.sidebarCollapsed}
+        />
+        {!state.sidebarCollapsed && (
+          <PanelSecciones
+            state={state} dispatch={dispatch} clinica={clinica} session={session}
+            avatarUrl={avatarUrl} contadores={contadores}
+          />
+        )}
 
         {/* Columna derecha */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
