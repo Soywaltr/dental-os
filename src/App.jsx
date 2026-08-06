@@ -354,29 +354,28 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           )}
         </div>
         {!col && (
-          <>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {clinica?.nombre || "DentalOS"}
-            </span>
-            {/* Desplegado el control de plegar es este chevrón: el rótulo
-                vertical "SECCIONES" sólo tiene sentido cuando está colapsado. */}
-            <button
-              onClick={toggle}
-              aria-label="Colapsar menú"
-              title="Colapsar menú"
-              style={{
-                width: 24, height: 24, borderRadius: 8, border: "none", flexShrink: 0,
-                background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.6)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", outline: "none", transition: "background 0.14s, color 0.14s",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; e.currentTarget.style.color = "#fff"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-            >
-              {IC.chevLeft}
-            </button>
-          </>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {clinica?.nombre || "DentalOS"}
+          </span>
         )}
+        {/* Único control de plegar/desplegar, en los dos estados -- así no hace
+            falta el rótulo vertical "SECCIONES" que ocupaba espacio abajo. */}
+        <button
+          onClick={toggle}
+          aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
+          title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
+          style={{
+            width: 24, height: 24, borderRadius: 8, border: "none", flexShrink: 0,
+            background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.6)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", outline: "none", transition: "background 0.14s, color 0.14s, transform 0.2s",
+            transform: col ? "rotate(180deg)" : "none",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+        >
+          {IC.chevLeft}
+        </button>
       </div>
 
       <div style={{ ...divisor, margin: col ? "11px 18px 9px" : "13px 12px 9px" }} />
@@ -414,32 +413,6 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           </div>
         ))}
       </nav>
-
-      {/* ── Colapsado: rótulo vertical para desplegar ── */}
-      {col && (
-        <button
-          onClick={toggle}
-          aria-label="Mostrar nombres de las secciones"
-          title="Mostrar nombres de las secciones"
-          style={{
-            width: 36, height: 84, margin: "10px auto 0", flexShrink: 0,
-            background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 11,
-            color: "rgba(255,255,255,0.4)", cursor: "pointer", outline: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "background 0.14s, color 0.14s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
-        >
-          <span style={{
-            writingMode: "vertical-rl", transform: "rotate(180deg)",
-            fontSize: 8.5, fontWeight: 800, letterSpacing: "1.4px",
-            textTransform: "uppercase", whiteSpace: "nowrap",
-          }}>
-            Secciones
-          </span>
-        </button>
-      )}
 
       {/* ── Ajustes, fijo al pie ── */}
       <div style={{ ...divisor, margin: col ? "10px 18px" : "10px 12px" }} />
@@ -588,13 +561,19 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
 const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, rol, onAbrirPaciente }) => {
   const label = VIEW_LABELS[state.view] ?? state.view;
+  // En portrait de iPad (~758-810px, menos los 60-230px del riel) este header
+  // no tenía ningún mecanismo de achique: grupo derecho a flexShrink:0, sin
+  // wrap. El selector de sede es decorativo (no hay más de una sede real
+  // todavía) así que es lo primero que se sacrifica; "Nueva cita" se reduce a
+  // sólo el ícono en vez de perder alguno de los dos por completo.
+  const { isNarrow } = useResponsive();
 
   return (
     <header style={{
       height: 62,
       display: "flex", alignItems: "center",
       padding: "0 4px 0 22px",
-      gap: 16, flexShrink: 0, zIndex: 90, position: "relative",
+      gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
     }}>
       {/* Título de la vista */}
       <span style={{ fontSize: 17, fontWeight: 700, color: C.ink, fontFamily: C.font, letterSpacing: "-0.4px", flexShrink: 0 }}>
@@ -609,39 +588,43 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
       />
 
       {/* Grupo derecho */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isNarrow ? 6 : 8, flexShrink: 0, marginLeft: "auto" }}>
 
-        {/* Selector sede */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "5px 10px", borderRadius: C.r,
-          border: `1px solid ${C.border}`, background: "#fff",
-          boxShadow: C.shadowSm,
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, flexShrink: 0 }} />
-          <select
-            value={state.subAccount}
-            onChange={e => dispatch({ type: "SET_SUB_ACCOUNT", payload: e.target.value })}
-            style={{
-              border: "none", outline: "none", background: "transparent",
-              fontSize: 12.5, fontWeight: 500, color: C.inkMid,
-              cursor: "pointer", fontFamily: C.font,
-              appearance: "none", WebkitAppearance: "none",
-            }}
-          >
-            <option>Sede Principal</option>
-            <option>Sucursal El Golf</option>
-            <option>Sucursal Miraflores</option>
-          </select>
-          <span style={{ color: C.inkFaint }}>{IC.chevDown}</span>
-        </div>
+        {/* Selector sede: no hay más de una sede real todavía, así que es
+            puramente decorativo -- lo primero que se sacrifica por espacio. */}
+        {!isNarrow && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "5px 10px", borderRadius: C.r,
+            border: `1px solid ${C.border}`, background: "#fff",
+            boxShadow: C.shadowSm,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, flexShrink: 0 }} />
+            <select
+              value={state.subAccount}
+              onChange={e => dispatch({ type: "SET_SUB_ACCOUNT", payload: e.target.value })}
+              style={{
+                border: "none", outline: "none", background: "transparent",
+                fontSize: 12.5, fontWeight: 500, color: C.inkMid,
+                cursor: "pointer", fontFamily: C.font,
+                appearance: "none", WebkitAppearance: "none",
+              }}
+            >
+              <option>Sede Principal</option>
+              <option>Sucursal El Golf</option>
+              <option>Sucursal Miraflores</option>
+            </select>
+            <span style={{ color: C.inkFaint }}>{IC.chevDown}</span>
+          </div>
+        )}
 
-        {/* Botón nueva cita */}
+        {/* Botón nueva cita: en portrait de iPad, sólo el ícono. */}
         <PrimaryBtn
           onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "agenda" } })}
+          title={isNarrow ? "Nueva cita" : undefined}
         >
           {IC.plus}
-          Nueva cita
+          {!isNarrow && "Nueva cita"}
         </PrimaryBtn>
 
         {/* Notificaciones. Ajustes ya no está acá: vive fijo al pie del riel. */}
@@ -649,33 +632,38 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
           {IC.bell}
         </HeaderIconBtn>
 
-        {/* Perfil: avatar + quién está usando la app y con qué rol. */}
+        {/* Perfil: avatar + quién está usando la app y con qué rol. En angosto,
+            sólo el avatar -- el nombre completo ya no entra sin apretar todo
+            lo demás. */}
         <button
           onClick={onLogout}
-          title="Cerrar sesión"
+          title={isNarrow ? `${nombreUsuario} — cerrar sesión` : "Cerrar sesión"}
           style={{
             display: "flex", alignItems: "center", gap: 9,
-            padding: "4px 10px 4px 4px", borderRadius: 100,
-            border: `1px solid ${C.border}`, background: "#fff",
-            cursor: "pointer", outline: "none", boxShadow: C.shadowSm,
-            transition: "border-color 0.12s", maxWidth: 190,
+            padding: isNarrow ? 0 : "4px 10px 4px 4px", borderRadius: 100,
+            border: isNarrow ? "none" : `1px solid ${C.border}`,
+            background: isNarrow ? "transparent" : "#fff",
+            cursor: "pointer", outline: "none", boxShadow: isNarrow ? "none" : C.shadowSm,
+            transition: "border-color 0.12s", maxWidth: isNarrow ? "none" : 190,
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderStrong; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
+          onMouseEnter={e => { if (!isNarrow) e.currentTarget.style.borderColor = C.borderStrong; }}
+          onMouseLeave={e => { if (!isNarrow) e.currentTarget.style.borderColor = C.border; }}
         >
           <span style={{
             width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
             background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : C.brandSoft,
             border: `1px solid ${C.border}`,
           }} />
-          <span style={{ minWidth: 0, textAlign: "left" }}>
-            <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, fontFamily: C.font, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {nombreUsuario}
+          {!isNarrow && (
+            <span style={{ minWidth: 0, textAlign: "left" }}>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, fontFamily: C.font, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {nombreUsuario}
+              </span>
+              <span style={{ display: "block", fontSize: 9.5, color: C.inkMute, fontFamily: C.font, textTransform: "capitalize" }}>
+                {rol || "Cerrar sesión"}
+              </span>
             </span>
-            <span style={{ display: "block", fontSize: 9.5, color: C.inkMute, fontFamily: C.font, textTransform: "capitalize" }}>
-              {rol || "Cerrar sesión"}
-            </span>
-          </span>
+          )}
         </button>
       </div>
     </header>
@@ -683,11 +671,12 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
 });
 
 // ─── MICRO: BOTÓN PRIMARIO ────────────────────────────────────────────────────
-const PrimaryBtn = memo(({ children, onClick }) => {
+const PrimaryBtn = memo(({ children, onClick, title }) => {
   const [hov, setHov] = useState(false);
   return (
     <button
       onClick={onClick}
+      title={title}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
@@ -963,8 +952,12 @@ export default function App() {
           />
 
           {/* Contenido */}
+          {/* Sin ancho máximo fijo: antes centraba el contenido en 1480px pase lo
+              que pase, así que colapsar el riel (60px vs 230px) sólo agrandaba el
+              margen vacío a los lados en vez de darle ese espacio a la vista. El
+              tope de 2000px es sólo para monitores ultra-anchos. */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "4px 14px 32px" : "4px 22px 44px", background: "transparent" }}>
-            <div style={{ maxWidth: 1480, margin: "0 auto" }}>
+            <div style={{ maxWidth: 2000, margin: "0 auto" }}>
               <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
             </div>
           </main>

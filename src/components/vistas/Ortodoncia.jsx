@@ -108,6 +108,11 @@ const resumenPagos = resumenPagosOrtodoncia;
 // interactiva de mostrar el mismo par de fotos que ya se ve en la grilla.
 function ComparadorDeslizante({ antes, despues, labelAntes = 'Antes', labelDespues = 'Después' }) {
   const [pos, setPos] = useState(50);
+  // En el modal de comparación hay hasta 5 de estas, una por ángulo, apiladas
+  // con scroll. Sin techo, la proporción 4:3 al 100% del ancho hacía que cada
+  // una ocupara ~735px de alto en un iPad -- casi la pantalla completa para una
+  // sola foto. El techo por vh la mantiene dentro de una sola pantalla.
+  const { isTablet } = useResponsive();
 
   const mover = (clientX, rect) => {
     const pct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
@@ -131,10 +136,16 @@ function ComparadorDeslizante({ antes, despues, labelAntes = 'Antes', labelDespu
   if (!antes || !despues) return null;
 
   return (
-    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: 14, overflow: 'hidden', userSelect: 'none', background: '#000', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
-      <img src={despues} alt={labelDespues} draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+    // object-fit: contain (no "cover"): "cover" recorta la foto para llenar la
+    // caja -- en un teléfono la mayoría de fotos clínicas son verticales, así
+    // que dentro de una caja 4:3 horizontal "cover" recortaba buena parte de la
+    // imagen (se veía "acercada"/incompleta). "contain" muestra la foto entera,
+    // con una franja negra a los lados si la proporción no calza -- el fondo ya
+    // es negro, así que esa franja es invisible.
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', maxHeight: isTablet ? '46vh' : '62vh', borderRadius: 14, overflow: 'hidden', userSelect: 'none', background: '#000', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+      <img src={despues} alt={labelDespues} draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
       <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
-        <img src={antes} alt={labelAntes} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src={antes} alt={labelAntes} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
       <div
         onPointerDown={onPointerDown}
