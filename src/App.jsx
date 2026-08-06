@@ -319,104 +319,101 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
   const W = col ? 60 : 230;
 
   const divisor = { height: 1, background: "rgba(255,255,255,0.13)", flexShrink: 0 };
+  const sombra = "0 16px 40px rgba(15,23,42,0.24)";
 
   return (
+    // La cápsula negra ya no es todo el `<aside>`: es sólo el bloque de arriba
+    // (logo + secciones), que mide lo que su contenido necesita. Ajustes y la
+    // flecha de plegar quedan afuera, como sus propias píldoras, con un espacio
+    // real de por medio -- no una más de las secciones ni un botón metido en la
+    // fila del logo.
     <aside style={{
       width: W, minWidth: W,
       margin: "13px 0 13px 10px",
       height: "calc(100vh - 26px)",
-      background: RAIL_BG,
-      borderRadius: 20,
       display: "flex", flexDirection: "column",
-      padding: "12px 0",
-      flexShrink: 0, zIndex: 101, overflow: "hidden",
-      boxShadow: "0 16px 40px rgba(15,23,42,0.24)",
+      flexShrink: 0, zIndex: 101,
       transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
     }}>
 
-      {/* ── Marca (+ nombre y colapsar cuando está desplegado) ── */}
+      {/* ── Cápsula: logo + secciones ── */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
-        padding: col ? 0 : "0 12px",
-        justifyContent: col ? "center" : "flex-start",
+        background: RAIL_BG, borderRadius: 20, boxShadow: sombra,
+        display: "flex", flexDirection: "column",
+        padding: "12px 0", minHeight: 0, overflow: "hidden",
       }}>
+        {/* Marca */}
         <div style={{
-          width: 32, height: 32, borderRadius: 10, overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
-          display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+          display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
+          padding: col ? 0 : "0 12px",
+          justifyContent: col ? "center" : "flex-start",
         }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
-            </svg>
+          <div style={{
+            width: 32, height: 32, borderRadius: 10, overflow: "hidden", flexShrink: 0,
+            background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
+            display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+          }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+              </svg>
+            )}
+          </div>
+          {!col && (
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {clinica?.nombre || "DentalOS"}
+            </span>
           )}
         </div>
-        {!col && (
-          <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {clinica?.nombre || "DentalOS"}
-          </span>
-        )}
-        {/* Único control de plegar/desplegar, en los dos estados -- así no hace
-            falta el rótulo vertical "SECCIONES" que ocupaba espacio abajo. */}
-        <button
-          onClick={toggle}
-          aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
-          title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
-          style={{
-            width: 24, height: 24, borderRadius: 8, border: "none", flexShrink: 0,
-            background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.6)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", outline: "none", transition: "background 0.14s, color 0.14s, transform 0.2s",
-            transform: col ? "rotate(180deg)" : "none",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; e.currentTarget.style.color = "#fff"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-        >
-          {IC.chevLeft}
-        </button>
+
+        <div style={{ ...divisor, margin: col ? "11px 18px 9px" : "13px 12px 9px" }} />
+
+        {/* Secciones */}
+        <nav style={{ overflowY: "auto", overflowX: "hidden", padding: col ? 0 : "0 10px" }}>
+          {SIDEBAR_SECTIONS.map((section, si) => (
+            <div key={si} style={{ marginBottom: col ? 0 : 8 }}>
+              {section.label && !col && (
+                <div style={{
+                  fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.38)",
+                  letterSpacing: "0.7px", textTransform: "uppercase",
+                  padding: "10px 10px 6px",
+                }}>
+                  {section.label}
+                </div>
+              )}
+              {/* Colapsado no hay lugar para el rótulo del grupo: una línea fina
+                  hace de separador. */}
+              {section.label && col && si > 0 && (
+                <div style={{ ...divisor, margin: "9px 18px" }} />
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: col ? 5 : 2 }}>
+                {section.items.map(item => (
+                  <NavItem
+                    key={item.id}
+                    item={item}
+                    isActive={view === item.id}
+                    collapsed={col}
+                    contador={contadores[item.id]}
+                    onClick={goTo}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
       </div>
 
-      <div style={{ ...divisor, margin: col ? "11px 18px 9px" : "13px 12px 9px" }} />
+      {/* El espacio entre las dos cápsulas es la propia página (transparente):
+          por eso se ve un corte real, no sólo una línea divisoria. */}
+      <div style={{ flex: 1, minHeight: 10 }} />
 
-      {/* ── Secciones ── */}
-      <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: col ? 0 : "0 10px" }}>
-        {SIDEBAR_SECTIONS.map((section, si) => (
-          <div key={si} style={{ marginBottom: col ? 0 : 8 }}>
-            {section.label && !col && (
-              <div style={{
-                fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.38)",
-                letterSpacing: "0.7px", textTransform: "uppercase",
-                padding: "10px 10px 6px",
-              }}>
-                {section.label}
-              </div>
-            )}
-            {/* Colapsado no hay lugar para el rótulo del grupo: una línea fina
-                hace de separador. */}
-            {section.label && col && si > 0 && (
-              <div style={{ ...divisor, margin: "9px 18px" }} />
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: col ? 5 : 2 }}>
-              {section.items.map(item => (
-                <NavItem
-                  key={item.id}
-                  item={item}
-                  isActive={view === item.id}
-                  collapsed={col}
-                  contador={contadores[item.id]}
-                  onClick={goTo}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* ── Ajustes, fijo al pie ── */}
-      <div style={{ ...divisor, margin: col ? "10px 18px" : "10px 12px" }} />
-      <div style={{ padding: col ? 0 : "0 10px", flexShrink: 0 }}>
+      {/* ── Cápsula: Ajustes ── */}
+      <div style={{
+        background: RAIL_BG, borderRadius: 16, boxShadow: sombra,
+        padding: col ? "6px 0" : "6px 10px", flexShrink: 0,
+      }}>
         <NavItem
           item={ITEM_AJUSTES}
           isActive={view === ITEM_AJUSTES.id}
@@ -424,6 +421,25 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           onClick={goTo}
         />
       </div>
+
+      {/* ── Flecha de plegar/desplegar, siempre al pie ── */}
+      <button
+        onClick={toggle}
+        aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
+        title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
+        style={{
+          width: 34, height: 34, margin: "10px auto 0", flexShrink: 0,
+          borderRadius: "50%", border: "none",
+          background: RAIL_BG, color: "rgba(255,255,255,0.6)", boxShadow: sombra,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", outline: "none", transition: "background 0.14s, color 0.14s, transform 0.2s",
+          transform: col ? "rotate(180deg)" : "none",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "#26262a"; e.currentTarget.style.color = "#fff"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = RAIL_BG; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+      >
+        {IC.chevLeft}
+      </button>
     </aside>
   );
 });

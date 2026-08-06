@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import { GraficoLineas, Leyenda, Sparkline, Anillo } from '../ui/Graficos';
-import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GRAD_PRIMARY, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
+import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
@@ -418,45 +418,51 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-      {/* ─── MINI KPIs ─── (fila 3: 2·3 + 3 + 3 = 12) */}
-      {kpisMini.map(k => (
-        <div key={k.label} style={{ ...col(2), ...card, padding: 16, minHeight: 172, justifyContent: 'space-between' }}>
-          <div style={rotulo}>{k.label}</div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: k.col, lineHeight: 1.1 }}>{k.value}</div>
-            <div style={{ fontSize: 9.5, color: k.deltaCol, fontWeight: 700, marginTop: 3 }}>{k.delta}</div>
-          </div>
-          <Sparkline valores={k.serie} color={k.col} ancho={78} alto={24} />
-        </div>
-      ))}
+      {/* ─── RESUMEN FINANCIERO ─── una sola tira con divisores, no 5 tarjetas
+          sueltas con formas distintas (esa mezcla de tarjeta de acento + anillo
+          + 3 mini-tarjetas era el tramo más "desordenado" del panel). */}
+      <div style={{
+        ...col(12), ...card,
+        flexDirection: isTablet ? 'column' : 'row',
+        alignItems: isTablet ? 'stretch' : 'center',
+        gap: isTablet ? 16 : 0,
+        padding: isTablet ? 18 : '18px 24px',
+      }}>
+        {kpisMini.map(k => (
+          <React.Fragment key={k.label}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: isTablet ? undefined : '1 1 0', minWidth: 0 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={rotulo}>{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: k.col, lineHeight: 1.15, marginTop: 4 }}>{k.value}</div>
+                <div style={{ fontSize: 9.5, color: k.deltaCol, fontWeight: 700, marginTop: 3 }}>{k.delta}</div>
+              </div>
+              <Sparkline valores={k.serie} color={k.col} ancho={50} alto={26} />
+            </div>
+            {!isTablet && <div style={{ width: 1, alignSelf: 'stretch', background: BD, margin: '0 22px' }} />}
+          </React.Fragment>
+        ))}
 
-      {/* ─── COBRANZA: tarjeta de acento ─── */}
-      <div style={{ ...col(3), ...card, background: GRAD_PRIMARY, border: 'none', justifyContent: 'space-between', minHeight: 172 }}>
-        <div>
-          <div style={{ ...rotulo, color: 'rgba(255,255,255,0.6)' }}>Por cobrar</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '8px 0 4px', letterSpacing: '-0.6px' }}>
+        <div style={{ flex: isTablet ? undefined : '1.3 1 0', minWidth: 0 }}>
+          <div style={rotulo}>Por cobrar</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: saldoPendienteTotal > 0 ? RJ : VERDE, lineHeight: 1.15, marginTop: 4 }}>
             {soles(saldoPendienteTotal)}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+          <div onClick={() => setView && setView('caja')} style={{ fontSize: 9.5, color: P, fontWeight: 700, marginTop: 3, cursor: 'pointer' }}>
             {saldoPendienteTotal > 0
-              ? `Repartido entre ${deudaPorPaciente.size} paciente${deudaPorPaciente.size !== 1 ? 's' : ''}. Tasa de cobro ${tasaCobro}%.`
-              : 'No hay saldos pendientes. Todo cobrado.'}
+              ? `${deudaPorPaciente.size} paciente${deudaPorPaciente.size !== 1 ? 's' : ''} · ir a cobrar →`
+              : 'Todo cobrado →'}
           </div>
         </div>
-        <button onClick={() => setView && setView('caja')}
-          style={{ background: '#fff', color: '#0F172A', border: 'none', borderRadius: 11, padding: '10px 14px', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', width: '100%' }}>
-          {saldoPendienteTotal > 0 ? 'Ir a cobrar' : 'Ver finanzas'}
-        </button>
-      </div>
+        {!isTablet && <div style={{ width: 1, alignSelf: 'stretch', background: BD, margin: '0 22px' }} />}
 
-      {/* ─── ANILLO: tasa de cobro ─── */}
-      <div style={{ ...col(3), ...card, alignItems: 'center', textAlign: 'center', minHeight: 172, justifyContent: 'center' }}>
-        <Anillo pct={tasaCobro} color={tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ} tamano={92} grosor={9}>
-          <span style={{ fontSize: 21, fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>{tasaCobro}<span style={{ fontSize: 12, color: MU }}>%</span></span>
-        </Anillo>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', marginTop: 11 }}>Tasa de cobro</div>
-        <div style={{ fontSize: 10, color: MU, marginTop: 3, lineHeight: 1.45 }}>
-          {soles(totalCobrado)} de {soles(totalFacturado)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Anillo pct={tasaCobro} color={tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ} tamano={52} grosor={6}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#0F172A' }}>{tasaCobro}%</span>
+          </Anillo>
+          <div>
+            <div style={rotulo}>Tasa de cobro</div>
+            <div style={{ fontSize: 10, color: MU, marginTop: 3 }}>{soles(totalCobrado)} de {soles(totalFacturado)}</div>
+          </div>
         </div>
       </div>
 
