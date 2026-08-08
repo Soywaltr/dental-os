@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import { GraficoLineas, Leyenda, Sparkline, Anillo } from '../ui/Graficos';
-import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FONT_DISPLAY, TRATAMIENTOS_CAT } from '../../utils/constants';
+import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
@@ -281,7 +281,7 @@ export default function Dashboard({ setView, clinica }) {
 
       {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12) */}
       <div style={{ ...col(4), padding: '6px 4px 0' }}>
-        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 500, fontStyle: 'italic', color: '#0F172A', margin: 0, letterSpacing: '-0.3px', lineHeight: 1.18 }}>
+        <h1 style={{ fontSize: 27, fontWeight: 650, color: '#0F172A', margin: 0, letterSpacing: '-0.6px', lineHeight: 1.2 }}>
           Hola{nombreClinica ? `, ${nombreClinica}` : ''}
           <br />¿qué tienes para hoy?
         </h1>
@@ -447,7 +447,7 @@ export default function Dashboard({ setView, clinica }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: isTablet ? undefined : '1 1 0', minWidth: 0 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={rotulo}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: k.col, lineHeight: 1.15, marginTop: 4 }}>{k.value}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', lineHeight: 1.15, marginTop: 4 }}>{k.value}</div>
                 <div style={{ fontSize: 9.5, color: k.deltaCol, fontWeight: 700, marginTop: 3 }}>{k.delta}</div>
               </div>
               <Sparkline valores={k.serie} color={k.col} ancho={50} alto={26} />
@@ -457,8 +457,11 @@ export default function Dashboard({ setView, clinica }) {
         ))}
 
         <div style={{ flex: isTablet ? undefined : '1.3 1 0', minWidth: 0 }}>
-          <div style={rotulo}>Por cobrar</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: saldoPendienteTotal > 0 ? RJ : VERDE, lineHeight: 1.15, marginTop: 4 }}>
+          <div style={{ ...rotulo, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: saldoPendienteTotal > 0 ? RJ : VERDE, flexShrink: 0 }} />
+            Por cobrar
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', lineHeight: 1.15, marginTop: 4 }}>
             {soles(saldoPendienteTotal)}
           </div>
           <div onClick={() => setView && setView('caja')} style={{ fontSize: 9.5, color: P, fontWeight: 700, marginTop: 3, cursor: 'pointer' }}>
@@ -480,8 +483,9 @@ export default function Dashboard({ setView, clinica }) {
         </div>
       </div>
 
-      {/* ─── NECESITA TU ATENCIÓN ─── (fila 4: 5 + 4 + 3 = 12) */}
-      <div style={{ ...col(5), ...card }}>
+      {/* ─── NECESITA TU ATENCIÓN ─── (fila 4: 5 + 4 + 3 = 12) — las 3 tarjetas
+          comparten minHeight para no quedar despareja como antes. */}
+      <div style={{ ...col(5), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Necesita tu atención</h2>
           {alertas.length > 0 && (
@@ -514,7 +518,7 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── DEUDORES ─── */}
-      <div style={{ ...col(4), ...card }}>
+      <div style={{ ...col(4), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Mayores deudores</h2>
           {topDeudores.length > 0 && (
@@ -542,7 +546,7 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── LABORATORIO ─── */}
-      <div style={{ ...col(3), ...card }}>
+      <div style={{ ...col(3), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Laboratorio</h2>
           <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: '#94A3B8' }}>

@@ -42,27 +42,20 @@ export const P = '#404040', PD = '#262626', DN = '#0f172a', LT = '#ffffff', MT =
 // GL/AZ/WA/RJ.
 export const CAT_ACCENT = '#7c3aed';
 
-// Superficies de tarjeta — sólidas, no vidrio esmerilado. El vidrio difuminado
-// sobre todo (misma opacidad, mismo blur, en cada tarjeta de cada vista) es
-// exactamente la firma visual de un dashboard "genérico hecho con IA": lee
-// como plantilla, no como marca. Una tarjeta opaca con un borde de un solo
-// pixel y una sombra de dos capas (contacto + ambiente) es lo que de verdad
-// usan los productos premium (Linear, Notion, Superhuman) — más nítido, más
-// legible, con más carácter. El nombre GLASS_* se conserva (lo importan 15
-// archivos) pero el tratamiento ya no es "glass".
+// Superficies de tarjeta — sólidas y planas, sin vidrio esmerilado NI la
+// sombra suave "flotante" que tenían antes. Stripe, Linear, Mercury y Ramp
+// resuelven la jerarquía de tarjetas con un borde de un pixel casi
+// imperceptible y una sombra de contacto mínima -- nunca una sombra grande y
+// difusa, que es lo que hace que una tarjeta "flote" y lea como una plantilla
+// de generador. El nombre GLASS_* se conserva (lo importan 15 archivos) pero
+// el tratamiento ya no es "glass" ni "flotante".
 export const GLASS_BG = '#ffffff';
 export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid rgba(15,23,42,0.07)';
-export const GLASS_SHADOW = '0 1px 2px rgba(15,23,42,0.05), 0 18px 32px -14px rgba(15,23,42,0.14)';
+export const GLASS_BORDER = '1px solid rgba(15,23,42,0.08)';
+export const GLASS_SHADOW = '0 1px 2px rgba(15,23,42,0.04)';
 export const GRAD_PRIMARY = 'linear-gradient(135deg, #52525b 0%, #27272a 100%)';
 export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(39,39,42,0.35)';
 export const GRAD_SUCCESS = 'linear-gradient(135deg, #14b8a6 0%, #22d3aa 100%)';
-
-// Tipografía de acento para momentos "hero" (saludo del Dashboard, título de
-// vista) — nunca para texto de UI funcional. Un serif editorial junto al Inter
-// de siempre es lo que separa "una marca clínica con criterio" de "un mismo
-// geométrico grotesco en cada encabezado", que es el otro tic de plantilla.
-export const FONT_DISPLAY = "'Fraunces', Georgia, 'Times New Roman', serif";
 
 export const PATIENTS = [
   { id: 1, name: 'María López', age: 32, phone: '+51 987 654 321', email: 'maria@gmail.com', tag: 'activo', treatment: 'Ortodoncia', nextVisit: 'Hoy 9:00', since: '2023', balance: 0, doc: '72345678', blood: 'O+', allergies: 'Ninguna', meds: 'Ninguno' },
