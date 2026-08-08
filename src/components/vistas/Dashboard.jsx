@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import { GraficoLineas, Leyenda, Sparkline, Anillo } from '../ui/Graficos';
-import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
+import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FONT_DISPLAY, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
@@ -253,7 +253,7 @@ export default function Dashboard({ setView, clinica }) {
   };
   const h2 = { margin: 0, fontSize: 14, fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px' };
   const rotulo = { fontSize: 9, color: MU, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' };
-  const subCard = { background: 'rgba(255,255,255,0.55)', border: `1px solid ${BD}`, borderRadius: 14 };
+  const subCard = { background: '#F8FAFA', border: `1px solid ${BD}`, borderRadius: 14 };
   // En tablet la rejilla colapsa a una columna y los `span` dejan de aplicar.
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
@@ -279,9 +279,9 @@ export default function Dashboard({ setView, clinica }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 14, alignItems: 'start', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-      {/* ─── SALUDO ─── (fila 1: 4 + 2·4 = 12) */}
+      {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12) */}
       <div style={{ ...col(4), padding: '6px 4px 0' }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-1px', lineHeight: 1.15 }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 500, fontStyle: 'italic', color: '#0F172A', margin: 0, letterSpacing: '-0.3px', lineHeight: 1.18 }}>
           Hola{nombreClinica ? `, ${nombreClinica}` : ''}
           <br />¿qué tienes para hoy?
         </h1>
@@ -306,19 +306,33 @@ export default function Dashboard({ setView, clinica }) {
         </div>
       </div>
 
-      {/* ─── ATAJOS ─── */}
-      {atajos.map(a => (
-        <div key={a.titulo} onClick={() => setView && setView(a.view)}
-          style={{ ...col(2), ...card, padding: 16, cursor: 'pointer', minHeight: 128, justifyContent: 'space-between' }}>
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.75)', border: `1px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F172A' }}>
-            <Icon name={a.icon} size={16} />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>{a.titulo}</div>
-            <div style={{ fontSize: 10, color: MU, marginTop: 3 }}>{a.sub}</div>
-          </div>
-        </div>
-      ))}
+      {/* ─── ATAJOS ─── una sola tira de accesos rápidos, no 4 tarjetas cuadradas
+          idénticas (ícono en cuadrado + título + subtítulo, repetido 4 veces,
+          es de los patrones más reconocibles de un dashboard genérico). */}
+      <div style={{ ...col(8), ...card, flexDirection: isTablet ? 'column' : 'row', padding: 6, gap: 0 }}>
+        {atajos.map((a, i) => (
+          <button key={a.titulo} onClick={() => setView && setView(a.view)}
+            style={{
+              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12,
+              padding: '13px 14px', cursor: 'pointer', borderRadius: 14, textAlign: 'left',
+              background: 'transparent', border: 'none', font: 'inherit',
+              borderLeft: (!isTablet && i > 0) ? `1px solid ${BD}` : 'none',
+              borderTop: (isTablet && i > 0) ? `1px solid ${BD}` : 'none',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(15,23,42,0.04)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+              <Icon name={a.icon} size={14} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
+              <div style={{ fontSize: 9.5, color: MU, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.sub}</div>
+            </div>
+          </button>
+        ))}
+      </div>
 
       {/* ─── TENDENCIA ─── (fila 2: 8 + 4 = 12) */}
       <div style={{ ...col(8), ...card }}>
@@ -330,7 +344,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Leyenda series={seriesGrafico} />
             <button onClick={() => setVerTabla(v => !v)}
-              style={{ background: 'rgba(255,255,255,0.6)', border: `1px solid ${BD}`, borderRadius: 8, padding: '4px 11px', fontSize: 10, fontWeight: 700, color: MU, cursor: 'pointer' }}>
+              style={{ background: '#F8FAFA', border: `1px solid ${BD}`, borderRadius: 8, padding: '4px 11px', fontSize: 10, fontWeight: 700, color: MU, cursor: 'pointer' }}>
               {verTabla ? 'Ver gráfico' : 'Ver tabla'}
             </button>
           </div>
@@ -368,7 +382,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', gap: 4 }}>
             {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
               <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
-                style={{ width: 22, height: 22, borderRadius: '50%', border: `1px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 11, background: 'rgba(255,255,255,0.55)' }}>
+                style={{ width: 22, height: 22, borderRadius: '50%', border: `1px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 11, background: '#F8FAFA' }}>
                 {lbl}
               </div>
             ))}
@@ -401,7 +415,7 @@ export default function Dashboard({ setView, clinica }) {
               <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
                 <div style={{ fontSize: 10, color: MU, fontWeight: 700, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 9, background: 'linear-gradient(135deg, #e9d5ff, #dbeafe)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F172A', fontWeight: 800, fontSize: 10.5, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                  <div style={{ width: 28, height: 28, borderRadius: 9, background: `${colorPorNombre(c.name)}17`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPorNombre(c.name), fontWeight: 800, fontSize: 10.5, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 10, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
@@ -514,7 +528,7 @@ export default function Dashboard({ setView, clinica }) {
             {topDeudores.map(d => (
               <div key={d.paciente.id} onClick={() => setView && setView('caja')} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.75)', border: `1px solid ${BD}`, color: '#0F172A', fontSize: 9.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#F1F4F4', border: `1px solid ${BD}`, color: '#0F172A', fontSize: 9.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
                   <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: RJ, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</div>
                 </div>
@@ -560,7 +574,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
             {CAT_TABS.map(t => (
               <div key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ fontSize: 10.5, fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? '#fff' : MU, background: activeTab === t.key ? '#0F172A' : 'rgba(255,255,255,0.55)', padding: '5px 11px', borderRadius: 100, cursor: 'pointer', border: activeTab === t.key ? 'none' : `1px solid ${BD}` }}>
+                style={{ fontSize: 10.5, fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? '#fff' : MU, background: activeTab === t.key ? '#0F172A' : '#F8FAFA', padding: '5px 11px', borderRadius: 100, cursor: 'pointer', border: activeTab === t.key ? 'none' : `1px solid ${BD}` }}>
                 {t.key}
               </div>
             ))}

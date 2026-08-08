@@ -13,7 +13,7 @@ import React, {
 import { supabase } from "./supabase";
 import Login from "./Login";
 import MFAChallenge from "./MFAChallenge";
-import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
+import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW, FONT_DISPLAY } from "./utils/constants";
 import useResponsive from "./utils/useResponsive";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
@@ -81,6 +81,7 @@ const C = {
   // Tipografía
   font:        "'Inter', 'DM Sans', system-ui, sans-serif",
   fontMono:    "'JetBrains Mono', monospace",
+  fontDisplay: FONT_DISPLAY,
   // Radios
   r:           "8px",
   rl:          "12px",
@@ -591,8 +592,9 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
       padding: "0 4px 0 22px",
       gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
     }}>
-      {/* Título de la vista */}
-      <span style={{ fontSize: 17, fontWeight: 700, color: C.ink, fontFamily: C.font, letterSpacing: "-0.4px", flexShrink: 0 }}>
+      {/* Título de la vista — serif de acento: es lo único "hero" que se repite
+          en cada pantalla, así que es donde más rinde la tipografía de marca. */}
+      <span style={{ fontSize: 19, fontWeight: 600, color: C.ink, fontFamily: C.fontDisplay, letterSpacing: "-0.2px", flexShrink: 0 }}>
         {label}
       </span>
 
@@ -910,6 +912,7 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,500&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
