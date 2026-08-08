@@ -62,7 +62,7 @@ export function Anillo({ pct, color, tamano = 92, grosor = 9, children }) {
   return (
     <div style={{ position: 'relative', width: tamano, height: tamano, flexShrink: 0 }}>
       <svg width={tamano} height={tamano} style={{ transform: 'rotate(-90deg)', display: 'block' }} aria-hidden="true">
-        <circle cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={`${color}26`} strokeWidth={grosor} />
+        <circle cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={`color-mix(in srgb, ${color} 15%, transparent)`} strokeWidth={grosor} />
         <circle
           cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={color} strokeWidth={grosor}
           strokeDasharray={circ} strokeDashoffset={circ * (1 - valor / 100)} strokeLinecap="round"

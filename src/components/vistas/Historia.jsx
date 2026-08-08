@@ -26,7 +26,7 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots =
   const domIsBad = isBad(domRaw);
 
   // AQUÍ ESTABA EL ERROR: Cambiado dom.cr por dom.g
-  const cf = !dom ? '#f8fafc' : (dom.g === 'r' || domIsBad) ? RJ + 'dd' : dom.mk === 'x' ? '#64748b22' : AZ + 'dd';
+  const cf = !dom ? '#f8fafc' : (dom.g === 'r' || domIsBad) ? `color-mix(in srgb, ${RJ} 87%, transparent)` : dom.mk === 'x' ? '#64748b22' : `color-mix(in srgb, ${AZ} 87%, transparent)`;
 
   const isExtraer = Object.values(surfs).some(s => s === 'extraer');
 
@@ -40,7 +40,7 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots =
       onMouseEnter={e => e.currentTarget.style.opacity = '.72'}
       onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
 
-      {active && <rect x="0" y="0" width={W} height={TH} rx="4" fill={P + '33'} stroke={P} strokeWidth="2" />}
+      {active && <rect x="0" y="0" width={W} height={TH} rx="4" fill={`color-mix(in srgb, ${P} 20%, transparent)`} stroke={P} strokeWidth="2" />}
       <path d={rp} fill="#f8fafc" stroke={active ? P : '#64748b'} strokeWidth={active ? 1.5 : .8} />
       <rect x={1} y={cY} width={W - 2} height={CH} rx="2" fill={cf} stroke={active ? P : '#64748b'} strokeWidth={active ? 1.5 : .8} />
 
@@ -100,7 +100,7 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
         const c = surfs[sf], t = gt(c), h = c && c !== 'normal';
 
         // AQUÍ ESTABA EL ERROR: Cambiado t.cr por t.g
-        const fill = h ? ((t.g === 'r' || isBad(c)) ? RJ + 'cc' : AZ + 'cc') : '#f8fafc';
+        const fill = h ? ((t.g === 'r' || isBad(c)) ? `color-mix(in srgb, ${RJ} 80%, transparent)` : `color-mix(in srgb, ${AZ} 80%, transparent)`) : '#f8fafc';
         
         return (
           <path key={sf} d={path} fill={fill} stroke="rgba(0,0,0,.1)" strokeWidth="1"
@@ -283,7 +283,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         const csRaw = cs.length ? cs[0][1] : null;
         const t = csRaw ? gt(csRaw) : null;
         return (
-          <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? P + '22' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
+          <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? `color-mix(in srgb, ${P} 13%, transparent)` : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
             {t && <span style={{ fontSize: 11, fontWeight: 800, color: (t.g === 'r' || isBad(csRaw)) ? RJ : AZ }}>{t.sig}</span>}
           </div>
         );
@@ -325,7 +325,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const eRow = (list, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => (
-        <div key={n} style={{ width: w, height: 13, border: '0.5px solid #374151', boxSizing: 'border-box', background: sel === n ? P + '11' : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }} />
+        <div key={n} style={{ width: w, height: 13, border: '0.5px solid #374151', boxSizing: 'border-box', background: sel === n ? `color-mix(in srgb, ${P} 7%, transparent)` : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }} />
       ))}
     </div>
   );
@@ -384,7 +384,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: MU, marginTop: 12, fontWeight: 600 }}>
           <input type="checkbox" checked={showP} onChange={e => setShowP(e.target.checked)} style={{ transform: 'scale(1.2)' }} /> Dientes Deciduos
         </label>
-        {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '8px', background: '#fef2f2', border: `1px solid ${RJ}55`, borderRadius: 6, fontSize: 11, color: RJ, cursor: 'pointer', fontWeight: 800 }}>Limpiar todo el mapa</button>}
+        {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '8px', background: '#fef2f2', border: `1px solid color-mix(in srgb, ${RJ} 33%, transparent)`, borderRadius: 6, fontSize: 11, color: RJ, cursor: 'pointer', fontWeight: 800 }}>Limpiar todo el mapa</button>}
       </div>
 
       {/* ÁREA CENTRAL */}
@@ -527,7 +527,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
             <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
-            <button onClick={() => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid ${RJ}44`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+            <button onClick={() => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 27%, transparent)`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
           </div>
 
           <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
@@ -536,7 +536,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
             const bad = has && isBad(c);
             return (
               <div key={sf} onClick={() => applySurf(sel, sf)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.g === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? (t.g === 'r' ? RJ + '44' : AZ + '44') : BD}` }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.g === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? `color-mix(in srgb, ${t.g === 'r' ? RJ : AZ} 27%, transparent)` : BD}` }}>
                 <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.g === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontSize: 10, color: has ? '#fff' : '#94a3b8', fontWeight: 900 }}>{sf}</span>
                 </div>
@@ -1449,7 +1449,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     )}
 
     {draftTreatment && (
-      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid ${P}55`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
         <div style={{ fontWeight: 800, fontSize: 13, color: P, marginBottom: 14 }}>Detalles del tratamiento: {draftTreatment.name}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
           <div>
@@ -1504,7 +1504,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   <div style={{ fontSize: 12, color: DN, fontWeight: 700 }}>S/{item.cost}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button onClick={() => { setEditingItemId(isEditing ? null : item.id); setEditDraft(item); }}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${P}55`, background: '#fff', color: P, fontWeight: 700 }}>
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, background: '#fff', color: P, fontWeight: 700 }}>
                       {isEditing ? 'Cerrar' : <><Icon name="edit" size={9} /> Editar</>}
                     </button>
                     {['pendiente', 'en_curso', 'completado'].filter(s => s !== st).map(ns => (
@@ -1514,7 +1514,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                       </button>
                     ))}
                     <button onClick={() => setPlan(p => p.filter(i => i.id !== item.id))}
-                      style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${RJ}44`, background: '#fef2f2', color: RJ, fontWeight: 700 }}>✕</button>
+                      style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid color-mix(in srgb, ${RJ} 27%, transparent)`, background: '#fef2f2', color: RJ, fontWeight: 700 }}>✕</button>
                   </div>
                 </div>
 
@@ -1579,7 +1579,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             )}
 
             {showNuevaNota && (
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid ${P}55`, borderRadius: 11, padding: 14, marginBottom: 14 }}>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: 11, padding: 14, marginBottom: 14 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: DN, marginBottom: 8 }}>Nueva nota clínica</div>
                 <textarea ref={notaTextareaRef} value={nuevaNotaTexto} onChange={e => setNuevaNotaTexto(e.target.value)}
                   placeholder="Descripción de la consulta, hallazgos clínicos, procedimiento realizado y recomendaciones..."

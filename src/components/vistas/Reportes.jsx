@@ -163,8 +163,8 @@ export default function Reportes() {
                     </div>
                   )}
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 120, width: '100%', justifyContent: 'center' }}>
-                    <div style={{ width: '45%', background: i === mesActualIdx ? P : P + '55', borderRadius: '3px 3px 0 0', height: `${(m.facturado / maxMes) * 100}%`, transition: 'height .3s' }} />
-                    <div style={{ width: '45%', background: i === mesActualIdx ? WA : WA + '55', borderRadius: '3px 3px 0 0', height: `${(m.cobrado / maxMes) * 100}%`, transition: 'height .3s' }} />
+                    <div style={{ width: '45%', background: i === mesActualIdx ? P : `color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '3px 3px 0 0', height: `${(m.facturado / maxMes) * 100}%`, transition: 'height .3s' }} />
+                    <div style={{ width: '45%', background: i === mesActualIdx ? WA : `color-mix(in srgb, ${WA} 33%, transparent)`, borderRadius: '3px 3px 0 0', height: `${(m.cobrado / maxMes) * 100}%`, transition: 'height .3s' }} />
                   </div>
                   <div style={{ fontSize: 9, color: i === mesActualIdx ? DN : MU, fontWeight: i === mesActualIdx ? 700 : 600, textTransform: 'capitalize' }}>{m.label}</div>
                 </div>

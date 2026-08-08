@@ -19,7 +19,6 @@ import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
 import useAAL from "./utils/useAAL";
 import useContadoresNav from "./utils/useContadoresNav";
-import { BACKDROP_IMAGE_URL } from "./utils/backdrop";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
 import { rutaPerfil } from "./utils/storage";
@@ -45,46 +44,50 @@ const Config      = lazy(() => import("./components/vistas/Config"));
 const RAIL_BG = "#141416";
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
+// Ya no son valores fijos: cada uno apunta a una variable CSS declarada en el
+// <style> de más abajo (":root" + "@media (prefers-color-scheme: dark)"). El
+// valor de la variable en modo claro es EXACTAMENTE el hex que había antes acá
+// -- cero cambio visual hoy -- y sólo diverge cuando el sistema está en oscuro.
 const C = {
-  // Fondos. El riel de navegación es casi negro (ver RAIL_BG), así que
-  // sidebarBg/cardBg/activeBg se quitaron al quedar sin uso.
-  pageBg:      "#e1e4e1",
-  hoverBg:     "rgba(15,23,42,0.05)",
-  glassBlur:   "blur(26px) saturate(180%)",
-  glassBorder: "1px solid rgba(255,255,255,0.75)",
-  glassShadow: "0 12px 40px rgba(30,35,33,0.14)",
+  // Fondos.
+  pageBg:      "var(--surface-secondary)",
+  hoverBg:     "var(--fill-quaternary)",
+  glassBlur:   "var(--blur-chrome)",
+  glassBorder: "1px solid var(--separator-chrome)",
+  glassShadow: "var(--shadow-md)",
   // Texto
-  ink:         "#111827",
-  inkMid:      "#4B5563",
-  inkMute:     "#9CA3AF",
-  inkFaint:    "#D1D5DB",
-  // Acento
-  brand:       "#404040",
-  brandHov:    "#262626",
-  brandSoft:   "#f1f1f0",
-  brandText:   "#262626",
+  ink:         "var(--label-primary)",
+  inkMid:      "var(--label-secondary)",
+  inkMute:     "var(--label-tertiary)",
+  inkFaint:    "var(--label-quaternary)",
+  // Acento — P en utils/constants.js es este mismo azul: es el único acento
+  // interactivo de toda la app (botones primarios, tabs activos, focos).
+  brand:       "var(--accent)",
+  brandHov:    "var(--accent-pressed)",
+  brandSoft:   "var(--accent-soft)",
+  brandText:   "var(--accent)",
   // Semánticos
-  green:       "#10B981",
-  greenSoft:   "#D1FAE5",
-  red:         "#EF4444",
-  redSoft:     "#FEE2E2",
-  amber:       "#F59E0B",
-  amberSoft:   "#FEF3C7",
-  blue:        "#3B82F6",
-  blueSoft:    "#DBEAFE",
+  green:       "var(--green)",
+  greenSoft:   "var(--green-soft)",
+  red:         "var(--red)",
+  redSoft:     "var(--red-soft)",
+  amber:       "var(--amber)",
+  amberSoft:   "var(--amber-soft)",
+  blue:        "var(--accent)",
+  blueSoft:    "var(--accent-soft)",
   // Bordes
-  border:      "#E5E7EB",
-  borderStrong:"#D1D5DB",
+  border:      "var(--separator)",
+  borderStrong:"var(--separator-strong)",
   // Sombras
-  shadowSm:    "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-  shadowMd:    "0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.04)",
+  shadowSm:    "var(--shadow-sm)",
+  shadowMd:    "var(--shadow-md)",
   // Tipografía
-  font:        "'Inter', 'DM Sans', system-ui, sans-serif",
+  font:        "-apple-system, 'SF Pro Text', 'SF Pro Display', 'Inter', system-ui, sans-serif",
   fontMono:    "'JetBrains Mono', monospace",
   // Radios
-  r:           "8px",
-  rl:          "12px",
-  rx:          "16px",
+  r:           "var(--radius-sm)",
+  rl:          "var(--radius-md)",
+  rx:          "var(--radius-lg)",
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
@@ -337,8 +340,11 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
     }}>
 
       {/* ── Cápsula: logo + secciones ── */}
+      {/* Vidrio/vibrancy: es chrome de navegación, no una tarjeta de
+          contenido -- ahí sí corresponde translucidez con blur. */}
       <div style={{
-        background: RAIL_BG, borderRadius: 20, boxShadow: sombra,
+        background: "rgba(20,20,22,0.78)", backdropFilter: "var(--blur-chrome)", WebkitBackdropFilter: "var(--blur-chrome)",
+        borderRadius: "var(--radius-lg)", boxShadow: sombra,
         display: "flex", flexDirection: "column",
         padding: "12px 0", minHeight: 0, overflow: "hidden",
       }}>
@@ -411,7 +417,8 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
 
       {/* ── Cápsula: Ajustes ── */}
       <div style={{
-        background: RAIL_BG, borderRadius: 16, boxShadow: sombra,
+        background: "rgba(20,20,22,0.78)", backdropFilter: "var(--blur-chrome)", WebkitBackdropFilter: "var(--blur-chrome)",
+        borderRadius: "var(--radius-md)", boxShadow: sombra,
         padding: col ? "6px 0" : "6px 10px", flexShrink: 0,
       }}>
         <NavItem
@@ -590,6 +597,9 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
       display: "flex", alignItems: "center",
       padding: "0 4px 0 22px",
       gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
+      background: "var(--surface-chrome)",
+      backdropFilter: "var(--blur-chrome)", WebkitBackdropFilter: "var(--blur-chrome)",
+      borderBottom: "1px solid var(--separator)",
     }}>
       {/* Título de la vista */}
       <span style={{ fontSize: 17, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: "-0.3px", flexShrink: 0 }}>
@@ -818,17 +828,11 @@ const Splash = () => (
     background: C.pageBg, gap: 16, fontFamily: C.font,
   }}>
     <div style={{
-      position: "fixed", inset: 0, zIndex: 0,
-      backgroundImage: BACKDROP_IMAGE_URL,
-      backgroundSize: "cover", backgroundPosition: "center",
-      filter: "blur(50px)", transform: "scale(1.15)",
-    }} />
-    <div style={{
       position: "relative", zIndex: 1,
       width: 48, height: 48, borderRadius: 14, background: GRAD_PRIMARY,
       display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
       animation: "pulse 1.5s ease-in-out infinite",
-      boxShadow: `0 8px 24px rgba(53,107,90,0.3)`,
+      boxShadow: GRAD_PRIMARY_SHADOW,
     }}>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -911,14 +915,78 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
+        /* ── Tokens: sistema de variables, modo claro por defecto ── */
+        :root {
+          --surface-primary: #FFFFFF;
+          --surface-secondary: #F5F5F7;
+          --surface-tertiary: #FBFBFD;
+          --fill-quaternary: rgba(0,0,0,0.035);
+          --fill-tertiary: rgba(0,0,0,0.06);
+          --label-primary: #1D1D1F;
+          --label-secondary: #6E6E73;
+          --label-tertiary: #8E8E93;
+          --label-quaternary: #C7C7CC;
+          --separator: rgba(0,0,0,0.08);
+          --separator-strong: rgba(0,0,0,0.14);
+          --separator-chrome: rgba(255,255,255,0.6);
+          --surface-chrome: rgba(255,255,255,0.72);
+          --accent: #0071E3;
+          --accent-pressed: #0058B0;
+          --accent-soft: rgba(0,113,227,0.12);
+          --green: #34C759;
+          --green-soft: rgba(52,199,89,0.14);
+          --red: #FF3B30;
+          --red-soft: rgba(255,59,48,0.13);
+          --amber: #FF9500;
+          --amber-soft: rgba(255,149,0,0.14);
+          --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+          --shadow-md: 0 1px 2px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.06);
+          --blur-chrome: blur(20px) saturate(180%);
+          --radius-sm: 8px;
+          --radius-md: 12px;
+          --radius-lg: 18px;
+        }
+        /* Modo oscuro: sigue la apariencia del sistema, sin switch manual todavía
+           -- igual que una app nativa que no fue configurada explícitamente en
+           Ajustes del sistema. */
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --surface-primary: #1D1D1F;
+            --surface-secondary: #000000;
+            --surface-tertiary: #2C2C2E;
+            --fill-quaternary: rgba(255,255,255,0.06);
+            --fill-tertiary: rgba(255,255,255,0.1);
+            --label-primary: #F5F5F7;
+            --label-secondary: #A1A1A6;
+            --label-tertiary: #8E8E93;
+            --label-quaternary: #48484A;
+            --separator: rgba(255,255,255,0.12);
+            --separator-strong: rgba(255,255,255,0.2);
+            --separator-chrome: rgba(255,255,255,0.1);
+            --surface-chrome: rgba(29,29,31,0.72);
+            --accent: #0A84FF;
+            --accent-pressed: #409CFF;
+            --accent-soft: rgba(10,132,255,0.18);
+            --green: #30D158;
+            --green-soft: rgba(48,209,88,0.16);
+            --red: #FF453A;
+            --red-soft: rgba(255,69,58,0.16);
+            --amber: #FF9F0A;
+            --amber-soft: rgba(255,159,10,0.16);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+            --shadow-md: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+          }
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
-          font-family: 'Inter', system-ui, sans-serif;
+          font-family: ${C.font};
           background: ${C.pageBg};
           color: ${C.ink};
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 10px; }
@@ -945,13 +1013,8 @@ export default function App() {
         overflow: "hidden", background: C.pageBg,
         fontFamily: C.font, position: "relative",
       }}>
-        {/* Fondo decorativo: textura odontológica difuminada (glassmorphism) */}
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 0,
-          backgroundImage: BACKDROP_IMAGE_URL,
-          backgroundSize: "cover", backgroundPosition: "center",
-          filter: "blur(50px)", transform: "scale(1.15)",
-        }} />
+        {/* Sin textura decorativa de fondo: "deferencia" pide una superficie
+            neutra que ceda protagonismo al contenido, no un adorno detrás. */}
 
         {/* Un solo riel: colapsado son los iconos, desplegado los mismos con
             nombre y contador. Nunca las secciones dos veces en pantalla. */}

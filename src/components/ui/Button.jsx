@@ -4,8 +4,8 @@ import { GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from '../../utils/constants';
 
 const VARIANTS = {
   primary: { background: GRAD_PRIMARY, color: '#fff', boxShadow: GRAD_PRIMARY_SHADOW },
-  secondary: { background: '#f1f5f9', color: '#64748b' },
-  danger: { background: '#fef2f2', color: '#ef4444' },
+  secondary: { background: 'var(--fill-tertiary)', color: 'var(--label-secondary)' },
+  danger: { background: 'var(--red-soft)', color: 'var(--red)' },
 };
 
 export default function Button({ children, onClick, variant = 'primary', disabled, style, type = 'button' }) {

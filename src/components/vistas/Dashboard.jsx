@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
+import SegmentedControl from '../ui/SegmentedControl';
 import { GraficoLineas, Leyenda, Sparkline, Anillo } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
@@ -248,12 +249,12 @@ export default function Dashboard({ setView, clinica }) {
   // ── Estilos base ─────────────────────────────────────────────────────────
   const card = {
     background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-    border: GLASS_BORDER, borderRadius: 22, padding: 20, boxShadow: GLASS_SHADOW,
+    border: GLASS_BORDER, borderRadius: 'var(--radius-lg)', padding: 20, boxShadow: GLASS_SHADOW,
     display: 'flex', flexDirection: 'column',
   };
-  const h2 = { margin: 0, fontSize: 14, fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px' };
-  const rotulo = { fontSize: 9, color: MU, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' };
-  const subCard = { background: '#F8FAFA', border: `1px solid ${BD}`, borderRadius: 14 };
+  const h2 = { margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--label-primary)', letterSpacing: '-0.1px' };
+  const rotulo = { fontSize: 9, color: MU, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' };
+  const subCard = { background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)' };
   // En tablet la rejilla colapsa a una columna y los `span` dejan de aplicar.
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
@@ -281,20 +282,20 @@ export default function Dashboard({ setView, clinica }) {
 
       {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12) */}
       <div style={{ ...col(4), padding: '6px 4px 0' }}>
-        <h1 style={{ fontSize: 27, fontWeight: 650, color: '#0F172A', margin: 0, letterSpacing: '-0.6px', lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: 27, fontWeight: 600, color: 'var(--label-primary)', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
           Hola{nombreClinica ? `, ${nombreClinica}` : ''}
           <br />¿qué tienes para hoy?
         </h1>
-        <p style={{ fontSize: 12.5, color: '#475569', margin: '12px 0 0', fontWeight: 500, lineHeight: 1.6, maxWidth: 340 }}>
+        <p style={{ fontSize: 12.5, color: 'var(--label-secondary)', margin: '12px 0 0', fontWeight: 500, lineHeight: 1.6, maxWidth: 340 }}>
           {citasHoy.length > 0
-            ? <>Tienes <b style={{ color: '#0F172A' }}>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''}</b> hoy, la próxima a las {citasHoy[0].hora_cita}. </>
+            ? <>Tienes <b style={{ color: 'var(--label-primary)' }}>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''}</b> hoy, la próxima a las {citasHoy[0].hora_cita}. </>
             : <>Hoy no tienes citas agendadas. </>}
           {saldoPendienteTotal > 0
-            ? <>Quedan <b style={{ color: '#0F172A' }}>{soles(saldoPendienteTotal)}</b> por cobrar.</>
+            ? <>Quedan <b style={{ color: 'var(--label-primary)' }}>{soles(saldoPendienteTotal)}</b> por cobrar.</>
             : <>La cobranza está al día.</>}
         </p>
         <div style={{ display: 'flex', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
-          <span style={{ ...subCard, padding: '5px 11px', fontSize: 10.5, fontWeight: 700, color: '#0F172A' }}>
+          <span style={{ ...subCard, padding: '5px 11px', fontSize: 10.5, fontWeight: 700, color: 'var(--label-primary)' }}>
             {estados.activo} activos
           </span>
           <span style={{ ...subCard, padding: '5px 11px', fontSize: 10.5, fontWeight: 700, color: AZ }}>
@@ -323,11 +324,11 @@ export default function Dashboard({ setView, clinica }) {
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(15,23,42,0.04)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--label-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
               <Icon name={a.icon} size={14} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--label-primary)', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
               <div style={{ fontSize: 9.5, color: MU, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.sub}</div>
             </div>
           </button>
@@ -344,7 +345,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Leyenda series={seriesGrafico} />
             <button onClick={() => setVerTabla(v => !v)}
-              style={{ background: '#F8FAFA', border: `1px solid ${BD}`, borderRadius: 8, padding: '4px 11px', fontSize: 10, fontWeight: 700, color: MU, cursor: 'pointer' }}>
+              style={{ background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 8, padding: '4px 11px', fontSize: 10, fontWeight: 700, color: MU, cursor: 'pointer' }}>
               {verTabla ? 'Ver gráfico' : 'Ver tabla'}
             </button>
           </div>
@@ -361,9 +362,9 @@ export default function Dashboard({ setView, clinica }) {
               <tbody>
                 {meses12.map((m, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
-                    <td style={{ padding: '6px 8px', color: '#0F172A', fontWeight: i === 11 ? 700 : 500, textTransform: 'capitalize' }}>{m.label} {String(m.anio).slice(2)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0F172A' }}>{soles(m.ingresos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0F172A' }}>{soles(m.gastos)}</td>
+                    <td style={{ padding: '6px 8px', color: 'var(--label-primary)', fontWeight: i === 11 ? 700 : 500, textTransform: 'capitalize' }}>{m.label} {String(m.anio).slice(2)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(m.ingresos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(m.gastos)}</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: (m.ingresos - m.gastos) >= 0 ? VERDE : RJ }}>{soles(m.ingresos - m.gastos)}</td>
                   </tr>
                 ))}
@@ -382,7 +383,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', gap: 4 }}>
             {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
               <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
-                style={{ width: 22, height: 22, borderRadius: '50%', border: `1px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 11, background: '#F8FAFA' }}>
+                style={{ width: 22, height: 22, borderRadius: '50%', border: `1px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 11, background: 'var(--surface-tertiary)' }}>
                 {lbl}
               </div>
             ))}
@@ -397,7 +398,7 @@ export default function Dashboard({ setView, clinica }) {
             return (
               <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
                 <span style={{ fontSize: 9, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: isSel ? '#0F172A' : 'transparent', border: isSel ? 'none' : `1px solid ${isToday ? P : 'transparent'}`, color: isSel ? '#fff' : '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 700 }}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', background: isSel ? 'var(--label-primary)' : 'transparent', border: isSel ? 'none' : `1px solid ${isToday ? P : 'transparent'}`, color: isSel ? '#fff' : 'var(--label-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 700 }}>
                   {d.getDate()}
                 </div>
                 {/* Punto de carga: qué días están ocupados, de un vistazo. */}
@@ -415,9 +416,9 @@ export default function Dashboard({ setView, clinica }) {
               <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
                 <div style={{ fontSize: 10, color: MU, fontWeight: 700, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 9, background: `${colorPorNombre(c.name)}17`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPorNombre(c.name), fontWeight: 800, fontSize: 10.5, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                  <div style={{ width: 28, height: 28, borderRadius: 9, background: `color-mix(in srgb, ${colorPorNombre(c.name)} 9%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPorNombre(c.name), fontWeight: 800, fontSize: 10.5, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 10, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                   </div>
                 </div>
@@ -447,7 +448,7 @@ export default function Dashboard({ setView, clinica }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: isTablet ? undefined : '1 1 0', minWidth: 0 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={rotulo}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', lineHeight: 1.15, marginTop: 4 }}>{k.value}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--label-primary)', lineHeight: 1.15, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
                 <div style={{ fontSize: 9.5, color: k.deltaCol, fontWeight: 700, marginTop: 3 }}>{k.delta}</div>
               </div>
               <Sparkline valores={k.serie} color={k.col} ancho={50} alto={26} />
@@ -461,7 +462,7 @@ export default function Dashboard({ setView, clinica }) {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: saldoPendienteTotal > 0 ? RJ : VERDE, flexShrink: 0 }} />
             Por cobrar
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', lineHeight: 1.15, marginTop: 4 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--label-primary)', lineHeight: 1.15, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
             {soles(saldoPendienteTotal)}
           </div>
           <div onClick={() => setView && setView('caja')} style={{ fontSize: 9.5, color: P, fontWeight: 700, marginTop: 3, cursor: 'pointer' }}>
@@ -474,7 +475,7 @@ export default function Dashboard({ setView, clinica }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Anillo pct={tasaCobro} color={tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ} tamano={52} grosor={6}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#0F172A' }}>{tasaCobro}%</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--label-primary)' }}>{tasaCobro}%</span>
           </Anillo>
           <div>
             <div style={rotulo}>Tasa de cobro</div>
@@ -489,7 +490,7 @@ export default function Dashboard({ setView, clinica }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Necesita tu atención</h2>
           {alertas.length > 0 && (
-            <span style={{ background: `${RJ}18`, color: RJ, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 100 }}>{alertas.length}</span>
+            <span style={{ background: `color-mix(in srgb, ${RJ} 12%, transparent)`, color: RJ, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 100 }}>{alertas.length}</span>
           )}
         </div>
         {alertas.length === 0 ? (
@@ -501,12 +502,12 @@ export default function Dashboard({ setView, clinica }) {
             {alertas.map((a, i) => (
               <div key={i} onClick={() => setView && setView(a.view)}
                 style={{ ...subCard, padding: '11px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 9, background: `${a.color}1A`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 9, background: `color-mix(in srgb, ${a.color} 10%, transparent)`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon name={a.icon} size={13} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 600, color: '#0F172A', lineHeight: 1.35 }}>{a.texto}</div>
-                  <span style={{ display: 'inline-block', marginTop: 5, fontSize: 9, fontWeight: 800, color: a.color, background: `${a.color}14`, padding: '2px 7px', borderRadius: 100, letterSpacing: '0.3px' }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--label-primary)', lineHeight: 1.35 }}>{a.texto}</div>
+                  <span style={{ display: 'inline-block', marginTop: 5, fontSize: 9, fontWeight: 800, color: a.color, background: `color-mix(in srgb, ${a.color} 8%, transparent)`, padding: '2px 7px', borderRadius: 100, letterSpacing: '0.3px' }}>
                     {a.etiqueta}
                   </span>
                 </div>
@@ -532,8 +533,8 @@ export default function Dashboard({ setView, clinica }) {
             {topDeudores.map(d => (
               <div key={d.paciente.id} onClick={() => setView && setView('caja')} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#F1F4F4', border: `1px solid ${BD}`, color: '#0F172A', fontSize: 9.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--fill-tertiary)', border: `1px solid ${BD}`, color: 'var(--label-primary)', fontSize: 9.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: RJ, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</div>
                 </div>
                 <div style={{ height: 5, background: BD, borderRadius: 3, overflow: 'hidden', marginLeft: 35 }}>
@@ -549,7 +550,7 @@ export default function Dashboard({ setView, clinica }) {
       <div style={{ ...col(3), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Laboratorio</h2>
-          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: '#94A3B8' }}>
+          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: 'var(--label-tertiary)' }}>
             <Icon name="activity" size={14} />
           </div>
         </div>
@@ -558,7 +559,7 @@ export default function Dashboard({ setView, clinica }) {
         ) : (
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { l: 'En proceso', v: labEnProceso.length, c: '#0F172A' },
+              { l: 'En proceso', v: labEnProceso.length, c: 'var(--label-primary)' },
               { l: 'Atrasadas', v: labAtrasadas.length, c: labAtrasadas.length > 0 ? RJ : MU },
               { l: 'Listas', v: labListo.length, c: VERDE },
             ].map(s => (
@@ -575,14 +576,12 @@ export default function Dashboard({ setView, clinica }) {
       <div style={{ ...col(8), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
           <h2 style={h2}>Pulso por especialidad</h2>
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            {CAT_TABS.map(t => (
-              <div key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ fontSize: 10.5, fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? '#fff' : MU, background: activeTab === t.key ? '#0F172A' : '#F8FAFA', padding: '5px 11px', borderRadius: 100, cursor: 'pointer', border: activeTab === t.key ? 'none' : `1px solid ${BD}` }}>
-                {t.key}
-              </div>
-            ))}
-          </div>
+          <SegmentedControl
+            options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
+            value={activeTab}
+            onChange={setActiveTab}
+            style={{ maxWidth: isTablet ? '100%' : 420 }}
+          />
         </div>
 
         {tratamientosTab.length === 0 ? (
@@ -596,8 +595,8 @@ export default function Dashboard({ setView, clinica }) {
               {topTratamientos.map(t => (
                 <div key={t.name} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, color: '#0F172A', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-                    <span style={{ fontSize: 10.5, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: '#0F172A' }}>{soles(t.monto)}</b></span>
+                    <span style={{ fontSize: 11, color: 'var(--label-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                    <span style={{ fontSize: 10.5, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: 'var(--label-primary)' }}>{soles(t.monto)}</b></span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(t.monto / maxTrat) * 100}%`, background: colorPorNombre(t.name), borderRadius: 3 }} />
@@ -610,8 +609,8 @@ export default function Dashboard({ setView, clinica }) {
               {ESTADO_TRAT.map(e => (
                 <div key={e.key} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, color: '#0F172A', fontWeight: 500 }}>{e.label}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#0F172A' }}>{conteoEstado[e.key]}</span>
+                    <span style={{ fontSize: 11, color: 'var(--label-primary)', fontWeight: 500 }}>{e.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--label-primary)' }}>{conteoEstado[e.key]}</span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(conteoEstado[e.key] / maxEstado) * 100}%`, background: e.color, borderRadius: 3 }} />
@@ -627,7 +626,7 @@ export default function Dashboard({ setView, clinica }) {
       <div style={{ ...col(4), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Gastos del mes</h2>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>{soles(gastosMes)}</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--label-primary)' }}>{soles(gastosMes)}</span>
         </div>
         {gastosPorCategoria.length === 0 ? (
           <div style={{ fontSize: 12, color: MU }}>Sin gastos registrados este mes.</div>
@@ -636,8 +635,8 @@ export default function Dashboard({ setView, clinica }) {
             {gastosPorCategoria.map(([cat, monto]) => (
               <div key={cat}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: '#0F172A', fontWeight: 500 }}>{cat}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#0F172A', fontVariantNumeric: 'tabular-nums' }}>{soles(monto)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--label-primary)', fontWeight: 500 }}>{cat}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{soles(monto)}</span>
                 </div>
                 <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${(monto / maxGasto) * 100}%`, background: colorPorNombre(cat), borderRadius: 3 }} />

@@ -401,14 +401,14 @@ export default function Consentimientos({ patient, clinica }) {
           return (
             <div key={c.id} onClick={() => setOpen(c)}
               style={{
-                background: '#fff', border: `1.5px solid ${g ? '#86efac' : P + '33'}`, borderRadius: 11, padding: 14,
+                background: '#fff', border: `1.5px solid ${g ? '#86efac' : `color-mix(in srgb, ${P} 20%, transparent)`}`, borderRadius: 11, padding: 14,
                 cursor: 'pointer', transition: 'all .15s', position: 'relative', display: 'flex', flexDirection: 'column', gap: 8,
                 boxShadow: g ? '0 2px 8px #86efac44' : 'none'
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = g ? '#16a34a' : P; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 18px ${g ? '#86efac44' : P + '22'}`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = g ? '#86efac' : P + '33'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = g ? '0 2px 8px #86efac44' : 'none'; }}>
+              onMouseEnter={e => { e.currentTarget.style.borderColor = g ? '#16a34a' : P; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 18px ${g ? '#86efac44' : `color-mix(in srgb, ${P} 13%, transparent)`}`; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = g ? '#86efac' : `color-mix(in srgb, ${P} 20%, transparent)`; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = g ? '0 2px 8px #86efac44' : 'none'; }}>
 
-              {g && <div style={{ position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: '50%', background: WA, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 900, boxShadow: `0 2px 6px ${WA}44` }}>✓</div>}
+              {g && <div style={{ position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: '50%', background: WA, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 900, boxShadow: `0 2px 6px color-mix(in srgb, ${WA} 27%, transparent)` }}>✓</div>}
 
               <div style={{ width: 34, height: 34, borderRadius: 9, background: color + '1a', color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="document" size={16} />

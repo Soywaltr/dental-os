@@ -155,7 +155,7 @@ const PATHS = {
   ),
 };
 
-export default function Icon({ name, size = 14, color = 'currentColor', strokeWidth = 2, style }) {
+export default function Icon({ name, size = 14, color = 'currentColor', strokeWidth = 1.75, style }) {
   const path = PATHS[name];
   if (!path) return null;
   return (

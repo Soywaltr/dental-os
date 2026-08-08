@@ -33,12 +33,20 @@ export const META_APP_ID = "TU_META_APP_ID_AQUI";
 export const META_OAUTH_SCOPE = "whatsapp_business_management,whatsapp_business_messaging";
 export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 
-// Paleta Ultra-Limpia
-export const P = '#404040', PD = '#262626', DN = '#0f172a', LT = '#ffffff', MT = '#f8fafc', BD = '#e2e8f0', MU = '#64748b', GL = '#d97706', WA = '#10b981', AZ = '#3b82f6', RJ = '#ef4444';
+// Paleta — ya no hex fijos, sino alias de las variables CSS declaradas en el
+// <style> de App.jsx (":root" + "@media (prefers-color-scheme: dark)"). P es
+// el ÚNICO acento interactivo de toda la app (botones primarios, tabs activos,
+// enlaces, foco) -- por eso apunta a --accent, el azul sistema de Apple, en vez
+// de a un gris de marca. Como estas ~15 vistas ya importan de aquí, repuntar
+// un solo valor cambia toda la app y además la deja lista para modo oscuro sin
+// tocar cada archivo.
+export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--label-primary)', LT = 'var(--surface-primary)', MT = 'var(--surface-secondary)', BD = 'var(--separator)', MU = 'var(--label-secondary)', GL = 'var(--amber)', WA = 'var(--green)', AZ = 'var(--accent)', RJ = 'var(--red)';
 
-// Color dedicado para paletas categóricas de datos (ej. gráficos de Analítica), separado
-// de P: P es ahora un gris neutro de marca/chrome y no pasa el piso de croma de una
-// paleta categórica (leería como "sin color"). Validado con validate_palette.js junto a
+// Color dedicado para paletas categóricas de datos (ej. gráficos de Analítica).
+// A propósito NO sigue el tema: es la identidad fija de una serie en un
+// gráfico, y darle claro/oscuro necesitaría re-validar el contraste contra la
+// superficie oscura con validate_palette.js (pendiente para cuando el modo
+// oscuro tenga más uso real). Validado hoy contra superficie clara junto a
 // GL/AZ/WA/RJ.
 export const CAT_ACCENT = '#7c3aed';
 
@@ -47,15 +55,19 @@ export const CAT_ACCENT = '#7c3aed';
 // resuelven la jerarquía de tarjetas con un borde de un pixel casi
 // imperceptible y una sombra de contacto mínima -- nunca una sombra grande y
 // difusa, que es lo que hace que una tarjeta "flote" y lea como una plantilla
-// de generador. El nombre GLASS_* se conserva (lo importan 15 archivos) pero
-// el tratamiento ya no es "glass" ni "flotante".
-export const GLASS_BG = '#ffffff';
+// de generador. GLASS_BLUR sigue en 'none': la vibrancy/blur de Apple es para
+// el chrome (riel, header, modales), no para cada tarjeta de contenido -- eso
+// sí se aplica directo en App.jsx/Modal.jsx con --blur-chrome.
+export const GLASS_BG = 'var(--surface-primary)';
 export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid rgba(15,23,42,0.08)';
-export const GLASS_SHADOW = '0 1px 2px rgba(15,23,42,0.04)';
-export const GRAD_PRIMARY = 'linear-gradient(135deg, #52525b 0%, #27272a 100%)';
-export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(39,39,42,0.35)';
-export const GRAD_SUCCESS = 'linear-gradient(135deg, #14b8a6 0%, #22d3aa 100%)';
+export const GLASS_BORDER = '1px solid var(--separator)';
+export const GLASS_SHADOW = 'var(--shadow-sm)';
+// Botón primario: relleno plano con el acento, sin degradado -- Apple casi
+// nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
+// con los imports existentes (Button.jsx, Login.jsx, MFAChallenge.jsx, App.jsx).
+export const GRAD_PRIMARY = 'var(--accent)';
+export const GRAD_PRIMARY_SHADOW = '0 4px 14px var(--accent-soft)';
+export const GRAD_SUCCESS = 'var(--green)';
 
 export const PATIENTS = [
   { id: 1, name: 'María López', age: 32, phone: '+51 987 654 321', email: 'maria@gmail.com', tag: 'activo', treatment: 'Ortodoncia', nextVisit: 'Hoy 9:00', since: '2023', balance: 0, doc: '72345678', blood: 'O+', allergies: 'Ninguna', meds: 'Ninguno' },

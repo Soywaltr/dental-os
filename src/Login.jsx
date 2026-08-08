@@ -70,7 +70,7 @@ export default function Login({ onLogin }) {
     width: '100%', padding: '12px 14px', border: `1.5px solid ${focused ? P : BD}`,
     borderRadius: 10, fontSize: 14, boxSizing: 'border-box', outline: 'none',
     transition: 'border-color 0.15s, box-shadow 0.15s', backgroundColor: 'rgba(255,255,255,0.7)', color: DN,
-    boxShadow: focused ? `0 0 0 3px ${P}22` : 'none',
+    boxShadow: focused ? `0 0 0 3px color-mix(in srgb, ${P} 13%, transparent)` : 'none',
   });
 
   const labelStyle = {
