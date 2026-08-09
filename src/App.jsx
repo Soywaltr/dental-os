@@ -343,8 +343,8 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
     // separarlo en cápsulas sueltas competía visualmente con las secciones.
     <aside style={{
       width: W, minWidth: W,
-      margin: "14px 0 14px 14px",
-      height: "calc(100vh - 28px)",
+      margin: "var(--gutter) 0 var(--gutter) var(--gutter)",
+      height: "calc(100vh - var(--gutter) * 2)",
       background: "var(--panel)",
       borderRadius: "var(--radius-panel)",
       boxShadow: "var(--shadow-float)",
@@ -631,7 +631,9 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
       height: 64, minHeight: 64,
       display: "flex", alignItems: "center",
       padding: "0 14px 0 22px",
-      margin: isNarrow ? "14px 14px 0 0" : "14px 22px 0 0",
+      // Mismo canal que el contenido: el header se alinea con los paneles de
+      // abajo en los dos bordes, no flota con su propia medida.
+      margin: "var(--gutter) var(--gutter) 0 var(--gutter)",
       gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
       background: "var(--panel)",
       borderRadius: "var(--radius-panel)",
@@ -1008,7 +1010,10 @@ export default function App() {
               que pase, así que colapsar el riel (60px vs 230px) sólo agrandaba el
               margen vacío a los lados en vez de darle ese espacio a la vista. El
               tope de 2000px es sólo para monitores ultra-anchos. */}
-          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "14px 14px 28px 0" : "16px 22px 32px 0", background: "transparent" }}>
+          {/* El mismo canal en los cuatro lados: el contenido queda separado del
+              riel exactamente igual que del borde derecho. Antes el padding
+              izquierdo era 0 y todo quedaba pegado al menú. */}
+          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: "var(--gutter)", background: "transparent" }}>
             <div style={{ maxWidth: 2000, margin: "0 auto" }}>
               <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
             </div>

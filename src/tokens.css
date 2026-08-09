@@ -84,6 +84,24 @@
   --dur-fast:  150ms;
   --dur-base:  200ms;
   --dur-slow:  250ms;
+
+  /* ── Espaciado ─────────────────────────────────────────────────────────── */
+  /* Un ÚNICO canal para todo el shell: el aire entre el riel y el contenido, el
+     que rodea el contenido y el que separa el header son exactamente el mismo
+     valor. Es lo que hace que la página se lea alineada en vez de improvisada;
+     si cada zona elige su propio número, el ojo lo nota aunque no sepa por qué. */
+  --gutter: 24px;
+  /* Separación entre paneles hermanos dentro de una vista. */
+  --gap-panel: 18px;
+}
+
+/* En pantallas de iPad y menores el canal se achica: mantener 24px a cada lado
+   le come demasiado ancho útil al contenido. */
+@media (max-width: 1180px) {
+  :root {
+    --gutter: 16px;
+    --gap-panel: 14px;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

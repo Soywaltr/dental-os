@@ -275,15 +275,20 @@ export default function Dashboard({ setView, clinica }) {
 
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 18, alignItems: 'start', animation: 'fadeIn 0.4s ease-in-out' }}>
+    // Un solo canal (--gap-panel) para TODA la rejilla: si una fila usa otra
+    // medida, el ojo lo nota aunque no sepa por qué.
+    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
       {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12) */}
-      <div style={{ ...col(4), padding: '6px 4px 0' }}>
-        <h1 style={{ fontSize: 27, fontWeight: 600, color: 'var(--label-primary)', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+      {/* Es un panel como sus vecinos: antes era texto suelto al borde de la
+          rejilla mientras al lado había una tarjeta, y esa mezcla se leía como
+          un elemento fuera de sitio. */}
+      <div style={{ ...col(4), ...card, justifyContent: 'center' }}>
+        <h1 style={{ fontSize: 27, fontWeight: 600, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
           Hola{nombreClinica ? `, ${nombreClinica}` : ''}
           <br />¿qué tienes para hoy?
         </h1>
-        <p style={{ fontSize: 13.5, color: 'var(--label-secondary)', margin: '12px 0 0', fontWeight: 500, lineHeight: 1.6, maxWidth: 340 }}>
+        <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: '12px 0 0', fontWeight: 400, lineHeight: 1.6, maxWidth: 340 }}>
           {citasHoy.length > 0
             ? <>Tienes <b style={{ color: 'var(--label-primary)' }}>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''}</b> hoy, la próxima a las {citasHoy[0].hora_cita}. </>
             : <>Hoy no tienes citas agendadas. </>}
@@ -399,7 +404,11 @@ export default function Dashboard({ setView, clinica }) {
             return (
               <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
                 <span style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: isSel ? 'var(--label-primary)' : 'transparent', border: isSel ? 'none' : `1px solid ${isToday ? P : 'transparent'}`, color: isSel ? '#fff' : 'var(--label-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600 }}>
+                {/* Seleccionado = acento. Antes el fondo era --label-primary con
+                    texto blanco fijo: en modo oscuro ese token se vuelve casi
+                    blanco y el número quedaba invisible. El acento se mantiene
+                    saturado en los dos modos. */}
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#fff' : (isToday ? P : 'var(--text-primary)'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color var(--dur-fast) var(--ease)' }}>
                   {d.getDate()}
                 </div>
                 {/* Punto de carga: qué días están ocupados, de un vistazo. */}
@@ -417,7 +426,11 @@ export default function Dashboard({ setView, clinica }) {
               <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
                 <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: `color-mix(in srgb, ${colorPorNombre(c.name)} 9%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colorPorNombre(c.name), fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                  {/* Iniciales en tinta neutra sobre superficie neutra: teñirlas
+                      con colorPorNombre las dejaba con muy poco contraste, porque
+                      esa escala es monocromática y sus pasos claros casi se
+                      funden con el fondo. El color identifica barras, no texto. */}
+                  <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
@@ -437,7 +450,7 @@ export default function Dashboard({ setView, clinica }) {
       {/* ─── INDICADORES ─── 4 tarjetas iguales (ícono en círculo teñido +
           etiqueta + cifra + variación), como la fila de KPIs de un dashboard
           SaaS de referencia — no una tira con divisores. */}
-      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)' }}>
         <Stat
           label="Ingresos del mes"
           value={soles(ingresosMes)}

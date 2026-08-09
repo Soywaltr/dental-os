@@ -1529,7 +1529,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         <textarea placeholder="Evolución, indicaciones al paciente, pendientes para el próximo control..." value={nuevoControl.observaciones} onChange={e => setNuevoControl(p => ({ ...p, observaciones: e.target.value }))} style={{ ...campoDoc, height: '68px', resize: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={agregarControlMensual} disabled={savingBitacora} style={{ background: savingBitacora ? 'var(--label-quaternary)' : P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingBitacora ? 'not-allowed' : 'pointer' }}>
+                        <button onClick={agregarControlMensual} disabled={savingBitacora} style={{ background: savingBitacora ? 'var(--panel-sunken)' : P, color: savingBitacora ? 'var(--text-tertiary)' : '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingBitacora ? 'not-allowed' : 'pointer' }}>
                           {savingBitacora ? 'Guardando...' : (editandoControl ? 'Guardar cambios' : '+ Agregar control')}
                         </button>
                         {editandoControl && (
@@ -1669,7 +1669,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                               : 'Ej: cuota de agosto'}
                             value={nuevoAbono.concepto} onChange={e => setNuevoAbono(p => ({ ...p, concepto: e.target.value }))} style={campoDoc} />
                         </div>
-                        <button onClick={agregarAbono} disabled={savingAbono} style={{ background: savingAbono ? 'var(--label-quaternary)' : WA, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingAbono ? 'not-allowed' : 'pointer' }}>
+                        <button onClick={agregarAbono} disabled={savingAbono} style={{ background: savingAbono ? 'var(--panel-sunken)' : WA, color: savingAbono ? 'var(--text-tertiary)' : '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingAbono ? 'not-allowed' : 'pointer' }}>
                           {savingAbono ? 'Guardando...' : '+ Registrar pago'}
                         </button>
                       </div>
