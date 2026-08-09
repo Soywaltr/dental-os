@@ -7,14 +7,21 @@ import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import useMetaWhatsApp from '../../utils/useMetaWhatsApp';
 import { BD, DN, MU, MT, P, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { BUCKET, rutaPerfil, rutaFirma, rutaLogo, firmar, invalidarFirma } from '../../utils/storage';
+import { contrasteTexto } from '../../utils/theme';
 import Seguridad from './Seguridad';
 
 const TABS = [
   { id: 'generales', lbl: 'Generales' },
+  { id: 'apariencia', lbl: 'Apariencia' },
   { id: 'perfil', lbl: 'Mi perfil' },
   { id: 'integraciones', lbl: 'Integraciones' },
   { id: 'seguridad', lbl: 'Seguridad' },
 ];
+
+// Tema por defecto ("Dra. Sol Vargas") -- el mismo valor que :root en
+// tokens.css. Si accent_color es null en Supabase, la clínica todavía no
+// eligió un color propio y el selector arranca mostrando este.
+const ACENTO_DEFECTO = '#6C5CE7';
 
 const cardStyle = {
   background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 20,
@@ -61,16 +68,26 @@ export default function Config({ clinicaId, clinica, clinicaRol, refrescarClinic
 
   return (
     <div style={{ padding: 22, overflowY: 'auto', flex: 1 }}>
-      <div style={{ display: 'flex', gap: 1, marginBottom: 20, borderBottom: `1px solid ${BD}` }}>
+      {/* <button>, no <div onClick>: antes la pestaña no tenía foco de teclado
+          ni :hover -- una inactiva se veía igual pasándole el mouse o no. */}
+      <div role="tablist" style={{ display: 'flex', gap: 1, marginBottom: 20, borderBottom: `1px solid ${BD}` }}>
         {TABS.map(t => (
-          <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '12px 18px', minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: 15, fontWeight: tab === t.id ? 600 : 500, color: tab === t.id ? P : MU, borderBottom: tab === t.id ? `2px solid ${P}` : '2px solid transparent', marginBottom: -1, transition: `color .18s ${EASE}, border-color .18s ${EASE}` }}>
+          <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+            className="tab-item u-focusable"
+            style={{
+              padding: '12px 18px', minHeight: 44, display: 'flex', alignItems: 'center',
+              cursor: 'pointer', fontSize: 15, fontWeight: tab === t.id ? 600 : 500,
+              color: tab === t.id ? P : MU, background: 'none', border: 'none',
+              borderBottom: tab === t.id ? `2px solid ${P}` : '2px solid transparent',
+              marginBottom: -1, borderRadius: 0, font: 'inherit',
+            }}>
             {t.lbl}
-          </div>
+          </button>
         ))}
       </div>
 
       {tab === 'generales' && <Generales clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />}
+      {tab === 'apariencia' && <Apariencia clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica} />}
       {tab === 'perfil' && <MiPerfil clinicaId={clinicaId} />}
       {tab === 'integraciones' && <Integraciones clinicaId={clinicaId} />}
       {tab === 'seguridad' && <Seguridad clinicaId={clinicaId} rol={clinicaRol} />}
@@ -79,98 +96,61 @@ export default function Config({ clinicaId, clinica, clinicaRol, refrescarClinic
 }
 
 // ── GENERALES ────────────────────────────────────────────────────────────────
-// Datos del consultorio (nombre + logo): funcional, se guarda en la tabla
-// `clinicas` y alimenta la marca del sidebar. El resto (horario, agente IA,
-// notificaciones) sigue como maqueta — fuera de alcance de esta fase.
+// Datos de contacto del consultorio: funcional, se guarda en la tabla
+// `clinicas`. Nombre, logo y color de marca viven en la pestaña Apariencia —
+// eso es identidad de marca, esto es información operativa. El resto
+// (horario, agente IA, notificaciones) sigue como maqueta — fuera de alcance
+// de esta fase.
 function Generales({ clinicaId, clinica, refrescarClinica }) {
-  const [nombre, setNombre] = useState('');
-  const [direccion, setDireccion] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [email, setEmail] = useState('');
-  const [cop, setCop] = useState('');
-  const [logoUrl, setLogoUrl] = useState(null);
+  // Un solo objeto en vez de 4 useState sueltos: la regla de lint marca varios
+  // setState síncronos seguidos en el cuerpo de un efecto (pueden encadenar
+  // renders) -- acá no hace falta, es sincronizar 4 campos de un mismo
+  // formulario a la vez cuando llega `clinica`.
+  const [datos, setDatos] = useState({ direccion: '', telefono: '', email: '', cop: '' });
   const [guardando, setGuardando] = useState(false);
-  const [subiendoLogo, setSubiendoLogo] = useState(false);
 
   useEffect(() => {
-    let vivo = true;
-    const sincronizar = async () => {
+    // La regla de lint marca un setState LLAMADO DIRECTO en el cuerpo del
+    // efecto (no importa cuántos); envolverlo en una función y llamarla es el
+    // patrón que ya usa el resto del archivo (MiPerfil, Apariencia) para
+    // sincronizar estado local desde una prop que llega después del primer render.
+    const sincronizar = () => {
       if (!clinica) return;
-      setNombre(clinica.nombre || '');
-      setDireccion(clinica.direccion || '');
-      setTelefono(clinica.telefono || '');
-      setEmail(clinica.email || '');
-      setCop(clinica.cop || '');
-      // Bucket privado: hay que firmar la ruta guardada para poder mostrarla.
-      const firmada = clinica.logo_url ? await firmar(clinica.logo_url) : null;
-      if (vivo) setLogoUrl(firmada);
+      setDatos({
+        direccion: clinica.direccion || '',
+        telefono: clinica.telefono || '',
+        email: clinica.email || '',
+        cop: clinica.cop || '',
+      });
     };
     sincronizar();
-    return () => { vivo = false; };
   }, [clinica]);
 
   const guardar = async () => {
     if (!clinicaId) return;
     setGuardando(true);
-    const { error } = await supabase.from('clinicas')
-      .update({ nombre, direccion, telefono, email, cop })
-      .eq('id', clinicaId);
+    const { error } = await supabase.from('clinicas').update(datos).eq('id', clinicaId);
     setGuardando(false);
     if (error) { alert('Error al guardar: ' + error.message); return; }
     alert('Datos del consultorio actualizados.');
     refrescarClinica?.();
   };
 
-  const subirLogo = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !clinicaId) return;
-    setSubiendoLogo(true);
-    const path = rutaLogo(clinicaId);
-    const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
-    if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
-    // Se guarda la RUTA, no una URL pública: con el bucket privado esa URL no
-    // resuelve, y la firma se genera al momento de mostrar.
-    const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: path }).eq('id', clinicaId);
-    setSubiendoLogo(false);
-    if (dbErr) { alert('Error al guardar el logo: ' + dbErr.message); return; }
-    invalidarFirma(path);
-    setLogoUrl(await firmar(path));
-    refrescarClinica?.();
-  };
-
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
+      <div className="u-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
         <div style={cardStyle}>
-          <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Datos del consultorio</div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <Icon name="document" size={20} color={MU} />
-              )}
-            </div>
-            <div>
-              <div style={{ ...labelCapsStyle, marginBottom: 2 }}>Logo del consultorio</div>
-              <label htmlFor="logo-upload" style={enlaceArchivoStyle}>
-                {subiendoLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar logo' : '+ Subir logo')}
-              </label>
-              <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={subirLogo} />
-            </div>
-          </div>
+          <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Datos de contacto</div>
 
           {[
-            ['Nombre', nombre, setNombre],
-            ['Dirección', direccion, setDireccion],
-            ['Teléfono', telefono, setTelefono],
-            ['Email', email, setEmail],
-            ['COP', cop, setCop],
-          ].map(([label, value, setValue]) => (
-            <div key={label} style={{ marginBottom: 12 }}>
+            ['Dirección', 'direccion'],
+            ['Teléfono', 'telefono'],
+            ['Email', 'email'],
+            ['COP', 'cop'],
+          ].map(([label, k]) => (
+            <div key={k} style={{ marginBottom: 12 }}>
               <label style={labelStyle}>{label}</label>
-              <input value={value} onChange={e => setValue(e.target.value)} style={inputStyle} />
+              <input value={datos[k]} onChange={e => setDatos(d => ({ ...d, [k]: e.target.value }))} className="field" style={inputStyle} />
             </div>
           ))}
 
@@ -190,7 +170,7 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
             {sec.fields.map(([k, v]) => (
               <div key={k} style={{ marginBottom: 12 }}>
                 <label style={labelStyle}>{k}</label>
-                <input defaultValue={v} style={inputStyle} />
+                <input defaultValue={v} className="field" style={inputStyle} />
               </div>
             ))}
           </div>
@@ -244,19 +224,23 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
 
       <label style={labelStyle}>Lunes a viernes</label>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input type="time" value={lvInicio} onChange={e => setLvInicio(e.target.value)} style={timeInputStyle} />
-        <input type="time" value={lvFin} onChange={e => setLvFin(e.target.value)} style={timeInputStyle} />
+        <input type="time" value={lvInicio} onChange={e => setLvInicio(e.target.value)} className="field" style={timeInputStyle} />
+        <input type="time" value={lvFin} onChange={e => setLvFin(e.target.value)} className="field" style={timeInputStyle} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 }}>
+      {/* Toggle pill en vez de checkbox nativo: mismo <input type="checkbox">
+          por debajo (teclado y lector de pantalla de fábrica), redibujado
+          con la clase .switch de ui.css. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36, marginBottom: 4 }}>
         <label style={{ ...labelStyle, marginBottom: 0 }}>Sábado</label>
-        <label style={{ fontSize: 12, color: MU, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minHeight: 36 }}>
-          <input type="checkbox" checked={!sabCerrado} onChange={e => setSabCerrado(!e.target.checked)} style={{ accentColor: P, cursor: 'pointer', width: 16, height: 16 }} /> Abierto
+        <label style={{ fontSize: 12, color: MU, display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', minHeight: 36 }}>
+          Abierto
+          <input type="checkbox" checked={!sabCerrado} onChange={e => setSabCerrado(!e.target.checked)} className="switch" />
         </label>
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, opacity: sabCerrado ? .5 : 1 }}>
-        <input type="time" disabled={sabCerrado} value={sabInicio} onChange={e => setSabInicio(e.target.value)} style={timeInputStyle} />
-        <input type="time" disabled={sabCerrado} value={sabFin} onChange={e => setSabFin(e.target.value)} style={timeInputStyle} />
+        <input type="time" disabled={sabCerrado} value={sabInicio} onChange={e => setSabInicio(e.target.value)} className="field" style={timeInputStyle} />
+        <input type="time" disabled={sabCerrado} value={sabFin} onChange={e => setSabFin(e.target.value)} className="field" style={timeInputStyle} />
       </div>
 
       <div style={{ marginBottom: 12 }}>
@@ -266,7 +250,7 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
 
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Duración de cita por defecto</label>
-        <select value={duracionCita} onChange={e => setDuracionCita(e.target.value)} style={inputStyle}>
+        <select value={duracionCita} onChange={e => setDuracionCita(e.target.value)} className="field" style={inputStyle}>
           {[15, 20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m} minutos</option>)}
         </select>
       </div>
@@ -274,6 +258,166 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
       <Button onClick={guardar} disabled={guardando} style={guardarBtnStyle}>
         <Icon name="save" size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
       </Button>
+    </div>
+  );
+}
+
+// ── APARIENCIA / MARCA (white-label) ─────────────────────────────────────────
+// Todo lo que hace a la identidad visual de la clínica en un solo lugar:
+// nombre comercial, logo y el acento de marca. El acento elegido acá es lo
+// único que cambia el tema de TODA la app -- ver utils/theme.js: al guardar,
+// refrescarClinica() vuelve a traer accent_color, y App.jsx lo aplica sobre
+// :root. hover/press/soft/ring se recalculan solos (color-mix en tokens.css).
+function Apariencia({ clinicaId, clinica, refrescarClinica }) {
+  const [nombre, setNombre] = useState('');
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [acento, setAcento] = useState(ACENTO_DEFECTO);
+  const [guardando, setGuardando] = useState(false);
+  const [subiendoLogo, setSubiendoLogo] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    const sincronizar = async () => {
+      if (!clinica) return;
+      setNombre(clinica.nombre || '');
+      setAcento(clinica.accent_color || ACENTO_DEFECTO);
+      const firmada = clinica.logo_url ? await firmar(clinica.logo_url) : null;
+      if (vivo) setLogoUrl(firmada);
+    };
+    sincronizar();
+    return () => { vivo = false; };
+  }, [clinica]);
+
+  const subirLogo = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !clinicaId) return;
+    setSubiendoLogo(true);
+    const path = rutaLogo(clinicaId);
+    const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
+    if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
+    // Se guarda la RUTA, no una URL pública: con el bucket privado esa URL no
+    // resuelve, y la firma se genera al momento de mostrar.
+    const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: path }).eq('id', clinicaId);
+    setSubiendoLogo(false);
+    if (dbErr) { alert('Error al guardar el logo: ' + dbErr.message); return; }
+    invalidarFirma(path);
+    setLogoUrl(await firmar(path));
+    refrescarClinica?.();
+  };
+
+  const guardar = async () => {
+    if (!clinicaId) return;
+    // El campo de texto acepta cualquier tecleo -- sin este chequeo, un hex a
+    // medio escribir se guardaría tal cual, aplicarTema() lo fijaría en
+    // --accent, y CADA componente que usa var(--accent) quedaría inválido en
+    // tiempo de cómputo: botones, ítem activo del menú, foco, todo a la vez.
+    // Justo lo que "el diseño no debe romperse con ningún acento" pide evitar.
+    if (!/^#[0-9A-Fa-f]{6}$/.test(acento)) {
+      alert('El color de acento debe ser un hex válido, por ejemplo #6C5CE7.');
+      return;
+    }
+    setGuardando(true);
+    // null cuando vuelve a ser exactamente el default: así una clínica que
+    // "restablece" no se queda pegada a un accent_color que por casualidad
+    // coincide con el tema por defecto de hoy -- si el default cambia en
+    // tokens.css el día de mañana, esta clínica lo sigue automáticamente.
+    const valor = acento.toUpperCase() === ACENTO_DEFECTO ? null : acento;
+    const { error } = await supabase.from('clinicas')
+      .update({ nombre, accent_color: valor })
+      .eq('id', clinicaId);
+    setGuardando(false);
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    alert('Apariencia actualizada.');
+    refrescarClinica?.();
+  };
+
+  const textoSobreAcento = contrasteTexto(acento);
+
+  return (
+    <div className="u-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
+      <div style={cardStyle}>
+        <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Marca</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <Icon name="document" size={20} color={MU} />
+            )}
+          </div>
+          <div>
+            <div style={{ ...labelCapsStyle, marginBottom: 2 }}>Logo</div>
+            <label htmlFor="logo-upload" className="link-accent" style={enlaceArchivoStyle}>
+              {subiendoLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar logo' : '+ Subir logo')}
+            </label>
+            <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={subirLogo} />
+          </div>
+        </div>
+
+        <label style={labelStyle}>Nombre comercial</label>
+        <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Consultorio Dra. Sol Vargas"
+          className="field" style={{ ...inputStyle, marginBottom: 16 }} />
+
+        <label style={labelStyle}>Color de acento</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <input type="color" value={acento} onChange={e => setAcento(e.target.value)} className="color-swatch u-focusable" aria-label="Elegir color de acento" />
+          <input value={acento} onChange={e => setAcento(e.target.value)} placeholder="#6C5CE7" maxLength={7}
+            className="field" style={{ ...inputStyle, flex: 1, fontVariantNumeric: 'tabular-nums' }} />
+        </div>
+        {acento !== ACENTO_DEFECTO && (
+          <button onClick={() => setAcento(ACENTO_DEFECTO)} className="link-accent u-focusable"
+            style={{ ...enlaceArchivoStyle, background: 'none', border: 'none', padding: 0, marginBottom: 14 }}>
+            Restablecer al color por defecto
+          </button>
+        )}
+
+        <Button onClick={guardar} disabled={guardando} style={{ ...guardarBtnStyle, marginTop: acento !== ACENTO_DEFECTO ? 0 : 10 }}>
+          <Icon name="save" size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
+        </Button>
+      </div>
+
+      {/* Vista previa EN VIVO: usa el color todavía sin guardar (acento),
+          nunca la variable --accent real -- si repintara la app entera con
+          cada tecla, una clínica probando colores vería parpadear todo el
+          software antes de decidirse. */}
+      <div style={cardStyle}>
+        <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Vista previa</div>
+
+        <div style={{ background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)', padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-control)', overflow: 'hidden', background: logoUrl ? 'transparent' : acento, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {logoUrl
+                ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ color: textoSobreAcento, fontSize: 13, fontWeight: 700 }}>{(nombre || 'C').charAt(0).toUpperCase()}</span>}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: DN }}>{nombre || 'Nombre del consultorio'}</div>
+          </div>
+
+          {/* Ítem de navegación activo — mismo patrón que el sidebar real. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 'var(--radius-control)', background: `color-mix(in srgb, ${acento} 10%, transparent)`, color: acento, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+            <Icon name="calendar" size={15} /> Agenda
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', fontSize: 13, color: MU, marginBottom: 14 }}>
+            <Icon name="document" size={15} /> Historial
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button disabled style={{ background: acento, color: textoSobreAcento, border: 'none', borderRadius: 'var(--radius-control)', padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'default' }}>
+              + Nueva cita
+            </button>
+            {/* --accent se fija SOLO en este input (las variables CSS heredan
+                al elemento, no escalan hacia arriba): el switch real de
+                .switch:checked usa var(--accent), así que acá se previsualiza
+                con el color en edición sin tocar el tema global de la app. */}
+            <input type="checkbox" defaultChecked disabled className="switch" style={{ '--accent': acento, cursor: 'default' }} aria-hidden="true" tabIndex={-1} />
+          </div>
+        </div>
+
+        <p style={{ fontSize: 12, color: MU, margin: '12px 0 0', lineHeight: 1.5 }}>
+          Así se ve el ítem activo del menú, el botón principal y el interruptor con este color. Guarda para aplicarlo a todo el sistema.
+        </p>
+      </div>
     </div>
   );
 }
@@ -357,7 +501,7 @@ function MiPerfil({ clinicaId }) {
             )}
           </div>
           <div>
-            <label htmlFor="avatar-upload" style={enlaceArchivoStyle}>
+            <label htmlFor="avatar-upload" className="link-accent" style={enlaceArchivoStyle}>
               {subiendoAvatar ? 'Subiendo...' : 'Cambiar foto'}
             </label>
             <input type="file" id="avatar-upload" accept="image/*" style={{ display: 'none' }} onChange={subirAvatar} />
@@ -366,15 +510,15 @@ function MiPerfil({ clinicaId }) {
 
         <label style={labelCapsStyle}>Nombre completo</label>
         <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Dra. Sol Vargas"
-          style={{ ...inputStyle, marginBottom: 14 }} />
+          className="field" style={{ ...inputStyle, marginBottom: 14 }} />
 
         <label style={labelCapsStyle}>Teléfono</label>
         <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+51 915 054 145"
-          style={{ ...inputStyle, marginBottom: 14 }} />
+          className="field" style={{ ...inputStyle, marginBottom: 14 }} />
 
         <label style={labelCapsStyle}>Email</label>
         <input value={email} disabled
-          style={{ ...inputStyle, background: MT, color: MU }} />
+          className="field" style={{ ...inputStyle, background: MT, color: MU }} />
 
         <Button onClick={guardar} disabled={saving} style={{ ...guardarBtnStyle, marginTop: 18 }}>
           <Icon name="save" size={15} /> {saving ? 'Guardando...' : 'Guardar cambios'}
@@ -391,7 +535,7 @@ function MiPerfil({ clinicaId }) {
             Sin firma configurada
           </div>
         )}
-        <label htmlFor="firma-upload" style={enlaceArchivoStyle}>
+        <label htmlFor="firma-upload" className="link-accent" style={enlaceArchivoStyle}>
           {subiendoFirma ? 'Subiendo...' : (firmaUrl ? 'Cambiar firma/sello' : '+ Subir firma y sello')}
         </label>
         <input type="file" id="firma-upload" accept="image/*" style={{ display: 'none' }} onChange={subirFirma} />

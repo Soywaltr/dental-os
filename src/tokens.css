@@ -1,12 +1,13 @@
 /* src/tokens.css
  * ─────────────────────────────────────────────────────────────────────────────
- * DentalOS · Design tokens — estilo "soft floating panels"
+ * DentalOS · Design tokens
  *
- * Paneles blancos que flotan sobre un fondo lavanda-gris, esquinas muy
- * redondeadas, sombras difusas de baja opacidad y UN solo color de acento
- * (violeta) reservado para estado activo/selección. Nada de bordes duros:
- * los elementos se separan con aire, con un cambio sutil de superficie o con
- * sombra.
+ * Monocromático + un solo acento (blanco-etiqueta, por clínica). Radios
+ * moderados, no la "sopa de tarjetas" con esquinas muy redondeadas y sombra
+ * pareja de la etapa anterior: las secciones se separan con líneas finas
+ * (hairline) y espacio; la sombra queda reservada para lo que de verdad flota
+ * sobre el contenido (menús, modales, dropdowns — ver --shadow-pop / Modal.jsx),
+ * nunca para una tarjeta de contenido normal.
  *
  * Este archivo es la ÚNICA fuente de verdad del color en la app. Los nombres
  * viejos (--label-*, --surface-*, etc.) se conservan al final como alias
@@ -37,14 +38,25 @@
   --text-tertiary:  #70707A;  /* etiquetas pequeñas, metadatos — 4.90:1 */
   --text-disabled:  #B8B8C2;
 
-  /* ── Acento único ──────────────────────────────────────────────────────── */
+  /* ── Acento único (white-label) ───────────────────────────────────────── */
   /* Solo para: toggle activo, radio/checkbox seleccionado, ítem de nav activo,
-     foco. No se usa como color decorativo ni como serie de datos. */
-  --accent:        #6C5CE7;
-  --accent-hover:  #7C6FF0;
-  --accent-press:  #5B4BD6;
-  --accent-soft:   rgba(108, 92, 231, 0.10);
-  --accent-ring:   rgba(108, 92, 231, 0.28);
+     foco, botón primario. No se usa como color decorativo ni como serie de
+     datos. #6C5CE7 es el tema por defecto ("Dra. Sol Vargas"); cada clínica
+     puede sobreescribir SOLO --accent y --accent-contrast en runtime
+     (utils/theme.js, según clinicas.accent_color) — hover/press/soft/ring se
+     recalculan solos porque son fórmulas de color-mix() sobre --accent, no
+     valores propios. Repintar toda la app queda en cambiar una sola variable. */
+  --accent:          #6C5CE7;
+  --accent-hover:    color-mix(in srgb, var(--accent) 88%, black);
+  --accent-press:    color-mix(in srgb, var(--accent) 76%, black);
+  --accent-soft:     color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-ring:     color-mix(in srgb, var(--accent) 28%, transparent);
+  /* Texto legible SOBRE el acento (botón primario). No es una fórmula CSS: la
+     relación de contraste no es lineal con el color, así que color-mix() no
+     puede elegir "blanco o negro" por sí solo — se calcula en JS
+     (utils/theme.js → contrasteTexto()) y se fija junto a --accent. Este valor
+     es el default para #6C5CE7 (4.86:1, blanco gana). */
+  --accent-contrast: #FFFFFF;
 
   /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
   /* Mismo criterio que los grises: estos colores se usan como TEXTO (cifras,
@@ -65,14 +77,24 @@
   --hairline-strong: rgba(26, 26, 30, 0.11);
 
   /* ── Elevación ─────────────────────────────────────────────────────────── */
-  --shadow-float:  0 4px 24px rgba(26, 26, 40, 0.06);
-  --shadow-raised: 0 2px 8px rgba(26, 26, 40, 0.05);
-  --shadow-pop:    0 12px 40px rgba(26, 26, 40, 0.12);
+  /* --shadow-raised (= --shadow-sm = GLASS_SHADOW) queda en 'none': es lo que
+     consumen las tarjetas de contenido de las 21 vistas, y "menos tarjetas,
+     separa con líneas finas" significa que una tarjeta común no debe flotar.
+     Sólo el chrome persistente (riel, header — usan --shadow-float directo) y
+     lo genuinamente flotante (modal, dropdown, menú — --shadow-pop) llevan
+     sombra. Ver Modal.jsx, que se desacopló de este alias a propósito. */
+  --shadow-float:  0 1px 2px rgba(26, 26, 30, 0.04), 0 4px 16px rgba(26, 26, 30, 0.06);
+  --shadow-raised: none;
+  --shadow-pop:    0 8px 30px rgba(26, 26, 30, 0.16), 0 2px 8px rgba(26, 26, 30, 0.08);
 
   /* ── Radios ────────────────────────────────────────────────────────────── */
-  --radius-panel:   26px;  /* contenedor grande / panel flotante */
-  --radius-card:    18px;  /* tarjeta dentro de un panel */
-  --radius-control: 12px;  /* botón, input, badge */
+  /* Moderados: 8/10/12, no 12/18/26. --radius-control cubre botón Y campo por
+     igual (el brief separa 6px botón / 8-10px campo, pero unificarlos en un
+     solo valor evita tocar cada llamada de borderRadius en las 21 vistas para
+     saber cuál es cuál -- eso queda para cuando se rediseñe cada vista). */
+  --radius-panel:   12px;  /* contenedor grande: riel, header, sección */
+  --radius-card:    10px;  /* tarjeta dentro de un panel */
+  --radius-control: 8px;   /* botón, input, badge */
   --radius-pill:    999px; /* toggle, dropdown, buscador, chip */
 
   /* ── Tipografía ────────────────────────────────────────────────────────── */
@@ -111,23 +133,35 @@
  * ───────────────────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-app:       #131318;
-    --panel:        #1D1D24;
-    --panel-sunken: #26262F;
-    --panel-hover:  #2C2C36;
+    /* Neutralizados: los valores anteriores (#131318, #1D1D24...) tenían un
+       tinte frío perceptible (el canal azul por encima del rojo/verde) — eso
+       es exactamente el "azul marino" que se quería evitar. Neutro real,
+       verificado con contraste: los 3 tokens de texto siguen ≥4.5:1 contra
+       las tres superficies. */
+    --bg-app:       #0D0D0E;
+    --panel:        #18181B;
+    --panel-sunken: #212124;
+    --panel-hover:  #292929;
 
-    --chrome:       rgba(29, 29, 36, 0.72);
+    --chrome:       rgba(24, 24, 27, 0.72);
 
     --text-primary:   #F4F4F7;
     --text-secondary: #A6A6B2;
     --text-tertiary:  #8A8A94;
     --text-disabled:  #55555F;
 
-    --accent:       #8B7BF5;
-    --accent-hover: #9B8DF8;
-    --accent-press: #7A69E8;
-    --accent-soft:  rgba(139, 123, 245, 0.16);
-    --accent-ring:  rgba(139, 123, 245, 0.36);
+    /* Mismas fórmulas que en claro, pero hacia BLANCO en vez de negro: en una
+       superficie oscura, "resaltar al pasar el mouse" es aclarar, no oscurecer.
+       Si una clínica fija --accent en runtime, estas se recalculan solas. */
+    --accent:          #8B7BF5;
+    --accent-hover:    color-mix(in srgb, var(--accent) 88%, white);
+    --accent-press:    color-mix(in srgb, var(--accent) 76%, white);
+    --accent-soft:     color-mix(in srgb, var(--accent) 16%, transparent);
+    --accent-ring:     color-mix(in srgb, var(--accent) 36%, transparent);
+    /* Default para #8B7BF5 (5.48:1, negro casi puro gana) -- blanco fijo aquí
+       daba 3.36:1 y NO pasaba AA: era un bug real ya en producción, previo a
+       este rediseño, en cualquier botón primario visto en modo oscuro. */
+    --accent-contrast: #141414;
 
     --green:      #43B583;
     --green-soft: rgba(67, 181, 131, 0.16);
@@ -139,9 +173,11 @@
     --hairline:        rgba(255, 255, 255, 0.07);
     --hairline-strong: rgba(255, 255, 255, 0.13);
 
-    --shadow-float:  0 4px 24px rgba(0, 0, 0, 0.36);
-    --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.30);
-    --shadow-pop:    0 12px 40px rgba(0, 0, 0, 0.50);
+    /* Mismo criterio que en claro: sombra sólo en chrome persistente y en lo
+       que flota; una tarjeta de contenido normal no lleva --shadow-raised. */
+    --shadow-float:  0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-raised: none;
+    --shadow-pop:    0 8px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -177,8 +213,6 @@
 
   --blur-chrome: var(--chrome-blur);
 
-  /* Los radios crecen: el estilo pide esquinas mucho más redondeadas que las
-     que tenía la etapa anterior (8/12/18 → 12/18/26). */
   --radius-sm: var(--radius-control);
   --radius-md: var(--radius-card);
   --radius-lg: var(--radius-panel);

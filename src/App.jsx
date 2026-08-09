@@ -23,6 +23,7 @@ import useContadoresNav from "./utils/useContadoresNav";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
 import NavIcon from "./components/ui/NavIcons";
+import { aplicarTema } from "./utils/theme";
 import { rutaPerfil } from "./utils/storage";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
@@ -894,6 +895,12 @@ export default function App() {
   // la foto va por URL firmada y no por la pública guardada en la tabla.
   const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
   const contadores = useContadoresNav(clinicaId);
+
+  // White-label: si la clínica fijó un acento propio (Ajustes → Apariencia),
+  // se aplica sobre :root. hover/press/soft/ring se recalculan solos porque
+  // son fórmulas de color-mix() en tokens.css -- acá solo se fija --accent y
+  // su contraste de texto (ver utils/theme.js).
+  useEffect(() => { aplicarTema(clinica); }, [clinica]);
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
   // No pelea con un re-expandido manual del usuario mientras siga en ese ancho

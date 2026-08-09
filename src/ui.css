@@ -1,0 +1,161 @@
+/* src/ui.css
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Estados interactivos que un `style={{}}` inline no puede expresar:
+ * :hover, :focus-visible, ::placeholder, transiciones y algún @media.
+ *
+ * Todo lo estructural (tamaño, color base, layout) sigue en el objeto inline
+ * de cada componente, tal como está. Estas clases se agregan AL LADO de ese
+ * `style`, nunca en reemplazo — por eso son pocas y de un solo propósito cada
+ * una. No es Tailwind: no hay una clase por propiedad, hay una clase por
+ * COMPONENTE DE ESTADO (".btn-primary", ".field"...), y usan los mismos
+ * tokens de tokens.css, así que heredan el tema de cada clínica sin cambios.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Foco ──────────────────────────────────────────────────────────────────
+   Un solo anillo de foco para toda la app: visible con teclado (:focus-visible),
+   invisible con mouse/touch (que es exactamente lo que separa de :focus a secas). */
+.u-focusable {
+  outline: none;
+}
+.u-focusable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+/* ── Campo de texto/select ─────────────────────────────────────────────── */
+.field {
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.field::placeholder {
+  color: var(--text-tertiary);
+}
+/* !important necesario: cada input trae su propio `border`/`background` como
+   shorthand INLINE (ej. inputStyle en Config.jsx), y un estilo inline gana
+   siempre sobre una regla de hoja de estilos sin importar el pseudo-selector
+   -- :hover/:focus no le dan más peso. Sin esto, border-color/background
+   quedarían escritos pero nunca se verían aplicados. box-shadow y
+   ::placeholder no chocan con nada inline, por eso no lo necesitan. */
+.field:hover:not(:disabled):not(:focus) {
+  border-color: var(--hairline-strong) !important;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  background: var(--panel) !important;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.field:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── Botones ───────────────────────────────────────────────────────────────
+   Reemplaza el patrón onMouseEnter/onMouseLeave que fijaba background inline a
+   mano: mismo resultado visual, estado nativo del navegador. */
+.btn {
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover) !important; }
+.btn-primary:active:not(:disabled) { background: var(--accent-press) !important; }
+.btn-secondary:hover:not(:disabled) { background: var(--panel-hover) !important; }
+.btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--red) 16%, transparent) !important; }
+
+/* Enlace de texto (ej. "Cambiar logo"). !important: el color base ya viene
+   inline (enlaceArchivoStyle tiene color: P) y gana siempre sobre una regla
+   externa, sea o no de :hover -- mismo motivo que en .field/.btn-*. */
+.link-accent {
+  transition: color var(--dur-fast) var(--ease), text-decoration-color var(--dur-fast) var(--ease);
+}
+.link-accent:hover {
+  color: var(--accent-hover) !important;
+}
+
+/* ── Pestañas ──────────────────────────────────────────────────────────────
+   Hoy no tenían NINGÚN feedback de :hover -- una pestaña inactiva se veía
+   idéntica pasándole el mouse por encima o no. !important: color/background
+   de la pestaña activa/inactiva se decide inline (tab === t.id ? ... : ...),
+   que gana siempre sobre esta regla si no se lo fuerza. */
+.tab-item {
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.tab-item:hover:not([aria-selected="true"]) {
+  color: var(--text-primary) !important;
+  background: var(--panel-hover) !important;
+}
+
+/* ── Fila de lista (ej. dispositivo con MFA, tarjeta de paciente) ─────────── */
+.row-hoverable {
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.row-hoverable:hover {
+  background: var(--panel-hover);
+}
+
+/* ── Selector de color nativo ──────────────────────────────────────────────
+   Reset del <input type="color"> del navegador: sin el marco/padding por
+   defecto, solo la pastilla de color con el radio y el borde del sistema. */
+.color-swatch {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  background: none;
+}
+.color-swatch::-webkit-color-swatch-wrapper { padding: 3px; }
+.color-swatch::-webkit-color-swatch { border: none; border-radius: 6px; }
+.color-swatch::-moz-color-swatch { border: none; border-radius: 6px; }
+
+/* ── Toggle tipo pill ──────────────────────────────────────────────────────
+   Checkbox nativo (accesible con teclado y lector de pantalla de fábrica),
+   redibujado como pill: gris apagado inactivo, acento activo. */
+.switch {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 40px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--hairline-strong);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.switch::before {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  transition: transform var(--dur-base) var(--ease);
+}
+.switch:checked {
+  background: var(--accent);
+}
+.switch:checked::before {
+  transform: translateX(16px);
+}
+.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Breakpoints compartidos ───────────────────────────────────────────────
+   Mismos cortes que utils/useResponsive.js (1180 tablet / 860 narrow), para
+   que el CSS y el JS de layout nunca respondan a anchos distintos. */
+@media (max-width: 1180px) {
+  .u-grid-2 { grid-template-columns: 1fr !important; }
+}

@@ -148,7 +148,7 @@ export default function Seguridad({ rol }) {
         {!enrolamiento && (
           <>
             {verificados.map(f => (
-              <div key={f.id} style={filaStyle}>
+              <div key={f.id} className="row-hoverable" style={{ ...filaStyle, borderRadius: 6, paddingLeft: 8, paddingRight: 8 }}>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>{f.friendly_name || 'Dispositivo'}</div>
                   <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>Agregado el {new Date(f.created_at).toLocaleDateString('es-PE')}</div>
@@ -195,6 +195,7 @@ export default function Seguridad({ rol }) {
               placeholder="000000"
               autoComplete="one-time-code"
               inputMode="numeric"
+              className="field"
               style={{
                 width: '100%', minHeight: 52, padding: '12px 14px', border: `1px solid ${BD}`,
                 borderRadius: 'var(--radius-sm)', background: 'var(--surface-tertiary)',
@@ -279,7 +280,7 @@ function GestionMFA() {
       {miembros.map(m => {
         const verificados = m.factores.filter(f => f.status === 'verified');
         return (
-          <div key={m.userId} style={filaStyle}>
+          <div key={m.userId} className="row-hoverable" style={{ ...filaStyle, borderRadius: 6, paddingLeft: 8, paddingRight: 8 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>
                 {m.email || m.userId}{m.esUnoMismo ? ' (tú)' : ''}
