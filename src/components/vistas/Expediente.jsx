@@ -475,14 +475,18 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
         {ini(patient.name)}
       </div>
 
-      {/* Datos */}
+      {/* Datos — el nombre se envuelve a 2 líneas en vez de cortarse con
+          "...": un nombre completo se lee mejor entero que a la mitad. */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: isSelected ? C.brandText : C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{
+          fontSize: 14, fontWeight: 600, color: isSelected ? C.brandText : C.ink, lineHeight: 1.25,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>
           {patient.name}
         </div>
-        <div style={{ fontSize: 13, color: C.inkMid, marginTop: 2, display: 'flex', gap: 8, fontVariantNumeric: 'tabular-nums' }}>
-          {patient.num_hc && <span style={{ color: C.brand, fontWeight: 600 }}>HC: {patient.num_hc}</span>}
-          <span>DNI: {patient.doc || '---'}</span>
+        <div style={{ fontSize: 12.5, color: C.inkMid, marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap', fontVariantNumeric: 'tabular-nums' }}>
+          {patient.num_hc && <span style={{ color: C.brand, fontWeight: 600, whiteSpace: 'nowrap' }}>HC: {patient.num_hc}</span>}
+          <span style={{ whiteSpace: 'nowrap' }}>DNI: {patient.doc || '---'}</span>
         </div>
       </div>
 
@@ -1043,7 +1047,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
 
       {/* ─── PANEL IZQUIERDO: DIRECTORIO ─── */}
       <aside style={{
-        width: isNarrow ? 230 : 300, minWidth: isNarrow ? 210 : 280,
+        width: isNarrow ? 250 : 320, minWidth: isNarrow ? 230 : 300,
         display: 'flex', flexDirection: 'column',
         background: GLASS_BG,
         backdropFilter: GLASS_BLUR,

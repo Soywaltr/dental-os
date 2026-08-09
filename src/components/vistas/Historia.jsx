@@ -1179,7 +1179,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* CABECERA DE HISTORIA */}
-      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderBottom: `1px solid ${BD}`, padding: '9px 18px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, flexWrap: 'wrap' }}>
+      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderBottom: `1px solid ${BD}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, flexWrap: 'wrap' }}>
         <div style={{ width: 44, height: 44, borderRadius: '50%', background: MT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 600, color: P, flexShrink: 0 }}>{ini(patData?.name || patient.name)}</div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1199,7 +1199,21 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             <Icon name="warning" size={12} /> Alergia: {patData.allergies}
           </span>
         )}
-        <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: MU }}>Próx. cita</div><div style={{ fontSize: 13.5, fontWeight: 600, color: P, fontVariantNumeric: 'tabular-nums' }}>{patData?.nextVisit || '---'}</div></div>
+        {/* Tarjetita de indicador, mismo lenguaje visual que Stat.jsx (ícono en
+            círculo teñido + etiqueta + cifra) en vez de un texto suelto. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
+          background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)',
+          padding: '7px 14px 7px 8px',
+        }}>
+          <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="calendar" size={14} />
+          </div>
+          <div>
+            <div style={{ fontSize: 10.5, color: MU, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Próx. cita</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: DN, fontVariantNumeric: 'tabular-nums' }}>{patData?.nextVisit || '---'}</div>
+          </div>
+        </div>
 
         {tieneOrtodoncia && (
           <button
