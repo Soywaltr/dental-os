@@ -19,6 +19,12 @@ const SUGERENCIAS = [
   '¿Cómo van las órdenes de laboratorio?',
 ];
 
+const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+// Las burbujas y las sugerencias se apoyan SOBRE el panel, que ya es
+// --surface-primary: por eso usan la terciaria, si no quedarían invisibles.
+const SUP_BURBUJA = 'var(--surface-tertiary)';
+
 const TITULO_MAX = 42;
 const tituloDesde = (texto) => (texto.length > TITULO_MAX ? texto.slice(0, TITULO_MAX - 1).trimEnd() + '…' : texto);
 
@@ -170,44 +176,51 @@ export default function AsistenteDatos({ clinicaId }) {
     <div style={{ padding: 18, display: 'flex', gap: 14, flex: 1, minHeight: 0 }}>
       <div style={{
         width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10,
-        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12,
+        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)',
         backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
         padding: 12, overflow: 'hidden',
       }}>
-        <Button onClick={nuevaConversacion} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, padding: '8px 10px' }}>
-          <Icon name="plus" size={14} /> Nueva conversación
+        <Button onClick={nuevaConversacion} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, padding: '12px 14px', minHeight: 44, borderRadius: 'var(--radius-sm)' }}>
+          <Icon name="plus" size={15} /> Nueva conversación
         </Button>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: MU, textTransform: 'uppercase', letterSpacing: 0.4, padding: '2px 2px 0' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--label-tertiary)', textTransform: 'uppercase', letterSpacing: 0.5, padding: '2px 2px 0' }}>
           Historial
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {conversaciones.length === 0 && (
-            <div style={{ fontSize: 11.5, color: MU, padding: '6px 2px' }}>Todavía no hay conversaciones guardadas.</div>
+            <div style={{ fontSize: 13, color: MU, padding: '6px 2px', lineHeight: 1.5 }}>Todavía no hay conversaciones guardadas.</div>
           )}
           {conversaciones.map((conv) => (
             <div
               key={conv.id}
               onClick={() => abrirConversacion(conv)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 8px', borderRadius: 8, cursor: 'pointer',
-                background: conv.id === conversacionActivaId ? '#ede9fe' : 'transparent',
+                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', minHeight: 44,
+                borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                background: conv.id === conversacionActivaId ? 'var(--accent-soft)' : 'transparent',
+                transition: `background-color .18s ${EASE}`,
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: 11.5, fontWeight: 600, color: conv.id === conversacionActivaId ? '#7c3aed' : DN,
+                  fontSize: 13, fontWeight: 600, color: conv.id === conversacionActivaId ? P : DN,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
                   {conv.titulo}
                 </div>
-                <div style={{ fontSize: 10, color: MU }}>{fechaRelativa(conv.updated_at)}</div>
+                <div style={{ fontSize: 12, color: 'var(--label-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{fechaRelativa(conv.updated_at)}</div>
               </div>
               <button
                 onClick={(e) => eliminarConversacion(conv.id, e)}
                 title="Eliminar conversación"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: MU, padding: 2, flexShrink: 0 }}
+                style={{
+                  border: 'none', background: 'none', cursor: 'pointer', color: 'var(--label-tertiary)',
+                  width: 32, height: 32, borderRadius: 'var(--radius-sm)', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: `color .18s ${EASE}, background-color .18s ${EASE}`,
+                }}
               >
-                <Icon name="trash" size={12} />
+                <Icon name="trash" size={14} />
               </button>
             </div>
           ))}
@@ -215,30 +228,31 @@ export default function AsistenteDatos({ clinicaId }) {
       </div>
 
       <div style={{
-        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12,
+        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)',
         backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
         flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
       }}>
-        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${BD}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: '#ede9fe', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Icon name="chat" size={17} />
+        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${BD}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="chat" size={18} />
           </div>
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: DN }}>Asistente de datos</div>
-            <div style={{ fontSize: 10.5, color: MU }}>Pregúntale sobre tu clínica — finanzas, pacientes, citas y laboratorio.</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: DN }}>Asistente de datos</div>
+            <div style={{ fontSize: 12, color: MU }}>Pregúntale sobre tu clínica — finanzas, pacientes, citas y laboratorio.</div>
           </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {historial.length === 0 && (
             <div style={{ margin: 'auto', textAlign: 'center', maxWidth: 380 }}>
-              <p style={{ fontSize: 12, color: MU, marginBottom: 14 }}>Probá con alguna de estas:</p>
+              <p style={{ fontSize: 13.5, color: MU, marginBottom: 14 }}>Probá con alguna de estas:</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {SUGERENCIAS.map(s => (
                   <button key={s} onClick={() => enviar(s)} style={{
-                    textAlign: 'left', padding: '9px 12px', borderRadius: 9,
-                    border: `1px solid ${BD}`, background: '#fff', color: DN,
-                    fontSize: 12, cursor: 'pointer',
+                    textAlign: 'left', padding: '12px 14px', minHeight: 44, borderRadius: 'var(--radius-sm)',
+                    border: `1px solid ${BD}`, background: SUP_BURBUJA, color: DN,
+                    fontSize: 13.5, cursor: 'pointer',
+                    transition: `background-color .18s ${EASE}, border-color .18s ${EASE}`,
                   }}>
                     {s}
                   </button>
@@ -250,11 +264,12 @@ export default function AsistenteDatos({ clinicaId }) {
           {historial.map((h, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: h.from === 'user' ? 'flex-end' : 'flex-start' }}>
               <div style={{
-                maxWidth: '75%', padding: '9px 13px', borderRadius: 12,
-                background: h.from === 'user' ? P : '#fff',
+                maxWidth: '75%', padding: '10px 14px', borderRadius: 'var(--radius-md)',
+                background: h.from === 'user' ? P : SUP_BURBUJA,
+                // Tinta sobre el acento fijo: se queda blanca literal en ambos temas.
                 color: h.from === 'user' ? '#fff' : DN,
                 border: h.from === 'user' ? 'none' : `1px solid ${BD}`,
-                fontSize: 12.5, lineHeight: 1.5,
+                fontSize: 13.5, lineHeight: 1.55,
               }}>
                 {h.from === 'bot' ? renderMensaje(h.txt) : h.txt}
               </div>
@@ -263,14 +278,14 @@ export default function AsistenteDatos({ clinicaId }) {
 
           {enviando && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <div style={{ padding: '9px 13px', borderRadius: 12, background: '#fff', border: `1px solid ${BD}`, color: MU, fontSize: 12.5 }}>
+              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: SUP_BURBUJA, border: `1px solid ${BD}`, color: MU, fontSize: 13.5 }}>
                 Pensando…
               </div>
             </div>
           )}
 
           {error && (
-            <div style={{ padding: '8px 12px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 11.5 }}>
+            <div style={{ padding: '10px 12px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`, borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13, lineHeight: 1.5 }}>
               {error}
             </div>
           )}
@@ -283,9 +298,13 @@ export default function AsistenteDatos({ clinicaId }) {
             onChange={e => setTexto(e.target.value)}
             placeholder="Escribe tu pregunta…"
             disabled={enviando}
-            style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: `1px solid ${BD}`, fontSize: 13, outline: 'none', color: DN }}
+            style={{
+              flex: 1, minHeight: 44, padding: '11px 14px', borderRadius: 'var(--radius-sm)',
+              border: `1px solid ${BD}`, background: SUP_BURBUJA, fontSize: 15, outline: 'none', color: DN,
+              transition: `border-color .18s ${EASE}`,
+            }}
           />
-          <Button type="submit" disabled={enviando || !texto.trim()} style={{ padding: '10px 20px', fontSize: 13 }}>
+          <Button type="submit" disabled={enviando || !texto.trim()} style={{ padding: '12px 22px', minHeight: 44, fontSize: 13.5, fontWeight: 600, borderRadius: 'var(--radius-sm)' }}>
             Enviar
           </Button>
         </form>

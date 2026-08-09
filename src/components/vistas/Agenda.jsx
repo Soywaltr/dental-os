@@ -10,6 +10,22 @@ import { BD, P, GL, MU, DN, MT, LT, RJ, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, G
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
+// Curva y duración estándar del sistema para los controles del encabezado:
+// propiedades explícitas (nunca "all") para no animar layout sin querer.
+const NAV_TRANSITION = 'background-color .15s cubic-bezier(0.25, 0.1, 0.25, 1), border-color .15s cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+// Horas cerradas: rayado diagonal con dos superficies del tema (antes dos
+// grises fijos), para que el patrón siga leyéndose en modo oscuro.
+const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, var(--surface-tertiary), var(--surface-tertiary) 6px, var(--fill-tertiary) 6px, var(--fill-tertiary) 12px)';
+
+const LABEL_MODAL = { fontSize: 13, fontWeight: 600, color: MU };
+const INPUT_MODAL = {
+  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: 'var(--radius-sm)',
+  border: `1px solid ${BD}`, marginTop: 6, boxSizing: 'border-box', fontSize: 15,
+  color: DN, background: LT, outline: 'none',
+  transition: 'border-color .15s cubic-bezier(0.25, 0.1, 0.25, 1)',
+};
+
 export default function Agenda({ clinicaId, clinica }) {
   // Horario real del consultorio (Ajustes > Generales > Horario de atención),
   // con respaldo a un horario por defecto mientras la clínica no lo configure.
@@ -326,36 +342,36 @@ export default function Agenda({ clinicaId, clinica }) {
     <div style={{ padding: 18, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
 
-        <div style={{ display: 'flex', gap: 5 }}>
-          <button onClick={handlePrev} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontWeight: 700, color: DN }}>◄</button>
-          <button onClick={() => setCurrentDate(new Date())} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontWeight: 700, color: DN, fontSize: 11 }}>Hoy</button>
-          <button onClick={handleNext} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontWeight: 700, color: DN }}>►</button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={handlePrev} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '6px 12px', minHeight: 36, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: DN, transition: NAV_TRANSITION }}>◄</button>
+          <button onClick={() => setCurrentDate(new Date())} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '6px 14px', minHeight: 36, cursor: 'pointer', fontWeight: 600, color: DN, fontSize: 13, transition: NAV_TRANSITION }}>Hoy</button>
+          <button onClick={handleNext} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '6px 12px', minHeight: 36, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: DN, transition: NAV_TRANSITION }}>►</button>
         </div>
 
-        <div style={{ fontSize: 14, fontWeight: 700, color: DN, textTransform: 'capitalize' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: DN, textTransform: 'capitalize', fontVariantNumeric: 'tabular-nums' }}>
           {view === 'Mensual'
             ? currentDate.toLocaleString('es-PE', { month: 'long', year: 'numeric' })
             : view === 'Semana' ? `Semana del ${getWeekDays()[0].getDate()} al ${getWeekDays()[5].getDate()}` : `Día: ${currentDate.toLocaleDateString()}`}
         </div>
 
-        <select value={view} onChange={e => setView(e.target.value)} style={{ marginLeft: 'auto', padding: '5px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, background: '#fff', outline: 'none' }}>
+        <select value={view} onChange={e => setView(e.target.value)} style={{ marginLeft: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)', border: `1px solid ${BD}`, fontSize: 13, color: DN, background: LT, outline: 'none', transition: NAV_TRANSITION }}>
           <option value="Semana">Vista semanal</option>
           <option value="Día">Vista diaria</option>
           <option value="Mensual">Vista mensual</option>
         </select>
 
         {!googleConnected && (
-          <button onClick={() => login()} style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={() => login()} style={{ background: 'var(--amber-soft)', color: GL, border: `1px solid color-mix(in srgb, ${GL} 30%, transparent)`, borderRadius: 'var(--radius-sm)', padding: '6px 14px', minHeight: 36, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: NAV_TRANSITION }}>
             Sincronizar Google
           </button>
         )}
 
-        <Button onClick={() => setShowModalCita(true)} style={{ padding: '6px 14px' }}>
+        <Button onClick={() => setShowModalCita(true)} style={{ padding: '8px 16px', minHeight: 44, fontSize: 15 }}>
           + Nueva cita
         </Button>
       </div>
 
-      <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+      <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
 
         <div style={{ display: 'grid', gridTemplateColumns: view === 'Mensual' ? 'repeat(7, 1fr)' : `50px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, background: LT }}>
           {view !== 'Mensual' && <div style={{ padding: 4 }} />}
@@ -363,9 +379,9 @@ export default function Agenda({ clinicaId, clinica }) {
             const label = view === 'Mensual' ? d : d.toLocaleDateString('es-ES', { weekday: 'short' }) + ' ' + d.getDate();
             const isToday = view !== 'Mensual' && d.toDateString() === new Date().toDateString();
             return (
-              <div key={i} style={{ padding: '9px 6px', textAlign: 'center', background: isToday ? MT : LT, borderLeft: i > 0 ? `1px solid ${BD}` : 'none' }}>
-                <div style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isToday ? P : MU, textTransform: 'capitalize' }}>{label}</div>
-                {isToday && <div style={{ fontSize: 8, color: P, fontWeight: 700, letterSpacing: .3 }}>HOY</div>}
+              <div key={i} style={{ padding: '10px 8px', textAlign: 'center', background: isToday ? MT : LT, borderLeft: i > 0 ? `1px solid ${BD}` : 'none' }}>
+                <div style={{ fontSize: 13, fontWeight: isToday ? 600 : 500, color: isToday ? P : MU, textTransform: 'capitalize', fontVariantNumeric: 'tabular-nums' }}>{label}</div>
+                {isToday && <div style={{ fontSize: 11, color: P, fontWeight: 600, letterSpacing: .3 }}>HOY</div>}
               </div>
             )
           })}
@@ -380,11 +396,11 @@ export default function Agenda({ clinicaId, clinica }) {
                 const isCurrentMonth = d.getMonth() === currentDate.getMonth();
 
                 return (
-                  <div key={i} style={{ borderRight: `1px solid ${MT}`, borderBottom: `1px solid ${MT}`, padding: 4, background: isCurrentMonth ? '#fff' : '#f8fafc' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: isCurrentMonth ? DN : MU, marginBottom: 4 }}>{d.getDate()}</div>
+                  <div key={i} style={{ borderRight: `1px solid ${BD}`, borderBottom: `1px solid ${BD}`, padding: 6, background: isCurrentMonth ? LT : 'var(--surface-tertiary)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: isCurrentMonth ? DN : MU, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>{d.getDate()}</div>
                     {apts.map((a, ai) => (
                       <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }}
-                        style={{ background: a.col || P, color: '#fff', padding: '3px 5px', borderRadius: 4, fontSize: 9, marginBottom: 2, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        style={{ background: a.col || P, color: '#fff', padding: '9px 8px', minHeight: 36, boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', fontSize: 11, lineHeight: 1.35, marginBottom: 4, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontVariantNumeric: 'tabular-nums' }}>
                         <b>{a.hora_cita}</b> {a.name}
                       </div>
                     ))}
@@ -394,8 +410,8 @@ export default function Agenda({ clinicaId, clinica }) {
             </div>
           ) : (
             hours.map(h => (
-              <div key={h} style={{ display: 'grid', gridTemplateColumns: `50px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${MT}`, minHeight: 46 }}>
-                <div style={{ padding: '3px 6px', fontSize: 9, color: MU, textAlign: 'right', background: LT, borderRight: `1px solid ${BD}` }}>{h}</div>
+              <div key={h} style={{ display: 'grid', gridTemplateColumns: `50px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, minHeight: 46 }}>
+                <div style={{ padding: '5px 8px', fontSize: 11, color: 'var(--label-tertiary)', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
                 {displayDays.map((d, di) => {
                   const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -403,14 +419,14 @@ export default function Agenda({ clinicaId, clinica }) {
 
                   return (
                     <div key={di} style={{
-                      borderLeft: `1px solid ${MT}`, padding: 2, minHeight: 46,
-                      background: abierto ? undefined : 'repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 6px, #e9edf1 6px, #e9edf1 12px)',
+                      borderLeft: `1px solid ${BD}`, padding: 3, minHeight: 46,
+                      background: abierto ? undefined : RAYADO_CERRADO,
                     }}>
                       {(weekApts[mapIndex] || []).filter(a => a.h === parseInt(h, 10) && a.fecha === targetDate).map((a, ai) => (
-                        <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }} style={{ background: a.col, borderRadius: 5, padding: '5px 8px', cursor: 'pointer', marginBottom: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                          <div style={{ fontSize: 10, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>
-                          <div style={{ fontSize: 9, color: 'rgba(255,255,255,.9)' }}>{a.t}</div>
-                          <div style={{ fontSize: 8, marginTop: 4, background: 'rgba(0,0,0,0.2)', display: 'inline-block', padding: '2px 4px', borderRadius: 4, color: '#fff' }}>⏰ {a.hora_cita}</div>
+                        <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }} style={{ background: a.col, borderRadius: 'var(--radius-sm)', padding: '7px 10px', minHeight: 36, boxSizing: 'border-box', cursor: 'pointer', marginBottom: 3, boxShadow: 'var(--shadow-sm)' }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.9)' }}>{a.t}</div>
+                          <div style={{ fontSize: 11, marginTop: 5, background: 'rgba(0,0,0,0.2)', display: 'inline-block', padding: '3px 6px', borderRadius: 'var(--radius-sm)', color: '#fff', fontVariantNumeric: 'tabular-nums' }}>⏰ {a.hora_cita}</div>
                         </div>
                       ))}
                     </div>
@@ -425,57 +441,57 @@ export default function Agenda({ clinicaId, clinica }) {
       {showModalCita && <ModalNuevaCita onClose={() => setShowModalCita(false)} onSave={handleGuardarCita} listaPacientes={listaPacientes} modo="cita" />}
 
       {showEditModal && selectedCita && (
-        <Modal cardStyle={{ padding: 25, width: 400 }}>
-            <h3 style={{ marginTop: 0, color: P }}>
+        <Modal cardStyle={{ padding: 24, width: 400 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 18, color: DN, fontSize: 17, fontWeight: 600 }}>
               {selectedCita.isGoogleOnly ? 'Editar Evento de Google' : `Editar Cita: ${selectedCita.name}`}
             </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: MU }}>TRATAMIENTO / MOTIVO</label>
+                <label style={LABEL_MODAL}>TRATAMIENTO / MOTIVO</label>
                 <input
                   value={selectedCita.treatment || selectedCita.reason || ''}
                   onChange={e => setSelectedCita({ ...selectedCita, treatment: e.target.value, reason: e.target.value })}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: `1px solid ${BD}`, marginTop: 4, boxSizing: 'border-box' }}
+                  style={INPUT_MODAL}
                 />
               </div>
 
               <div style={{ display: 'flex', gap: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: MU }}>NUEVA FECHA</label>
+                  <label style={LABEL_MODAL}>NUEVA FECHA</label>
                   <input
                     type="date"
                     value={selectedCita.fecha || ''}
                     onChange={e => setSelectedCita({ ...selectedCita, fecha: e.target.value })}
-                    style={{ width: '100%', padding: 10, borderRadius: 8, border: `1px solid ${BD}`, marginTop: 4, boxSizing: 'border-box' }}
+                    style={{ ...INPUT_MODAL, fontVariantNumeric: 'tabular-nums' }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: MU }}>NUEVA HORA</label>
+                  <label style={LABEL_MODAL}>NUEVA HORA</label>
                   <input
                     type="time"
                     value={selectedCita.hora_cita || ''}
                     onChange={e => setSelectedCita({ ...selectedCita, hora_cita: e.target.value })}
-                    style={{ width: '100%', padding: 10, borderRadius: 8, border: `1px solid ${BD}`, marginTop: 4, boxSizing: 'border-box' }}
+                    style={{ ...INPUT_MODAL, fontVariantNumeric: 'tabular-nums' }}
                   />
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 25 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <Button
                 variant="danger"
                 onClick={handleDeleteCita}
                 disabled={savingEdit}
-                style={{ padding: '10px 15px', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Icon name="trash" size={13} /> Eliminar
+                style={{ padding: '10px 16px', minHeight: 44, fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon name="trash" size={15} /> Eliminar
               </Button>
 
               <div style={{ flex: 1, display: 'flex', gap: 10 }}>
-                <Button variant="secondary" onClick={() => setShowEditModal(false)} disabled={savingEdit} style={{ flex: 1, padding: 10, fontSize: 14 }}>
+                <Button variant="secondary" onClick={() => setShowEditModal(false)} disabled={savingEdit} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15 }}>
                   Cancelar
                 </Button>
-                <Button onClick={handleSaveEdit} disabled={savingEdit} style={{ flex: 1, padding: 10, fontSize: 14 }}>
+                <Button onClick={handleSaveEdit} disabled={savingEdit} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15 }}>
                   {savingEdit ? 'Procesando...' : 'Actualizar'}
                 </Button>
               </div>

@@ -14,32 +14,39 @@ import { normalizarTexto, ini, findPatientByDoc, findPatientByName, estadoPacien
 import useResponsive from '../../utils/useResponsive';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
+// Ya no son hex fijos: cada entrada apunta a la MISMA variable CSS declarada en
+// el :root de App.jsx (que trae su contraparte en @media prefers-color-scheme:
+// dark). Así este archivo hereda modo oscuro sin duplicar paleta, y `C` queda
+// como un alias local de los mismos tokens que exporta utils/constants.js.
 const C = {
-  bg:          '#F4F6F8',
-  surface:     '#FFFFFF',
-  surfaceAlt:  '#F9FAFB',
-  border:      '#E5E7EB',
-  borderStrong:'#D1D5DB',
-  ink:         '#111827',
-  inkMid:      '#4B5563',
-  inkMute:     '#9CA3AF',
-  brand:       '#404040',
-  brandSoft:   '#f1f1f0',
-  brandText:   '#262626',
-  green:       '#10B981',
-  greenSoft:   '#D1FAE5',
-  blue:        '#3B82F6',
-  blueSoft:    '#DBEAFE',
-  red:         '#EF4444',
-  redSoft:     '#FEE2E2',
-  amber:       '#F59E0B',
-  amberSoft:   '#FEF3C7',
-  r:           '8px',
-  rl:          '12px',
-  rx:          '16px',
+  bg:          'var(--surface-secondary)',
+  surface:     'var(--surface-primary)',
+  surfaceAlt:  'var(--surface-tertiary)',
+  fill:        'var(--fill-tertiary)',
+  fillHover:   'var(--fill-quaternary)',
+  border:      'var(--separator)',
+  borderStrong:'var(--separator-strong)',
+  ink:         'var(--label-primary)',
+  inkMid:      'var(--label-secondary)',
+  inkMute:     'var(--label-tertiary)',
+  brand:       'var(--accent)',
+  brandSoft:   'var(--accent-soft)',
+  brandText:   'var(--accent-pressed)',
+  green:       'var(--green)',
+  greenSoft:   'var(--green-soft)',
+  blue:        'var(--accent)',
+  blueSoft:    'var(--accent-soft)',
+  red:         'var(--red)',
+  redSoft:     'var(--red-soft)',
+  amber:       'var(--amber)',
+  amberSoft:   'var(--amber-soft)',
+  r:           'var(--radius-sm)',
+  rl:          'var(--radius-md)',
+  rx:          'var(--radius-lg)',
   font:        "'Inter', system-ui, sans-serif",
-  shadowSm:    '0 1px 3px rgba(0,0,0,0.06)',
-  shadowMd:    '0 4px 12px rgba(0,0,0,0.06)',
+  shadowSm:    'var(--shadow-sm)',
+  shadowMd:    'var(--shadow-md)',
+  ease:        'cubic-bezier(0.25, 0.1, 0.25, 1)',
 };
 
 // ─── ICONOS ───────────────────────────────────────────────────────────────────
@@ -54,7 +61,7 @@ const IcPlus = () => (
   </svg>
 );
 const IcFolder = () => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={C.borderStrong} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" style={{ stroke: C.borderStrong }} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
   </svg>
 );
@@ -385,8 +392,8 @@ function usePatientForm(patientsList) {
 // ─── SUB-COMPONENTE: FILTROS ──────────────────────────────────────────────────
 const FilterPills = memo(({ active, onChange }) => (
   <div style={{
-    display: 'flex', gap: 4,
-    background: C.surfaceAlt, padding: 4,
+    display: 'flex', gap: 2,
+    background: C.fill, padding: 2,
     borderRadius: C.rl, border: `1px solid ${C.border}`,
   }}>
     {['todos', 'activo', 'nuevo', 'inactivo'].map(f => (
@@ -394,15 +401,15 @@ const FilterPills = memo(({ active, onChange }) => (
         key={f}
         onClick={() => onChange(f)}
         style={{
-          flex: 1, padding: '6px 0',
+          flex: 1, padding: '0 2px', minHeight: 36,
           borderRadius: C.r, border: 'none',
           background: active === f ? C.surface : 'transparent',
-          color: active === f ? C.ink : C.inkMute,
-          fontSize: 12, fontWeight: active === f ? 600 : 450,
+          color: active === f ? C.ink : C.inkMid,
+          fontSize: 13, fontWeight: active === f ? 600 : 400,
           cursor: 'pointer', fontFamily: C.font,
           boxShadow: active === f ? C.shadowSm : 'none',
           textTransform: 'capitalize',
-          transition: 'all 0.12s',
+          transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}, box-shadow 0.15s ${C.ease}`,
         }}
       >
         {f}
@@ -428,11 +435,12 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
       onMouseLeave={() => setHov(false)}
       aria-pressed={isSelected}
       style={{
-        padding: '12px 14px', cursor: 'pointer', borderRadius: C.rl, marginBottom: 4,
+        padding: '10px 12px', paddingRight: mostrarEliminar ? 46 : 12,
+        minHeight: 44, cursor: 'pointer', borderRadius: C.rl, marginBottom: 2,
         display: 'flex', alignItems: 'center', gap: 12, position: 'relative', // position relative es clave
-        background: isSelected ? C.brandSoft : hov ? C.surfaceAlt : 'transparent',
-        border: `1px solid ${isSelected ? C.brand + '40' : 'transparent'}`,
-        transition: 'all 0.12s', outline: 'none',
+        background: isSelected ? C.brandSoft : hov ? C.fillHover : 'transparent',
+        border: `1px solid ${isSelected ? `color-mix(in srgb, ${C.brand} 28%, transparent)` : 'transparent'}`,
+        transition: `background 0.15s ${C.ease}, border-color 0.15s ${C.ease}`, outline: 'none',
       }}
     >
       {/* Botón Eliminar: discreto (icono gris) para no saturar la lista cuando
@@ -446,9 +454,10 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
           title="Eliminar paciente"
           style={{
             position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-            width: 28, height: 28, borderRadius: '50%', background: 'transparent', color: C.inkMute,
+            width: 36, height: 36, minHeight: 36, borderRadius: '50%', background: 'transparent', color: C.inkMute,
             border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', zIndex: 10,
+            transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}`,
           }}
           onMouseEnter={e => { e.currentTarget.style.background = C.redSoft; e.currentTarget.style.color = C.red; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.inkMute; }}
@@ -458,19 +467,20 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
       {/* Avatar */}
       <div style={{
         width: 38, height: 38, borderRadius: C.r, flexShrink: 0,
-        background: isSelected ? C.brand : C.surfaceAlt, color: isSelected ? '#fff' : C.brand,
+        background: isSelected ? C.brand : C.fill, color: isSelected ? '#fff' : C.inkMid,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 700, fontSize: 14, fontFamily: C.font, transition: 'all 0.15s',
+        fontWeight: 600, fontSize: 15, fontFamily: C.font,
+        transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}`,
       }}>
         {ini(patient.name)}
       </div>
 
       {/* Datos */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: isSelected ? C.brandText : C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: isSelected ? C.brandText : C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {patient.name}
         </div>
-        <div style={{ fontSize: 11, color: C.inkMute, marginTop: 1, display: 'flex', gap: 6 }}>
+        <div style={{ fontSize: 13, color: C.inkMid, marginTop: 2, display: 'flex', gap: 8, fontVariantNumeric: 'tabular-nums' }}>
           {patient.num_hc && <span style={{ color: C.brand, fontWeight: 600 }}>HC: {patient.num_hc}</span>}
           <span>DNI: {patient.doc || '---'}</span>
         </div>
@@ -480,7 +490,7 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
       {!mostrarEliminar && estado !== 'activo' && (
         <span
           title={estado === 'nuevo' ? 'Paciente nuevo (≤30 días)' : 'Sin actividad hace más de 6 meses'}
-          style={{ width: 7, height: 7, borderRadius: '50%', background: estado === 'nuevo' ? C.blue : '#9CA3AF', flexShrink: 0 }}
+          style={{ width: 8, height: 8, borderRadius: '50%', background: estado === 'nuevo' ? C.blue : C.inkMute, flexShrink: 0 }}
         />
       )}
     </div>
@@ -495,10 +505,10 @@ const EmptyState = memo(() => (
     padding: 40, gap: 12, textAlign: 'center',
   }}>
     <IcFolder />
-    <div style={{ fontSize: 15, fontWeight: 600, color: C.ink }}>
+    <div style={{ fontSize: 20, fontWeight: 600, color: C.ink, letterSpacing: '-0.02em' }}>
       Expediente Clínico
     </div>
-    <div style={{ fontSize: 13, color: C.inkMute, maxWidth: 260, lineHeight: 1.6 }}>
+    <div style={{ fontSize: 15, color: C.inkMid, maxWidth: 300, lineHeight: 1.5 }}>
       Selecciona un paciente del directorio para cargar su historial clínico completo.
     </div>
   </div>
@@ -508,8 +518,7 @@ const EmptyState = memo(() => (
 const FormField = memo(({ label, children, span }) => (
   <div style={{ gridColumn: span ? '1 / -1' : undefined }}>
     <label style={{
-      fontSize: 11, fontWeight: 600, color: C.inkMute,
-      textTransform: 'uppercase', letterSpacing: '0.4px',
+      fontSize: 13, fontWeight: 600, color: C.inkMid,
       display: 'block', marginBottom: 6, fontFamily: C.font,
     }}>
       {label}
@@ -519,11 +528,11 @@ const FormField = memo(({ label, children, span }) => (
 ));
 
 const inputStyle = {
-  width: '100%', padding: '9px 12px',
+  width: '100%', padding: '11px 12px', minHeight: 44,
   borderRadius: C.r, border: `1px solid ${C.border}`,
-  fontSize: 13, fontFamily: C.font, color: C.ink,
+  fontSize: 15, fontFamily: C.font, color: C.ink,
   background: C.surface, outline: 'none', boxSizing: 'border-box',
-  transition: 'border-color 0.12s',
+  transition: `border-color 0.15s ${C.ease}, box-shadow 0.15s ${C.ease}`,
 };
 
 // ─── SUB-COMPONENTE: MODAL NUEVO PACIENTE ────────────────────────────────────
@@ -552,7 +561,7 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
       cardStyle={{
         background: C.surface, borderRadius: C.rx,
         width: '100%', maxWidth: 520,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+        boxShadow: C.shadowMd,
         border: `1px solid ${C.border}`,
         overflow: 'hidden',
       }}>
@@ -562,17 +571,18 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
           borderBottom: `1px solid ${C.border}`,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: C.font }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: '-0.02em' }}>
             Registrar paciente
           </div>
           <button
             onClick={onClose}
             style={{
-              width: 28, height: 28, borderRadius: '50%',
-              border: `1px solid ${C.border}`, background: C.surfaceAlt,
-              cursor: 'pointer', color: C.inkMute, fontSize: 14,
+              width: 36, height: 36, minHeight: 36, borderRadius: '50%',
+              border: 'none', background: C.fill,
+              cursor: 'pointer', color: C.inkMid, fontSize: 15,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: C.font, outline: 'none',
+              transition: `background 0.15s ${C.ease}`,
             }}
           >
             ✕
@@ -588,7 +598,7 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
             <input
               value={form.doc}
               onChange={e => handleDocChange(e.target.value)}
-              style={{ ...inputStyle, borderColor: C.brand }}
+              style={{ ...inputStyle, borderColor: C.brand, fontVariantNumeric: 'tabular-nums' }}
               onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brandSoft}`; }}
               onBlur={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = 'none'; }}
             />
@@ -613,7 +623,7 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
               value={form.phone}
               onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
               placeholder="Ej: 990711528"
-              style={inputStyle}
+              style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }}
               onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brandSoft}`; }}
               onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none'; }}
             />
@@ -624,7 +634,7 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
               type="date"
               value={form.birthDate}
               onChange={e => handleBirthDate(e.target.value)}
-              style={inputStyle}
+              style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }}
               onFocus={e => { e.target.style.borderColor = C.brand; }}
               onBlur={e => { e.target.style.borderColor = C.border; }}
             />
@@ -635,7 +645,7 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
               type="number"
               value={form.age}
               onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-              style={{ ...inputStyle, background: C.surfaceAlt }}
+              style={{ ...inputStyle, background: C.fill, fontVariantNumeric: 'tabular-nums' }}
             />
           </FormField>
 
@@ -659,10 +669,11 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
           <button
             onClick={onClose}
             style={{
-              flex: 1, padding: '9px', borderRadius: C.r,
+              flex: 1, padding: '0 16px', minHeight: 44, borderRadius: C.r,
               border: `1px solid ${C.border}`, background: C.surface,
               cursor: 'pointer', fontWeight: 600, color: C.inkMid,
-              fontSize: 13, fontFamily: C.font,
+              fontSize: 15, fontFamily: C.font,
+              transition: `background 0.15s ${C.ease}`,
             }}
           >
             Cancelar
@@ -671,12 +682,13 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
             onClick={handleSubmit}
             disabled={saving}
             style={{
-              flex: 1, padding: '9px', borderRadius: C.r,
+              flex: 1, padding: '0 16px', minHeight: 44, borderRadius: C.r,
               border: 'none',
               background: saving ? C.inkMute : C.brand,
               color: '#fff', cursor: saving ? 'not-allowed' : 'pointer',
-              fontWeight: 600, fontSize: 13, fontFamily: C.font,
+              fontWeight: 600, fontSize: 15, fontFamily: C.font,
               boxShadow: C.shadowSm,
+              transition: `background 0.15s ${C.ease}, opacity 0.15s ${C.ease}`,
             }}
           >
             {saving ? 'Guardando…' : 'Guardar paciente'}
@@ -737,66 +749,66 @@ const ExportarPacientesModal = memo(({ onClose, patientsList }) => {
         background: C.surface, borderRadius: C.rx,
         width: '100%', maxWidth: 560, maxHeight: '85dvh',
         display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+        boxShadow: C.shadowMd,
         border: `1px solid ${C.border}`, overflow: 'hidden',
       }}>
       <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font }}>Exportar pacientes</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, fontSize: 18 }}>×</button>
+        <span style={{ fontSize: 20, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: '-0.02em' }}>Exportar pacientes</span>
+        <button onClick={onClose} style={{ width: 36, height: 36, minHeight: 36, borderRadius: '50%', background: C.fill, border: 'none', cursor: 'pointer', color: C.inkMid, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: `background 0.15s ${C.ease}` }}>×</button>
       </div>
 
       <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.ink, fontWeight: 600, marginBottom: 14, cursor: 'pointer' }}>
-          <input type="checkbox" checked={conHistorial} onChange={e => setConHistorial(e.target.checked)} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 36, fontSize: 15, color: C.ink, fontWeight: 500, marginBottom: 14, cursor: 'pointer' }}>
+          <input type="checkbox" checked={conHistorial} onChange={e => setConHistorial(e.target.checked)} style={{ width: 17, height: 17, accentColor: C.brand, cursor: 'pointer' }} />
           Incluir historial de tratamientos (fechas, costos, pagos)
         </label>
 
         {conHistorial && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: C.inkMute, display: 'block', marginBottom: 4 }}>DESDE (opcional)</label>
-              <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={inputStyle} />
+              <label style={{ fontSize: 13, fontWeight: 600, color: C.inkMid, display: 'block', marginBottom: 6 }}>DESDE (opcional)</label>
+              <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: C.inkMute, display: 'block', marginBottom: 4 }}>HASTA (opcional)</label>
-              <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={inputStyle} />
+              <label style={{ fontSize: 13, fontWeight: 600, color: C.inkMid, display: 'block', marginBottom: 6 }}>HASTA (opcional)</label>
+              <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }} />
             </div>
           </div>
         )}
         {conHistorial && (fechaDesde || fechaHasta) && (
-          <p style={{ fontSize: 11, color: C.inkMute, marginTop: -8, marginBottom: 14 }}>
+          <p style={{ fontSize: 13, color: C.inkMid, lineHeight: 1.5, marginTop: -6, marginBottom: 14 }}>
             Solo se incluyen tratamientos con fecha dentro del rango. Un paciente sin tratamientos en ese rango no aparecerá.
           </p>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: C.ink }}>Pacientes a exportar ({seleccionados.size} de {patientsList.length})</span>
-          <button onClick={toggleTodos} style={{ background: 'none', border: 'none', color: C.brand, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: C.ink, fontVariantNumeric: 'tabular-nums' }}>Pacientes a exportar ({seleccionados.size} de {patientsList.length})</span>
+          <button onClick={toggleTodos} style={{ background: 'none', border: 'none', color: C.brand, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 36, padding: '0 4px' }}>
             {todosMarcados ? 'Ninguno' : 'Todos'}
           </button>
         </div>
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: C.r, maxHeight: 260, overflowY: 'auto' }}>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: C.rl, maxHeight: 260, overflowY: 'auto' }}>
           {patientsList.map((p, i) => (
             <label key={p.id} style={{
-              display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', minHeight: 44, cursor: 'pointer',
               borderBottom: i < patientsList.length - 1 ? `1px solid ${C.border}` : 'none',
             }}>
-              <input type="checkbox" checked={seleccionados.has(p.id)} onChange={() => toggleUno(p.id)} />
-              <span style={{ fontSize: 12.5, color: C.ink, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
-              <span style={{ fontSize: 11, color: C.inkMute }}>DNI {p.doc || '---'}</span>
+              <input type="checkbox" checked={seleccionados.has(p.id)} onChange={() => toggleUno(p.id)} style={{ width: 17, height: 17, accentColor: C.brand, cursor: 'pointer' }} />
+              <span style={{ fontSize: 15, color: C.ink, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+              <span style={{ fontSize: 13, color: C.inkMid, fontVariantNumeric: 'tabular-nums' }}>DNI {p.doc || '---'}</span>
             </label>
           ))}
         </div>
       </div>
 
       <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, flexShrink: 0 }}>
-        <button onClick={onClose} style={{ flex: 1, padding: 9, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surface, cursor: 'pointer', fontWeight: 600, color: C.inkMid, fontSize: 13 }}>
+        <button onClick={onClose} style={{ flex: 1, padding: '0 16px', minHeight: 44, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surface, cursor: 'pointer', fontWeight: 600, color: C.inkMid, fontSize: 15, transition: `background 0.15s ${C.ease}` }}>
           Cancelar
         </button>
         <button
           onClick={descargar}
           disabled={descargando || seleccionados.size === 0}
-          style={{ flex: 1, padding: 9, borderRadius: C.r, border: 'none', background: descargando || seleccionados.size === 0 ? C.inkMute : C.brand, color: '#fff', cursor: descargando ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          style={{ flex: 1, padding: '0 16px', minHeight: 44, borderRadius: C.r, border: 'none', background: descargando || seleccionados.size === 0 ? C.inkMute : C.brand, color: '#fff', cursor: descargando ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: `background 0.15s ${C.ease}` }}>
           <IcDownload /> {descargando ? 'Generando…' : 'Descargar CSV'}
         </button>
       </div>
@@ -874,54 +886,54 @@ const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
         background: C.surface, borderRadius: C.rx,
         width: '100%', maxWidth: 640, maxHeight: '85dvh',
         display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+        boxShadow: C.shadowMd,
         border: `1px solid ${C.border}`, overflow: 'hidden',
       }}>
-      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: C.font }}>Importar pacientes desde CSV</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, fontSize: 18 }}>×</button>
+      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <span style={{ fontSize: 20, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: '-0.02em' }}>Importar pacientes desde CSV</span>
+        <button onClick={onClose} style={{ width: 36, height: 36, minHeight: 36, flexShrink: 0, borderRadius: '50%', background: C.fill, border: 'none', cursor: 'pointer', color: C.inkMid, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: `background 0.15s ${C.ease}` }}>×</button>
       </div>
 
       <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
         {resultado ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.green, marginBottom: 6 }}>
+            <div style={{ fontSize: 17, fontWeight: 600, color: C.green, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>
               ✓ {resultado.insertados} paciente{resultado.insertados !== 1 ? 's' : ''} importado{resultado.insertados !== 1 ? 's' : ''}
             </div>
             {resultado.omitidos > 0 && (
-              <div style={{ fontSize: 12.5, color: C.inkMute }}>{resultado.omitidos} fila{resultado.omitidos !== 1 ? 's' : ''} omitida{resultado.omitidos !== 1 ? 's' : ''} (duplicado no confirmado, o con error)</div>
+              <div style={{ fontSize: 13.5, color: C.inkMid, fontVariantNumeric: 'tabular-nums' }}>{resultado.omitidos} fila{resultado.omitidos !== 1 ? 's' : ''} omitida{resultado.omitidos !== 1 ? 's' : ''} (duplicado no confirmado, o con error)</div>
             )}
           </div>
         ) : !filas ? (
           <div>
-            <p style={{ fontSize: 12.5, color: C.inkMid, lineHeight: 1.6, marginBottom: 14 }}>
+            <p style={{ fontSize: 13.5, color: C.inkMid, lineHeight: 1.55, marginBottom: 14 }}>
               El archivo debe ser un CSV con encabezados. Las columnas <strong>Nombre</strong> y <strong>DNI</strong> son obligatorias
               (el resto son opcionales). Si no tienes un archivo todavía, descarga tu lista actual como plantilla y edítala.
             </p>
             <button
               onClick={() => exportarPacientesCSV(patientsList)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surfaceAlt, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: C.inkMid, marginBottom: 16 }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 14px', minHeight: 36, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.fill, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.inkMid, marginBottom: 16, transition: `background 0.15s ${C.ease}` }}>
               <IcDownload /> Descargar plantilla / lista actual
             </button>
-            <input type="file" accept=".csv,text/csv" onChange={onFileChange} style={{ display: 'block', fontSize: 13 }} />
-            {error && <div style={{ marginTop: 10, fontSize: 12, color: C.red }}>{error}</div>}
+            <input type="file" accept=".csv,text/csv" onChange={onFileChange} style={{ display: 'block', fontSize: 15, color: C.inkMid }} />
+            {error && <div style={{ marginTop: 10, fontSize: 13, color: C.red }}>{error}</div>}
           </div>
         ) : (
           <div>
-            <div style={{ display: 'flex', gap: 10, marginBottom: 14, fontSize: 12 }}>
-              <span style={{ color: C.green, fontWeight: 700 }}>{nuevos} nuevo{nuevos !== 1 ? 's' : ''}</span>
-              <span style={{ color: C.amber, fontWeight: 700 }}>{duplicados} duplicado{duplicados !== 1 ? 's' : ''}</span>
-              {errores > 0 && <span style={{ color: C.red, fontWeight: 700 }}>{errores} con error</span>}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 14, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ color: C.green, fontWeight: 600 }}>{nuevos} nuevo{nuevos !== 1 ? 's' : ''}</span>
+              <span style={{ color: C.amber, fontWeight: 600 }}>{duplicados} duplicado{duplicados !== 1 ? 's' : ''}</span>
+              {errores > 0 && <span style={{ color: C.red, fontWeight: 600 }}>{errores} con error</span>}
             </div>
             {duplicados > 0 && (
-              <p style={{ fontSize: 11.5, color: C.inkMute, marginBottom: 10 }}>
+              <p style={{ fontSize: 13, color: C.inkMid, lineHeight: 1.5, marginBottom: 10 }}>
                 Ya existe un paciente con ese DNI. Marca la casilla si igual quieres importarlo como un paciente nuevo y separado.
               </p>
             )}
-            <div style={{ border: `1px solid ${C.border}`, borderRadius: C.r, overflow: 'hidden' }}>
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: C.rl, overflow: 'hidden' }}>
               {filas.map((f, i) => (
                 <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', minHeight: 44,
                   borderBottom: i < filas.length - 1 ? `1px solid ${C.border}` : 'none',
                   background: f.estado === 'error' ? C.redSoft : f.estado === 'duplicado' ? C.amberSoft : 'transparent',
                 }}>
@@ -930,17 +942,18 @@ const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
                       type="checkbox"
                       checked={!!seleccionDuplicados[i]}
                       onChange={e => setSeleccionDuplicados(prev => ({ ...prev, [i]: e.target.checked }))}
+                      style={{ width: 17, height: 17, accentColor: C.brand, cursor: 'pointer' }}
                     />
                   ) : (
-                    <span style={{ width: 13, textAlign: 'center', color: f.estado === 'error' ? C.red : C.green, fontWeight: 700 }}>
+                    <span style={{ width: 17, textAlign: 'center', color: f.estado === 'error' ? C.red : C.green, fontWeight: 600 }}>
                       {f.estado === 'error' ? '!' : '✓'}
                     </span>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {f.name || '(sin nombre)'}
                     </div>
-                    <div style={{ fontSize: 10.5, color: C.inkMute }}>
+                    <div style={{ fontSize: 12, color: C.inkMid, fontVariantNumeric: 'tabular-nums' }}>
                       {f.estado === 'error' ? f.motivo : `DNI ${f.doc || '---'}`}
                     </div>
                   </div>
@@ -953,20 +966,20 @@ const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
 
       {!resultado && filas && (
         <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, flexShrink: 0 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: 9, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surface, cursor: 'pointer', fontWeight: 600, color: C.inkMid, fontSize: 13 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '0 16px', minHeight: 44, borderRadius: C.r, border: `1px solid ${C.border}`, background: C.surface, cursor: 'pointer', fontWeight: 600, color: C.inkMid, fontSize: 15, transition: `background 0.15s ${C.ease}` }}>
             Cancelar
           </button>
           <button
             onClick={confirmar}
             disabled={importando || nuevos + Object.values(seleccionDuplicados).filter(Boolean).length === 0}
-            style={{ flex: 1, padding: 9, borderRadius: C.r, border: 'none', background: importando ? C.inkMute : C.brand, color: '#fff', cursor: importando ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13 }}>
+            style={{ flex: 1, padding: '0 16px', minHeight: 44, borderRadius: C.r, border: 'none', background: importando ? C.inkMute : C.brand, color: '#fff', cursor: importando ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15, transition: `background 0.15s ${C.ease}` }}>
             {importando ? 'Importando…' : 'Confirmar importación'}
           </button>
         </div>
       )}
       {resultado && (
         <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
-          <button onClick={onClose} style={{ width: '100%', padding: 9, borderRadius: C.r, border: 'none', background: C.brand, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+          <button onClick={onClose} style={{ width: '100%', padding: '0 16px', minHeight: 44, borderRadius: C.r, border: 'none', background: C.brand, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 15, transition: `background 0.15s ${C.ease}` }}>
             Cerrar
           </button>
         </div>
@@ -1049,7 +1062,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
             alignItems: 'center', marginBottom: 12,
           }}>
             <span style={{
-              fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: C.font,
+              fontSize: 17, fontWeight: 600, color: C.ink, fontFamily: C.font,
             }}>
               Directorio
             </span>
@@ -1059,11 +1072,11 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
                 aria-label="Exportar pacientes a CSV"
                 title="Exportar a CSV"
                 style={{
-                  width: 30, height: 30, borderRadius: C.r,
-                  background: C.surfaceAlt, color: C.inkMid,
-                  border: `1px solid ${C.border}`, cursor: 'pointer',
+                  width: 36, height: 36, minHeight: 36, borderRadius: C.r,
+                  background: C.fill, color: C.inkMid,
+                  border: 'none', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'background 0.12s', outline: 'none',
+                  transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}`, outline: 'none',
                 }}
               >
                 <IcDownload />
@@ -1073,11 +1086,11 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
                 aria-label="Importar pacientes desde CSV"
                 title="Importar desde CSV"
                 style={{
-                  width: 30, height: 30, borderRadius: C.r,
-                  background: C.surfaceAlt, color: C.inkMid,
-                  border: `1px solid ${C.border}`, cursor: 'pointer',
+                  width: 36, height: 36, minHeight: 36, borderRadius: C.r,
+                  background: C.fill, color: C.inkMid,
+                  border: 'none', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'background 0.12s', outline: 'none',
+                  transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}`, outline: 'none',
                 }}
               >
                 <IcUpload />
@@ -1086,11 +1099,11 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
                 onClick={() => setShowModal(true)}
                 aria-label="Nuevo paciente"
                 style={{
-                  width: 30, height: 30, borderRadius: C.r,
+                  width: 36, height: 36, minHeight: 36, borderRadius: C.r,
                   background: C.brand, color: '#fff',
                   border: 'none', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: C.shadowSm, transition: 'background 0.12s', outline: 'none',
+                  boxShadow: C.shadowSm, transition: `background 0.15s ${C.ease}`, outline: 'none',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = C.brandText; }}
                 onMouseLeave={e => { e.currentTarget.style.background = C.brand; }}
@@ -1103,7 +1116,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
           {/* Buscador */}
           <div style={{ position: 'relative', marginBottom: 10 }}>
             <span style={{
-              position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+              position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
               color: C.inkMute, display: 'flex', pointerEvents: 'none',
             }}>
               <IcSearch />
@@ -1114,11 +1127,11 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
               value={q}
               onChange={e => setQ(e.target.value)}
               style={{
-                ...inputStyle, paddingLeft: 32,
-                background: C.surfaceAlt,
+                ...inputStyle, paddingLeft: 36,
+                background: C.fill, borderColor: 'transparent',
               }}
               onFocus={e => { e.target.style.borderColor = C.brand; e.target.style.background = C.surface; }}
-              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.background = C.surfaceAlt; }}
+              onBlur={e => { e.target.style.borderColor = 'transparent'; e.target.style.background = C.fill; }}
             />
           </div>
 
@@ -1128,7 +1141,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         {/* Lista de pacientes */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
           {loading && (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: C.inkMute, fontSize: 13 }}>
+            <div style={{ padding: '32px 0', textAlign: 'center', color: C.inkMute, fontSize: 15 }}>
               Cargando…
             </div>
           )}
@@ -1144,7 +1157,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
           ))}
 
           {!loading && filteredList.length === 0 && (
-            <div style={{ padding: '32px 16px', textAlign: 'center', color: C.inkMute, fontSize: 13 }}>
+            <div style={{ padding: '32px 16px', textAlign: 'center', color: C.inkMute, fontSize: 15 }}>
               No se encontraron pacientes.
             </div>
           )}
@@ -1154,7 +1167,8 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         <div style={{
           padding: '10px 16px',
           borderTop: `1px solid ${C.border}`,
-          fontSize: 11, color: C.inkMute, fontFamily: C.font,
+          fontSize: 13, color: C.inkMute, fontFamily: C.font,
+          fontVariantNumeric: 'tabular-nums',
         }}>
           {filteredList.length} paciente{filteredList.length !== 1 ? 's' : ''}
         </div>

@@ -17,8 +17,43 @@ const TABS = [
 ];
 
 const cardStyle = {
-  background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 20,
+  background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 20,
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
+};
+
+const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+// Cabecera de tarjeta, etiqueta de campo, campo y botón de guardar: un solo
+// estilo para los tres bloques de Ajustes, así los formularios no divergen.
+const tituloCardStyle = { fontSize: 15, fontWeight: 600, color: DN };
+
+const labelStyle = { fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 5 };
+
+const labelCapsStyle = { ...labelStyle, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 6 };
+
+const inputStyle = {
+  width: '100%', minHeight: 44, padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+  border: `1px solid ${BD}`, background: 'var(--surface-tertiary)', fontSize: 13, color: DN,
+  outline: 'none', boxSizing: 'border-box',
+  transition: `border-color .18s ${EASE}, background-color .18s ${EASE}`,
+};
+
+const guardarBtnStyle = {
+  minHeight: 44, padding: '12px 22px', fontSize: 13.5, fontWeight: 600,
+  borderRadius: 'var(--radius-sm)', display: 'inline-flex', alignItems: 'center', gap: 8,
+};
+
+const enlaceArchivoStyle = {
+  fontSize: 13, color: P, fontWeight: 600, cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', minHeight: 36,
+  transition: `color .18s ${EASE}`,
+};
+
+const accionBtnStyle = { minHeight: 44, padding: '12px 20px', fontSize: 13.5, fontWeight: 600, borderRadius: 'var(--radius-sm)' };
+
+const avisoErrorStyle = {
+  padding: '10px 12px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`,
+  borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13, lineHeight: 1.5,
 };
 
 export default function Config({ clinicaId, clinica, clinicaRol, refrescarClinica }) {
@@ -29,7 +64,7 @@ export default function Config({ clinicaId, clinica, clinicaRol, refrescarClinic
       <div style={{ display: 'flex', gap: 1, marginBottom: 20, borderBottom: `1px solid ${BD}` }}>
         {TABS.map(t => (
           <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '10px 18px', cursor: 'pointer', fontSize: 13, fontWeight: tab === t.id ? 700 : 500, color: tab === t.id ? P : MU, borderBottom: tab === t.id ? `2px solid ${P}` : '2px solid transparent', marginBottom: -1, transition: 'all .15s' }}>
+            style={{ padding: '12px 18px', minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: 15, fontWeight: tab === t.id ? 600 : 500, color: tab === t.id ? P : MU, borderBottom: tab === t.id ? `2px solid ${P}` : '2px solid transparent', marginBottom: -1, transition: `color .18s ${EASE}, border-color .18s ${EASE}` }}>
             {t.lbl}
           </div>
         ))}
@@ -107,10 +142,10 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${MT}` }}>Datos del consultorio</div>
+          <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Datos del consultorio</div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 10, background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
@@ -118,8 +153,8 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
               )}
             </div>
             <div>
-              <div style={{ fontSize: 9.5, color: MU, fontWeight: 700, textTransform: 'uppercase', letterSpacing: .3, marginBottom: 3 }}>Logo del consultorio</div>
-              <label htmlFor="logo-upload" style={{ fontSize: 11, color: P, fontWeight: 700, cursor: 'pointer' }}>
+              <div style={{ ...labelCapsStyle, marginBottom: 2 }}>Logo del consultorio</div>
+              <label htmlFor="logo-upload" style={enlaceArchivoStyle}>
                 {subiendoLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar logo' : '+ Subir logo')}
               </label>
               <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={subirLogo} />
@@ -133,15 +168,14 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
             ['Email', email, setEmail],
             ['COP', cop, setCop],
           ].map(([label, value, setValue]) => (
-            <div key={label} style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>{label}</label>
-              <input value={value} onChange={e => setValue(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' }} />
+            <div key={label} style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>{label}</label>
+              <input value={value} onChange={e => setValue(e.target.value)} style={inputStyle} />
             </div>
           ))}
 
-          <Button onClick={guardar} disabled={guardando} style={{ marginTop: 6, padding: '9px 24px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Icon name="save" size={13} /> {guardando ? 'Guardando...' : 'Guardar'}
+          <Button onClick={guardar} disabled={guardando} style={{ ...guardarBtnStyle, marginTop: 8 }}>
+            <Icon name="save" size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
           </Button>
         </div>
 
@@ -152,11 +186,11 @@ function Generales({ clinicaId, clinica, refrescarClinica }) {
           { title: 'Notificaciones', fields: [['Nuevas citas', 'Email + WhatsApp'], ['Pagos recibidos', 'Email'], ['Laboratorio listo', 'WhatsApp'], ['Ausencias', 'WhatsApp']] },
         ].map((sec, si) => (
           <div key={si} style={cardStyle}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${MT}` }}>{sec.title}</div>
+            <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>{sec.title}</div>
             {sec.fields.map(([k, v]) => (
-              <div key={k} style={{ marginBottom: 10 }}>
-                <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>{k}</label>
-                <input defaultValue={v} style={{ width: '100%', padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' }} />
+              <div key={k} style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>{k}</label>
+                <input defaultValue={v} style={inputStyle} />
               </div>
             ))}
           </div>
@@ -202,44 +236,43 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
     refrescarClinica?.();
   };
 
-  const timeInputStyle = { flex: 1, padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' };
+  const timeInputStyle = { ...inputStyle, width: 'auto', flex: 1, fontVariantNumeric: 'tabular-nums' };
 
   return (
     <div style={cardStyle}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${MT}` }}>Horario de atención</div>
+      <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Horario de atención</div>
 
-      <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Lunes a viernes</label>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+      <label style={labelStyle}>Lunes a viernes</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <input type="time" value={lvInicio} onChange={e => setLvInicio(e.target.value)} style={timeInputStyle} />
         <input type="time" value={lvFin} onChange={e => setLvFin(e.target.value)} style={timeInputStyle} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-        <label style={{ fontSize: 9.5, color: MU, fontWeight: 600 }}>Sábado</label>
-        <label style={{ fontSize: 10, color: MU, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-          <input type="checkbox" checked={!sabCerrado} onChange={e => setSabCerrado(!e.target.checked)} style={{ accentColor: P, cursor: 'pointer' }} /> Abierto
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 }}>
+        <label style={{ ...labelStyle, marginBottom: 0 }}>Sábado</label>
+        <label style={{ fontSize: 12, color: MU, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minHeight: 36 }}>
+          <input type="checkbox" checked={!sabCerrado} onChange={e => setSabCerrado(!e.target.checked)} style={{ accentColor: P, cursor: 'pointer', width: 16, height: 16 }} /> Abierto
         </label>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10, opacity: sabCerrado ? .5 : 1 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, opacity: sabCerrado ? .5 : 1 }}>
         <input type="time" disabled={sabCerrado} value={sabInicio} onChange={e => setSabInicio(e.target.value)} style={timeInputStyle} />
         <input type="time" disabled={sabCerrado} value={sabFin} onChange={e => setSabFin(e.target.value)} style={timeInputStyle} />
       </div>
 
-      <div style={{ marginBottom: 10 }}>
-        <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Domingo</label>
-        <div style={{ padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 10.5, color: MU, background: MT }}>Cerrado — la Agenda no muestra domingos</div>
+      <div style={{ marginBottom: 12 }}>
+        <label style={labelStyle}>Domingo</label>
+        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: MU, background: 'var(--fill-tertiary)' }}>Cerrado — la Agenda no muestra domingos</div>
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ fontSize: 9.5, color: MU, fontWeight: 600, display: 'block', marginBottom: 3 }}>Duración de cita por defecto</label>
-        <select value={duracionCita} onChange={e => setDuracionCita(e.target.value)}
-          style={{ width: '100%', padding: '6px 10px', borderRadius: 7, border: `1px solid ${BD}`, fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box', background: '#fff' }}>
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>Duración de cita por defecto</label>
+        <select value={duracionCita} onChange={e => setDuracionCita(e.target.value)} style={inputStyle}>
           {[15, 20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m} minutos</option>)}
         </select>
       </div>
 
-      <Button onClick={guardar} disabled={guardando} style={{ padding: '9px 24px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <Icon name="save" size={13} /> {guardando ? 'Guardando...' : 'Guardar'}
+      <Button onClick={guardar} disabled={guardando} style={guardarBtnStyle}>
+        <Icon name="save" size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
       </Button>
     </div>
   );
@@ -308,12 +341,12 @@ function MiPerfil({ clinicaId }) {
     setSubiendoFirma(false);
   };
 
-  if (loading) return <div style={{ padding: 20, color: MU, fontSize: 12 }}>Cargando perfil…</div>;
+  if (loading) return <div style={{ padding: 20, color: MU, fontSize: 13.5 }}>Cargando perfil…</div>;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 16 }}>Datos personales</div>
+        <div style={{ ...tituloCardStyle, marginBottom: 16 }}>Datos personales</div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -324,41 +357,41 @@ function MiPerfil({ clinicaId }) {
             )}
           </div>
           <div>
-            <label htmlFor="avatar-upload" style={{ fontSize: 11, color: P, fontWeight: 700, cursor: 'pointer' }}>
+            <label htmlFor="avatar-upload" style={enlaceArchivoStyle}>
               {subiendoAvatar ? 'Subiendo...' : 'Cambiar foto'}
             </label>
             <input type="file" id="avatar-upload" accept="image/*" style={{ display: 'none' }} onChange={subirAvatar} />
           </div>
         </div>
 
-        <label style={{ fontSize: 9.5, color: MU, fontWeight: 700, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>Nombre completo</label>
+        <label style={labelCapsStyle}>Nombre completo</label>
         <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Dra. Sol Vargas"
-          style={{ width: '100%', padding: '8px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, marginBottom: 12, boxSizing: 'border-box', color: DN }} />
+          style={{ ...inputStyle, marginBottom: 14 }} />
 
-        <label style={{ fontSize: 9.5, color: MU, fontWeight: 700, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>Teléfono</label>
+        <label style={labelCapsStyle}>Teléfono</label>
         <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+51 915 054 145"
-          style={{ width: '100%', padding: '8px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, marginBottom: 12, boxSizing: 'border-box', color: DN }} />
+          style={{ ...inputStyle, marginBottom: 14 }} />
 
-        <label style={{ fontSize: 9.5, color: MU, fontWeight: 700, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>Email</label>
+        <label style={labelCapsStyle}>Email</label>
         <input value={email} disabled
-          style={{ width: '100%', padding: '8px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, background: MT, color: MU, boxSizing: 'border-box' }} />
+          style={{ ...inputStyle, background: MT, color: MU }} />
 
-        <Button onClick={guardar} disabled={saving} style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <Icon name="save" size={12} /> {saving ? 'Guardando...' : 'Guardar cambios'}
+        <Button onClick={guardar} disabled={saving} style={{ ...guardarBtnStyle, marginTop: 18 }}>
+          <Icon name="save" size={15} /> {saving ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </div>
 
       <div style={cardStyle}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 6 }}>Firma y sello digital</div>
-        <p style={{ fontSize: 11, color: MU, margin: '0 0 14px' }}>Se usa al imprimir recetas y presupuestos en el Historial.</p>
+        <div style={{ ...tituloCardStyle, marginBottom: 6 }}>Firma y sello digital</div>
+        <p style={{ fontSize: 13, color: MU, margin: '0 0 14px', lineHeight: 1.5 }}>Se usa al imprimir recetas y presupuestos en el Historial.</p>
         {firmaUrl ? (
           <img src={firmaUrl} alt="Firma y sello" onError={() => setFirmaUrl(null)} style={{ maxHeight: 70, maxWidth: '100%', objectFit: 'contain', display: 'block', marginBottom: 12 }} />
         ) : (
-          <div style={{ height: 70, border: `1px dashed ${BD}`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MU, fontSize: 11, marginBottom: 12 }}>
+          <div style={{ height: 70, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', background: 'var(--surface-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--label-tertiary)', fontSize: 13, marginBottom: 12 }}>
             Sin firma configurada
           </div>
         )}
-        <label htmlFor="firma-upload" style={{ fontSize: 11, color: P, fontWeight: 700, cursor: 'pointer' }}>
+        <label htmlFor="firma-upload" style={enlaceArchivoStyle}>
           {subiendoFirma ? 'Subiendo...' : (firmaUrl ? 'Cambiar firma/sello' : '+ Subir firma y sello')}
         </label>
         <input type="file" id="firma-upload" accept="image/*" style={{ display: 'none' }} onChange={subirFirma} />
@@ -376,44 +409,44 @@ function Integraciones({ clinicaId }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="clock" size={19} />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Google Calendar</div>
-            <div style={{ fontSize: 10.5, color: google.connected ? WA : MU, fontWeight: 600 }}>
+            <div style={tituloCardStyle}>Google Calendar</div>
+            <div style={{ fontSize: 12, color: google.connected ? WA : MU, fontWeight: 600 }}>
               {google.connected ? 'Conectado' : 'No conectado'}
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: MU, margin: '0 0 16px', lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: MU, margin: '0 0 16px', lineHeight: 1.5 }}>
           Sincroniza las citas de tu Agenda con tu calendario de Google: al crear, editar o eliminar una cita se refleja automáticamente.
         </p>
         {google.connected ? (
-          <Button variant="danger" onClick={google.disconnect} style={{ fontSize: 11 }}>Desconectar</Button>
+          <Button variant="danger" onClick={google.disconnect} style={accionBtnStyle}>Desconectar</Button>
         ) : (
-          <Button onClick={() => google.connect()} style={{ fontSize: 11 }}>Conectar con Google</Button>
+          <Button onClick={() => google.connect()} style={accionBtnStyle}>Conectar con Google</Button>
         )}
       </div>
 
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--green-soft)', color: WA, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="chat" size={19} />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>WhatsApp Business</div>
-            <div style={{ fontSize: 10.5, color: wa.connected ? WA : MU, fontWeight: 600 }}>
+            <div style={tituloCardStyle}>WhatsApp Business</div>
+            <div style={{ fontSize: 12, color: wa.connected ? WA : MU, fontWeight: 600 }}>
               {wa.loading ? 'Verificando…' : wa.connected ? 'Conectado' : 'No conectado'}
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: MU, margin: '0 0 12px', lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: MU, margin: '0 0 12px', lineHeight: 1.5 }}>
           Conecta tu número de WhatsApp Business (Meta) para automatizar mensajes con pacientes.
         </p>
 
         {wa.errorMsg && (
-          <div style={{ padding: '8px 10px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 11, marginBottom: 12 }}>
+          <div style={{ ...avisoErrorStyle, marginBottom: 12 }}>
             {wa.errorMsg}
           </div>
         )}
@@ -421,14 +454,14 @@ function Integraciones({ clinicaId }) {
         {wa.connected ? (
           <>
             {wa.connection?.businesses?.length > 0 && (
-              <div style={{ fontSize: 11, color: DN, marginBottom: 10 }}>
+              <div style={{ fontSize: 13, color: DN, marginBottom: 10 }}>
                 {wa.connection.businesses.map(b => b.name).join(', ')}
               </div>
             )}
-            <Button variant="danger" onClick={wa.disconnect} style={{ fontSize: 11 }}>Desconectar</Button>
+            <Button variant="danger" onClick={wa.disconnect} style={accionBtnStyle}>Desconectar</Button>
           </>
         ) : (
-          <Button onClick={wa.connect} disabled={wa.connecting} style={{ fontSize: 11 }}>
+          <Button onClick={wa.connect} disabled={wa.connecting} style={accionBtnStyle}>
             {wa.connecting ? 'Conectando…' : 'Conectar con Meta'}
           </Button>
         )}

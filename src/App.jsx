@@ -45,9 +45,9 @@ const RAIL_BG = "#141416";
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 // Ya no son valores fijos: cada uno apunta a una variable CSS declarada en el
-// <style> de más abajo (":root" + "@media (prefers-color-scheme: dark)"). El
-// valor de la variable en modo claro es EXACTAMENTE el hex que había antes acá
-// -- cero cambio visual hoy -- y sólo diverge cuando el sistema está en oscuro.
+// <style> de más abajo (":root" + "@media (prefers-color-scheme: dark)"), con
+// los valores del sistema de Apple. Repuntar acá cambia toda la app de una vez
+// y además la deja siguiendo el modo claro/oscuro del sistema operativo.
 const C = {
   // Fondos.
   pageBg:      "var(--surface-secondary)",

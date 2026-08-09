@@ -127,15 +127,15 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
             {esExtraer && (
               <rect x={tx - 14} y={ty - 6} width="28" height="13" rx="2" fill={RJ} />
             )}
-            <text x={tx} y={ty + 4} textAnchor="middle" fontSize={sf === sf0 ? 12 : 10}
-              fontWeight="800" fill={esExtraer || h ? '#fff' : '#94a3b8'} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+            <text x={tx} y={ty + 4} textAnchor="middle" fontSize={sf === sf0 ? 13 : 11}
+              fontWeight="600" fill={esExtraer || h ? '#fff' : 'var(--label-tertiary)'} style={{ pointerEvents: 'none', userSelect: 'none' }}>
               {esExtraer ? 'EXT' : (h && t.sig ? t.sig : sf)}
             </text>
           </g>
         );
       })}
 
-      <text x={cx} y={S + 12} textAnchor="middle" fontSize="11" fill="#0D5C6B" fontWeight="900">
+      <text x={cx} y={S + 13} textAnchor="middle" fontSize="13" fill={DN} fontWeight="600">
         {num}
       </text>
     </svg>
@@ -284,7 +284,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         const t = csRaw ? gt(csRaw) : null;
         return (
           <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel === n ? `color-mix(in srgb, ${P} 13%, transparent)` : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
-            {t && <span style={{ fontSize: 11, fontWeight: 800, color: (t.g === 'r' || isBad(csRaw)) ? RJ : AZ }}>{t.sig}</span>}
+            {t && <span style={{ fontSize: 12, fontWeight: 600, color: (t.g === 'r' || isBad(csRaw)) ? RJ : AZ }}>{t.sig}</span>}
           </div>
         );
       })}
@@ -294,7 +294,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const nRow = (list, w) => (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => (
-        <div key={n} style={{ width: w, fontSize: 12, textAlign: 'center', userSelect: 'none', color: sel === n ? P : MU, fontWeight: sel === n ? 900 : 600, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none', padding: '2px 0 6px' }}>
+        <div key={n} style={{ width: w, fontSize: 13, textAlign: 'center', userSelect: 'none', color: sel === n ? P : MU, fontWeight: sel === n ? 700 : 500, fontVariantNumeric: 'tabular-nums', borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none', padding: '2px 0 6px' }}>
           {n}
         </div>
       ))}
@@ -345,12 +345,12 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       <div style={{ display: 'flex', gap: 22, padding: '0 20px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderBottom: `1px solid ${BD}`, flexShrink: 0 }}>
         {[{ id: 'inicial', lbl: 'Odo. Inicial' }, { id: 'evolución', lbl: 'Odo. Evolución' }].map(t => (
           <div key={t.id} onClick={() => setMode(t.id)}
-            style={{ padding: '12px 2px', marginBottom: -1, cursor: 'pointer', fontSize: 13, fontWeight: mode === t.id ? 700 : 500, color: mode === t.id ? P : MU, borderBottom: mode === t.id ? `2px solid ${P}` : '2px solid transparent', transition: 'all .15s' }}>
+            style={{ padding: '13px 2px', minHeight: 44, boxSizing: 'border-box', marginBottom: -1, cursor: 'pointer', fontSize: 15, fontWeight: mode === t.id ? 600 : 500, color: mode === t.id ? P : MU, borderBottom: mode === t.id ? `2px solid ${P}` : '2px solid transparent', transition: 'color .18s cubic-bezier(0.25, 0.1, 0.25, 1), border-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
             {t.lbl}
           </div>
         ))}
         {mode === 'evolución' && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14, fontSize: 10, color: MU, fontWeight: 600 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14, fontSize: 12, color: MU, fontWeight: 500 }}>
             {[{ s: 'pendiente', l: 'Pendiente' }, { s: 'en_curso', l: 'En curso' }, { s: 'completado', l: 'Completado' }].map(({ s, l }) => (
               <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: sc(s).c, display: 'inline-block' }} /> {l}
@@ -363,39 +363,39 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       {/* SIDEBAR HERRAMIENTAS */}
       <div style={{ width: 180, background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRight: `1px solid ${BD}`, overflowY: 'auto', flexShrink: 0, padding: 12 }}>
-        <div style={{ background: at.col, color: at.tc, padding: '6px 8px', borderRadius: 6, fontSize: 12, fontWeight: 700, textAlign: 'center', marginBottom: 10 }}>{at.lbl}</div>
+        <div style={{ background: at.col, color: at.tc, padding: '8px 10px', minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', fontSize: 13.5, fontWeight: 600, textAlign: 'center', marginBottom: 10 }}>{at.lbl}</div>
 
         {[{ label: 'Rojo — mal estado', g: 'r' }, { label: 'Azul — buen estado', g: 'a' }].map(({ label, g }) => (
           <div key={g}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: g === 'r' ? RJ : AZ, textTransform: 'uppercase', letterSpacing: .5, margin: '12px 0 6px', borderTop: '1px solid #f0f4f8', paddingTop: 8 }}>{label}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: g === 'r' ? RJ : AZ, textTransform: 'uppercase', letterSpacing: .5, margin: '12px 0 6px', borderTop: `1px solid ${BD}`, paddingTop: 8 }}>{label}</div>
             {TOOLS.filter(t => t.g === g).map(t => (
               <div key={t.id} onClick={() => setAct(t.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 6, cursor: 'pointer', marginBottom: 2, background: act === t.id ? t.col : 'transparent' }}
-                onMouseEnter={e => { if (act !== t.id) e.currentTarget.style.background = '#f8fafc' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', minHeight: 36, boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', cursor: 'pointer', marginBottom: 2, background: act === t.id ? t.col : 'transparent', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
+                onMouseEnter={e => { if (act !== t.id) e.currentTarget.style.background = 'var(--fill-quaternary)' }}
                 onMouseLeave={e => { if (act !== t.id) e.currentTarget.style.background = 'transparent' }}>
-                <div style={{ width: 12, height: 12, borderRadius: 3, background: t.col, border: '1px solid #cbd5e1', flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: act === t.id ? '#fff' : '#374151', fontWeight: act === t.id ? 700 : 500 }}>{t.lbl}</span>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: t.col, border: `1px solid ${BD}`, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: act === t.id ? '#fff' : DN, fontWeight: act === t.id ? 600 : 500 }}>{t.lbl}</span>
               </div>
             ))}
           </div>
         ))}
 
-        <div onClick={() => setAct('normal')} style={{ marginTop: 10, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', textAlign: 'center', border: `1px solid ${BD}`, fontSize: 11, color: '#374151', fontWeight: 700 }}>↺ Limpiar pincel</div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: MU, marginTop: 12, fontWeight: 600 }}>
-          <input type="checkbox" checked={showP} onChange={e => setShowP(e.target.checked)} style={{ transform: 'scale(1.2)' }} /> Dientes Deciduos
+        <div onClick={() => setAct('normal')} style={{ marginTop: 10, padding: '8px 10px', minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', cursor: 'pointer', textAlign: 'center', border: `1px solid ${BD}`, fontSize: 13, color: DN, fontWeight: 600 }}>↺ Limpiar pincel</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: MU, marginTop: 12, minHeight: 36, fontWeight: 500 }}>
+          <input type="checkbox" checked={showP} onChange={e => setShowP(e.target.checked)} style={{ accentColor: P, transform: 'scale(1.2)' }} /> Dientes Deciduos
         </label>
-        {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '8px', background: '#fef2f2', border: `1px solid color-mix(in srgb, ${RJ} 33%, transparent)`, borderRadius: 6, fontSize: 11, color: RJ, cursor: 'pointer', fontWeight: 800 }}>Limpiar todo el mapa</button>}
+        {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '9px', minHeight: 36, background: 'var(--red-soft)', border: `1px solid color-mix(in srgb, ${RJ} 33%, transparent)`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: RJ, cursor: 'pointer', fontWeight: 600 }}>Limpiar todo el mapa</button>}
       </div>
 
       {/* ÁREA CENTRAL */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '30px 20px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-        <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 14, padding: '24px 30px', display: 'inline-block', minWidth: 750, boxShadow: GLASS_SHADOW }}>
+        <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: '24px 30px', display: 'inline-block', minWidth: 750, boxShadow: GLASS_SHADOW }}>
           <div style={{ display: 'flex', gap: 15, marginBottom: 15, alignItems: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: DN }}>{patient?.name || 'Paciente'}</div>
-            <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 12, background: mode === 'inicial' ? MT : '#fef3c7', color: mode === 'inicial' ? P : GL }}>{mode}</span>
+            <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: DN }}>{patient?.name || 'Paciente'}</div>
+            <span style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-md)', background: mode === 'inicial' ? MT : 'var(--amber-soft)', color: mode === 'inicial' ? P : GL }}>{mode}</span>
           </div>
 
-          <div style={{ fontSize: 10, fontWeight: 800, color: MU, textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Maxilar superior</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: MU, textTransform: 'uppercase', letterSpacing: .4, textAlign: 'center', marginBottom: 6 }}>Maxilar superior</div>
 
           {recRow(UA, aw)}{eRow(UA, aw)}{nRow(UA, aw)}{tRow(UA, true, aw)}
 
@@ -408,7 +408,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           {/* PLANO OCLUSAL */}
           <div style={{ margin: '12px 0 10px', borderTop: '2px solid #374151', position: 'relative', width: '100%' }}>
-            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%) translateY(-50%)', background: '#fff', padding: '0 12px', fontSize: 9, color: '#94a3b8', fontWeight: 800, whiteSpace: 'nowrap' }}>PLANO OCLUSAL</span>
+            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%) translateY(-50%)', background: LT, padding: '0 12px', fontSize: 11, color: 'var(--label-tertiary)', fontWeight: 600, letterSpacing: .4, whiteSpace: 'nowrap' }}>PLANO OCLUSAL</span>
           </div>
 
           {showP && (
@@ -420,47 +420,49 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           {tRow(LA, false, aw)}{nRow(LA, aw)}{eRow(LA, aw)}{recRow(LA, aw)}
 
-          <div style={{ fontSize: 10, fontWeight: 800, color: MU, textTransform: 'uppercase', textAlign: 'center', marginTop: 6 }}>Maxilar inferior</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: MU, textTransform: 'uppercase', letterSpacing: .4, textAlign: 'center', marginTop: 6 }}>Maxilar inferior</div>
 
           <div style={{ marginTop: 20, borderTop: `1px solid ${BD}`, paddingTop: 12 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: DN }}>ESPECIFICACIONES CLÍNICAS: </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: DN }}>ESPECIFICACIONES CLÍNICAS: </span>
             <textarea value={specs} onChange={e => setSpecs(e.target.value)} placeholder="Ej. Hallazgos múltiples o anotaciones no gráficas..."
-              style={{ width: '100%', minHeight: 30, marginTop: 5, padding: '4px 8px', border: '1px solid transparent', borderBottom: '1px solid #94a3b8', fontSize: 11, resize: 'vertical', outline: 'none', color: DN, background: '#f8fafc', borderRadius: '4px 4px 0 0', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+              style={{ width: '100%', minHeight: 40, marginTop: 6, padding: '8px 10px', border: '1px solid transparent', borderBottom: `1px solid ${BD}`, fontSize: 13, lineHeight: 1.5, resize: 'vertical', outline: 'none', color: DN, background: 'var(--surface-tertiary)', borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0', fontFamily: 'inherit', boxSizing: 'border-box' }} />
           </div>
 
           {/* EVALUACIÓN PERIODONTAL — a nivel de boca completa, no por pieza */}
-          <div style={{ marginTop: 20, background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#7e22ce', marginBottom: 10, textTransform: 'uppercase', letterSpacing: .3 }}>
+          <div style={{ marginTop: 20, background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 'var(--radius-md)', padding: 16 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: '#7e22ce', marginBottom: 10, textTransform: 'uppercase', letterSpacing: .3 }}>
               Evaluación Periodontal — Boca completa
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {['Ninguno', 'Gingivitis leve', 'Gingivitis moderada', 'Gingivitis severa', 'Periodontitis'].map(opt => (
                 <div key={opt} onClick={() => setPeriodontalDx(opt)}
                   style={{
-                    padding: '7px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                    padding: '9px 16px', minHeight: 36, boxSizing: 'border-box', display: 'flex', alignItems: 'center',
+                    borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600,
                     background: periodontalDx === opt ? '#7e22ce' : '#fff',
                     color: periodontalDx === opt ? '#fff' : '#7e22ce',
                     border: '1px solid #7e22ce55',
+                    transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1), color .18s cubic-bezier(0.25, 0.1, 0.25, 1)',
                   }}>
                   {opt}
                 </div>
               ))}
             </div>
             {periodontalDx && periodontalDx !== 'Ninguno' && (
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: '#7e22ce', fontWeight: 600 }}>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#7e22ce', fontWeight: 500 }}>
                 <Icon name="warning" size={11} /> Este diagnóstico es a nivel de boca completa y se guarda junto con el resto de la historia clínica.
               </div>
             )}
           </div>
 
-          {allF.length > 0 && <div style={{ marginTop: 15, padding: 12, background: LT, borderRadius: 10, border: `1px solid ${BD}` }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: P, marginBottom: 8 }}>Resumen de Hallazgos ({allF.length}):</div>
+          {allF.length > 0 && <div style={{ marginTop: 15, padding: 14, background: LT, borderRadius: 'var(--radius-md)', border: `1px solid ${BD}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: P, marginBottom: 8, fontVariantNumeric: 'tabular-nums' }}>Resumen de Hallazgos ({allF.length}):</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {allF.map(({ n, sf, c }, i) => {
                 const t = gt(c);
                 return (
                   <span key={i} onClick={() => applySurf(n, sf)} title="Clic para quitar"
-                    style={{ fontSize: 10, background: '#fff', color: t.g === 'r' ? RJ : AZ, padding: '3px 10px', borderRadius: 12, fontWeight: 800, cursor: 'pointer', border: `1px solid ${t.g === 'r' ? RJ : AZ}55`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    style={{ fontSize: 12, background: LT, color: t.g === 'r' ? RJ : AZ, padding: '6px 12px', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer', fontVariantNumeric: 'tabular-nums', border: `1px solid color-mix(in srgb, ${t.g === 'r' ? RJ : AZ} 33%, transparent)`, boxShadow: 'var(--shadow-sm)' }}>
                     Pieza {n} / {sf} : {t.sig}
                   </span>
                 );
@@ -474,21 +476,21 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       {sel && (
         <div style={{ width: 250, background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderLeft: `1px solid ${BD}`, overflowY: 'auto', flexShrink: 0, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: P }}>Pieza {sel}</div><div style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{TNAME[sel] || '—'}</div></div>
-            <button onClick={() => setSel(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 28, height: 28, fontSize: 18, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            <div><div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: P, fontVariantNumeric: 'tabular-nums' }}>Pieza {sel}</div><div style={{ fontSize: 13, color: MU, fontWeight: 500 }}>{TNAME[sel] || '—'}</div></div>
+            <button onClick={() => setSel(null)} style={{ background: 'var(--fill-tertiary)', border: 'none', borderRadius: '50%', width: 36, height: 36, minHeight: 36, fontSize: 17, cursor: 'pointer', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
 
           {mode === 'evolución' && (
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Estado del tratamiento</div>
+              <div style={{ fontSize: 12, color: MU, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Estado del tratamiento</div>
               {itemsPieza.length === 0 ? (
-                <div style={{ fontSize: 11, color: MU, lineHeight: 1.5, background: MT, border: `1px solid ${BD}`, borderRadius: 8, padding: 10 }}>
+                <div style={{ fontSize: 13, color: MU, lineHeight: 1.5, background: MT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: 12 }}>
                   {allF.some(f => String(f.n) === String(sel)) ? (
                     <>
                       Esta pieza aún no tiene un tratamiento en el Plan.
                       {onGenerarSugerencia && (
                         <button onClick={onGenerarSugerencia}
-                          style={{ display: 'block', marginTop: 8, width: '100%', padding: '7px', background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                          style={{ display: 'block', marginTop: 8, width: '100%', padding: '9px', minHeight: 36, background: LT, color: P, border: `1px solid ${P}`, borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                           Generar sugerencias del odontograma
                         </button>
                       )}
@@ -496,22 +498,22 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
                   ) : 'Marca un hallazgo en esta pieza para poder generar su tratamiento.'}
                 </div>
               ) : itemsPieza.map(item => (
-                <div key={item.id} style={{ background: sc(item.status).bg, border: `1px solid ${sc(item.status).c}55`, borderRadius: 8, padding: '10px 12px', marginBottom: 6 }}>
+                <div key={item.id} style={{ background: sc(item.status).bg, border: `1px solid color-mix(in srgb, ${sc(item.status).c} 33%, transparent)`, borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: DN }}>{item.name}</div>
-                    <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 10, background: '#fff', color: sc(item.status).c, whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>{item.name}</div>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 9px', borderRadius: 'var(--radius-sm)', background: '#fff', color: sc(item.status).c, whiteSpace: 'nowrap' }}>
                       {item.status.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
                   {item.status === 'pendiente' && (
                     <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'en_curso' } : i))}
-                      style={{ marginTop: 8, width: '100%', padding: '7px', background: sc('en_curso').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                      style={{ marginTop: 8, width: '100%', padding: '9px', minHeight: 36, background: sc('en_curso').c, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       Iniciar tratamiento
                     </button>
                   )}
                   {item.status === 'en_curso' && (
                     <button onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: 'completado' } : i))}
-                      style={{ marginTop: 8, width: '100%', padding: '7px', background: sc('completado').c, color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                      style={{ marginTop: 8, width: '100%', padding: '9px', minHeight: 36, background: sc('completado').c, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       Marcar como completado
                     </button>
                   )}
@@ -521,47 +523,47 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           )}
 
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 10, color: MU, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase' }}>Vista Oclusal</div>
+            <div style={{ fontSize: 12, color: MU, marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Vista Oclusal</div>
             <OcclusalMap num={sel} surfs={selSurfs} activeTool={act} onSurf={sf => applySurf(sel, sf)} size={160} />
           </div>
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 15 }}>
-            <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 8, padding: '8px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Aplicar toda pieza</button>
-            <button onClick={() => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); delete next[sel]; return next; })} style={{ background: '#fef2f2', color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 27%, transparent)`, borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>↺</button>
+            <button onClick={() => applyAll(sel)} style={{ flex: 1, background: at.col, color: at.tc, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Aplicar toda pieza</button>
+            <button onClick={() => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); delete next[sel]; return next; })} style={{ background: 'var(--red-soft)', color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 27%, transparent)`, borderRadius: 'var(--radius-sm)', padding: '11px 14px', minHeight: 44, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>↺</button>
           </div>
 
-          <div style={{ fontSize: 10, color: MU, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Superficies</div>
+          <div style={{ fontSize: 12, color: MU, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Superficies</div>
           {getSurfs(sel).map(sf => {
             const c = selSurfs[sf], t = gt(c), has = c && c !== 'normal';
             const bad = has && isBad(c);
             return (
               <div key={sf} onClick={() => applySurf(sel, sf)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: has ? (t.g === 'r' ? '#fef2f2' : '#eff6ff') : LT, border: `1px solid ${has ? `color-mix(in srgb, ${t.g === 'r' ? RJ : AZ} 27%, transparent)` : BD}` }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: has ? (t.g === 'r' ? RJ : AZ) : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, color: has ? '#fff' : '#94a3b8', fontWeight: 900 }}>{sf}</span>
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '10px 12px', minHeight: 44, boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: has ? (t.g === 'r' ? 'var(--red-soft)' : 'var(--accent-soft)') : LT, border: `1px solid ${has ? `color-mix(in srgb, ${t.g === 'r' ? RJ : AZ} 27%, transparent)` : BD}` }}>
+                <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: has ? (t.g === 'r' ? RJ : AZ) : 'var(--fill-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 12, color: has ? '#fff' : 'var(--label-tertiary)', fontWeight: 600 }}>{sf}</span>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, fontWeight: has ? 800 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div>
+                  <div style={{ fontSize: 13, fontWeight: has ? 600 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div>
                   {bad && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: RJ, fontWeight: 700, marginTop: 2 }}>
-                      <Icon name="warning" size={10} /> Marcado en mal estado
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: RJ, fontWeight: 600, marginTop: 3 }}>
+                      <Icon name="warning" size={11} /> Marcado en mal estado
                     </div>
                   )}
                   {has && t.g === 'a' && (
-                    <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, fontSize: 9.5, color: MU, cursor: 'pointer', fontWeight: 600 }}>
-                      <input type="checkbox" checked={bad} onChange={() => toggleBadFlag(sel, sf)} style={{ transform: 'scale(0.9)' }} />
+                    <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11, lineHeight: 1.4, color: MU, cursor: 'pointer', fontWeight: 500 }}>
+                      <input type="checkbox" checked={bad} onChange={() => toggleBadFlag(sel, sf)} style={{ accentColor: P, transform: 'scale(0.9)' }} />
                       Marcar como en mal estado (necesita reemplazo)
                     </label>
                   )}
                 </div>
-                {has && <span style={{ fontSize: 14, color: MU, fontWeight: 800 }}>✕</span>}
+                {has && <span style={{ fontSize: 15, color: MU, fontWeight: 600 }}>✕</span>}
               </div>
             );
           })}
 
-          <div style={{ fontSize: 10, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Notas de pieza</div>
+          <div style={{ fontSize: 12, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Notas de pieza</div>
           <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel] = JSON.parse(JSON.stringify(currentTeeth[sel] || {})); next[sel].note = e.target.value; return next; })}
-            style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 8, fontSize: 11, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#f8fafc' }} />
+            style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, lineHeight: 1.5, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: 'var(--surface-tertiary)' }} />
         </div>
       )}
       </div>
@@ -574,13 +576,13 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 // ============================================================================
 function AnamnesisSiNo({ label, value, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '5px 0' }}>
-      <span style={{ fontSize: 11.5, color: DN }}>{label}</span>
-      <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 0', minHeight: 36, boxSizing: 'border-box' }}>
+      <span style={{ fontSize: 13.5, color: DN }}>{label}</span>
+      <div style={{ display: 'flex', gap: 14, flexShrink: 0 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: MU, cursor: 'pointer' }}>
           <input type="checkbox" checked={value === 'no'} onChange={() => onChange(value === 'no' ? '' : 'no')} style={{ accentColor: P, cursor: 'pointer' }} /> No
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: MU, cursor: 'pointer' }}>
           <input type="checkbox" checked={value === 'si'} onChange={() => onChange(value === 'si' ? '' : 'si')} style={{ accentColor: P, cursor: 'pointer' }} /> Sí
         </label>
       </div>
@@ -590,21 +592,27 @@ function AnamnesisSiNo({ label, value, onChange }) {
 
 function AnamnesisSiNoDetalle({ label, value, detalle, onChange, onChangeDetalle }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '5px 0', flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 11.5, color: DN, flex: '1 1 240px' }}>{label}</span>
-      <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 0', minHeight: 36, boxSizing: 'border-box', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 13.5, color: DN, flex: '1 1 240px' }}>{label}</span>
+      <div style={{ display: 'flex', gap: 14, flexShrink: 0 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: MU, cursor: 'pointer' }}>
           <input type="checkbox" checked={value === 'no'} onChange={() => onChange(value === 'no' ? '' : 'no')} style={{ accentColor: P, cursor: 'pointer' }} /> No
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: MU, cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: MU, cursor: 'pointer' }}>
           <input type="checkbox" checked={value === 'si'} onChange={() => onChange(value === 'si' ? '' : 'si')} style={{ accentColor: P, cursor: 'pointer' }} /> Sí
         </label>
       </div>
       <input value={detalle || ''} onChange={e => onChangeDetalle(e.target.value)} placeholder="Detalle (opcional)"
-        style={{ flex: '1 1 180px', border: `1px solid ${BD}`, borderRadius: 6, padding: '4px 8px', fontSize: 11, color: DN, outline: 'none', boxSizing: 'border-box' }} />
+        style={{ flex: '1 1 180px', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '7px 10px', minHeight: 36, background: LT, fontSize: 13, color: DN, outline: 'none', boxSizing: 'border-box' }} />
     </div>
   );
 }
+
+// Campos de la ficha de filiación. labelStyleDoc/inputStyleDoc (constants.js) todavía
+// traen hex fijos y una escala de 10-12px; aquí se re-tintan con los tokens del tema y
+// se suben a la escala tipográfica nueva, sin tocar el archivo compartido.
+const labelDoc = { ...labelStyleDoc, fontSize: '12px', fontWeight: '600', color: MU, marginBottom: '6px' };
+const inputDoc = { ...inputStyleDoc, fontSize: '15px', height: '40px', padding: '9px 12px', borderRadius: 'var(--radius-sm)', color: DN, border: `1px solid ${BD}`, background: LT };
 
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
@@ -1172,43 +1180,43 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
       {/* CABECERA DE HISTORIA */}
       <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderBottom: `1px solid ${BD}`, padding: '9px 18px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, flexWrap: 'wrap' }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%', background: MT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: P, flexShrink: 0 }}>{ini(patData?.name || patient.name)}</div>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: MT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 600, color: P, flexShrink: 0 }}>{ini(patData?.name || patient.name)}</div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: DN }}>{patData?.name || patient.name}</div>
+            <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: DN }}>{patData?.name || patient.name}</div>
           </div>
-          <div style={{ fontSize: 10, color: MU, marginTop: 3, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-            <Icon name="phone" size={10} /> {patData?.phone || 'Sin celular'} · <Icon name="mail" size={10} /> {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años · {patData?.blood || 'O+'} {patData?.sexo ? `· ${patData.sexo}` : ''}
+          <div style={{ fontSize: 12, color: MU, marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', fontVariantNumeric: 'tabular-nums' }}>
+            <Icon name="phone" size={12} /> {patData?.phone || 'Sin celular'} · <Icon name="mail" size={12} /> {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años · {patData?.blood || 'O+'} {patData?.sexo ? `· ${patData.sexo}` : ''}
           </div>
           {(patData?.direccion) && (
-            <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon name="pin" size={9} /> {patData.direccion}
+            <div style={{ fontSize: 11, color: 'var(--label-tertiary)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="pin" size={11} /> {patData.direccion}
             </div>
           )}
         </div>
         {patData?.allergies && patData.allergies !== 'Ninguna' && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, background: '#fee2e2', color: RJ, padding: '4px 10px', borderRadius: 10 }}>
-            <Icon name="warning" size={11} /> Alergia: {patData.allergies}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, background: 'var(--red-soft)', color: RJ, padding: '6px 12px', borderRadius: 'var(--radius-md)' }}>
+            <Icon name="warning" size={12} /> Alergia: {patData.allergies}
           </span>
         )}
-        <div style={{ textAlign: 'right' }}><div style={{ fontSize: 9, color: MU }}>Próx. cita</div><div style={{ fontSize: 12, fontWeight: 700, color: P }}>{patData?.nextVisit || '---'}</div></div>
+        <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: MU }}>Próx. cita</div><div style={{ fontSize: 13.5, fontWeight: 600, color: P, fontVariantNumeric: 'tabular-nums' }}>{patData?.nextVisit || '---'}</div></div>
 
         {tieneOrtodoncia && (
           <button
             onClick={() => setView?.('ortodoncia', patData || patient)}
             title={`Ver el tratamiento de ortodoncia de ${patData?.name || patient.name}`}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: P, border: `1px solid ${BD}`, borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: LT, color: P, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '9px 16px', minHeight: 36, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
           >
-            <Icon name="tooth" size={13} /> Ortodoncia
+            <Icon name="tooth" size={14} /> Ortodoncia
           </button>
         )}
 
-        <button onClick={saveAllToCloud} style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-          <Icon name="save" size={13} /> {saving ? 'Guardando...' : 'Guardar en Nube'}
+        <button onClick={saveAllToCloud} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <Icon name="save" size={14} /> {saving ? 'Guardando...' : 'Guardar en Nube'}
         </button>
 
-        <button style={{ background: WA, color: '#fff', border: 'none', borderRadius: 7, padding: '8px 14px', display: 'flex', cursor: 'pointer' }}>
-          <Icon name="chat" size={14} />
+        <button style={{ background: WA, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 16px', minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+          <Icon name="chat" size={15} />
         </button>
       </div>
 
@@ -1216,7 +1224,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       <div style={{ display: 'flex', gap: 1, padding: '5px 14px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderBottom: `1px solid ${BD}`, flexShrink: 0, overflowX: 'auto' }}>
         {TABS.map(t => (
           <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '5px 13px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: tab === t.id ? 700 : 400, background: tab === t.id ? P : 'transparent', color: tab === t.id ? '#fff' : MU, whiteSpace: 'nowrap', transition: 'all .15s' }}>
+            style={{ padding: '8px 14px', minHeight: 36, display: 'flex', alignItems: 'center', boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 13, fontWeight: tab === t.id ? 600 : 500, background: tab === t.id ? P : 'transparent', color: tab === t.id ? '#fff' : MU, whiteSpace: 'nowrap', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1), color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
             {t.lbl}
           </div>
         ))}
@@ -1228,21 +1236,21 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
         {/* --- PESTAÑA FILIACIÓN --- */}
         {tab === 'filiacion' && (
-          <div style={{ padding: '30px', overflowY: 'auto', height: '100%', boxSizing: 'border-box', background: '#f8fafc' }}>
-            <div style={{ maxWidth: '1000px', margin: '0 auto', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '8px', border: GLASS_BORDER, padding: '35px', boxShadow: GLASS_SHADOW }}>
+          <div style={{ padding: '30px', overflowY: 'auto', height: '100%', boxSizing: 'border-box', background: MT }}>
+            <div style={{ maxWidth: '1000px', margin: '0 auto', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: 'var(--radius-lg)', border: GLASS_BORDER, padding: '35px', boxShadow: GLASS_SHADOW }}>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h2 style={{ margin: 0, color: '#0f172a', fontSize: '20px', fontWeight: 600 }}>Datos Personales</h2>
+                <h2 style={{ margin: 0, color: DN, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em' }}>Datos Personales</h2>
                 <div>
                   {!isEditingFiliacion ? (
-                    <button onClick={() => setIsEditingFiliacion(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-                      <Icon name="edit" size={13} /> Editar Campos
+                    <button onClick={() => setIsEditingFiliacion(true)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--fill-tertiary)', color: MU, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
+                      <Icon name="edit" size={14} /> Editar Campos
                     </button>
                   ) : (
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={handleCancelEdit} style={{ background: '#fff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
-                      <button onClick={handleSaveEditPatient} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0087b3', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-                        <Icon name="save" size={13} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
+                      <button onClick={handleCancelEdit} style={{ background: LT, color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 40%, transparent)`, borderRadius: 'var(--radius-sm)', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>Cancelar</button>
+                      <button onClick={handleSaveEditPatient} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
+                        <Icon name="save" size={14} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
                       </button>
                     </div>
                   )}
@@ -1250,33 +1258,33 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                <div><label style={labelStyleDoc}>Nombres y Apellidos</label><input disabled={!isEditingFiliacion} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div>
-                <div><label style={labelStyleDoc}>N° HC</label><input readOnly disabled value={editForm.num_hc || ''} placeholder="Autogenerado" style={{ ...inputStyleDoc, background: '#f1f5f9', borderColor: 'transparent', cursor: 'not-allowed', fontWeight: 'bold', color: '#64748b' }} /></div>
-                <div><label style={labelStyleDoc}>Sexo</label><select disabled={!isEditingFiliacion} value={editForm.sexo || ''} onChange={e => setEditForm({ ...editForm, sexo: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }}><option value="">Seleccionar</option><option value="Mujer">Mujer</option><option value="Hombre">Hombre</option></select></div>
-                <div><label style={labelStyleDoc}>Documento</label><div style={{ display: 'grid', gridTemplateColumns: '85px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.tipo_doc || ''} onChange={e => setEditForm({ ...editForm, tipo_doc: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }}><option value="DNI">DNI</option><option value="CE">C.E.</option><option value="Pasaporte">Pasap.</option><option value="RUC">RUC</option></select><input disabled={!isEditingFiliacion} value={editForm.doc || ''} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div></div>
-                <div><label style={labelStyleDoc}>Teléfono</label><div style={{ display: 'grid', gridTemplateColumns: '95px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.cod_pais || '+51'} onChange={e => setEditForm({ ...editForm, cod_pais: e.target.value })} style={{ ...inputStyleDoc, padding: '10px 6px', background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }}>{TODAS_NACIONES.map(n => <option key={n.n} value={n.c}>{n.b} {n.c}</option>)}</select><input disabled={!isEditingFiliacion} value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div></div>
-                <div><label style={labelStyleDoc}>Email</label><input disabled={!isEditingFiliacion} value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div>
-                <div><label style={labelStyleDoc}>F. nacimiento y Edad</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 70px', gap: '8px' }}><input disabled={!isEditingFiliacion} type="date" value={editForm.birthDate || ''} onChange={e => { const bDay = e.target.value; let calculatedAge = editForm.age; if (bDay) { const today = new Date(); const birth = new Date(bDay); calculatedAge = today.getFullYear() - birth.getFullYear(); } setEditForm({ ...editForm, birthDate: bDay, age: calculatedAge }); }} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /><input value={editForm.age || ''} readOnly placeholder="Edad" style={{ ...inputStyleDoc, background: '#f1f5f9', textAlign: 'center', borderColor: 'transparent' }} /></div></div>
-                <div><label style={labelStyleDoc}>País de nacimiento</label><select disabled={!isEditingFiliacion} value={editForm.pais_nacimiento || ''} onChange={e => setEditForm({ ...editForm, pais_nacimiento: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }}><option value="">Seleccionar</option>{TODAS_NACIONES.map(n => <option key={n.n} value={n.n}>{n.b} {n.n}</option>)}</select></div>
-                <div><label style={labelStyleDoc}>Ocupación</label><input disabled={!isEditingFiliacion} value={editForm.ocupacion || ''} onChange={e => setEditForm({ ...editForm, ocupacion: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div>
-                <div style={{ gridColumn: 'span 2' }}><label style={labelStyleDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div>
-                <div><label style={labelStyleDoc}>Grupo Sanguíneo</label><input disabled={!isEditingFiliacion} value={editForm.blood || ''} onChange={e => setEditForm({ ...editForm, blood: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div>
-                <div><label style={labelStyleDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }}><option value="">Seleccionar</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option><option value="Tiktok">Tiktok</option><option value="Google">Google</option><option value="Referido por paciente">Referido por paciente</option><option value="Referido por doctor">Referido por doctor</option><option value="Amigos y familiares">Amigos y familiares</option><option value="Fachada">Fachada</option></select></div>
-                <div><label style={labelStyleDoc}>Línea de negocio</label><select disabled={!isEditingFiliacion} value={editForm.linea_negocio || ''} onChange={e => setEditForm({ ...editForm, linea_negocio: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }}><option value="">Seleccionar</option><option value="Ortodoncia">Ortodoncia</option><option value="Rehabilitación">Rehabilitación</option><option value="Estética">Estética</option><option value="Endodoncia">Endodoncia</option><option value="Tratamiento integral">Tratamiento integral</option><option value="Odontopediatría">Odontopediatría</option></select></div>
-                <div><label style={labelStyleDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f8fafc', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Nombres y Apellidos</label><input disabled={!isEditingFiliacion} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>N° HC</label><input readOnly disabled value={editForm.num_hc || ''} placeholder="Autogenerado" style={{ ...inputDoc, background: 'var(--fill-tertiary)', borderColor: 'transparent', cursor: 'not-allowed', fontWeight: 600, color: MU, fontVariantNumeric: 'tabular-nums' }} /></div>
+                <div><label style={labelDoc}>Sexo</label><select disabled={!isEditingFiliacion} value={editForm.sexo || ''} onChange={e => setEditForm({ ...editForm, sexo: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Mujer">Mujer</option><option value="Hombre">Hombre</option></select></div>
+                <div><label style={labelDoc}>Documento</label><div style={{ display: 'grid', gridTemplateColumns: '85px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.tipo_doc || ''} onChange={e => setEditForm({ ...editForm, tipo_doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="DNI">DNI</option><option value="CE">C.E.</option><option value="Pasaporte">Pasap.</option><option value="RUC">RUC</option></select><input disabled={!isEditingFiliacion} value={editForm.doc || ''} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
+                <div><label style={labelDoc}>Teléfono</label><div style={{ display: 'grid', gridTemplateColumns: '95px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.cod_pais || '+51'} onChange={e => setEditForm({ ...editForm, cod_pais: e.target.value })} style={{ ...inputDoc, padding: '9px 6px', background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }}>{TODAS_NACIONES.map(n => <option key={n.n} value={n.c}>{n.b} {n.c}</option>)}</select><input disabled={!isEditingFiliacion} value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
+                <div><label style={labelDoc}>Email</label><input disabled={!isEditingFiliacion} value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>F. nacimiento y Edad</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 70px', gap: '8px' }}><input disabled={!isEditingFiliacion} type="date" value={editForm.birthDate || ''} onChange={e => { const bDay = e.target.value; let calculatedAge = editForm.age; if (bDay) { const today = new Date(); const birth = new Date(bDay); calculatedAge = today.getFullYear() - birth.getFullYear(); } setEditForm({ ...editForm, birthDate: bDay, age: calculatedAge }); }} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /><input value={editForm.age || ''} readOnly placeholder="Edad" style={{ ...inputDoc, background: 'var(--fill-tertiary)', textAlign: 'center', borderColor: 'transparent', fontVariantNumeric: 'tabular-nums' }} /></div></div>
+                <div><label style={labelDoc}>País de nacimiento</label><select disabled={!isEditingFiliacion} value={editForm.pais_nacimiento || ''} onChange={e => setEditForm({ ...editForm, pais_nacimiento: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option>{TODAS_NACIONES.map(n => <option key={n.n} value={n.n}>{n.b} {n.n}</option>)}</select></div>
+                <div><label style={labelDoc}>Ocupación</label><input disabled={!isEditingFiliacion} value={editForm.ocupacion || ''} onChange={e => setEditForm({ ...editForm, ocupacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div style={{ gridColumn: 'span 2' }}><label style={labelDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Grupo Sanguíneo</label><input disabled={!isEditingFiliacion} value={editForm.blood || ''} onChange={e => setEditForm({ ...editForm, blood: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option><option value="Tiktok">Tiktok</option><option value="Google">Google</option><option value="Referido por paciente">Referido por paciente</option><option value="Referido por doctor">Referido por doctor</option><option value="Amigos y familiares">Amigos y familiares</option><option value="Fachada">Fachada</option></select></div>
+                <div><label style={labelDoc}>Línea de negocio</label><select disabled={!isEditingFiliacion} value={editForm.linea_negocio || ''} onChange={e => setEditForm({ ...editForm, linea_negocio: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Ortodoncia">Ortodoncia</option><option value="Rehabilitación">Rehabilitación</option><option value="Estética">Estética</option><option value="Endodoncia">Endodoncia</option><option value="Tratamiento integral">Tratamiento integral</option><option value="Odontopediatría">Odontopediatría</option></select></div>
+                <div><label style={labelDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--surface-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
               </div>
 
               {editForm.age < 18 && (
                 <div style={{ marginTop: '45px' }}>
-                  <h3 style={{ color: '#0087b3', fontSize: '15px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Familiar / Apoderado <span style={{ fontSize: 11, background: '#fee2e2', color: '#ef4444', padding: '2px 8px', borderRadius: 4 }}>Requerido</span>
+                  <h3 style={{ color: P, fontSize: '17px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    Familiar / Apoderado <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--red-soft)', color: RJ, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}>Requerido</span>
                   </h3>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div style={{ background: '#0087b3', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '12px 20px' }}><div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>Nombre</div><div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>N° doc</div><div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>Parentesco</div></div>
-                    <div style={{ background: '#f8fafc', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px', padding: '20px' }}>
-                      <input disabled={!isEditingFiliacion} value={editForm.apoderado || ''} onChange={e => setEditForm({ ...editForm, apoderado: e.target.value })} placeholder="Nombre completo" style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f1f5f9', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} />
-                      <input disabled={!isEditingFiliacion} value={editForm.apoderado_dni || ''} onChange={e => setEditForm({ ...editForm, apoderado_dni: e.target.value })} placeholder="DNI/CE" style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f1f5f9', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} />
-                      <input disabled={!isEditingFiliacion} value={editForm.parentesco || ''} onChange={e => setEditForm({ ...editForm, parentesco: e.target.value })} placeholder="Ej: Madre, Padre" style={{ ...inputStyleDoc, background: isEditingFiliacion ? '#fff' : '#f1f5f9', borderColor: isEditingFiliacion ? '#cbd5e1' : 'transparent' }} />
+                  <div style={{ border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    <div style={{ background: P, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '12px 20px' }}><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>Nombre</div><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>N° doc</div><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>Parentesco</div></div>
+                    <div style={{ background: 'var(--surface-tertiary)', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px', padding: '20px' }}>
+                      <input disabled={!isEditingFiliacion} value={editForm.apoderado || ''} onChange={e => setEditForm({ ...editForm, apoderado: e.target.value })} placeholder="Nombre completo" style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--fill-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
+                      <input disabled={!isEditingFiliacion} value={editForm.apoderado_dni || ''} onChange={e => setEditForm({ ...editForm, apoderado_dni: e.target.value })} placeholder="DNI/CE" style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--fill-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
+                      <input disabled={!isEditingFiliacion} value={editForm.parentesco || ''} onChange={e => setEditForm({ ...editForm, parentesco: e.target.value })} placeholder="Ej: Madre, Padre" style={{ ...inputDoc, background: isEditingFiliacion ? LT : 'var(--fill-tertiary)', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
                     </div>
                   </div>
                 </div>
@@ -1307,42 +1315,42 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 1000, margin: '0 auto' }}>
 
               {/* Motivo de consulta */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
-                <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Motivo de consulta</label>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18 }}>
+                <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 6 }}>Motivo de consulta</label>
                 <textarea value={anamnesisData['Motivo de consulta'] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, 'Motivo de consulta': e.target.value })}
-                  style={{ width: '100%', minHeight: 44, border: `1px solid ${BD}`, borderRadius: 7, padding: '7px 10px', fontSize: 12, outline: 'none', color: DN, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                  style={{ width: '100%', minHeight: 48, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 13.5, lineHeight: 1.5, outline: 'none', color: DN, background: LT, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
               </div>
 
               {/* Enfermedad actual */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: P, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}`, textTransform: 'uppercase', letterSpacing: .3 }}>Enfermedad actual</div>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Enfermedad actual</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {['Tiempo de enfermedad', 'Signos y síntomas principales', 'Relato cronológico', 'Funciones biológicas'].map(f => (
                     <div key={f}>
-                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
                       <input value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
-                        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '6px 0', minHeight: 36, fontSize: 13.5, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Antecedentes */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: P, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}`, textTransform: 'uppercase', letterSpacing: .3 }}>Antecedentes</div>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Antecedentes</div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                   {['Antecedentes familiares', 'Antecedentes personales'].map(f => (
                     <div key={f}>
-                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
                       <input value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
-                        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '6px 0', minHeight: 36, fontSize: 13.5, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
                     </div>
                   ))}
                 </div>
 
-                <div style={{ fontSize: 10.5, color: MU, fontWeight: 700, marginBottom: 4 }}>¿Tiene o ha tenido?</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${MT}` }}>
+                <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom:4 }}>¿Tiene o ha tenido?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${BD}` }}>
                   {[['Presión alta', 'VIH'], ['Presión baja', 'Diabetes'], ['Hepatitis', 'Asma'], ['Gastritis', '¿Fuma?'], ['Úlceras', null]].map(([izq, der], i) => (
                     <React.Fragment key={i}>
                       <AnamnesisSiNo label={izq} value={anamnesisData[izq] || ''} onChange={v => setAnamnesisData({ ...anamnesisData, [izq]: v })} />
@@ -1352,9 +1360,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 </div>
 
                 <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>Comentario adicional</label>
+                  <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>Comentario adicional</label>
                   <input value={anamnesisData['Comentario adicional'] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, 'Comentario adicional': e.target.value })}
-                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '3px 0', fontSize: 12, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${BD}`, padding: '6px 0', minHeight: 36, fontSize: 13.5, outline: 'none', color: DN, background: 'transparent', boxSizing: 'border-box' }} />
                 </div>
 
                 <div>
@@ -1376,18 +1384,18 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
               {/* Examen clínico */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 11, padding: 15 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: P, marginBottom: 11, paddingBottom: 7, borderBottom: `1px solid ${MT}`, textTransform: 'uppercase', letterSpacing: .3 }}>Examen clínico</div>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Examen clínico</div>
 
-                <div style={{ fontSize: 10.5, color: MU, fontWeight: 700, marginBottom: 8 }}>Signos vitales</div>
+                <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom:8 }}>Signos vitales</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                   {[['PA', 'mmHg'], ['FC', 'bpm'], ['Temperatura', '°C'], ['FR', 'r/m']].map(([f, unidad]) => (
                     <div key={f}>
-                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
                       <div style={{ display: 'flex' }}>
                         <input value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
-                          style={{ flex: 1, minWidth: 0, border: `1px solid ${BD}`, borderRight: 'none', borderRadius: '6px 0 0 6px', padding: '5px 8px', fontSize: 12, outline: 'none', color: DN, boxSizing: 'border-box' }} />
-                        <span style={{ border: `1px solid ${BD}`, borderRadius: '0 6px 6px 0', padding: '5px 8px', fontSize: 10.5, color: MU, background: MT, whiteSpace: 'nowrap' }}>{unidad}</span>
+                          style={{ flex: 1, minWidth: 0, border: `1px solid ${BD}`, borderRight: 'none', borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)', padding: '9px 12px', minHeight: 36, fontSize: 13.5, outline: 'none', color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
+                        <span style={{ border: `1px solid ${BD}`, borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', padding: '9px 12px', display: 'flex', alignItems: 'center', fontSize: 12, color: MU, background: MT, whiteSpace: 'nowrap' }}>{unidad}</span>
                       </div>
                     </div>
                   ))}
@@ -1396,17 +1404,17 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {['Examen extraoral', 'Examen intraoral', 'Resultado de exámenes auxiliares', 'Observaciones'].map(f => (
                     <div key={f}>
-                      <label style={{ fontSize: 10, color: MU, fontWeight: 600, display: 'block', marginBottom: 2 }}>{f}</label>
+                      <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
                       <textarea value={anamnesisData[f] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, [f]: e.target.value })}
-                        style={{ width: '100%', minHeight: 60, border: `1px solid ${BD}`, borderRadius: 7, padding: '7px 10px', fontSize: 12, outline: 'none', color: DN, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                        style={{ width: '100%', minHeight: 68, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 13.5, lineHeight: 1.5, outline: 'none', color: DN, background: LT, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
                     </div>
                   ))}
                 </div>
               </div>
 
             </div>
-            <button onClick={saveAllToCloud} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              <Icon name="save" size={13} /> Guardar anamnesis
+            <button onClick={saveAllToCloud} style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+              <Icon name="save" size={14} /> Guardar anamnesis
             </button>
           </div>
         )}
@@ -1416,28 +1424,28 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         {tab === 'plan' && (
   <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Plan de tratamiento — {patData?.name || patient.name}</div>
+      <div style={{ fontSize: 17, fontWeight: 600, color: DN }}>Plan de tratamiento — {patData?.name || patient.name}</div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={generarDesdeOdontograma} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: P, border: `1px solid ${P}`, borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-          <Icon name="bolt" size={12} /> Generar desde odontograma
+        <button onClick={generarDesdeOdontograma} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: LT, color: P, border: `1px solid ${P}`, borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <Icon name="bolt" size={13} /> Generar desde odontograma
         </button>
-        <button onClick={() => { setShowTreatPicker(!showTreatPicker); setDraftTreatment(null); }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+        <button onClick={() => { setShowTreatPicker(!showTreatPicker); setDraftTreatment(null); }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           {showTreatPicker ? 'Cerrar catálogo' : '+ Agregar tratamiento'}
         </button>
       </div>
     </div>
 
     {showTreatPicker && !draftTreatment && (
-      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: DN, marginBottom: 10 }}>Seleccionar tratamiento:</div>
+      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 16 }}>
+        <div style={{ fontWeight: 600, fontSize: 13.5, color: DN, marginBottom: 12 }}>Seleccionar tratamiento:</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
           {TRATAMIENTOS_CAT.map(cat => (
             <div key={cat.cat}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: P, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>{cat.cat}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: P, marginBottom: 6, textTransform: 'uppercase', letterSpacing: .3 }}>{cat.cat}</div>
               {cat.items.map(item => (
                 <div key={item} onClick={() => setDraftTreatment({ name: item, cost: PRECIOS[item] || 0, tooth: '', date: new Date().toISOString().slice(0,10), sessions: 1, notes: '' })}
-                  style={{ fontSize: 11, color: DN, padding: '3px 7px', borderRadius: 5, cursor: 'pointer', marginBottom: 2 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = MT; e.currentTarget.style.color = P }}
+                  style={{ fontSize: 13, color: DN, padding: '8px 10px', minHeight: 36, display: 'flex', alignItems: 'center', boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', cursor: 'pointer', marginBottom: 2, fontVariantNumeric: 'tabular-nums', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1), color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--fill-quaternary)'; e.currentTarget.style.color = P }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DN }}>
                   {item} — S/{PRECIOS[item] || 0}
                 </div>
@@ -1449,37 +1457,37 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     )}
 
     {draftTreatment && (
-      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
-        <div style={{ fontWeight: 800, fontSize: 13, color: P, marginBottom: 14 }}>Detalles del tratamiento: {draftTreatment.name}</div>
+      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 16 }}>
+        <div style={{ fontWeight: 600, fontSize: 15, color: P, marginBottom: 14 }}>Detalles del tratamiento: {draftTreatment.name}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
           <div>
-            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Pieza dental</label>
-            <input value={draftTreatment.tooth} onChange={e => setDraftTreatment({ ...draftTreatment, tooth: e.target.value })} placeholder="Ej: 14, 24-26" style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+            <label style={{ fontSize: 12, color: MU, fontWeight: 600, display: 'block', marginBottom: 5 }}>Pieza dental</label>
+            <input value={draftTreatment.tooth} onChange={e => setDraftTreatment({ ...draftTreatment, tooth: e.target.value })} placeholder="Ej: 14, 24-26" style={{ width: '100%', padding: '9px 12px', minHeight: 40, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13.5, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Fecha</label>
-            <input type="date" value={draftTreatment.date} onChange={e => setDraftTreatment({ ...draftTreatment, date: e.target.value })} style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+            <label style={{ fontSize: 12, color: MU, fontWeight: 600, display: 'block', marginBottom: 5 }}>Fecha</label>
+            <input type="date" value={draftTreatment.date} onChange={e => setDraftTreatment({ ...draftTreatment, date: e.target.value })} style={{ width: '100%', padding: '9px 12px', minHeight: 40, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13.5, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>N° sesiones</label>
-            <input type="number" min="1" value={draftTreatment.sessions} onChange={e => setDraftTreatment({ ...draftTreatment, sessions: parseInt(e.target.value) || 1 })} style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+            <label style={{ fontSize: 12, color: MU, fontWeight: 600, display: 'block', marginBottom: 5 }}>N° sesiones</label>
+            <input type="number" min="1" value={draftTreatment.sessions} onChange={e => setDraftTreatment({ ...draftTreatment, sessions: parseInt(e.target.value) || 1 })} style={{ width: '100%', padding: '9px 12px', minHeight: 40, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13.5, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Costo (S/)</label>
-            <input type="number" value={draftTreatment.cost} onChange={e => setDraftTreatment({ ...draftTreatment, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '7px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, boxSizing: 'border-box' }} />
+            <label style={{ fontSize: 12, color: MU, fontWeight: 600, display: 'block', marginBottom: 5 }}>Costo (S/)</label>
+            <input type="number" value={draftTreatment.cost} onChange={e => setDraftTreatment({ ...draftTreatment, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '9px 12px', minHeight: 40, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13.5, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
           </div>
         </div>
         <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 10, color: MU, fontWeight: 700, display: 'block', marginBottom: 4 }}>Notas clínicas</label>
-          <textarea value={draftTreatment.notes} onChange={e => setDraftTreatment({ ...draftTreatment, notes: e.target.value })} placeholder="Observaciones, indicaciones, plan específico para esta pieza..." style={{ width: '100%', minHeight: 60, padding: '8px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+          <label style={{ fontSize: 12, color: MU, fontWeight: 600, display: 'block', marginBottom: 5 }}>Notas clínicas</label>
+          <textarea value={draftTreatment.notes} onChange={e => setDraftTreatment({ ...draftTreatment, notes: e.target.value })} placeholder="Observaciones, indicaciones, plan específico para esta pieza..." style={{ width: '100%', minHeight: 68, padding: '9px 12px', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13.5, lineHeight: 1.5, color: DN, background: LT, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setDraftTreatment(null)} style={{ background: '#fff', color: MU, border: `1px solid ${BD}`, borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={() => setDraftTreatment(null)} style={{ background: LT, color: MU, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '11px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={() => {
             setPlan(p => [...p, { id: Date.now(), name: draftTreatment.name, tooth: draftTreatment.tooth || '—', status: 'pendiente', cost: draftTreatment.cost, paid: 0, date: draftTreatment.date, sessions: draftTreatment.sessions, notes: draftTreatment.notes }]);
             setDraftTreatment(null);
             setShowTreatPicker(false);
-          }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Agregar al plan</button>
+          }} style={{ background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Agregar al plan</button>
         </div>
       </div>
     )}
@@ -1489,38 +1497,38 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       const b = sc(st);
       return (
         <div key={st} style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: b.c, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: b.c, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontVariantNumeric: 'tabular-nums' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.c }} />{st.replace('_', ' ')} ({items.length})
           </div>
           {items.map(item => {
             const isEditing = editingItemId === item.id;
             return (
-              <div key={item.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, padding: '10px 14px', marginBottom: 7 }}>
+              <div key={item.id} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 140 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: DN }}>{item.name}</div>
-                    <div style={{ fontSize: 10, color: MU }}>Pieza: {item.tooth} · {item.date} · {item.sessions || 1} sesión(es)</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>{item.name}</div>
+                    <div style={{ fontSize: 12, color: MU, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>Pieza: {item.tooth} · {item.date} · {item.sessions || 1} sesión(es)</div>
                   </div>
-                  <div style={{ fontSize: 12, color: DN, fontWeight: 700 }}>S/{item.cost}</div>
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <div style={{ fontSize: 15, color: DN, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>S/{item.cost}</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => { setEditingItemId(isEditing ? null : item.id); setEditDraft(item); }}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, background: '#fff', color: P, fontWeight: 700 }}>
-                      {isEditing ? 'Cerrar' : <><Icon name="edit" size={9} /> Editar</>}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, padding: '7px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, background: LT, color: P, fontWeight: 600 }}>
+                      {isEditing ? 'Cerrar' : <><Icon name="edit" size={11} /> Editar</>}
                     </button>
                     {['pendiente', 'en_curso', 'completado'].filter(s => s !== st).map(ns => (
                       <button key={ns} onClick={() => setPlan(p => p.map(i => i.id === item.id ? { ...i, status: ns } : i))}
-                        style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${sc(ns).c}`, background: sc(ns).bg, color: sc(ns).c, fontWeight: 600 }}>
+                        style={{ fontSize: 11, padding: '7px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: `1px solid ${sc(ns).c}`, background: sc(ns).bg, color: sc(ns).c, fontWeight: 600 }}>
                         → {ns.replace('_', ' ')}
                       </button>
                     ))}
                     <button onClick={() => setPlan(p => p.filter(i => i.id !== item.id))}
-                      style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, cursor: 'pointer', border: `1px solid color-mix(in srgb, ${RJ} 27%, transparent)`, background: '#fef2f2', color: RJ, fontWeight: 700 }}>✕</button>
+                      style={{ fontSize: 11, padding: '7px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: `1px solid color-mix(in srgb, ${RJ} 27%, transparent)`, background: 'var(--red-soft)', color: RJ, fontWeight: 600 }}>✕</button>
                   </div>
                 </div>
 
                 {item.notes && !isEditing && (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${BD}`, fontSize: 11, color: MU, fontStyle: 'italic', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                    <Icon name="document" size={11} style={{ marginTop: 1, flexShrink: 0 }} /> {item.notes}
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${BD}`, fontSize: 13, lineHeight: 1.5, color: MU, fontStyle: 'italic', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                    <Icon name="document" size={12} style={{ marginTop: 2, flexShrink: 0 }} /> {item.notes}
                   </div>
                 )}
 
@@ -1528,32 +1536,32 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${BD}` }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 10 }}>
                       <div>
-                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Pieza</label>
-                        <input value={editDraft.tooth || ''} onChange={e => setEditDraft({ ...editDraft, tooth: e.target.value })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                        <label style={{ fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Pieza</label>
+                        <input value={editDraft.tooth || ''} onChange={e => setEditDraft({ ...editDraft, tooth: e.target.value })} style={{ width: '100%', padding: '8px 10px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Fecha</label>
-                        <input type="date" value={editDraft.date === '—' ? '' : editDraft.date || ''} onChange={e => setEditDraft({ ...editDraft, date: e.target.value })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                        <label style={{ fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Fecha</label>
+                        <input type="date" value={editDraft.date === '—' ? '' : editDraft.date || ''} onChange={e => setEditDraft({ ...editDraft, date: e.target.value })} style={{ width: '100%', padding: '8px 10px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Sesiones</label>
-                        <input type="number" min="1" value={editDraft.sessions || 1} onChange={e => setEditDraft({ ...editDraft, sessions: parseInt(e.target.value) || 1 })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                        <label style={{ fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Sesiones</label>
+                        <input type="number" min="1" value={editDraft.sessions || 1} onChange={e => setEditDraft({ ...editDraft, sessions: parseInt(e.target.value) || 1 })} style={{ width: '100%', padding: '8px 10px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Costo (S/)</label>
-                        <input type="number" value={editDraft.cost || 0} onChange={e => setEditDraft({ ...editDraft, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '5px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                        <label style={{ fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Costo (S/)</label>
+                        <input type="number" value={editDraft.cost || 0} onChange={e => setEditDraft({ ...editDraft, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '8px 10px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
                       </div>
                     </div>
-                    <label style={{ fontSize: 9, color: MU, fontWeight: 700, display: 'block', marginBottom: 3 }}>Notas clínicas</label>
-                    <textarea value={editDraft.notes || ''} onChange={e => setEditDraft({ ...editDraft, notes: e.target.value })} style={{ width: '100%', minHeight: 50, padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: 8 }} />
+                    <label style={{ fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 4 }}>Notas clínicas</label>
+                    <textarea value={editDraft.notes || ''} onChange={e => setEditDraft({ ...editDraft, notes: e.target.value })} style={{ width: '100%', minHeight: 60, padding: '9px 12px', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, lineHeight: 1.5, color: DN, background: LT, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: 10 }} />
                     <button onClick={() => { setPlan(p => p.map(i => i.id === item.id ? { ...editDraft } : i)); setEditingItemId(null); }}
-                      style={{ background: P, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Guardar cambios</button>
+                      style={{ background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Guardar cambios</button>
                   </div>
                 )}
               </div>
             );
           })}
-          {items.length === 0 && <div style={{ fontSize: 11, color: MU, fontStyle: 'italic', padding: '5px 8px' }}>Sin tratamientos en este estado</div>}
+          {items.length === 0 && <div style={{ fontSize: 13, color: 'var(--label-tertiary)', fontStyle: 'italic', padding: '6px 8px' }}>Sin tratamientos en este estado</div>}
         </div>
       );
     })}
@@ -1564,49 +1572,49 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         {tab === 'evolucion' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Notas de evolución</div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: DN }}>Notas de evolución</div>
               <button
                 onClick={() => { setShowNuevaNota(true); setTimeout(() => notaTextareaRef.current?.focus(), 0); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                <Icon name="plus" size={12} /> Nueva nota
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <Icon name="plus" size={13} /> Nueva nota
               </button>
             </div>
 
             {notasEvolucion.length === 0 && !showNuevaNota && (
-              <div style={{ background: '#fff', border: `1px dashed ${BD}`, borderRadius: 11, padding: 30, textAlign: 'center', color: MU, fontSize: 12, marginBottom: 11 }}>
+              <div style={{ background: LT, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', padding: 30, textAlign: 'center', color: MU, fontSize: 13.5, marginBottom: 12 }}>
                 Aún no hay notas de evolución registradas.
               </div>
             )}
 
             {showNuevaNota && (
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: 11, padding: 14, marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: DN, marginBottom: 8 }}>Nueva nota clínica</div>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 14 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: DN, marginBottom: 10 }}>Nueva nota clínica</div>
                 <textarea ref={notaTextareaRef} value={nuevaNotaTexto} onChange={e => setNuevaNotaTexto(e.target.value)}
                   placeholder="Descripción de la consulta, hallazgos clínicos, procedimiento realizado y recomendaciones..."
-                  style={{ width: '100%', minHeight: 80, padding: 9, border: `1px solid ${BD}`, borderRadius: 7, fontSize: 12, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <Button variant="secondary" onClick={() => { setShowNuevaNota(false); setNuevaNotaTexto(''); }} style={{ padding: '7px 16px', fontSize: 11 }}>Cancelar</Button>
+                  style={{ width: '100%', minHeight: 96, padding: '10px 12px', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13.5, lineHeight: 1.6, resize: 'vertical', outline: 'none', color: DN, background: LT, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <Button variant="secondary" onClick={() => { setShowNuevaNota(false); setNuevaNotaTexto(''); }} style={{ padding: '10px 18px', minHeight: 44, fontSize: 13 }}>Cancelar</Button>
                   <button onClick={async () => { await handleAgregarNotaEvolucion(); setShowNuevaNota(false); }} disabled={savingNota}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: savingNota ? MU : P, color: '#fff', border: 'none', borderRadius: 7, padding: '7px 16px', fontSize: 11, fontWeight: 700, cursor: savingNota ? 'not-allowed' : 'pointer' }}>
-                    <Icon name="save" size={12} /> {savingNota ? 'Guardando...' : 'Guardar'}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: savingNota ? MU : P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: savingNota ? 'not-allowed' : 'pointer' }}>
+                    <Icon name="save" size={13} /> {savingNota ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
               </div>
             )}
 
             {notasEvolucion.map(n => (
-              <div key={n.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 11, padding: 15, marginBottom: 11 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: P }}>{n.date}</span>
+              <div key={n.id} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: P, fontVariantNumeric: 'tabular-nums' }}>{n.date}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, color: MU }}>{n.dr}</span>
+                    <span style={{ fontSize: 12, color: MU }}>{n.dr}</span>
                     <button onClick={() => handleEliminarNotaEvolucion(n.id)} title="Eliminar nota"
-                      style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', display: 'flex', padding: 0 }}>
-                      <Icon name="trash" size={13} />
+                      style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, minWidth: 36, padding: 0 }}>
+                      <Icon name="trash" size={14} />
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 12, color: DN, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{n.txt}</div>
+                <div style={{ fontSize: 13.5, color: DN, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{n.txt}</div>
               </div>
             ))}
           </div>
@@ -1620,92 +1628,92 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
           return (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Recetas médicas</div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: DN }}>Recetas médicas</div>
               <button onClick={handleNuevaReceta}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                <Icon name="plus" size={12} /> Nueva receta
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <Icon name="plus" size={13} /> Nueva receta
               </button>
             </div>
 
-            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 12, padding: 20, maxWidth: 500 }}>
-              <div style={{ textAlign: 'center', borderBottom: `1px solid ${BD}`, paddingBottom: 12, marginBottom: 14 }}>
-                <div style={{ fontSize: 10, color: MU }}>Cirujano Dentista · COP 12345</div>
-                <div style={{ fontSize: 10, color: MU }}>Los Diamantes 178, Trujillo · +51 915 054 145</div>
+            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 22, maxWidth: 500 }}>
+              <div style={{ textAlign: 'center', borderBottom: `1px solid ${BD}`, paddingBottom: 12, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: MU }}>Cirujano Dentista · COP 12345</div>
+                <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>Los Diamantes 178, Trujillo · +51 915 054 145</div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 {[['Paciente', patData?.name || patient.name], ['DNI', patData?.doc || patient.doc], ['Edad', (patData?.age || patient.age) + ' años'], ['Fecha', recetaActual?.date || fechaLarga()]].map(([k, v]) => (
-                  <div key={k}><div style={{ fontSize: 9, color: MU }}>{k}</div><div style={{ fontSize: 11, fontWeight: 600, color: DN, borderBottom: `1px solid ${BD}` }}>{v}</div></div>
+                  <div key={k}><div style={{ fontSize: 11, color: MU }}>{k}</div><div style={{ fontSize: 13, fontWeight: 500, color: DN, paddingBottom: 3, borderBottom: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{v}</div></div>
                 ))}
               </div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: DN, marginBottom: 8 }}>Rp:</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: DN, marginBottom: 10 }}>Rp:</div>
 
               {(!recetaActual || recetaActual.meds.length === 0) && (
-                <div style={{ fontSize: 11, color: MU, fontStyle: 'italic', marginBottom: 10 }}>Sin medicamentos agregados aún.</div>
+                <div style={{ fontSize: 13, color: 'var(--label-tertiary)', fontStyle: 'italic', marginBottom: 12 }}>Sin medicamentos agregados aún.</div>
               )}
 
               {recetaActual?.meds.map(r => (
                 <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 10, paddingBottom: 10, borderBottom: `1px dashed ${BD}` }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: DN }}>{r.med}</div>
-                    {r.dose && <div style={{ fontSize: 11, color: MU }}>{r.dose}</div>}
-                    {r.inst && <div style={{ fontSize: 10, color: MU, fontStyle: 'italic' }}>{r.inst}</div>}
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>{r.med}</div>
+                    {r.dose && <div style={{ fontSize: 13, color: MU, marginTop: 2 }}>{r.dose}</div>}
+                    {r.inst && <div style={{ fontSize: 12, color: MU, fontStyle: 'italic', marginTop: 2 }}>{r.inst}</div>}
                   </div>
                   <button onClick={() => handleEliminarMedicamento(recetaActual.id, r.id)} title="Quitar medicamento"
-                    style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', display: 'flex', padding: 0, flexShrink: 0 }}>
-                    <Icon name="trash" size={13} />
+                    style={{ background: 'none', border: 'none', color: RJ, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, minWidth: 36, padding: 0, flexShrink: 0 }}>
+                    <Icon name="trash" size={14} />
                   </button>
                 </div>
               ))}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 }}>
                 <input value={medDraft.med} onChange={e => setMedDraft({ ...medDraft, med: e.target.value })} placeholder="Medicamento"
-                  style={{ padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ padding: '9px 11px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, outline: 'none', boxSizing: 'border-box' }} />
                 <input value={medDraft.dose} onChange={e => setMedDraft({ ...medDraft, dose: e.target.value })} placeholder="Dosis / frecuencia"
-                  style={{ padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ padding: '9px 11px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, outline: 'none', boxSizing: 'border-box' }} />
                 <input value={medDraft.inst} onChange={e => setMedDraft({ ...medDraft, inst: e.target.value })} placeholder="Indicaciones"
-                  style={{ padding: '6px 8px', border: `1px solid ${BD}`, borderRadius: 6, fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ padding: '9px 11px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 13, color: DN, background: LT, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <button onClick={handleAgregarMedicamento} disabled={savingReceta}
-                style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', background: savingReceta ? MU : '#fff', color: savingReceta ? '#fff' : P, border: `1px solid ${P}`, borderRadius: 6, padding: '6px', fontSize: 11, fontWeight: 700, cursor: savingReceta ? 'not-allowed' : 'pointer' }}>
-                <Icon name="plus" size={12} /> {savingReceta ? 'Guardando...' : 'Agregar medicamento'}
+                style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', background: savingReceta ? 'var(--fill-tertiary)' : LT, color: savingReceta ? 'var(--label-tertiary)' : P, border: `1px solid ${savingReceta ? BD : P}`, borderRadius: 'var(--radius-sm)', padding: '10px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: savingReceta ? 'not-allowed' : 'pointer' }}>
+                <Icon name="plus" size={13} /> {savingReceta ? 'Guardando...' : 'Agregar medicamento'}
               </button>
 
               <div style={{ marginTop: 16, borderTop: `1px solid ${BD}`, paddingTop: 10, textAlign: 'right' }}>
-                <div style={{ fontSize: 10, color: MU, marginBottom: 4 }}>Firma y sello</div>
+                <div style={{ fontSize: 12, color: MU, marginBottom: 6 }}>Firma y sello</div>
                 {firmaDoctorUrl ? (
                   <img src={firmaDoctorUrl} alt="Firma y sello" onError={() => setFirmaDoctorUrl(null)} style={{ maxHeight: 44, maxWidth: '100%', objectFit: 'contain' }} />
                 ) : (
-                  <div style={{ fontSize: 9.5, color: MU, fontStyle: 'italic' }}>Configura tu firma en Ajustes → Mi perfil</div>
+                  <div style={{ fontSize: 12, color: 'var(--label-tertiary)', fontStyle: 'italic' }}>Configura tu firma en Ajustes → Mi perfil</div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
                 <button onClick={() => imprimirReceta(recetaActual)}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 7, padding: '7px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                  <Icon name="print" size={13} /> Imprimir
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <Icon name="print" size={14} /> Imprimir
                 </button>
                 <button onClick={() => enviarRecetaWhatsApp(recetaActual)}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: WA, color: '#fff', border: 'none', borderRadius: 7, padding: '7px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                  <Icon name="chat" size={13} /> Enviar WhatsApp
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: WA, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <Icon name="chat" size={14} /> Enviar WhatsApp
                 </button>
               </div>
             </div>
 
             {historialAnterior.length > 0 && (
               <div style={{ marginTop: 20, maxWidth: 500 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: MU, textTransform: 'uppercase', letterSpacing: .3, marginBottom: 8 }}>Historial de recetas</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: MU, textTransform: 'uppercase', letterSpacing: .3, marginBottom: 8 }}>Historial de recetas</div>
                 {historialAnterior.map(r => (
-                  <div key={r.id} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Icon name="document" size={15} color={MU} />
+                  <div key={r.id} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Icon name="document" size={16} color={MU} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 600, color: DN }}>{r.date}</div>
-                      <div style={{ fontSize: 10, color: MU }}>{r.meds.length} medicamento{r.meds.length !== 1 ? 's' : ''}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{r.date}</div>
+                      <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>{r.meds.length} medicamento{r.meds.length !== 1 ? 's' : ''}</div>
                     </div>
-                    <button onClick={() => imprimirReceta(r)} title="Imprimir" style={{ background: 'none', border: 'none', color: P, cursor: 'pointer', display: 'flex', padding: 4 }}>
-                      <Icon name="print" size={14} />
+                    <button onClick={() => imprimirReceta(r)} title="Imprimir" style={{ background: 'none', border: 'none', color: P, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, minWidth: 36, padding: 4 }}>
+                      <Icon name="print" size={15} />
                     </button>
-                    <button onClick={() => enviarRecetaWhatsApp(r)} title="Enviar por WhatsApp" style={{ background: 'none', border: 'none', color: WA, cursor: 'pointer', display: 'flex', padding: 4 }}>
-                      <Icon name="chat" size={14} />
+                    <button onClick={() => enviarRecetaWhatsApp(r)} title="Enviar por WhatsApp" style={{ background: 'none', border: 'none', color: WA, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, minWidth: 36, padding: 4 }}>
+                      <Icon name="chat" size={15} />
                     </button>
                   </div>
                 ))}
@@ -1719,17 +1727,17 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         {tab === 'imagenes' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Imágenes y Radiografías</div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: DN }}>Imágenes y Radiografías</div>
 
               <input type="file" id="file-upload" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
-              <label htmlFor="file-upload" style={{ background: saving ? MU : P, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              <label htmlFor="file-upload" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: saving ? MU : P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, boxSizing: 'border-box', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer' }}>
                 {saving ? '⏳ Subiendo...' : '+ Subir imagen'}
               </label>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
               {imagenesFirmadas.map((img, i) => (
-                <div key={i} style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 10, overflow: 'hidden', position: 'relative' }}
+                <div key={i} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', transition: 'border-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = P} onMouseLeave={e => e.currentTarget.style.borderColor = BD}>
 
                   <button
@@ -1737,7 +1745,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                       e.stopPropagation();
                       handleDeleteImage(i, img.url);
                     }}
-                    style={{ position: 'absolute', top: 6, right: 6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22, fontSize: 10, fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+                    style={{ position: 'absolute', top: 6, right: 6, background: RJ, color: '#fff', border: 'none', borderRadius: '50%', width: 32, height: 32, minHeight: 32, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, boxShadow: 'var(--shadow-md)' }}
                     title="Eliminar imagen"
                   >
                     ✕
@@ -1746,17 +1754,17 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   <div style={{ height: 100, background: LT, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     <img src={img.urlFirmada} alt="Radiografía" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  <div style={{ padding: '7px 10px' }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: DN }}>{img.type}</div>
-                    <div style={{ fontSize: 9.5, color: MU }}>{img.date}</div>
+                  <div style={{ padding: '10px 12px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: DN }}>{img.type}</div>
+                    <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>{img.date}</div>
                   </div>
                 </div>
               ))}
 
-              <label htmlFor="file-upload" style={{ background: LT, border: `2px dashed ${BD}`, borderRadius: 10, height: 148, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 6 }}
+              <label htmlFor="file-upload" style={{ background: LT, border: `2px dashed ${BD}`, borderRadius: 'var(--radius-md)', height: 148, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 6, transition: 'border-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = P} onMouseLeave={e => e.currentTarget.style.borderColor = BD}>
-                <div style={{ fontSize: 28, color: BD }}>+</div>
-                <div style={{ fontSize: 10, color: MU, fontWeight: 600 }}>Subir archivo</div>
+                <div style={{ fontSize: 28, color: 'var(--label-tertiary)' }}>+</div>
+                <div style={{ fontSize: 12, color: MU, fontWeight: 500 }}>Subir archivo</div>
               </label>
             </div>
           </div>
@@ -1773,55 +1781,55 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Presupuesto</div>
-                <div style={{ fontSize: 11, color: MU, marginTop: 2 }}>{patData?.name || patient.name} · {new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                <div style={{ fontSize: 17, fontWeight: 600, color: DN }}>Presupuesto</div>
+                <div style={{ fontSize: 13, color: MU, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>{patData?.name || patient.name} · {new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={imprimirPresupuesto} disabled={sinTratamientos}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: '#0087b3', border: `1px solid #0087b3`, borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>
-                  <Icon name="print" size={13} /> Imprimir
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: LT, color: P, border: `1px solid ${P}`, borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>
+                  <Icon name="print" size={14} /> Imprimir
                 </button>
                 <button onClick={enviarPresupuestoWhatsApp} disabled={sinTratamientos}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>
-                  <Icon name="chat" size={13} /> WhatsApp
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: WA, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: sinTratamientos ? 'not-allowed' : 'pointer', opacity: sinTratamientos ? .5 : 1 }}>
+                  <Icon name="chat" size={14} /> WhatsApp
                 </button>
               </div>
             </div>
 
             {sinTratamientos ? (
-              <div style={{ background: '#fff', border: `1px dashed ${BD}`, borderRadius: 12, padding: 40, textAlign: 'center', color: MU, fontSize: 12 }}>
+              <div style={{ background: LT, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>
                 Aún no hay tratamientos en el plan. Agrégalos desde la pestaña "Plan trat." para generar el presupuesto.
               </div>
             ) : (
-            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
               <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${BD}` }}>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Tratamiento</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Pieza</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Costo (S/)</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Abonado (S/)</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: MU }}>Saldo (S/)</th>
+                  <tr style={{ background: 'var(--surface-tertiary)', borderBottom: `1px solid ${BD}` }}>
+                    <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Tratamiento</th>
+                    <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Pieza</th>
+                    <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Costo (S/)</th>
+                    <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Abonado (S/)</th>
+                    <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Saldo (S/)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {plan.map((item, idx) => (
                     <tr key={item.id} style={{ borderBottom: idx === plan.length - 1 ? 'none' : `1px solid ${BD}` }}>
-                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: DN }}>{item.name}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: DN }}>{item.tooth}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: DN }}>{item.cost.toFixed(2)}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#0ea5e9', fontWeight: 600 }}>{item.paid.toFixed(2)}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: (item.cost - item.paid) > 0 ? '#ef4444' : '#10b981', fontWeight: 600 }}>{(item.cost - item.paid).toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13.5, fontWeight: 600, color: DN }}>{item.name}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13.5, color: DN, fontVariantNumeric: 'tabular-nums' }}>{item.tooth}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13.5, color: DN, fontVariantNumeric: 'tabular-nums' }}>{item.cost.toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13.5, color: P, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{item.paid.toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13.5, color: (item.cost - item.paid) > 0 ? RJ : WA, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{(item.cost - item.paid).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot style={{ background: '#f8fafc', borderTop: `2px solid ${BD}` }}>
+                <tfoot style={{ background: 'var(--surface-tertiary)', borderTop: `2px solid ${BD}` }}>
                   <tr>
-                    <td colSpan={2} style={{ padding: '14px 16px', fontSize: 12, fontWeight: 800, color: DN, textAlign: 'right' }}>TOTALES:</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: DN }}>S/ {totalCosto.toFixed(2)}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#0ea5e9' }}>S/ {totalPagado.toFixed(2)}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>S/ {totalSaldo.toFixed(2)}</td>
+                    <td colSpan={2} style={{ padding: '14px 16px', fontSize: 13.5, fontWeight: 600, color: DN, textAlign: 'right' }}>TOTALES:</td>
+                    <td style={{ padding: '14px 16px', fontSize: 15, fontWeight: 700, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/ {totalCosto.toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 15, fontWeight: 700, color: P, fontVariantNumeric: 'tabular-nums' }}>S/ {totalPagado.toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 15, fontWeight: 700, color: RJ, fontVariantNumeric: 'tabular-nums' }}>S/ {totalSaldo.toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1831,20 +1839,20 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
             <div
               onClick={() => { setPagoDraft({ itemId: plan.find(i => (i.cost - i.paid) > 0)?.id ? String(plan.find(i => (i.cost - i.paid) > 0).id) : '', monto: '' }); setShowPagoModal(true); }}
-              style={{ marginTop: 20, background: '#fff', border: `1px dashed ${BD}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold' }}>$</div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#0284c7' }}>Registrar nuevo pago / abono</span>
+              style={{ marginTop: 20, background: LT, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', padding: 16, minHeight: 44, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-quaternary)'} onMouseLeave={e => e.currentTarget.style.background = LT}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accent-soft)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600 }}>$</div>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: P }}>Registrar nuevo pago / abono</span>
             </div>
 
             {showPagoModal && (
-              <Modal cardStyle={{ padding: 24, width: 380, boxShadow: '0 20px 50px rgba(0,0,0,0.15)' }}>
-                <h3 style={{ marginTop: 0, marginBottom: 16, color: '#0f172a', fontSize: 15 }}>Registrar pago / abono</h3>
+              <Modal cardStyle={{ padding: 24, width: 380, boxShadow: 'var(--shadow-md)' }}>
+                <h3 style={{ marginTop: 0, marginBottom: 16, color: DN, fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em' }}>Registrar pago / abono</h3>
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: MU, display: 'block', marginBottom: 4 }}>Tratamiento</label>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: MU, display: 'block', marginBottom: 5 }}>Tratamiento</label>
                   <select value={pagoDraft.itemId} onChange={e => setPagoDraft({ ...pagoDraft, itemId: e.target.value })}
-                    style={{ width: '100%', padding: 9, borderRadius: 8, border: `1px solid ${BD}`, fontSize: 12, boxSizing: 'border-box', background: '#fff' }}>
+                    style={{ width: '100%', padding: '10px 12px', minHeight: 40, borderRadius: 'var(--radius-sm)', border: `1px solid ${BD}`, fontSize: 13.5, color: DN, boxSizing: 'border-box', background: LT }}>
                     <option value="">Selecciona un tratamiento…</option>
                     {plan.filter(i => (i.cost - i.paid) > 0).map(i => (
                       <option key={i.id} value={i.id}>{i.name} (Pieza {i.tooth}) — Saldo S/{(i.cost - i.paid).toFixed(2)}</option>
@@ -1853,14 +1861,14 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: MU, display: 'block', marginBottom: 4 }}>Monto a abonar (S/)</label>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: MU, display: 'block', marginBottom: 5 }}>Monto a abonar (S/)</label>
                   <input type="number" min="0" step="0.01" value={pagoDraft.monto} onChange={e => setPagoDraft({ ...pagoDraft, monto: e.target.value })}
-                    placeholder="0.00" style={{ width: '100%', padding: 9, borderRadius: 8, border: `1px solid ${BD}`, fontSize: 12, boxSizing: 'border-box' }} />
+                    placeholder="0.00" style={{ width: '100%', padding: '10px 12px', minHeight: 40, borderRadius: 'var(--radius-sm)', border: `1px solid ${BD}`, fontSize: 13.5, color: DN, background: LT, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' }} />
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <Button variant="secondary" onClick={() => setShowPagoModal(false)} style={{ flex: 1, padding: 10, fontSize: 12 }}>Cancelar</Button>
-                  <Button onClick={registrarAbono} style={{ flex: 1, padding: 10, fontSize: 12 }}>Registrar abono</Button>
+                  <Button variant="secondary" onClick={() => setShowPagoModal(false)} style={{ flex: 1, padding: 12, minHeight: 44, fontSize: 13.5 }}>Cancelar</Button>
+                  <Button onClick={registrarAbono} style={{ flex: 1, padding: 12, minHeight: 44, fontSize: 13.5 }}>Registrar abono</Button>
                 </div>
               </Modal>
             )}

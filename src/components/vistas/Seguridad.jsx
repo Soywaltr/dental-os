@@ -15,9 +15,30 @@ import Button from '../ui/Button';
 import { BD, DN, MU, MT, P, RJ, WA, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 const cardStyle = {
-  background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 20,
+  background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 20,
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
+
+const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+const tituloCardStyle = { fontSize: 15, fontWeight: 600, color: DN };
+
+const parrafoStyle = { fontSize: 13, color: MU, lineHeight: 1.5 };
+
+const avisoErrorStyle = {
+  padding: '10px 12px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`,
+  borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13, lineHeight: 1.5,
+};
+
+// Fila de dispositivo/persona: alto de toque cómodo y separador de 1px.
+const filaStyle = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  gap: 12, padding: '10px 0', minHeight: 52, borderBottom: `1px solid ${BD}`,
+};
+
+const filaBtnStyle = { fontSize: 12, fontWeight: 600, padding: '9px 14px', minHeight: 36, borderRadius: 'var(--radius-sm)' };
+
+const accionBtnStyle = { fontSize: 13.5, fontWeight: 600, padding: '12px 20px', minHeight: 44, borderRadius: 'var(--radius-sm)' };
 
 const IcShield = ({ size = 19, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -98,28 +119,28 @@ export default function Seguridad({ rol }) {
     await cargarFactores();
   };
 
-  if (loading) return <div style={{ padding: 20, color: MU, fontSize: 12 }}>Cargando…</div>;
+  if (loading) return <div style={{ padding: 20, color: MU, fontSize: 13.5 }}>Cargando…</div>;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: verificados.length > 0 ? '#dcfce7' : '#fef3c7', color: verificados.length > 0 ? '#16a34a' : '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: verificados.length > 0 ? 'var(--green-soft)' : 'var(--amber-soft)', color: verificados.length > 0 ? WA : 'var(--amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <IcShield />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: DN }}>Verificación en dos pasos</div>
-            <div style={{ fontSize: 10.5, color: verificados.length > 0 ? WA : MU, fontWeight: 600 }}>
+            <div style={tituloCardStyle}>Verificación en dos pasos</div>
+            <div style={{ fontSize: 12, color: verificados.length > 0 ? WA : MU, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
               {verificados.length > 0 ? `${verificados.length} dispositivo${verificados.length > 1 ? 's' : ''} activo${verificados.length > 1 ? 's' : ''}` : 'No configurada'}
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: MU, margin: '0 0 14px', lineHeight: 1.5 }}>
+        <p style={{ ...parrafoStyle, margin: '0 0 14px' }}>
           Además de tu contraseña, pide un código de una app como Google Authenticator o Authy al iniciar sesión.
         </p>
 
         {verificados.length === 1 && (
-          <div style={{ padding: '8px 10px', background: '#fffbeb', borderLeft: `3px solid #f59e0b`, borderRadius: 6, color: '#92400e', fontSize: 11, marginBottom: 14, lineHeight: 1.5 }}>
+          <div style={{ padding: '10px 12px', background: 'var(--amber-soft)', borderLeft: '3px solid var(--amber)', borderRadius: 'var(--radius-sm)', color: DN, fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>
             Te recomendamos agregar un <b>segundo dispositivo</b>. Supabase no ofrece códigos de respaldo — si pierdes el único dispositivo enrolado, necesitarás que un administrador te restablezca el acceso.
           </div>
         )}
@@ -127,24 +148,24 @@ export default function Seguridad({ rol }) {
         {!enrolamiento && (
           <>
             {verificados.map(f => (
-              <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${MT}` }}>
+              <div key={f.id} style={filaStyle}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: DN }}>{f.friendly_name || 'Dispositivo'}</div>
-                  <div style={{ fontSize: 10, color: MU }}>Agregado el {new Date(f.created_at).toLocaleDateString('es-PE')}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>{f.friendly_name || 'Dispositivo'}</div>
+                  <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>Agregado el {new Date(f.created_at).toLocaleDateString('es-PE')}</div>
                 </div>
-                <Button variant="danger" onClick={() => quitarFactor(f.id, f.friendly_name || 'este dispositivo')} disabled={quitando === f.id} style={{ fontSize: 10.5, padding: '5px 10px' }}>
+                <Button variant="danger" onClick={() => quitarFactor(f.id, f.friendly_name || 'este dispositivo')} disabled={quitando === f.id} style={filaBtnStyle}>
                   {quitando === f.id ? 'Quitando…' : 'Quitar'}
                 </Button>
               </div>
             ))}
 
             {error && (
-              <div style={{ padding: '8px 10px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 11, margin: '12px 0' }}>
+              <div style={{ ...avisoErrorStyle, margin: '12px 0' }}>
                 {error}
               </div>
             )}
 
-            <Button onClick={iniciarEnrolamiento} disabled={inscribiendo} style={{ marginTop: 14, fontSize: 11 }}>
+            <Button onClick={iniciarEnrolamiento} disabled={inscribiendo} style={{ ...accionBtnStyle, marginTop: 14 }}>
               {inscribiendo ? 'Generando código QR…' : (verificados.length > 0 ? '+ Agregar otro dispositivo' : 'Activar verificación en dos pasos')}
             </Button>
           </>
@@ -152,38 +173,46 @@ export default function Seguridad({ rol }) {
 
         {enrolamiento && (
           <form onSubmit={confirmarEnrolamiento}>
-            <p style={{ fontSize: 11.5, color: MU, margin: '0 0 10px' }}>
+            <p style={{ ...parrafoStyle, margin: '0 0 10px' }}>
               Escanea este código con tu app de autenticación:
             </p>
-            <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 8, padding: 12, display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            {/* El fondo del QR se queda blanco literal: es la zona de silencio que
+                necesita el lector para escanearlo, no una superficie del tema. */}
+            <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: 14, display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
               <img src={enrolamiento.qr_code} alt="Código QR" style={{ width: 160, height: 160 }} />
             </div>
             <details style={{ marginBottom: 12 }}>
-              <summary style={{ fontSize: 10.5, color: P, cursor: 'pointer', fontWeight: 600 }}>¿No puedes escanear? Ingresa el código manualmente</summary>
-              <div style={{ fontSize: 10.5, color: DN, fontFamily: 'monospace', background: MT, padding: 8, borderRadius: 6, marginTop: 6, wordBreak: 'break-all' }}>
+              <summary style={{ fontSize: 13, color: P, cursor: 'pointer', fontWeight: 600, minHeight: 36, display: 'flex', alignItems: 'center', transition: `color .18s ${EASE}` }}>¿No puedes escanear? Ingresa el código manualmente</summary>
+              <div style={{ fontSize: 13, color: DN, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: .5, lineHeight: 1.5, background: MT, padding: 10, borderRadius: 'var(--radius-sm)', marginTop: 6, wordBreak: 'break-all' }}>
                 {enrolamiento.secret}
               </div>
             </details>
 
-            <label style={{ fontSize: 9.5, color: MU, fontWeight: 700, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: .3 }}>Código de 6 dígitos</label>
+            <label style={{ fontSize: 11, color: MU, fontWeight: 600, display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .4 }}>Código de 6 dígitos</label>
             <input
               value={codigo}
               onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
               autoComplete="one-time-code"
               inputMode="numeric"
-              style={{ width: '100%', padding: '8px 10px', border: `1px solid ${BD}`, borderRadius: 7, fontSize: 16, letterSpacing: 4, textAlign: 'center', marginBottom: 12, boxSizing: 'border-box', color: DN }}
+              style={{
+                width: '100%', minHeight: 52, padding: '12px 14px', border: `1px solid ${BD}`,
+                borderRadius: 'var(--radius-sm)', background: 'var(--surface-tertiary)',
+                fontSize: 22, fontWeight: 600, letterSpacing: 8, fontVariantNumeric: 'tabular-nums',
+                textAlign: 'center', marginBottom: 12, boxSizing: 'border-box', color: DN, outline: 'none',
+                transition: `border-color .18s ${EASE}`,
+              }}
             />
 
             {error && (
-              <div style={{ padding: '8px 10px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 11, marginBottom: 12 }}>
+              <div style={{ ...avisoErrorStyle, marginBottom: 12 }}>
                 {error}
               </div>
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <Button type="button" variant="secondary" onClick={cancelarEnrolamiento} style={{ fontSize: 11, flex: 1 }}>Cancelar</Button>
-              <Button type="submit" disabled={verificando || codigo.length !== 6} style={{ fontSize: 11, flex: 1 }}>
+              <Button type="button" variant="secondary" onClick={cancelarEnrolamiento} style={{ ...accionBtnStyle, flex: 1 }}>Cancelar</Button>
+              <Button type="submit" disabled={verificando || codigo.length !== 6} style={{ ...accionBtnStyle, flex: 1 }}>
                 {verificando ? 'Verificando…' : 'Confirmar'}
               </Button>
             </div>
@@ -232,17 +261,17 @@ function GestionMFA() {
     setReloadTick(t => t + 1);
   };
 
-  if (loading) return <div style={{ ...cardStyle, color: MU, fontSize: 12 }}>Cargando personal…</div>;
+  if (loading) return <div style={{ ...cardStyle, color: MU, fontSize: 13.5 }}>Cargando personal…</div>;
 
   return (
     <div style={cardStyle}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 6 }}>Verificación en dos pasos del personal</div>
-      <p style={{ fontSize: 11.5, color: MU, margin: '0 0 14px', lineHeight: 1.5 }}>
+      <div style={{ ...tituloCardStyle, marginBottom: 6 }}>Verificación en dos pasos del personal</div>
+      <p style={{ ...parrafoStyle, margin: '0 0 14px' }}>
         Si alguien de tu clínica pierde su dispositivo, restablécelo aquí para que pueda enrolar uno nuevo.
       </p>
 
       {error && (
-        <div style={{ padding: '8px 10px', background: '#fef2f2', borderLeft: `3px solid ${RJ}`, borderRadius: 6, color: '#b91c1c', fontSize: 11, marginBottom: 12 }}>
+        <div style={{ ...avisoErrorStyle, marginBottom: 12 }}>
           {error}
         </div>
       )}
@@ -250,17 +279,17 @@ function GestionMFA() {
       {miembros.map(m => {
         const verificados = m.factores.filter(f => f.status === 'verified');
         return (
-          <div key={m.userId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${MT}` }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: DN }}>
+          <div key={m.userId} style={filaStyle}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>
                 {m.email || m.userId}{m.esUnoMismo ? ' (tú)' : ''}
               </div>
-              <div style={{ fontSize: 10, color: MU, textTransform: 'capitalize' }}>
+              <div style={{ fontSize: 12, color: MU, textTransform: 'capitalize', fontVariantNumeric: 'tabular-nums' }}>
                 {m.rol} · {verificados.length > 0 ? `${verificados.length} dispositivo${verificados.length > 1 ? 's' : ''} verificado${verificados.length > 1 ? 's' : ''}` : 'sin MFA configurado'}
               </div>
             </div>
             {!m.esUnoMismo && verificados.length > 0 && (
-              <Button variant="danger" onClick={() => resetear(m.userId, m.email)} disabled={reseteando === m.userId} style={{ fontSize: 10.5, padding: '5px 10px' }}>
+              <Button variant="danger" onClick={() => resetear(m.userId, m.email)} disabled={reseteando === m.userId} style={filaBtnStyle}>
                 {reseteando === m.userId ? 'Restableciendo…' : 'Restablecer'}
               </Button>
             )}

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Stat from '../ui/Stat';
 import Icon from '../ui/Icon';
-import { BD, P, PD, MU, DN, MT, WA, AZ, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BD, P, PD, MU, DN, WA, AZ, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { sc, estadoPaciente, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
@@ -53,13 +53,13 @@ export default function Reportes() {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: MU, fontSize: 12 }}>Cargando analítica…</div>
+      <div style={{ padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>Cargando analítica…</div>
     );
   }
 
   if (errorMsg) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: RJ, fontSize: 12 }}>
+      <div style={{ padding: 40, textAlign: 'center', color: RJ, fontSize: 13.5 }}>
         Error al cargar la analítica: {errorMsg}
       </div>
     );
@@ -120,12 +120,12 @@ export default function Reportes() {
     .sort((a, b) => b.saldo - a.saldo)
     .slice(0, 5);
 
-  const cardStyle = { background: GLASS_BG, border: GLASS_BORDER, borderRadius: 12, padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW };
-  const sectionTitle = { fontWeight: 700, fontSize: 13, color: DN, marginBottom: 14 };
+  const cardStyle = { background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW };
+  const sectionTitle = { fontWeight: 600, fontSize: 15, color: DN, marginBottom: 14 };
 
   return (
     <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: DN, marginBottom: 16 }}>
+      <div style={{ fontSize: 20, fontWeight: 600, color: DN, marginBottom: 18, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
         Analítica del consultorio — {hoy.getFullYear()}
       </div>
 
@@ -144,29 +144,29 @@ export default function Reportes() {
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={sectionTitle}>Facturado vs. cobrado (S/, últimos 6 meses)</div>
-            <div style={{ display: 'flex', gap: 12, fontSize: 10, color: MU }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: P, display: 'inline-block' }} /> Facturado</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: WA, display: 'inline-block' }} /> Cobrado</span>
+            <div style={{ display: 'flex', gap: 14, fontSize: 12, color: MU }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: P, display: 'inline-block' }} /> Facturado</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: WA, display: 'inline-block' }} /> Cobrado</span>
             </div>
           </div>
 
           {totalTrat === 0 ? (
-            <div style={{ textAlign: 'center', color: MU, fontSize: 12, padding: '30px 0' }}>Aún no hay tratamientos registrados para graficar ingresos.</div>
+            <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '30px 0' }}>Aún no hay tratamientos registrados para graficar ingresos.</div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, height: 160, position: 'relative' }}>
               {meses.map((m, i) => (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, position: 'relative' }}
                   onMouseEnter={() => setHoverMes(i)} onMouseLeave={() => setHoverMes(null)}>
                   {hoverMes === i && (
-                    <div style={{ position: 'absolute', bottom: '100%', marginBottom: 6, background: DN, color: '#fff', padding: '6px 10px', borderRadius: 6, fontSize: 10, whiteSpace: 'nowrap', zIndex: 5, boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}>
+                    <div style={{ position: 'absolute', bottom: '100%', marginBottom: 6, background: DN, color: 'var(--surface-primary)', padding: '8px 11px', borderRadius: 'var(--radius-sm)', fontSize: 12, lineHeight: 1.45, whiteSpace: 'nowrap', zIndex: 5, boxShadow: 'var(--shadow-md)', fontVariantNumeric: 'tabular-nums' }}>
                       Facturado: S/{m.facturado.toLocaleString()}<br />Cobrado: S/{m.cobrado.toLocaleString()}
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 120, width: '100%', justifyContent: 'center' }}>
-                    <div style={{ width: '45%', background: i === mesActualIdx ? P : `color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '3px 3px 0 0', height: `${(m.facturado / maxMes) * 100}%`, transition: 'height .3s' }} />
-                    <div style={{ width: '45%', background: i === mesActualIdx ? WA : `color-mix(in srgb, ${WA} 33%, transparent)`, borderRadius: '3px 3px 0 0', height: `${(m.cobrado / maxMes) * 100}%`, transition: 'height .3s' }} />
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, width: '100%', justifyContent: 'center' }}>
+                    <div style={{ width: '45%', background: i === mesActualIdx ? P : `color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '4px 4px 0 0', height: `${(m.facturado / maxMes) * 100}%`, transition: 'height .3s cubic-bezier(0.25, 0.1, 0.25, 1)' }} />
+                    <div style={{ width: '45%', background: i === mesActualIdx ? WA : `color-mix(in srgb, ${WA} 33%, transparent)`, borderRadius: '4px 4px 0 0', height: `${(m.cobrado / maxMes) * 100}%`, transition: 'height .3s cubic-bezier(0.25, 0.1, 0.25, 1)' }} />
                   </div>
-                  <div style={{ fontSize: 9, color: i === mesActualIdx ? DN : MU, fontWeight: i === mesActualIdx ? 700 : 600, textTransform: 'capitalize' }}>{m.label}</div>
+                  <div style={{ fontSize: 12, color: i === mesActualIdx ? DN : MU, fontWeight: i === mesActualIdx ? 600 : 500, textTransform: 'capitalize' }}>{m.label}</div>
                 </div>
               ))}
             </div>
@@ -177,19 +177,19 @@ export default function Reportes() {
         <div style={cardStyle}>
           <div style={sectionTitle}>Tratamientos más frecuentes</div>
           {frecuencias.length === 0 ? (
-            <div style={{ textAlign: 'center', color: MU, fontSize: 12, padding: '30px 0' }}>Sin tratamientos registrados aún.</div>
+            <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '30px 0' }}>Sin tratamientos registrados aún.</div>
           ) : (
             frecuencias.map((f, i) => (
-              <div key={f.name} style={{ marginBottom: 9, cursor: 'default' }}
+              <div key={f.name} style={{ marginBottom: 12, cursor: 'default' }}
                 onMouseEnter={() => setHoverTrat(i)} onMouseLeave={() => setHoverTrat(null)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                  <span style={{ fontSize: 11, color: DN, fontWeight: 500 }}>{f.name}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: f.color }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 5 }}>
+                  <span style={{ fontSize: 13, color: DN, fontWeight: 500 }}>{f.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: f.color, fontVariantNumeric: 'tabular-nums' }}>
                     {f.n}{hoverTrat === i && totalTrat > 0 && <span style={{ color: MU, fontWeight: 500 }}> · {Math.round((f.n / totalTrat) * 100)}%</span>}
                   </span>
                 </div>
-                <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(f.n / maxFrec) * 100}%`, background: f.color, borderRadius: 3, transition: 'width .3s' }} />
+                <div style={{ height: 6, background: 'var(--fill-tertiary)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(f.n / maxFrec) * 100}%`, background: f.color, borderRadius: 3, transition: 'width .3s cubic-bezier(0.25, 0.1, 0.25, 1)' }} />
                 </div>
               </div>
             ))
@@ -208,12 +208,12 @@ export default function Reportes() {
           ].map(({ key, label, icon }) => {
             const c = sc(key);
             return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: key !== 'completado' ? `1px solid ${MT}` : 'none' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: c.bg, color: c.c, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon name={icon} size={14} />
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', minHeight: 44, borderBottom: key !== 'completado' ? `1px solid ${BD}` : 'none' }}>
+                <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)', background: c.bg, color: c.c, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon name={icon} size={15} />
                 </div>
-                <div style={{ flex: 1, fontSize: 12, color: DN, fontWeight: 500 }}>{label}</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: c.c }}>{estadoTrat[key]}</div>
+                <div style={{ flex: 1, fontSize: 13.5, color: DN, fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 17, fontWeight: 600, color: c.c, fontVariantNumeric: 'tabular-nums' }}>{estadoTrat[key]}</div>
               </div>
             );
           })}
@@ -223,16 +223,16 @@ export default function Reportes() {
         <div style={cardStyle}>
           <div style={sectionTitle}>Estado de pacientes</div>
           {[
-            { key: 'activo', label: 'Activo', icon: 'users', bg: '#dcfce7', color: '#16a34a' },
-            { key: 'nuevo', label: 'Nuevo', icon: 'userPlus', bg: '#dbeafe', color: AZ },
-            { key: 'inactivo', label: 'Inactivo', icon: 'users', bg: MT, color: MU },
+            { key: 'activo', label: 'Activo', icon: 'users', bg: 'var(--green-soft)', color: WA },
+            { key: 'nuevo', label: 'Nuevo', icon: 'userPlus', bg: 'var(--accent-soft)', color: AZ },
+            { key: 'inactivo', label: 'Inactivo', icon: 'users', bg: 'var(--fill-tertiary)', color: MU },
           ].map(({ key, label, icon, bg, color }) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: key !== 'inactivo' ? `1px solid ${MT}` : 'none' }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon name={icon} size={14} />
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', minHeight: 44, borderBottom: key !== 'inactivo' ? `1px solid ${BD}` : 'none' }}>
+              <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)', background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name={icon} size={15} />
               </div>
-              <div style={{ flex: 1, fontSize: 12, color: DN, fontWeight: 500 }}>{label}</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color }}>{estados[key]}</div>
+              <div style={{ flex: 1, fontSize: 13.5, color: DN, fontWeight: 500 }}>{label}</div>
+              <div style={{ fontSize: 17, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums' }}>{estados[key]}</div>
             </div>
           ))}
         </div>
@@ -241,13 +241,13 @@ export default function Reportes() {
         <div style={cardStyle}>
           <div style={sectionTitle}>Mayor saldo pendiente</div>
           {topDeudores.length === 0 ? (
-            <div style={{ textAlign: 'center', color: MU, fontSize: 12, padding: '20px 0' }}>Nadie tiene saldo pendiente. Al día.</div>
+            <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '20px 0' }}>Nadie tiene saldo pendiente. Al día.</div>
           ) : (
             topDeudores.map((d, i) => (
-              <div key={d.paciente.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: i !== topDeudores.length - 1 ? `1px solid ${MT}` : 'none' }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: MT, color: MU, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</div>
-                <div style={{ flex: 1, fontSize: 12, color: DN, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: RJ }}>S/{d.saldo.toLocaleString()}</div>
+              <div key={d.paciente.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', minHeight: 44, borderBottom: i !== topDeudores.length - 1 ? `1px solid ${BD}` : 'none' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--fill-tertiary)', color: MU, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</div>
+                <div style={{ flex: 1, fontSize: 13.5, color: DN, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: RJ, fontVariantNumeric: 'tabular-nums' }}>S/{d.saldo.toLocaleString()}</div>
               </div>
             ))
           )}
