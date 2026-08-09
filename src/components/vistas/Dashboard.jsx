@@ -13,7 +13,7 @@ import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
 import SegmentedControl from '../ui/SegmentedControl';
 import { GraficoLineas, Leyenda } from '../ui/Graficos';
-import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
+import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
@@ -28,10 +28,12 @@ const CAT_TABS = [
   { key: 'Implantes', cats: ['Implantología'] },
 ];
 
-// Serie financiera. Violeta + ámbar oscuro: par verificado con el validador de
-// paletas contra la superficie de las tarjetas -- pasa banda de luminosidad,
-// piso de croma, separación bajo daltonismo (ΔE 32.6 protan) y contraste ≥3:1.
-// El ámbar de marca (#d97706) quedaba en 2.76:1, de ahí el paso más oscuro.
+// Serie financiera: teal + ámbar oscuro. Re-verificado con validate_palette.js
+// contra la superficie blanca del panel -- pasa banda de luminosidad, piso de
+// croma, separación bajo daltonismo (ΔE 13.6 deutan / 23.6 visión normal) y
+// contraste ≥3:1. Ingresos era violeta, pero el violeta pasó a ser el acento
+// único de la interfaz: el mismo color no puede significar dos cosas (ver el
+// comentario de CAT_ACCENT en utils/constants.js).
 const COLOR_INGRESOS = CAT_ACCENT;
 const COLOR_GASTOS = '#b45309';
 const VERDE = '#059669';
@@ -247,14 +249,18 @@ export default function Dashboard({ setView, clinica }) {
   const maxGasto = Math.max(...gastosPorCategoria.map(([, v]) => v), 1);
 
   // ── Estilos base ─────────────────────────────────────────────────────────
+  // Panel flotante: blanco puro sobre el fondo lavanda, muy redondeado, sombra
+  // difusa y SIN borde — la separación la dan el aire y la sombra, no una línea.
   const card = {
-    background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-    border: GLASS_BORDER, borderRadius: 'var(--radius-lg)', padding: 20, boxShadow: GLASS_SHADOW,
+    background: 'var(--panel)',
+    borderRadius: 'var(--radius-panel)', padding: 24,
+    boxShadow: 'var(--shadow-float)',
     display: 'flex', flexDirection: 'column',
   };
-  const h2 = { margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--label-primary)', letterSpacing: '-0.1px' };
-  const rotulo = { fontSize: 11, color: MU, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' };
-  const subCard = { background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)' };
+  const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' };
+  const rotulo = { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
+  // Bloque hundido dentro de un panel: cambia de superficie, no lleva borde.
+  const subCard = { background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)' };
   // En tablet la rejilla colapsa a una columna y los `span` dejan de aplicar.
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
@@ -269,7 +275,7 @@ export default function Dashboard({ setView, clinica }) {
 
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 14, alignItems: 'start', animation: 'fadeIn 0.4s ease-in-out' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 18, alignItems: 'start', animation: 'fadeIn 0.4s ease-in-out' }}>
 
       {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12) */}
       <div style={{ ...col(4), padding: '6px 4px 0' }}>
@@ -308,8 +314,8 @@ export default function Dashboard({ setView, clinica }) {
               flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12,
               padding: '13px 14px', cursor: 'pointer', borderRadius: 'var(--radius-md)', textAlign: 'left',
               background: 'transparent', border: 'none', font: 'inherit', minHeight: 44,
-              borderLeft: (!isTablet && i > 0) ? `1px solid ${BD}` : 'none',
-              borderTop: (isTablet && i > 0) ? `1px solid ${BD}` : 'none',
+              borderLeft: (!isTablet && i > 0) ? `1px solid var(--hairline)` : 'none',
+              borderTop: (isTablet && i > 0) ? `1px solid var(--hairline)` : 'none',
               transition: 'background-color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--fill-quaternary)'; }}
@@ -340,7 +346,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Leyenda series={seriesGrafico} />
             <button onClick={() => setVerTabla(v => !v)}
-              style={{ background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: MU, cursor: 'pointer' }}>
+              style={{ background: 'var(--panel-sunken)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: MU, cursor: 'pointer' }}>
               {verTabla ? 'Ver gráfico' : 'Ver tabla'}
             </button>
           </div>
@@ -351,12 +357,12 @@ export default function Dashboard({ setView, clinica }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
               <thead><tr>
                 {['Mes', 'Ingresos', 'Gastos', 'Utilidad'].map(x => (
-                  <th key={x} style={{ textAlign: x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                  <th key={x} style={{ textAlign: x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
                 ))}
               </tr></thead>
               <tbody>
                 {meses12.map((m, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
+                  <tr key={i} style={{ borderBottom: '1px solid var(--hairline)' }}>
                     <td style={{ padding: '6px 8px', color: 'var(--label-primary)', fontWeight: i === 11 ? 700 : 500, textTransform: 'capitalize' }}>{m.label} {String(m.anio).slice(2)}</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(m.ingresos)}</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(m.gastos)}</td>
@@ -378,7 +384,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', gap: 4 }}>
             {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
               <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
-                style={{ width: 22, height: 22, borderRadius: '50%', border: `1px solid ${BD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: 'var(--surface-tertiary)' }}>
+                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: 'var(--panel-sunken)' }}>
                 {lbl}
               </div>
             ))}
@@ -518,7 +524,7 @@ export default function Dashboard({ setView, clinica }) {
             {topDeudores.map(d => (
               <div key={d.paciente.id} onClick={() => setView && setView('caja')} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--fill-tertiary)', border: `1px solid ${BD}`, color: 'var(--label-primary)', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--panel-sunken)', border: 'none', color: 'var(--label-primary)', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
                   <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: RJ, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</div>
                 </div>

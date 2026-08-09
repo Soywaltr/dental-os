@@ -1,5 +1,5 @@
 // src/utils/helpers.js
-import { MT, P, RJ, TOOLS, GL, AZ, WA, CAT_ACCENT } from './constants';
+import { MT, P, RJ, TOOLS } from './constants';
 
 export const normalizarTexto = (texto) => {
   if (!texto) return '';
@@ -90,12 +90,26 @@ export const resumenPagosOrtodoncia = (pagos, fechaInicio) => {
   return { acumulado, pagoInicial, cuota, esperado, deuda, meses, abonos };
 };
 
-// Paleta categórica validada (contraste + separación CVD, ver utils/constants.js)
-// para identidad de tratamientos/categorías de gasto. El color se asigna por
-// hash del nombre, no por ranking, para que una misma categoría conserve
-// siempre el mismo color aunque cambie de posición o de vista (Reportes,
-// Dashboard). Orden fijo: nunca se cicla ni se reordena por valor.
-export const CAT_COLORS = [CAT_ACCENT, GL, AZ, WA, RJ];
+// Tinte por nombre para barras de tratamiento / categoría de gasto.
+//
+// Antes eran 5 tonos distintos (violeta, ámbar, azul, verde, rojo). Se cambió a
+// una escala MONOCROMÁTICA de un solo tono por dos razones:
+//
+// 1. El diseño es monocromático con el violeta como único acento; barras de
+//    cinco colores lo contradicen y meten ruido.
+// 2. Esa paleta no pasaba la validación: con el acento nuevo quedaban dos
+//    violetas a ΔE 6.5 (indistinguibles), y ninguna combinación de 5 tonos
+//    llegó al piso de ΔE 15 en todos los pares. Con más de ~4 series, lo
+//    correcto no es inventar tonos sino apoyarse en otra codificación.
+//
+// Cada barra ya lleva su nombre escrito al lado, así que la identidad la
+// carga la etiqueta, no el color: el tono sólo aporta variación visual. Se
+// mantiene el hash por nombre para que una misma categoría conserve siempre
+// su mismo paso, en cualquier vista.
+const PASOS_TINTE = [0.95, 0.72, 0.52, 0.36, 0.24];
+export const CAT_COLORS = PASOS_TINTE.map(
+  a => `color-mix(in srgb, var(--accent) ${Math.round(a * 100)}%, var(--panel-sunken))`
+);
 export const colorPorNombre = (name) => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;

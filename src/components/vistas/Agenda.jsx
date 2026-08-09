@@ -6,7 +6,8 @@ import ModalNuevaCita from '../ui/ModalNuevaCita';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
-import { BD, P, GL, MU, DN, MT, LT, RJ, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import Stat from '../ui/Stat';
+import { BD, P, GL, MU, DN, MT, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
@@ -338,8 +339,32 @@ export default function Agenda({ clinicaId, clinica }) {
     } finally { setSavingEdit(false); }
   };
 
+  // ── Resumen de arriba: sólo lo que se puede saber sin abrir el calendario ──
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  const semana = getWeekDays();
+  const semanaSet = new Set(semana.map(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`));
+  const citasAgendadas = allApts.filter(a => a.fecha && a.hora_cita);
+  const citasHoy = citasAgendadas.filter(a => a.fecha === hoyStr);
+  const citasSemana = citasAgendadas.filter(a => semanaSet.has(a.fecha));
+  const proximaCita = citasAgendadas
+    .filter(a => a.fecha > hoyStr || (a.fecha === hoyStr && a.hora_cita >= new Date().toTimeString().slice(0, 5)))
+    .sort((a, b) => (a.fecha + a.hora_cita).localeCompare(b.fecha + b.hora_cita))[0];
+
   return (
     <div style={{ padding: 18, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+        <Stat label="Citas hoy" value={citasHoy.length} col={P} icon={<Icon name="calendar" size={15} />} />
+        <Stat label="Esta semana" value={citasSemana.length} col={DN} icon={<Icon name="activity" size={15} />} />
+        <Stat
+          label="Próxima cita"
+          value={proximaCita ? proximaCita.hora_cita : '—'}
+          sub={proximaCita ? proximaCita.name : 'Sin citas próximas'}
+          subCol={MU}
+          col={proximaCita ? WA : MU}
+          icon={<Icon name="clock" size={15} />}
+        />
+      </div>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
 
         <div style={{ display: 'flex', gap: 6 }}>

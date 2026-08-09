@@ -108,8 +108,13 @@ export default function Laboratorio({ clinicaId }) {
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[['Total órdenes', orders.length, null], ['En proceso', orders.filter(o => o.status === 'en_proceso').length, MU], ['Listo para retirar', orders.filter(o => o.status === 'listo').length, P], ['Entregado', orders.filter(o => o.status === 'entregado').length, WA]].map(([l, v, c]) => (
-          <Stat key={l} label={l} value={v} col={c} />
+        {[
+          ['Total órdenes', orders.length, null, 'document'],
+          ['En proceso', orders.filter(o => o.status === 'en_proceso').length, MU, 'activity'],
+          ['Listo para retirar', orders.filter(o => o.status === 'listo').length, P, 'clock'],
+          ['Entregado', orders.filter(o => o.status === 'entregado').length, WA, 'checkCircle'],
+        ].map(([l, v, c, ic]) => (
+          <Stat key={l} label={l} value={v} col={c} icon={<Icon name={ic} size={15} />} />
         ))}
       </div>
 

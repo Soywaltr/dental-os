@@ -11,6 +11,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../supabase';
 import Modal from '../ui/Modal';
 import Icon from '../ui/Icon';
+import Stat from '../ui/Stat';
 import {
   labelStyleDoc, inputStyleDoc, P, BD, DN, MU, LT, MT, WA, RJ, GL,
   GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW
@@ -1886,19 +1887,13 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 22 }}>
-        {[
-          { lbl: 'En tratamiento', val: String(pacientesOrto.length), col: DN, sub: 'pacientes activos' },
-          { lbl: `Cobrado en ${mesActualNombre}`, val: fmtSoles(cobradoEsteMes), col: WA, sub: 'cuotas iniciales + mensuales + extras' },
-          { lbl: 'Cuotas mensuales', val: fmtSoles(cuotasDelMes), col: P, sub: 'lo recurrente pactado por mes' },
-          { lbl: 'Por cobrar', val: fmtSoles(porCobrar), col: porCobrar > 0 ? RJ : WA, sub: 'atrasos acumulados a la fecha' },
-        ].map(s => (
-          <div key={s.lbl} style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: '16px 18px' }}>
-            <div style={{ fontSize: 11, color: 'var(--label-tertiary)', fontWeight: 600, letterSpacing: 0.3, marginBottom: 6 }}>{s.lbl.toUpperCase()}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: s.col, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{s.val}</div>
-            <div style={{ fontSize: 12, color: MU, marginTop: 6 }}>{s.sub}</div>
-          </div>
-        ))}
+      {/* Mismo componente Stat que usan Dashboard/Reportes/Caja/Laboratorio,
+          no una tarjeta hecha a mano con otro lenguaje visual. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 22 }}>
+        <Stat label="En tratamiento" value={String(pacientesOrto.length)} col={DN} sub="pacientes activos" subCol={MU} icon={<Icon name="users" size={15} />} />
+        <Stat label={`Cobrado en ${mesActualNombre}`} value={fmtSoles(cobradoEsteMes)} col={WA} sub="cuotas iniciales + mensuales + extras" subCol={MU} icon={<Icon name="checkCircle" size={15} />} />
+        <Stat label="Cuotas mensuales" value={fmtSoles(cuotasDelMes)} col={P} sub="lo recurrente pactado por mes" subCol={MU} icon={<Icon name="calendar" size={15} />} />
+        <Stat label="Por cobrar" value={fmtSoles(porCobrar)} col={porCobrar > 0 ? RJ : WA} sub="atrasos acumulados a la fecha" subCol={MU} icon={<Icon name="clock" size={15} />} />
       </div>
 
       {pacientesOrto.length > 0 && (

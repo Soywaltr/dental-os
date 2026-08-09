@@ -42,13 +42,17 @@ export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 // tocar cada archivo.
 export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--label-primary)', LT = 'var(--surface-primary)', MT = 'var(--surface-secondary)', BD = 'var(--separator)', MU = 'var(--label-secondary)', GL = 'var(--amber)', WA = 'var(--green)', AZ = 'var(--accent)', RJ = 'var(--red)';
 
-// Color dedicado para paletas categóricas de datos (ej. gráficos de Analítica).
-// A propósito NO sigue el tema: es la identidad fija de una serie en un
-// gráfico, y darle claro/oscuro necesitaría re-validar el contraste contra la
-// superficie oscura con validate_palette.js (pendiente para cuando el modo
-// oscuro tenga más uso real). Validado hoy contra superficie clara junto a
-// GL/AZ/WA/RJ.
-export const CAT_ACCENT = '#7c3aed';
+// Identidad de la serie "Ingresos" en los gráficos. NO sigue el tema: es el
+// color fijo de una serie de datos, no chrome.
+//
+// Era violeta (#7c3aed). Se cambió a teal porque el violeta pasó a ser el
+// acento único de la interfaz, y el mismo color no puede significar dos cosas
+// en la misma pantalla. El teal se eligió midiendo con validate_palette.js:
+//   · contra "Gastos" (#b45309): ΔE 13.6 daltonismo / 23.6 visión normal — pasa
+//   · contra el acento violeta: ΔE 24.2 — el más distinguible de los candidatos
+// Un azul (#1D4ED8) habría fallado: ΔE 10.6 contra el acento, por debajo del
+// piso de 15, se leerían como el mismo color.
+export const CAT_ACCENT = '#0D9488';
 
 // Superficies de tarjeta — sólidas y planas, sin vidrio esmerilado NI la
 // sombra suave "flotante" que tenían antes. Stripe, Linear, Mercury y Ramp

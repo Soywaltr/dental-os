@@ -1,0 +1,167 @@
+/* src/tokens.css
+ * ─────────────────────────────────────────────────────────────────────────────
+ * DentalOS · Design tokens — estilo "soft floating panels"
+ *
+ * Paneles blancos que flotan sobre un fondo lavanda-gris, esquinas muy
+ * redondeadas, sombras difusas de baja opacidad y UN solo color de acento
+ * (violeta) reservado para estado activo/selección. Nada de bordes duros:
+ * los elementos se separan con aire, con un cambio sutil de superficie o con
+ * sombra.
+ *
+ * Este archivo es la ÚNICA fuente de verdad del color en la app. Los nombres
+ * viejos (--label-*, --surface-*, etc.) se conservan al final como alias
+ * porque los consumen ~21 archivos vía utils/constants.js; así el rediseño
+ * entero se aplica cambiando este archivo, sin tocar cada vista.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Superficies ───────────────────────────────────────────────────────── */
+  --bg-app:        #F3F2F8;  /* fondo general lavanda-gris */
+  --panel:         #FFFFFF;  /* panel/tarjeta que flota */
+  --panel-sunken:  #F7F6FB;  /* hueco dentro de un panel (pista de tabs, input) */
+  --panel-hover:   #F1F0F7;
+
+  /* Chrome translúcido: solo barras y overlays, nunca una tarjeta de contenido */
+  --chrome:        rgba(255, 255, 255, 0.72);
+  --chrome-blur:   blur(20px) saturate(180%);
+
+  /* ── Texto ─────────────────────────────────────────────────────────────── */
+  /* Los grises son un paso más oscuros que el #8A8A94 del brief: verificado con
+     un script de contraste WCAG, ese valor daba 3.42:1 sobre panel blanco y
+     3.18:1 sobre --panel-sunken, por debajo del 4.5:1 que pide AA para texto
+     normal. Estos son los valores MÁS CLAROS que sí cumplen, para perder lo
+     mínimo del carácter suave. --text-disabled queda exento: no comunica
+     información (WCAG excluye controles inactivos). */
+  --text-primary:   #1A1A1E;  /* títulos y cifras */
+  --text-secondary: #6E6E7A;  /* cuerpo secundario — 5.03:1 */
+  --text-tertiary:  #70707A;  /* etiquetas pequeñas, metadatos — 4.90:1 */
+  --text-disabled:  #B8B8C2;
+
+  /* ── Acento único ──────────────────────────────────────────────────────── */
+  /* Solo para: toggle activo, radio/checkbox seleccionado, ítem de nav activo,
+     foco. No se usa como color decorativo ni como serie de datos. */
+  --accent:        #6C5CE7;
+  --accent-hover:  #7C6FF0;
+  --accent-press:  #5B4BD6;
+  --accent-soft:   rgba(108, 92, 231, 0.10);
+  --accent-ring:   rgba(108, 92, 231, 0.28);
+
+  /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
+  /* Mismo criterio que los grises: estos colores se usan como TEXTO (cifras,
+     etiquetas de estado), así que necesitan 4.5:1. Los tonos suaves originales
+     daban 3.38 / 3.84 / 2.97:1. Estos son los más claros que cumplen.
+     Las variantes -soft son solo fondo de badge, nunca texto. */
+  --green:      #258057;  /* al día / completado — 4.88:1 */
+  --green-soft: rgba(37, 128, 87, 0.11);
+  --red:        #D2344E;  /* pendiente / vencido — 4.86:1 */
+  --red-soft:   rgba(210, 52, 78, 0.10);
+  --amber:      #966923;  /* aviso — 4.86:1 */
+  --amber-soft: rgba(150, 105, 35, 0.12);
+
+  /* ── Separadores ───────────────────────────────────────────────────────── */
+  /* Casi invisibles a propósito: el brief pide separar con espacio, no con
+     líneas. Se conservan porque tablas y listas largas sí necesitan una guía. */
+  --hairline:        rgba(26, 26, 30, 0.06);
+  --hairline-strong: rgba(26, 26, 30, 0.11);
+
+  /* ── Elevación ─────────────────────────────────────────────────────────── */
+  --shadow-float:  0 4px 24px rgba(26, 26, 40, 0.06);
+  --shadow-raised: 0 2px 8px rgba(26, 26, 40, 0.05);
+  --shadow-pop:    0 12px 40px rgba(26, 26, 40, 0.12);
+
+  /* ── Radios ────────────────────────────────────────────────────────────── */
+  --radius-panel:   26px;  /* contenedor grande / panel flotante */
+  --radius-card:    18px;  /* tarjeta dentro de un panel */
+  --radius-control: 12px;  /* botón, input, badge */
+  --radius-pill:    999px; /* toggle, dropdown, buscador, chip */
+
+  /* ── Tipografía ────────────────────────────────────────────────────────── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Movimiento ────────────────────────────────────────────────────────── */
+  --ease:      cubic-bezier(0.25, 0.1, 0.25, 1);
+  --dur-fast:  150ms;
+  --dur-base:  200ms;
+  --dur-slow:  250ms;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Modo oscuro — sigue la preferencia del sistema.
+ * Los paneles siguen "flotando": suben de luminosidad respecto al fondo, que es
+ * como se lee la elevación en oscuro (una sombra negra sobre negro no se ve).
+ * ───────────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-app:       #131318;
+    --panel:        #1D1D24;
+    --panel-sunken: #26262F;
+    --panel-hover:  #2C2C36;
+
+    --chrome:       rgba(29, 29, 36, 0.72);
+
+    --text-primary:   #F4F4F7;
+    --text-secondary: #A6A6B2;
+    --text-tertiary:  #8A8A94;
+    --text-disabled:  #55555F;
+
+    --accent:       #8B7BF5;
+    --accent-hover: #9B8DF8;
+    --accent-press: #7A69E8;
+    --accent-soft:  rgba(139, 123, 245, 0.16);
+    --accent-ring:  rgba(139, 123, 245, 0.36);
+
+    --green:      #43B583;
+    --green-soft: rgba(67, 181, 131, 0.16);
+    --red:        #E8697F;
+    --red-soft:   rgba(232, 105, 127, 0.16);
+    --amber:      #DCA24A;
+    --amber-soft: rgba(220, 162, 74, 0.16);
+
+    --hairline:        rgba(255, 255, 255, 0.07);
+    --hairline-strong: rgba(255, 255, 255, 0.13);
+
+    --shadow-float:  0 4px 24px rgba(0, 0, 0, 0.36);
+    --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.30);
+    --shadow-pop:    0 12px 40px rgba(0, 0, 0, 0.50);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * ALIAS DE COMPATIBILIDAD
+ * Los nombres de la etapa anterior siguen vivos en ~21 archivos (vía los
+ * exports de utils/constants.js: DN, MU, BD, LT, MT, P, RJ, WA, GL...). Se
+ * remapean acá a la paleta nueva para que todo el software adopte el rediseño
+ * sin editar cada vista una por una.
+ * ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --surface-primary:   var(--panel);
+  --surface-secondary: var(--bg-app);
+  --surface-tertiary:  var(--panel-sunken);
+  --surface-chrome:    var(--chrome);
+
+  --fill-tertiary:    var(--panel-sunken);
+  --fill-quaternary:  var(--panel-hover);
+
+  --label-primary:    var(--text-primary);
+  --label-secondary:  var(--text-secondary);
+  --label-tertiary:   var(--text-tertiary);
+  --label-quaternary: var(--text-disabled);
+
+  --separator:        var(--hairline);
+  --separator-strong: var(--hairline-strong);
+  --separator-chrome: var(--hairline);
+
+  --accent-pressed: var(--accent-press);
+
+  --shadow-sm: var(--shadow-raised);
+  --shadow-md: var(--shadow-float);
+
+  --blur-chrome: var(--chrome-blur);
+
+  /* Los radios crecen: el estilo pide esquinas mucho más redondeadas que las
+     que tenía la etapa anterior (8/12/18 → 12/18/26). */
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-panel);
+}

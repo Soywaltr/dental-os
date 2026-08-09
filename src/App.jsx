@@ -1,9 +1,10 @@
 // src/App.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 // DentalOS · Shell
-// Riel de navegación negro, colapsable: iconos solos o iconos con nombre y
-// contador, nunca las dos cosas a la vez · Ajustes fijo al pie · Header con
-// título de vista, buscador global y perfil · Context + Reducer · Lazy views
+// Panel de navegación blanco flotante, colapsable a riel de íconos · pill suave
+// para el ítem activo y subsecciones colgando de una línea conectora · Ajustes
+// y "Contraer" al pie · Header con título, buscador global y perfil ·
+// Context + Reducer · Lazy views
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, {
@@ -21,6 +22,7 @@ import useAAL from "./utils/useAAL";
 import useContadoresNav from "./utils/useContadoresNav";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
+import NavIcon from "./components/ui/NavIcons";
 import { rutaPerfil } from "./utils/storage";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
@@ -34,20 +36,11 @@ const Reportes    = lazy(() => import("./components/vistas/Reportes"));
 const AsistenteDatos = lazy(() => import("./components/vistas/AsistenteDatos"));
 const Config      = lazy(() => import("./components/vistas/Config"));
 
-// ─── FONDO DECORATIVO (glassmorphism) ─────────────────────────────────────────
-// Compartido con Login.jsx vía utils/backdrop.js (evita import circular App<->Login).
-
-// Riel de navegación (nivel 1): casi negro, plano. El violeta del referente de
-// diseño no se usa acá a propósito -- está reservado para la serie "Ingresos" de
-// los gráficos, y repetirlo como color de marca haría que el mismo color
-// signifique dos cosas distintas en la misma pantalla.
-const RAIL_BG = "#141416";
-
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
-// Ya no son valores fijos: cada uno apunta a una variable CSS declarada en el
-// <style> de más abajo (":root" + "@media (prefers-color-scheme: dark)"), con
-// los valores del sistema de Apple. Repuntar acá cambia toda la app de una vez
-// y además la deja siguiendo el modo claro/oscuro del sistema operativo.
+// Ya no son valores fijos: cada uno apunta a una variable CSS declarada en
+// src/tokens.css (":root" + "@media (prefers-color-scheme: dark)"). Ese archivo
+// es la única fuente de verdad del color; repuntarlo cambia toda la app de una
+// vez y la deja siguiendo el modo claro/oscuro del sistema operativo.
 const C = {
   // Fondos.
   pageBg:      "var(--surface-secondary)",
@@ -181,28 +174,45 @@ const VIEWS = {
 // ─── ESTRUCTURA SIDEBAR ───────────────────────────────────────────────────────
 // Ajustes NO está en esta lista: va fijo al pie del riel (ver ITEM_AJUSTES), así
 // que tenerlo también acá lo mostraría dos veces.
+// Arquitectura de información. Se reagrupó porque la anterior mezclaba cosas
+// de distinta naturaleza:
+//
+//   · "Finanzas" estaba dentro de "Clínica" — no es trabajo clínico, es gestión
+//     del negocio. Ahora vive con Analítica bajo "Gestión".
+//   · "Analítica" colgaba suelta al lado de Dashboard y repite buena parte de su
+//     información (deudores, por cobrar, series de ingresos). Pasa a ser
+//     subsección: el Dashboard responde "qué pasa hoy" y Analítica "cómo venimos
+//     en el tiempo". Se muestra indentada, colgando de su padre.
+//   · "Clínica" queda con lo que de verdad es asistencial: la agenda, la
+//     historia del paciente y los dos tratamientos con flujo propio.
 const SIDEBAR_SECTIONS = [
   {
-    label: null, // sin etiqueta para la sección principal
+    label: null, // el inicio no necesita rótulo
     items: [
-      { id: "dashboard",  label: "Dashboard" },
-      { id: "agenda",     label: "Agenda" },
-      { id: "expediente", label: "Historial" },
-      { id: "reportes",   label: "Analítica" },
+      { id: "dashboard", label: "Dashboard", icon: "dashboard", children: [
+        { id: "reportes", label: "Analítica", icon: "reportes" },
+      ] },
     ],
   },
   {
     label: "Clínica",
     items: [
-      { id: "caja",        label: "Finanzas" },
-      { id: "laboratorio", label: "Laboratorio" },
-      { id: "ortodoncia",  label: "Ortodoncia" },
-      { id: "whatsapp",    label: "Chat IA",    badge: "IA" },
+      { id: "agenda",      label: "Agenda",     icon: "agenda" },
+      { id: "expediente",  label: "Historial",  icon: "expediente" },
+      { id: "ortodoncia",  label: "Ortodoncia", icon: "ortodoncia" },
+      { id: "laboratorio", label: "Laboratorio", icon: "laboratorio" },
+    ],
+  },
+  {
+    label: "Gestión",
+    items: [
+      { id: "caja",     label: "Finanzas", icon: "caja" },
+      { id: "whatsapp", label: "Chat IA",  icon: "whatsapp", badge: "IA" },
     ],
   },
 ];
 
-const ITEM_AJUSTES = { id: "config", label: "Ajustes" };
+const ITEM_AJUSTES = { id: "config", label: "Ajustes", icon: "config" };
 
 // Iconos — 16px, stroke 1.75
 const IC = {
@@ -233,11 +243,13 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
-// Un solo componente para los dos estados del riel: colapsado (icono de 36px con
-// el nombre en el tooltip) y desplegado (icono + nombre + contador). Activo =
-// pastilla blanca con el icono en oscuro.
-const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
+// Activo = "pill" de fondo suave, nunca un borde ni un bloque de color fuerte.
+// `sub` lo indenta como subsección (Analítica bajo Dashboard), colgando de la
+// línea conectora que dibuja el grupo.
+const NavItem = memo(({ item, isActive, collapsed, contador, onClick, sub = false }) => {
   const [hov, setHov] = useState(false);
+  const alto = 40; // área táctil cómoda incluso en el riel angosto
+
   return (
     <button
       onClick={() => onClick(item.id)}
@@ -247,33 +259,34 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
       onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
-        width: collapsed ? 36 : "100%", height: 36,
+        width: collapsed ? 40 : "100%", height: alto, minHeight: alto,
         margin: collapsed ? "0 auto" : 0,
-        display: "flex", alignItems: "center", gap: 10,
-        padding: collapsed ? 0 : "0 10px",
+        display: "flex", alignItems: "center", gap: 11,
+        padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
-        borderRadius: 11, border: "none",
-        background: isActive ? "#fff" : hov ? "rgba(255,255,255,0.12)" : "transparent",
-        color: isActive ? C.ink : hov ? "#fff" : "rgba(255,255,255,0.6)",
-        fontFamily: C.font, fontSize: 12.5,
-        fontWeight: isActive ? 650 : 500,
-        letterSpacing: "-0.1px", textAlign: "left",
+        borderRadius: "var(--radius-control)", border: "none",
+        // El pill activo es una superficie suave, no el acento a pleno: el
+        // violeta se reserva para el ícono y la barrita de la izquierda.
+        background: isActive ? "var(--accent-soft)" : hov ? "var(--panel-hover)" : "transparent",
+        color: isActive ? "var(--accent)" : hov ? "var(--text-primary)" : "var(--text-secondary)",
+        fontFamily: C.font, fontSize: 13.5,
+        fontWeight: isActive ? 600 : 400,
+        textAlign: "left",
         cursor: "pointer", outline: "none", flexShrink: 0,
-        transition: "background 0.14s, color 0.14s",
+        transition: "background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease)",
       }}
     >
       <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, flexShrink: 0 }}>
-        {IC[item.id]}
+        <NavIcon name={item.icon} size={sub ? 16 : 18} />
       </span>
 
-      {/* Colapsado no cabe la píldora "IA": se reduce a un punto, que igual avisa
-          que esa sección tiene algo distinto. */}
+      {/* Colapsado no cabe la píldora "IA": se reduce a un punto. */}
       {collapsed && item.badge && (
         <span style={{
-          position: "absolute", top: 6, right: 6,
+          position: "absolute", top: 7, right: 7,
           width: 6, height: 6, borderRadius: "50%",
-          background: C.green,
-          border: `1.5px solid ${isActive ? "#fff" : RAIL_BG}`,
+          background: "var(--accent)",
+          border: "1.5px solid var(--panel)",
         }} />
       )}
 
@@ -282,19 +295,22 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
           <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
           {item.badge && (
             <span style={{
-              fontSize: 8.5, fontWeight: 800, letterSpacing: "0.3px",
-              padding: "2px 6px", borderRadius: 100, flexShrink: 0,
-              background: isActive ? C.brandSoft : "rgba(255,255,255,0.16)",
-              color: isActive ? C.brandText : "#fff",
+              fontSize: 10, fontWeight: 600, letterSpacing: "0.2px",
+              padding: "3px 8px", borderRadius: "var(--radius-pill)", flexShrink: 0,
+              background: "var(--text-primary)", color: "var(--panel)",
             }}>
               {item.badge}
             </span>
           )}
-          {typeof contador === "number" && (
+          {typeof contador === "number" && contador > 0 && (
             <span style={{
-              fontSize: 10.5, fontWeight: 700, flexShrink: 0,
-              color: isActive ? C.inkMute : "rgba(255,255,255,0.45)",
-              minWidth: 14, textAlign: "right", fontVariantNumeric: "tabular-nums",
+              fontSize: 11, fontWeight: 600, flexShrink: 0,
+              minWidth: 20, height: 20, padding: "0 6px",
+              borderRadius: "var(--radius-pill)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: isActive ? "var(--panel)" : "var(--panel-sunken)",
+              color: "var(--text-secondary)",
+              fontVariantNumeric: "tabular-nums",
             }}>
               {contador}
             </span>
@@ -319,134 +335,151 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
   const logoUrl = useSignedUrl(clinica?.logo_url);
   const goTo = useCallback(id => dispatch({ type: "SET_VIEW", payload: { view: id } }), [dispatch]);
   const toggle = useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 60 : 230;
-
-  const divisor = { height: 1, background: "rgba(255,255,255,0.13)", flexShrink: 0 };
-  const sombra = "0 16px 40px rgba(15,23,42,0.24)";
+  const W = col ? 76 : 250;
 
   return (
-    // La cápsula negra ya no es todo el `<aside>`: es sólo el bloque de arriba
-    // (logo + secciones), que mide lo que su contenido necesita. Ajustes y la
-    // flecha de plegar quedan afuera, como sus propias píldoras, con un espacio
-    // real de por medio -- no una más de las secciones ni un botón metido en la
-    // fila del logo.
+    // Un solo panel blanco que flota sobre el fondo lavanda, con esquinas muy
+    // redondeadas y sombra difusa. Ajustes va al pie, DENTRO del mismo panel:
+    // separarlo en cápsulas sueltas competía visualmente con las secciones.
     <aside style={{
       width: W, minWidth: W,
-      margin: "13px 0 13px 10px",
-      height: "calc(100vh - 26px)",
+      margin: "14px 0 14px 14px",
+      height: "calc(100vh - 28px)",
+      background: "var(--panel)",
+      borderRadius: "var(--radius-panel)",
+      boxShadow: "var(--shadow-float)",
       display: "flex", flexDirection: "column",
-      flexShrink: 0, zIndex: 101,
-      transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
+      padding: "18px 0 14px",
+      flexShrink: 0, zIndex: 101, overflow: "hidden",
+      transition: "width var(--dur-slow) var(--ease), min-width var(--dur-slow) var(--ease)",
     }}>
 
-      {/* ── Cápsula: logo + secciones ── */}
-      {/* Vidrio/vibrancy: es chrome de navegación, no una tarjeta de
-          contenido -- ahí sí corresponde translucidez con blur. */}
+      {/* ── Marca ── */}
       <div style={{
-        background: "rgba(20,20,22,0.78)", backdropFilter: "var(--blur-chrome)", WebkitBackdropFilter: "var(--blur-chrome)",
-        borderRadius: "var(--radius-lg)", boxShadow: sombra,
-        display: "flex", flexDirection: "column",
-        padding: "12px 0", minHeight: 0, overflow: "hidden",
+        display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
+        padding: col ? 0 : "0 18px", marginBottom: 20,
+        justifyContent: col ? "center" : "flex-start",
       }}>
-        {/* Marca */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
-          padding: col ? 0 : "0 12px",
-          justifyContent: col ? "center" : "flex-start",
+          width: 36, height: 36, borderRadius: "var(--radius-control)", overflow: "hidden", flexShrink: 0,
+          background: logoUrl ? "transparent" : "var(--accent)",
+          display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
         }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 10, overflow: "hidden", flexShrink: 0,
-            background: logoUrl ? "transparent" : "rgba(255,255,255,0.14)",
-            display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
-          }}>
-            {logoUrl ? (
-              <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
-              </svg>
-            )}
-          </div>
-          {!col && (
-            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {clinica?.nombre || "DentalOS"}
-            </span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+            </svg>
           )}
         </div>
+        {!col && (
+          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {clinica?.nombre || "DentalOS"}
+          </span>
+        )}
+      </div>
 
-        <div style={{ ...divisor, margin: col ? "11px 18px 9px" : "13px 12px 9px" }} />
+      {/* ── Secciones ── */}
+      <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: col ? 0 : "0 12px" }}>
+        {SIDEBAR_SECTIONS.map((section, si) => (
+          <div key={si} style={{ marginBottom: 14 }}>
+            {section.label && !col && (
+              <div style={{
+                fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)",
+                letterSpacing: "0.4px", textTransform: "uppercase",
+                padding: "0 12px 8px",
+              }}>
+                {section.label}
+              </div>
+            )}
+            {/* Colapsado no hay lugar para el rótulo: un espacio extra separa
+                los grupos, en vez de una línea dura. */}
+            {section.label && col && si > 0 && <div style={{ height: 10 }} />}
 
-        {/* Secciones */}
-        <nav style={{ overflowY: "auto", overflowX: "hidden", padding: col ? 0 : "0 10px" }}>
-          {SIDEBAR_SECTIONS.map((section, si) => (
-            <div key={si} style={{ marginBottom: col ? 0 : 8 }}>
-              {section.label && !col && (
-                <div style={{
-                  fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.38)",
-                  letterSpacing: "0.7px", textTransform: "uppercase",
-                  padding: "10px 10px 6px",
-                }}>
-                  {section.label}
-                </div>
-              )}
-              {/* Colapsado no hay lugar para el rótulo del grupo: una línea fina
-                  hace de separador. */}
-              {section.label && col && si > 0 && (
-                <div style={{ ...divisor, margin: "9px 18px" }} />
-              )}
-              <div style={{ display: "flex", flexDirection: "column", gap: col ? 5 : 2 }}>
-                {section.items.map(item => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {section.items.map(item => (
+                <React.Fragment key={item.id}>
                   <NavItem
-                    key={item.id}
                     item={item}
                     isActive={view === item.id}
                     collapsed={col}
                     contador={contadores[item.id]}
                     onClick={goTo}
                   />
-                ))}
-              </div>
+                  {/* Subsecciones: indentadas y colgando de una línea vertical
+                      fina, para que se lea que dependen de su padre. */}
+                  {item.children && !col && (
+                    <div style={{ position: "relative", paddingLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 3 }}>
+                      <span aria-hidden="true" style={{
+                        position: "absolute", left: 21, top: 4, bottom: 4,
+                        width: 1.5, borderRadius: 1, background: "var(--hairline-strong)",
+                      }} />
+                      {item.children.map(hijo => (
+                        <NavItem
+                          key={hijo.id}
+                          item={hijo}
+                          isActive={view === hijo.id}
+                          collapsed={false}
+                          contador={contadores[hijo.id]}
+                          onClick={goTo}
+                          sub
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* Colapsado el riel no tiene ancho para indentar, así que la
+                      subsección se muestra como un ícono más — si no, quedaría
+                      inalcanzable al plegar el menú. */}
+                  {item.children && col && item.children.map(hijo => (
+                    <NavItem
+                      key={hijo.id}
+                      item={hijo}
+                      isActive={view === hijo.id}
+                      collapsed
+                      contador={contadores[hijo.id]}
+                      onClick={goTo}
+                      sub
+                    />
+                  ))}
+                </React.Fragment>
+              ))}
             </div>
-          ))}
-        </nav>
-      </div>
+          </div>
+        ))}
+      </nav>
 
-      {/* El espacio entre las dos cápsulas es la propia página (transparente):
-          por eso se ve un corte real, no sólo una línea divisoria. */}
-      <div style={{ flex: 1, minHeight: 10 }} />
-
-      {/* ── Cápsula: Ajustes ── */}
-      <div style={{
-        background: "rgba(20,20,22,0.78)", backdropFilter: "var(--blur-chrome)", WebkitBackdropFilter: "var(--blur-chrome)",
-        borderRadius: "var(--radius-md)", boxShadow: sombra,
-        padding: col ? "6px 0" : "6px 10px", flexShrink: 0,
-      }}>
+      {/* ── Pie: Ajustes + plegar ── */}
+      <div style={{ flexShrink: 0, padding: col ? 0 : "0 12px", marginTop: 10 }}>
         <NavItem
           item={ITEM_AJUSTES}
           isActive={view === ITEM_AJUSTES.id}
           collapsed={col}
           onClick={goTo}
         />
+        <button
+          onClick={toggle}
+          aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
+          title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
+          style={{
+            width: col ? 40 : "100%", height: 40, minHeight: 40,
+            margin: col ? "3px auto 0" : "3px 0 0",
+            display: "flex", alignItems: "center", justifyContent: col ? "center" : "flex-start",
+            gap: 11, padding: col ? 0 : "0 12px",
+            borderRadius: "var(--radius-control)", border: "none", background: "transparent",
+            color: "var(--text-tertiary)", fontFamily: C.font, fontSize: 13.5,
+            cursor: "pointer", outline: "none",
+            transition: "background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease)",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--panel-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-tertiary)"; }}
+        >
+          <span style={{ display: "flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <NavIcon name="panel" size={18} />
+          </span>
+          {!col && <span>Contraer</span>}
+        </button>
       </div>
-
-      {/* ── Flecha de plegar/desplegar, siempre al pie ── */}
-      <button
-        onClick={toggle}
-        aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
-        title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
-        style={{
-          width: 34, height: 34, margin: "10px auto 0", flexShrink: 0,
-          borderRadius: "50%", border: "none",
-          background: RAIL_BG, color: "rgba(255,255,255,0.6)", boxShadow: sombra,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", outline: "none", transition: "background 0.14s, color 0.14s, transform 0.2s",
-          transform: col ? "rotate(180deg)" : "none",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = "#26262a"; e.currentTarget.style.color = "#fff"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = RAIL_BG; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-      >
-        {IC.chevLeft}
-      </button>
     </aside>
   );
 });
@@ -513,7 +546,7 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
   return (
     <div ref={cajaRef} style={{ position: "relative", flex: 1, maxWidth: 430, minWidth: 0 }}>
       <span style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: C.inkMute, display: "flex", pointerEvents: "none" }}>
-        {IC.search}
+        <NavIcon name="buscar" size={17} />
       </span>
       <input
         ref={inputRef}
@@ -592,17 +625,20 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
   const { isNarrow } = useResponsive();
 
   return (
+    // El header también es un panel flotante: sin borde inferior duro, separado
+    // del contenido por aire, igual que el resto de los bloques.
     <header style={{
-      height: 62,
+      height: 64, minHeight: 64,
       display: "flex", alignItems: "center",
-      padding: "0 4px 0 22px",
+      padding: "0 14px 0 22px",
+      margin: isNarrow ? "14px 14px 0 0" : "14px 22px 0 0",
       gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
-      background: "var(--surface-chrome)",
-      backdropFilter: "var(--blur-chrome)", WebkitBackdropFilter: "var(--blur-chrome)",
-      borderBottom: "1px solid var(--separator)",
+      background: "var(--panel)",
+      borderRadius: "var(--radius-panel)",
+      boxShadow: "var(--shadow-float)",
     }}>
       {/* Título de la vista */}
-      <span style={{ fontSize: 17, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: "-0.3px", flexShrink: 0 }}>
+      <span style={{ fontSize: 19, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: "-0.02em", flexShrink: 0 }}>
         {label}
       </span>
 
@@ -649,13 +685,13 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
           onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "agenda" } })}
           title={isNarrow ? "Nueva cita" : undefined}
         >
-          {IC.plus}
+          <NavIcon name="mas" size={16} />
           {!isNarrow && "Nueva cita"}
         </PrimaryBtn>
 
         {/* Notificaciones. Ajustes ya no está acá: vive fijo al pie del riel. */}
         <HeaderIconBtn label={`${state.notifCount} notificaciones`} badge={state.notifCount}>
-          {IC.bell}
+          <NavIcon name="campana" size={18} />
         </HeaderIconBtn>
 
         {/* Perfil: avatar + quién está usando la app y con qué rol. En angosto,
@@ -915,69 +951,6 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
-        /* ── Tokens: sistema de variables, modo claro por defecto ── */
-        :root {
-          --surface-primary: #FFFFFF;
-          --surface-secondary: #F5F5F7;
-          --surface-tertiary: #FBFBFD;
-          --fill-quaternary: rgba(0,0,0,0.035);
-          --fill-tertiary: rgba(0,0,0,0.06);
-          --label-primary: #1D1D1F;
-          --label-secondary: #6E6E73;
-          --label-tertiary: #8E8E93;
-          --label-quaternary: #C7C7CC;
-          --separator: rgba(0,0,0,0.08);
-          --separator-strong: rgba(0,0,0,0.14);
-          --separator-chrome: rgba(255,255,255,0.6);
-          --surface-chrome: rgba(255,255,255,0.72);
-          --accent: #0071E3;
-          --accent-pressed: #0058B0;
-          --accent-soft: rgba(0,113,227,0.12);
-          --green: #34C759;
-          --green-soft: rgba(52,199,89,0.14);
-          --red: #FF3B30;
-          --red-soft: rgba(255,59,48,0.13);
-          --amber: #FF9500;
-          --amber-soft: rgba(255,149,0,0.14);
-          --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-          --shadow-md: 0 1px 2px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.06);
-          --blur-chrome: blur(20px) saturate(180%);
-          --radius-sm: 8px;
-          --radius-md: 12px;
-          --radius-lg: 18px;
-        }
-        /* Modo oscuro: sigue la apariencia del sistema, sin switch manual todavía
-           -- igual que una app nativa que no fue configurada explícitamente en
-           Ajustes del sistema. */
-        @media (prefers-color-scheme: dark) {
-          :root {
-            --surface-primary: #1D1D1F;
-            --surface-secondary: #000000;
-            --surface-tertiary: #2C2C2E;
-            --fill-quaternary: rgba(255,255,255,0.06);
-            --fill-tertiary: rgba(255,255,255,0.1);
-            --label-primary: #F5F5F7;
-            --label-secondary: #A1A1A6;
-            --label-tertiary: #8E8E93;
-            --label-quaternary: #48484A;
-            --separator: rgba(255,255,255,0.12);
-            --separator-strong: rgba(255,255,255,0.2);
-            --separator-chrome: rgba(255,255,255,0.1);
-            --surface-chrome: rgba(29,29,31,0.72);
-            --accent: #0A84FF;
-            --accent-pressed: #409CFF;
-            --accent-soft: rgba(10,132,255,0.18);
-            --green: #30D158;
-            --green-soft: rgba(48,209,88,0.16);
-            --red: #FF453A;
-            --red-soft: rgba(255,69,58,0.16);
-            --amber: #FF9F0A;
-            --amber-soft: rgba(255,159,10,0.16);
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-            --shadow-md: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
-          }
-        }
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
           font-family: ${C.font};
@@ -1035,7 +1008,7 @@ export default function App() {
               que pase, así que colapsar el riel (60px vs 230px) sólo agrandaba el
               margen vacío a los lados en vez de darle ese espacio a la vista. El
               tope de 2000px es sólo para monitores ultra-anchos. */}
-          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "4px 14px 32px" : "4px 22px 44px", background: "transparent" }}>
+          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isTablet ? "14px 14px 28px 0" : "16px 22px 32px 0", background: "transparent" }}>
             <div style={{ maxWidth: 2000, margin: "0 auto" }}>
               <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
             </div>
