@@ -131,12 +131,12 @@ export default function Reportes() {
 
       {/* ── KPIs ── */}
       <div style={{ display: 'flex', gap: 11, marginBottom: 16, flexWrap: 'wrap' }}>
-        <Stat label="Total pacientes" value={pacientes.length} col={DN} />
-        <Stat label="Nuevos (30 días)" value={estados.nuevo} col={AZ} />
-        <Stat label="Facturado este mes" value={`S/${meses[mesActualIdx].facturado.toLocaleString()}`} col={P} />
-        <Stat label="Cobrado este mes" value={`S/${meses[mesActualIdx].cobrado.toLocaleString()}`} col={WA} />
-        <Stat label="Saldo pendiente total" value={`S/${totalPendiente.toLocaleString()}`} col={totalPendiente > 0 ? RJ : WA} />
-        <Stat label="Tasa de completados" value={`${tasaCompletado}%`} col={PD} />
+        <Stat label="Total pacientes" value={pacientes.length} col={DN} icon={<Icon name="users" size={15} />} />
+        <Stat label="Nuevos (30 días)" value={estados.nuevo} col={AZ} icon={<Icon name="userPlus" size={15} />} />
+        <Stat label="Facturado este mes" value={`S/${meses[mesActualIdx].facturado.toLocaleString()}`} col={P} icon={<Icon name="trendingUp" size={15} />} />
+        <Stat label="Cobrado este mes" value={`S/${meses[mesActualIdx].cobrado.toLocaleString()}`} col={WA} icon={<Icon name="card" size={15} />} />
+        <Stat label="Saldo pendiente total" value={`S/${totalPendiente.toLocaleString()}`} col={totalPendiente > 0 ? RJ : WA} icon={<Icon name="clock" size={15} />} />
+        <Stat label="Tasa de completados" value={`${tasaCompletado}%`} col={PD} icon={<Icon name="checkCircle" size={15} />} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1.3fr 1fr', gap: 16, marginBottom: 16 }}>

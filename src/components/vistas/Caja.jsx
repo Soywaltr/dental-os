@@ -340,10 +340,10 @@ export default function Caja({ clinicaId }) {
   return (
     <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
       <div style={{ display: 'flex', gap: 11, marginBottom: 16, flexWrap: 'wrap' }}>
-        <Stat label="Total facturado" value={`S/${total.toLocaleString()}`} />
-        <Stat label="Cobrado" value={`S/${cobrado.toLocaleString()}`} col={WA} sub={pendiente === 0 && total > 0 ? 'Al día' : undefined} />
-        <Stat label="Pendiente" value={`S/${pendiente.toLocaleString()}`} col={pendiente > 0 ? RJ : WA} />
-        <Stat label="Ingresos del mes" value={`S/${ingresosMesActual.toLocaleString()}`} col={P}
+        <Stat label="Total facturado" value={`S/${total.toLocaleString()}`} icon={<Icon name="document" size={15} />} />
+        <Stat label="Cobrado" value={`S/${cobrado.toLocaleString()}`} col={WA} icon={<Icon name="checkCircle" size={15} />} sub={pendiente === 0 && total > 0 ? 'Al día' : undefined} />
+        <Stat label="Pendiente" value={`S/${pendiente.toLocaleString()}`} col={pendiente > 0 ? RJ : WA} icon={<Icon name="clock" size={15} />} />
+        <Stat label="Ingresos del mes" value={`S/${ingresosMesActual.toLocaleString()}`} col={P} icon={<Icon name="trendingUp" size={15} />}
           sub={variacionMes === null ? undefined : `${variacionMes >= 0 ? '↑' : '↓'} ${Math.abs(variacionMes)}% vs anterior`} />
       </div>
 

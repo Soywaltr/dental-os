@@ -10,8 +10,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
+import Stat from '../ui/Stat';
 import SegmentedControl from '../ui/SegmentedControl';
-import { GraficoLineas, Leyenda, Sparkline, Anillo } from '../ui/Graficos';
+import { GraficoLineas, Leyenda } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
@@ -148,7 +149,6 @@ export default function Dashboard({ setView, clinica }) {
 
   const serieIngresos = meses12.map(m => m.ingresos);
   const serieGastos = meses12.map(m => m.gastos);
-  const serieUtilidad = meses12.map(m => m.ingresos - m.gastos);
   const seriesGrafico = [
     { nombre: 'Ingresos', color: COLOR_INGRESOS, valores: serieIngresos },
     { nombre: 'Gastos', color: COLOR_GASTOS, valores: serieGastos },
@@ -267,15 +267,6 @@ export default function Dashboard({ setView, clinica }) {
     { icon: 'chat', titulo: 'Preguntar a la IA', sub: 'Sobre tus datos', view: 'whatsapp' },
   ];
 
-  const kpisMini = [
-    { label: 'Ingresos', value: soles(ingresosMes), serie: serieIngresos, col: COLOR_INGRESOS,
-      delta: pctIngresos === null ? null : `${pctIngresos >= 0 ? '▲' : '▼'} ${Math.abs(pctIngresos)}%`,
-      deltaCol: pctIngresos === null ? MU : (pctIngresos >= 0 ? VERDE : RJ) },
-    { label: 'Gastos', value: soles(gastosMes), serie: serieGastos, col: COLOR_GASTOS,
-      delta: `${gastosDelMes.length} registro${gastosDelMes.length !== 1 ? 's' : ''}`, deltaCol: MU },
-    { label: 'Utilidad neta', value: soles(utilidadMes), serie: serieUtilidad, col: utilidadMes >= 0 ? VERDE : RJ,
-      delta: `${margenPct}% de margen`, deltaCol: utilidadMes >= 0 ? VERDE : RJ },
-  ];
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 14, alignItems: 'start', animation: 'fadeIn 0.4s ease-in-out' }}>
@@ -437,55 +428,45 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-      {/* ─── RESUMEN FINANCIERO ─── una sola tira con divisores, no 5 tarjetas
-          sueltas con formas distintas (esa mezcla de tarjeta de acento + anillo
-          + 3 mini-tarjetas era el tramo más "desordenado" del panel). */}
-      <div style={{
-        ...col(12), ...card,
-        flexDirection: isTablet ? 'column' : 'row',
-        alignItems: isTablet ? 'stretch' : 'center',
-        gap: isTablet ? 16 : 0,
-        padding: isTablet ? 18 : '18px 24px',
-      }}>
-        {kpisMini.map(k => (
-          <React.Fragment key={k.label}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: isTablet ? undefined : '1 1 0', minWidth: 0 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={rotulo}>{k.label}</div>
-                <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--label-primary)', lineHeight: 1.15, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-                <div style={{ fontSize: 11, color: k.deltaCol, fontWeight: 600, marginTop: 3 }}>{k.delta}</div>
-              </div>
-              <Sparkline valores={k.serie} color={k.col} ancho={50} alto={26} />
-            </div>
-            {!isTablet && <div style={{ width: 1, alignSelf: 'stretch', background: BD, margin: '0 22px' }} />}
-          </React.Fragment>
-        ))}
-
-        <div style={{ flex: isTablet ? undefined : '1.3 1 0', minWidth: 0 }}>
-          <div style={{ ...rotulo, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: saldoPendienteTotal > 0 ? RJ : VERDE, flexShrink: 0 }} />
-            Por cobrar
-          </div>
-          <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--label-primary)', lineHeight: 1.15, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
-            {soles(saldoPendienteTotal)}
-          </div>
-          <div onClick={() => setView && setView('caja')} style={{ fontSize: 11, color: P, fontWeight: 600, marginTop: 3, cursor: 'pointer' }}>
-            {saldoPendienteTotal > 0
-              ? `${deudaPorPaciente.size} paciente${deudaPorPaciente.size !== 1 ? 's' : ''} · ir a cobrar →`
-              : 'Todo cobrado →'}
-          </div>
-        </div>
-        {!isTablet && <div style={{ width: 1, alignSelf: 'stretch', background: BD, margin: '0 22px' }} />}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Anillo pct={tasaCobro} color={tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ} tamano={52} grosor={6}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{tasaCobro}%</span>
-          </Anillo>
-          <div>
-            <div style={rotulo}>Tasa de cobro</div>
-            <div style={{ fontSize: 12, color: MU, marginTop: 3 }}>{soles(totalCobrado)} de {soles(totalFacturado)}</div>
-          </div>
-        </div>
+      {/* ─── INDICADORES ─── 4 tarjetas iguales (ícono en círculo teñido +
+          etiqueta + cifra + variación), como la fila de KPIs de un dashboard
+          SaaS de referencia — no una tira con divisores. */}
+      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+        <Stat
+          label="Ingresos del mes"
+          value={soles(ingresosMes)}
+          icon={<Icon name="trendingUp" size={15} />}
+          col={COLOR_INGRESOS}
+          sub={pctIngresos === null ? null : `${pctIngresos >= 0 ? '↑' : '↓'} ${Math.abs(pctIngresos)}% vs. mes anterior`}
+          subCol={pctIngresos === null ? MU : (pctIngresos >= 0 ? VERDE : RJ)}
+        />
+        <Stat
+          label="Gastos del mes"
+          value={soles(gastosMes)}
+          icon={<Icon name="card" size={15} />}
+          col={COLOR_GASTOS}
+          sub={`${gastosDelMes.length} registro${gastosDelMes.length !== 1 ? 's' : ''}`}
+          subCol={MU}
+        />
+        <Stat
+          label="Utilidad neta"
+          value={soles(utilidadMes)}
+          icon={<Icon name="checkCircle" size={15} />}
+          col={utilidadMes >= 0 ? VERDE : RJ}
+          sub={`${margenPct}% de margen`}
+          subCol={utilidadMes >= 0 ? VERDE : RJ}
+        />
+        <Stat
+          label="Por cobrar"
+          value={soles(saldoPendienteTotal)}
+          icon={<Icon name="clock" size={15} />}
+          col={saldoPendienteTotal > 0 ? RJ : VERDE}
+          onClick={() => setView && setView('caja')}
+          sub={saldoPendienteTotal > 0
+            ? `${deudaPorPaciente.size} paciente${deudaPorPaciente.size !== 1 ? 's' : ''} · ${tasaCobro}% cobrado`
+            : 'Todo cobrado'}
+          subCol={saldoPendienteTotal > 0 ? RJ : VERDE}
+        />
       </div>
 
       {/* ─── NECESITA TU ATENCIÓN ─── (fila 4: 5 + 4 + 3 = 12) — las 3 tarjetas
