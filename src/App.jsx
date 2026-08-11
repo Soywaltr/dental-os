@@ -222,10 +222,9 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
-// Vive sobre el riel relleno con el acento, así que sus colores salen de los
-// tokens --rail-*, que sólo emparejan --accent con --accent-contrast: ese par
-// está verificado como legible, por lo que el riel funciona con cualquier acento
-// que elija una clínica. Activo = cuadrado claro con el ícono en el acento.
+// Colores desde los tokens --rail-*. Activo = píldora sólida negra (blanca en
+// modo oscuro) con texto en el color opuesto, NO un tinte de --accent -- así
+// se lee igual sin importar qué color de marca elija cada clínica.
 // El :hover lo pone .rail-item en ui.css (un inline style no puede).
 const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
   const alto = 40; // área táctil cómoda incluso en el riel angosto
@@ -243,7 +242,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         display: "flex", alignItems: "center", gap: 11,
         padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
-        borderRadius: "var(--radius-control)", border: "none",
+        borderRadius: "var(--radius-pill)", border: "none",
         background: isActive ? "var(--rail-active-bg)" : "transparent",
         color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink)",
         fontFamily: C.font, fontSize: 13.5,
@@ -279,12 +278,17 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
             </span>
           )}
           {typeof contador === "number" && contador > 0 && (
+            // Sobre la píldora activa (sólida, sin relación con --accent) un
+            // tinte del acento se veía como una mancha al azar -- el overlay
+            // translúcido en el color OPUESTO de la píldora (blanco sobre
+            // negro, negro sobre blanco en oscuro) es lo que de verdad separa
+            // el número del fondo sólido.
             <span style={{
               fontSize: 11, fontWeight: 600, flexShrink: 0,
               minWidth: 20, height: 20, padding: "0 6px",
               borderRadius: "var(--radius-pill)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: isActive ? "var(--accent-soft)" : "var(--rail-hover)",
+              background: isActive ? "color-mix(in srgb, var(--rail-active-ink) 20%, transparent)" : "var(--rail-hover)",
               color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
               fontVariantNumeric: "tabular-nums",
             }}>
@@ -298,9 +302,9 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
 });
 
 // ─── COMPONENTE: RIEL DE NAVEGACIÓN ───────────────────────────────────────────
-// Panel claro flotante. Sus colores salen de los tokens --rail-*, que derivan de
-// --panel/--accent, así que sigue el tema y el acento de cada clínica sin lógica
-// propia. Ítem activo = tinte del acento, no un bloque saturado.
+// Panel claro flotante. Sus colores salen de los tokens --rail-*. Ítem activo
+// = píldora sólida (negra en claro, blanca en oscuro) con texto en el color
+// opuesto -- ver el comentario de --rail-active-bg en tokens.css.
 //
 // Al pie, y en este orden: Ajustes, plegar, y el bloque de perfil del usuario.
 // El perfil vive acá (no en el header) porque es identidad de sesión, no una
@@ -549,30 +553,36 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
         onChange={e => onCambio(e.target.value)}
         onFocus={() => { if (hayTexto) setAbierto(true); }}
         placeholder="Buscar paciente por nombre o documento…"
+        // Fondo gris claro sin borde visible: el campo se distingue del panel
+        // por el cambio de superficie, no por una línea. El foco lo marca
+        // .field en ui.css con box-shadow (un anillo, no un borde nuevo).
+        className="field"
         style={{
           width: "100%", padding: "9px 34px 9px 36px",
-          borderRadius: 12, border: `1px solid ${C.border}`,
-          background: "var(--panel)", fontSize: 13,
+          borderRadius: "var(--radius-control)", border: "1px solid transparent",
+          background: "var(--panel-sunken)", fontSize: 13,
           fontFamily: C.font, color: C.ink, outline: "none",
-          transition: "border-color 0.12s, box-shadow 0.12s",
         }}
-        onMouseEnter={e => { e.target.style.borderColor = C.borderStrong; }}
-        onMouseLeave={e => { if (document.activeElement !== e.target) e.target.style.borderColor = C.border; }}
       />
       <kbd style={{
         position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
         fontSize: 10, color: C.inkMute, fontFamily: C.fontMono,
-        background: C.brandSoft, padding: "2px 6px", borderRadius: 5,
+        background: C.brandSoft, padding: "2px 6px", borderRadius: "var(--radius-control)",
         pointerEvents: "none",
       }}>
         /
       </kbd>
 
       {abierto && hayTexto && (
+        // Opaco, no vidrio: es una lista densa de resultados (nombre + DNI),
+        // y ahí la legibilidad pesa más que el efecto -- mismo criterio que
+        // el tooltip del gráfico. La sombra pasa de un valor azul-marino sin
+        // token a --shadow-pop, la misma que usa cualquier otro elemento que
+        // flota sobre el contenido.
         <div style={{
           position: "absolute", top: "calc(100% + 7px)", left: 0, right: 0,
-          background: "var(--panel)", borderRadius: 14, border: `1px solid ${C.border}`,
-          boxShadow: "0 18px 40px rgba(15,23,42,0.16)", overflow: "hidden", zIndex: 200,
+          background: "var(--panel)", borderRadius: "var(--radius-card)", border: `1px solid ${C.border}`,
+          boxShadow: "var(--shadow-pop)", overflow: "hidden", zIndex: 200,
         }}>
           {buscando && <div style={{ padding: "14px 15px", fontSize: 12, color: C.inkMute }}>Buscando…</div>}
           {!buscando && resultados.length === 0 && (

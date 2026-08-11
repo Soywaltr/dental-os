@@ -51,27 +51,26 @@ export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--labe
 // Identidad de la serie "Ingresos" en los gráficos. NO sigue el tema: es el
 // color fijo de una serie de datos, no chrome.
 //
-// Era violeta (#7c3aed). Se cambió a teal porque el violeta pasó a ser el
-// acento único de la interfaz, y el mismo color no puede significar dos cosas
-// en la misma pantalla. El teal se eligió midiendo con validate_palette.js:
-//   · contra "Gastos" (#b45309): ΔE 13.6 daltonismo / 23.6 visión normal — pasa
-//   · contra el acento violeta: ΔE 24.2 — el más distinguible de los candidatos
-// Un azul (#1D4ED8) habría fallado: ΔE 10.6 contra el acento, por debajo del
-// piso de 15, se leerían como el mismo color.
+// Es teal. El acento pasó de violeta a verde salvia en el rediseño
+// glassmorphism, así que este teal quedó más cerca en tono de --accent (ΔE
+// 10.5 en OKLab) y de --green (ΔE 9.1) que antes -- no colisiona (ambos siguen
+// por encima del piso de daltonismo) pero ya no tiene el margen amplio que
+// tenía contra el violeta (ΔE 24.2). Aparecen en formas y lugares distintos
+// (línea de gráfico vs. píldora de nav vs. barra de estado), así que no se
+// confunden en pantalla, pero si en el futuro se agrega una CUARTA serie
+// verde/teal, hay que remedir con validate_palette.js antes de elegirla.
 export const CAT_ACCENT = '#0D9488';
 
-// Superficies de tarjeta — sólidas y planas, sin vidrio esmerilado NI la
-// sombra suave "flotante" que tenían antes. Stripe, Linear, Mercury y Ramp
-// resuelven la jerarquía de tarjetas con un borde de un pixel casi
-// imperceptible y una sombra de contacto mínima -- nunca una sombra grande y
-// difusa, que es lo que hace que una tarjeta "flote" y lea como una plantilla
-// de generador. GLASS_BLUR sigue en 'none': la vibrancy/blur de Apple es para
-// el chrome (riel, header, modales), no para cada tarjeta de contenido -- eso
-// sí se aplica directo en App.jsx/Modal.jsx con --blur-chrome.
-export const GLASS_BG = 'var(--surface-primary)';
-export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid var(--separator)';
-export const GLASS_SHADOW = 'var(--shadow-sm)';
+// Superficies de tarjeta — vidrio de verdad: fondo translúcido + blur +
+// borde de luz, no la superficie sólida y plana de la etapa anterior (ese
+// diseño evitaba blur a propósito; el rediseño actual lo pide explícitamente
+// en las 12 vistas que ya importan estas cuatro constantes, más Login.jsx,
+// Modal.jsx y MFAChallenge.jsx -- repuntar sólo esto les da vidrio a todas
+// sin tocar cada archivo). Los tokens --panel-glass-* están en tokens.css.
+export const GLASS_BG = 'var(--panel-glass-bg)';
+export const GLASS_BLUR = 'var(--panel-glass-blur)';
+export const GLASS_BORDER = '1px solid var(--panel-glass-border)';
+export const GLASS_SHADOW = 'var(--shadow-raised)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
 // con los imports existentes (Button.jsx, Login.jsx, MFAChallenge.jsx, App.jsx).

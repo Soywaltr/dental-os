@@ -338,12 +338,16 @@ export default function Dashboard({ setView, clinica }) {
   const maxGasto = Math.max(...gastosPorCategoria.map(([, v]) => v), 1);
 
   // ── Estilos base ─────────────────────────────────────────────────────────
-  // Panel flotante: blanco puro sobre el fondo lavanda, muy redondeado, sombra
-  // difusa y SIN borde — la separación la dan el aire y la sombra, no una línea.
+  // Tarjeta de vidrio: mismo tratamiento que las otras 12 vistas (GLASS_BG/
+  // GLASS_BLUR/GLASS_BORDER en utils/constants.js) -- antes el Dashboard usaba
+  // var(--panel) opaco directo, por su cuenta, y quedaba desalineado del resto
+  // de la app apenas se activó el vidrio en todas las demás.
   const card = {
-    background: 'var(--panel)',
+    background: 'var(--panel-glass-bg)',
+    backdropFilter: 'var(--panel-glass-blur)', WebkitBackdropFilter: 'var(--panel-glass-blur)',
+    border: '1px solid var(--panel-glass-border)',
     borderRadius: 'var(--radius-panel)', padding: 24,
-    boxShadow: 'var(--shadow-float)',
+    boxShadow: 'var(--shadow-raised)',
     display: 'flex', flexDirection: 'column',
   };
   const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' };
