@@ -58,20 +58,23 @@
      es el default para #6C5CE7 (4.86:1, blanco gana). */
   --accent-contrast: #FFFFFF;
 
-  /* ── Riel de navegación (relleno con el acento) ─────────────────────────
-     Sólo emparejan --accent con --accent-contrast, nunca un blanco fijo: ese
-     par ya está verificado como legible (contrasteTexto() elige el que gana en
-     contraste), así que el riel funciona con CUALQUIER acento que elija una
-     clínica -- incluido uno claro, donde un ícono blanco quedaría invisible.
-     No hace falta redefinirlos en modo oscuro: derivan de --accent, que sí
-     cambia, y la relación entre ambos se mantiene. */
-  --rail-bg:         var(--accent);
-  --rail-ink:        color-mix(in srgb, var(--accent-contrast) 76%, transparent);
-  --rail-ink-strong: var(--accent-contrast);
-  --rail-hover:      color-mix(in srgb, var(--accent-contrast) 14%, transparent);
-  --rail-active-bg:  var(--accent-contrast);
+  /* ── Riel de navegación ──────────────────────────────────────────────────
+     Panel claro, no una franja de color: el riel es chrome y debe ceder
+     protagonismo al contenido. El ítem activo se distingue con un tinte del
+     acento, no con un bloque saturado.
+
+     Se definen como tokens propios (en vez de usar --panel/--accent directo en
+     el componente) porque son los mismos valores que consumen el logo, los
+     rótulos de grupo y el bloque de perfil: si el riel cambia de tratamiento,
+     se toca acá y no en seis lugares del JSX. Derivan de tokens que ya
+     invierten con el tema, así que no hace falta redefinirlos en oscuro. */
+  --rail-bg:         var(--panel);
+  --rail-ink:        var(--text-secondary);
+  --rail-ink-strong: var(--text-primary);
+  --rail-hover:      var(--panel-hover);
+  --rail-active-bg:  var(--accent-soft);
   --rail-active-ink: var(--accent);
-  --rail-divisor:    color-mix(in srgb, var(--accent-contrast) 18%, transparent);
+  --rail-divisor:    var(--hairline);
 
   /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
   /* Mismo criterio que los grises: estos colores se usan como TEXTO (cifras,

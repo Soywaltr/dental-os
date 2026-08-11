@@ -7,7 +7,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
-import { BD, P, GL, MU, DN, MT, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BD, P, GL, MU, DN, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
@@ -18,6 +18,22 @@ const NAV_TRANSITION = 'background-color .15s cubic-bezier(0.25, 0.1, 0.25, 1), 
 // Horas cerradas: rayado diagonal con dos superficies del tema (antes dos
 // grises fijos), para que el patrón siga leyéndose en modo oscuro.
 const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, var(--surface-tertiary), var(--surface-tertiary) 6px, var(--fill-tertiary) 6px, var(--fill-tertiary) 12px)';
+
+// Tipos de bloque de cita. Antes eran tres colores saturados con texto blanco
+// (#6366f1 indigo, #0D5C6B teal, #e11d48 rojo) y el rojo era el caso POR
+// DEFECTO -- en el resto de la app el rojo significa "problema", así que una
+// cita normal se leía como una alerta. Ahora son tintes suaves con texto
+// oscuro, que es además lo que hace legible el título Y la hora dentro de un
+// bloque de 46px de alto.
+//
+// `borde` da el filo de color a la izquierda: es lo que sigue distinguiendo un
+// tipo de otro cuando el relleno es tenue.
+const TIPO_CITA = {
+  google: { tinte: 'color-mix(in srgb, var(--accent) 14%, var(--panel))', borde: 'var(--accent)' },
+  nuevo:  { tinte: 'var(--green-soft)', borde: 'var(--green)' },
+  normal: { tinte: 'var(--panel-sunken)', borde: 'var(--hairline-strong)' },
+};
+const tipoDeCita = (p) => (p.isGoogleOnly ? 'google' : p.tag === 'nuevo' ? 'nuevo' : 'normal');
 
 const LABEL_MODAL = { fontSize: 13, fontWeight: 600, color: MU };
 const INPUT_MODAL = {
@@ -69,6 +85,27 @@ export default function Agenda({ clinicaId, clinica }) {
   const [selectedCita, setSelectedCita] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Hora actual para la línea de "ahora" sobre la grilla. Se refresca cada
+  // minuto: con un `new Date()` calculado en el render, la línea se quedaría
+  // congelada donde estaba al montar la vista, que es justo lo que la haría
+  // inútil en una agenda que se deja abierta toda la jornada.
+  const [ahora, setAhora] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Fecha y hora con las que abrir "Nueva cita" precargada; null = en blanco.
+  const [preseleccion, setPreseleccion] = useState(null);
+
+  // Abre "Nueva cita" con la fecha y la hora del hueco que se tocó, en vez de
+  // obligar a reescribirlas.
+  const abrirNuevaCitaEn = (fechaISO, hora) => {
+    const hh = String(parseInt(hora, 10)).padStart(2, '0');
+    setPreseleccion({ fecha: fechaISO, hora: `${hh}:00` });
+    setShowModalCita(true);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const { data, error } = await supabase.from('pacientes').select('*');
@@ -97,7 +134,7 @@ export default function Agenda({ clinicaId, clinica }) {
                   id: gEvent.id, google_event_id: gEvent.id, isGoogleOnly: true,
                   name: gEvent.summary || 'Cita Google', doc: '', phone: '',
                   reason: gEvent.description || 'Agendada desde Google Calendar',
-                  fecha: dateParts[0], hora_cita: timeStr, tag: 'google', col: '#6366f1'
+                  fecha: dateParts[0], hora_cita: timeStr, tag: 'google'
                 };
               }).filter(Boolean);
           } else if (res.status === 401) {
@@ -144,8 +181,8 @@ export default function Agenda({ clinicaId, clinica }) {
           if (dayIndex !== -1) {
             tempApts[dayIndex].push({
               ...p, p: p.name, t: p.treatment || p.reason,
-              h: parseInt(p.hora_cita.split(':')[0], 10), 
-              col: p.isGoogleOnly ? '#6366f1' : (p.tag === 'nuevo' ? '#0D5C6B' : '#e11d48')
+              h: parseInt(p.hora_cita.split(':')[0], 10),
+              tipo: tipoDeCita(p),
             });
           }
         }
@@ -391,22 +428,34 @@ export default function Agenda({ clinicaId, clinica }) {
           </button>
         )}
 
-        <Button onClick={() => setShowModalCita(true)} style={{ padding: '8px 16px', minHeight: 44, fontSize: 15 }}>
+        <Button onClick={() => { setPreseleccion(null); setShowModalCita(true); }} style={{ padding: '8px 16px', minHeight: 44, fontSize: 15 }}>
           + Nueva cita
         </Button>
       </div>
 
       <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
 
-        <div style={{ display: 'grid', gridTemplateColumns: view === 'Mensual' ? 'repeat(7, 1fr)' : `50px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, background: LT }}>
+        {/* Cabecera de días. La columna de HOY se marca con la tinta invertida
+            (fondo oscuro), no con un tono suave: es la referencia visual que
+            más se busca al abrir la agenda. */}
+        <div style={{ display: 'grid', gridTemplateColumns: view === 'Mensual' ? 'repeat(7, 1fr)' : `56px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, background: LT }}>
           {view !== 'Mensual' && <div style={{ padding: 4 }} />}
           {(view === 'Mensual' ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] : displayDays).map((d, i) => {
-            const label = view === 'Mensual' ? d : d.toLocaleDateString('es-ES', { weekday: 'short' }) + ' ' + d.getDate();
+            const label = view === 'Mensual' ? d : `${d.getDate()} · ${d.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')}`;
             const isToday = view !== 'Mensual' && d.toDateString() === new Date().toDateString();
             return (
-              <div key={i} style={{ padding: '10px 8px', textAlign: 'center', background: isToday ? MT : LT, borderLeft: i > 0 ? `1px solid ${BD}` : 'none' }}>
-                <div style={{ fontSize: 13, fontWeight: isToday ? 600 : 500, color: isToday ? P : MU, textTransform: 'capitalize', fontVariantNumeric: 'tabular-nums' }}>{label}</div>
-                {isToday && <div style={{ fontSize: 11, color: P, fontWeight: 600, letterSpacing: .3 }}>HOY</div>}
+              <div key={i} style={{
+                padding: '11px 8px', textAlign: 'center',
+                background: isToday ? DN : LT,
+                borderLeft: i > 0 ? `1px solid ${BD}` : 'none',
+              }}>
+                <div style={{
+                  fontSize: 13, fontWeight: isToday ? 600 : 500,
+                  color: isToday ? LT : MU,
+                  textTransform: 'capitalize', fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {label}
+                </div>
               </div>
             )
           })}
@@ -423,47 +472,125 @@ export default function Agenda({ clinicaId, clinica }) {
                 return (
                   <div key={i} style={{ borderRight: `1px solid ${BD}`, borderBottom: `1px solid ${BD}`, padding: 6, background: isCurrentMonth ? LT : 'var(--surface-tertiary)' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isCurrentMonth ? DN : MU, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>{d.getDate()}</div>
-                    {apts.map((a, ai) => (
-                      <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }}
-                        style={{ background: a.col || P, color: '#fff', padding: '9px 8px', minHeight: 36, boxSizing: 'border-box', borderRadius: 'var(--radius-sm)', fontSize: 11, lineHeight: 1.35, marginBottom: 4, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontVariantNumeric: 'tabular-nums' }}>
-                        <b>{a.hora_cita}</b> {a.name}
-                      </div>
-                    ))}
+                    {/* Mismo tratamiento de tinte que la vista semanal. El tipo
+                        se calcula acá porque estas filas vienen de `allApts`
+                        (datos crudos), no de `weekApts`, que es donde se
+                        precalcula `.tipo`. */}
+                    {apts.map((a, ai) => {
+                      const tipo = TIPO_CITA[tipoDeCita(a)];
+                      return (
+                        <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }}
+                          className="bloque-cita"
+                          style={{
+                            background: tipo.tinte, borderLeft: `3px solid ${tipo.borde}`,
+                            color: DN, padding: '7px 9px', minHeight: 36, boxSizing: 'border-box',
+                            borderRadius: 'var(--radius-sm)', fontSize: 11.5, lineHeight: 1.35,
+                            marginBottom: 4, cursor: 'pointer', whiteSpace: 'nowrap',
+                            overflow: 'hidden', textOverflow: 'ellipsis', fontVariantNumeric: 'tabular-nums',
+                          }}>
+                          <b>{a.hora_cita}</b> {a.name}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
             </div>
           ) : (
-            hours.map(h => (
-              <div key={h} style={{ display: 'grid', gridTemplateColumns: `50px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, minHeight: 46 }}>
-                <div style={{ padding: '5px 8px', fontSize: 11, color: 'var(--label-tertiary)', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
+            hours.map(h => {
+              const horaFila = parseInt(h, 10);
+              // ¿La línea de "ahora" cae dentro de esta fila? Si sí, se calcula
+              // a qué % de alto va, para que la línea quede en el minuto real y
+              // no pegada al borde de la hora.
+              const esFilaActual = ahora.getHours() === horaFila;
+              const pctMinuto = (ahora.getMinutes() / 60) * 100;
+
+              return (
+              <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, minHeight: 52, position: 'relative' }}>
+                <div style={{ padding: '6px 9px', fontSize: 11.5, color: 'var(--label-tertiary)', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
                 {displayDays.map((d, di) => {
                   const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  const abierto = estaAbierto(d, parseInt(h, 10));
+                  const abierto = estaAbierto(d, horaFila);
+                  const esHoy = d.toDateString() === ahora.toDateString();
+                  const citasCelda = (weekApts[mapIndex] || []).filter(a => a.h === horaFila && a.fecha === targetDate);
 
                   return (
                     <div key={di} style={{
-                      borderLeft: `1px solid ${BD}`, padding: 3, minHeight: 46,
+                      borderLeft: `1px solid ${BD}`, padding: 3, minHeight: 52,
                       background: abierto ? undefined : RAYADO_CERRADO,
+                      position: 'relative',
                     }}>
-                      {(weekApts[mapIndex] || []).filter(a => a.h === parseInt(h, 10) && a.fecha === targetDate).map((a, ai) => (
-                        <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }} style={{ background: a.col, borderRadius: 'var(--radius-sm)', padding: '7px 10px', minHeight: 36, boxSizing: 'border-box', cursor: 'pointer', marginBottom: 3, boxShadow: 'var(--shadow-sm)' }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>
-                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.9)' }}>{a.t}</div>
-                          <div style={{ fontSize: 11, marginTop: 5, background: 'rgba(0,0,0,0.2)', display: 'inline-block', padding: '3px 6px', borderRadius: 'var(--radius-sm)', color: '#fff', fontVariantNumeric: 'tabular-nums' }}>⏰ {a.hora_cita}</div>
+                      {/* Línea de hora actual: sólo en la columna de hoy y sólo
+                          en la fila de la hora en curso. */}
+                      {esHoy && esFilaActual && (
+                        <div aria-hidden="true" style={{
+                          position: 'absolute', left: 0, right: 0, top: `${pctMinuto}%`,
+                          height: 2, background: RJ, zIndex: 3, pointerEvents: 'none',
+                        }}>
+                          <span style={{
+                            position: 'absolute', left: 0, top: -1, width: 7, height: 7,
+                            borderRadius: '50%', background: RJ, transform: 'translate(-3px, -2.5px)',
+                          }} />
                         </div>
-                      ))}
+                      )}
+
+                      {/* Celda vacía y abierta: crea una cita YA con esa fecha y
+                          hora. Antes había que abrir "Nueva cita" y volver a
+                          escribir a mano el día y la hora que ya se estaban
+                          mirando. El :hover lo pone .celda-libre en ui.css. */}
+                      {citasCelda.length === 0 && abierto && (
+                        <button
+                          className="celda-libre"
+                          onClick={() => abrirNuevaCitaEn(targetDate, h)}
+                          aria-label={`Agendar el ${targetDate} a las ${h}`}
+                          title={`Agendar a las ${h}`}
+                          style={{
+                            position: 'absolute', inset: 3,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'transparent', border: 'none',
+                            borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                            color: 'transparent', padding: 0,
+                          }}
+                        >
+                          <Icon name="plus" size={15} />
+                        </button>
+                      )}
+
+                      {citasCelda.map((a, ai) => {
+                        const tipo = TIPO_CITA[a.tipo] || TIPO_CITA.normal;
+                        return (
+                          <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }}
+                            className="bloque-cita"
+                            style={{
+                              background: tipo.tinte,
+                              borderLeft: `3px solid ${tipo.borde}`,
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '6px 9px', minHeight: 44, boxSizing: 'border-box',
+                              cursor: 'pointer', marginBottom: 3, position: 'relative', zIndex: 2,
+                            }}
+                          >
+                            <div style={{ fontSize: 12.5, fontWeight: 600, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                              <span style={{ fontSize: 11.5, color: MU, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{a.hora_cita}</span>
+                              {a.t && (
+                                <span style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {a.t}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )
                 })}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
 
-      {showModalCita && <ModalNuevaCita onClose={() => setShowModalCita(false)} onSave={handleGuardarCita} listaPacientes={listaPacientes} modo="cita" />}
+      {showModalCita && <ModalNuevaCita onClose={() => { setShowModalCita(false); setPreseleccion(null); }} onSave={handleGuardarCita} listaPacientes={listaPacientes} modo="cita" inicial={preseleccion} />}
 
       {showEditModal && selectedCita && (
         <Modal cardStyle={{ padding: 24, width: 400 }}>

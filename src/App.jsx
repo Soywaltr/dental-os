@@ -189,7 +189,7 @@ const VIEWS = {
 //     historia del paciente y los dos tratamientos con flujo propio.
 const SIDEBAR_SECTIONS = [
   {
-    label: null, // el inicio no necesita rótulo
+    label: "Principal",
     items: [
       { id: "dashboard", label: "Dashboard", icon: "dashboard" },
     ],
@@ -298,33 +298,32 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
 });
 
 // ─── COMPONENTE: RIEL DE NAVEGACIÓN ───────────────────────────────────────────
-// Franja rellena con el acento de la clínica, pegada al borde izquierdo (sin
-// margen ni esquinas, como en la referencia): así es una zona de navegación
-// clara y no "otra tarjeta más" compitiendo con el contenido.
+// Panel claro flotante. Sus colores salen de los tokens --rail-*, que derivan de
+// --panel/--accent, así que sigue el tema y el acento de cada clínica sin lógica
+// propia. Ítem activo = tinte del acento, no un bloque saturado.
 //
-// Todos sus colores salen de los tokens --rail-*, que sólo emparejan --accent
-// con --accent-contrast. Ese par se calcula para cumplir AA (utils/theme.js),
-// así que el riel sigue legible con cualquier acento white-label, incluido uno
-// claro donde un ícono blanco fijo desaparecería.
-//
-// Ajustes va fijo al pie, fuera de la lista con scroll, para que siempre esté a
-// la vista sin importar cuántas secciones haya arriba.
-const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
+// Al pie, y en este orden: Ajustes, plegar, y el bloque de perfil del usuario.
+// El perfil vive acá (no en el header) porque es identidad de sesión, no una
+// acción de la vista actual.
+const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreUsuario, rol, onLogout }) => {
   const { sidebarCollapsed: col, view } = state;
   // El bucket es privado: el logo va por URL firmada, no por la pública que
   // quedó guardada en clinicas.logo_url.
   const logoUrl = useSignedUrl(clinica?.logo_url);
   const goTo = useCallback(id => dispatch({ type: "SET_VIEW", payload: { view: id } }), [dispatch]);
   const toggle = useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 72 : 244;
+  const W = col ? 76 : 248;
 
   return (
     <aside style={{
       width: W, minWidth: W,
-      height: "100vh",
+      margin: "var(--gutter) 0 var(--gutter) var(--gutter)",
+      height: "calc(100vh - var(--gutter) * 2)",
       background: "var(--rail-bg)",
+      borderRadius: "var(--radius-panel)",
+      boxShadow: "var(--shadow-float)",
       display: "flex", flexDirection: "column",
-      padding: "20px 0 14px",
+      padding: "18px 0 12px",
       flexShrink: 0, zIndex: 101, overflow: "hidden",
       transition: "width var(--dur-slow) var(--ease), min-width var(--dur-slow) var(--ease)",
     }}>
@@ -332,16 +331,14 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
       {/* ── Marca ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
-        padding: col ? 0 : "0 16px", marginBottom: 22,
+        padding: col ? 0 : "0 16px", marginBottom: 20,
         justifyContent: col ? "center" : "flex-start",
       }}>
-        {/* El recuadro del logo va en el color de contraste, no en el acento:
-            sobre una franja del acento, un cuadro del mismo acento no se vería. */}
         <div style={{
           width: 36, height: 36, borderRadius: "var(--radius-control)", overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "var(--rail-active-bg)",
+          background: logoUrl ? "transparent" : "var(--accent)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--rail-active-ink)",
+          color: "var(--accent-contrast)",
         }}>
           {logoUrl ? (
             <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -371,10 +368,10 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
                 {section.label}
               </div>
             )}
-            {/* Colapsado no hay lugar para el rótulo: una línea fina del color
-                de contraste separa los grupos. */}
+            {/* Colapsado no hay lugar para el rótulo: una línea fina separa los
+                grupos. */}
             {section.label && col && si > 0 && (
-              <div style={{ height: 1, background: "var(--rail-divisor)", margin: "0 18px 10px" }} />
+              <div style={{ height: 1, background: "var(--rail-divisor)", margin: "0 20px 10px" }} />
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -423,6 +420,56 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           </span>
           {!col && <span>Contraer</span>}
         </button>
+      </div>
+
+      {/* ── Cuenta ── el perfil vive al pie del riel, no en el header: es
+          identidad de sesión (quién está usando la app), no una acción de la
+          vista actual. */}
+      <div style={{ flexShrink: 0, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--rail-divisor)" }}>
+        {!col && (
+          <div style={{
+            fontSize: 11, fontWeight: 600, color: "var(--rail-ink)",
+            letterSpacing: "0.4px", textTransform: "uppercase",
+            padding: "0 24px 8px",
+          }}>
+            Cuenta
+          </div>
+        )}
+        <div style={{ padding: col ? 0 : "0 12px" }}>
+          <button
+            onClick={onLogout}
+            className="rail-item"
+            title={`${nombreUsuario} — cerrar sesión`}
+            style={{
+              width: col ? 44 : "100%", minHeight: 44,
+              margin: col ? "0 auto" : 0,
+              display: "flex", alignItems: "center", gap: 10,
+              padding: col ? 0 : "6px 10px",
+              justifyContent: col ? "center" : "flex-start",
+              borderRadius: "var(--radius-control)", border: "none", background: "transparent",
+              cursor: "pointer", textAlign: "left", fontFamily: C.font,
+            }}
+          >
+            <span style={{
+              width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "var(--accent-soft)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12, fontWeight: 600, color: "var(--accent)",
+            }}>
+              {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
+            </span>
+            {!col && (
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--rail-ink-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {nombreUsuario}
+                </span>
+                <span style={{ display: "block", fontSize: 11.5, color: "var(--rail-ink)", textTransform: "capitalize" }}>
+                  {rol || "Cerrar sesión"}
+                </span>
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </aside>
   );
@@ -611,7 +658,7 @@ const SelectorTema = memo(({ compacto }) => {
 });
 
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
-const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, rol, onAbrirPaciente }) => {
+const TopHeader = memo(({ state, dispatch, onAbrirPaciente }) => {
   const label = VIEW_LABELS[state.view] ?? state.view;
   // En portrait de iPad (~758-810px, menos los 60-230px del riel) este header
   // no tenía ningún mecanismo de achique: grupo derecho a flexShrink:0, sin
@@ -672,39 +719,8 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
           <NavIcon name="campana" size={18} />
         </HeaderIconBtn>
 
-        {/* Perfil: avatar + quién está usando la app y con qué rol. En angosto,
-            sólo el avatar -- el nombre completo ya no entra sin apretar todo
-            lo demás. */}
-        <button
-          onClick={onLogout}
-          title={isNarrow ? `${nombreUsuario} — cerrar sesión` : "Cerrar sesión"}
-          style={{
-            display: "flex", alignItems: "center", gap: 9,
-            padding: isNarrow ? 0 : "4px 10px 4px 4px", borderRadius: 100,
-            border: isNarrow ? "none" : `1px solid ${C.border}`,
-            background: isNarrow ? "transparent" : "var(--panel)",
-            cursor: "pointer", outline: "none", boxShadow: isNarrow ? "none" : C.shadowSm,
-            transition: "border-color 0.12s", maxWidth: isNarrow ? "none" : 190,
-          }}
-          onMouseEnter={e => { if (!isNarrow) e.currentTarget.style.borderColor = C.borderStrong; }}
-          onMouseLeave={e => { if (!isNarrow) e.currentTarget.style.borderColor = C.border; }}
-        >
-          <span style={{
-            width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-            background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : C.brandSoft,
-            border: `1px solid ${C.border}`,
-          }} />
-          {!isNarrow && (
-            <span style={{ minWidth: 0, textAlign: "left" }}>
-              <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, fontFamily: C.font, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {nombreUsuario}
-              </span>
-              <span style={{ display: "block", fontSize: 9.5, color: C.inkMute, fontFamily: C.font, textTransform: "capitalize" }}>
-                {rol || "Cerrar sesión"}
-              </span>
-            </span>
-          )}
-        </button>
+        {/* El perfil ya no está acá: vive al pie del riel (bloque "Cuenta"),
+            porque es identidad de sesión y no una acción de la vista actual. */}
       </div>
     </header>
   );
@@ -985,15 +1001,18 @@ export default function App() {
         {/* Riel de acento a sangre por la izquierda: colapsado son los iconos,
             desplegado los mismos con nombre y contador. Nunca las secciones dos
             veces en pantalla -- no hay pestañas arriba que las repitan. */}
-        <Sidebar state={state} dispatch={dispatch} clinica={clinica} contadores={contadores} />
+        <Sidebar
+          state={state} dispatch={dispatch} clinica={clinica} contadores={contadores}
+          avatarUrl={avatarUrl} onLogout={logout}
+          nombreUsuario={session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario"}
+          rol={clinicaRol}
+        />
 
         {/* Columna derecha */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
           {/* Header: título de vista + buscador + acciones */}
           <TopHeader
-            state={state} dispatch={dispatch} onLogout={logout} avatarUrl={avatarUrl}
-            nombreUsuario={session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario"}
-            rol={clinicaRol}
+            state={state} dispatch={dispatch}
             onAbrirPaciente={p => dispatch({ type: "SET_VIEW", payload: { view: "expediente", pat: p } })}
           />
 

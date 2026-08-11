@@ -201,6 +201,30 @@
   outline-offset: 2px;
 }
 
+/* ── Grilla de la Agenda ───────────────────────────────────────────────────
+   Hueco libre: invisible hasta que se le pasa el mouse, y entonces aparece un
+   "+" tenue. No puede ser un inline style porque el estado de reposo es
+   `color: transparent` y sólo :hover/:focus-visible lo revelan. */
+.celda-libre:hover,
+.celda-libre:focus-visible {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+.celda-libre:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Bloque de cita: se levanta un poco al pasar el mouse, para que se lea como
+   algo que se puede abrir. */
+.bloque-cita {
+  transition: box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.bloque-cita:hover {
+  box-shadow: var(--shadow-pop);
+  transform: translateY(-1px);
+}
+
 /* ── Breakpoints compartidos ───────────────────────────────────────────────
    Mismos cortes que utils/useResponsive.js (1180 tablet / 860 narrow), para
    que el CSS y el JS de layout nunca respondan a anchos distintos. */
