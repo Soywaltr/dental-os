@@ -2,12 +2,13 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * DentalOS · Design tokens
  *
- * Monocromático + un solo acento (blanco-etiqueta, por clínica). Radios
- * moderados, no la "sopa de tarjetas" con esquinas muy redondeadas y sombra
- * pareja de la etapa anterior: las secciones se separan con líneas finas
- * (hairline) y espacio; la sombra queda reservada para lo que de verdad flota
- * sobre el contenido (menús, modales, dropdowns — ver --shadow-pop / Modal.jsx),
- * nunca para una tarjeta de contenido normal.
+ * Monocromático + un solo acento (blanco-etiqueta, por clínica). Paneles
+ * blancos que flotan sobre un fondo azul-lavanda claro, con esquinas suaves,
+ * mucho aire y sombras grandes de opacidad bajísima: la tarjeta se despega del
+ * fondo por un halo apenas perceptible y por el contraste de superficie, nunca
+ * por un borde duro. La elevación crece en tres pasos: --shadow-raised para una
+ * tarjeta de contenido, --shadow-float para el chrome persistente (riel,
+ * header) y --shadow-pop para lo que de verdad flota encima (modal, dropdown).
  *
  * Este archivo es la ÚNICA fuente de verdad del color en la app. Los nombres
  * viejos (--label-*, --surface-*, etc.) se conservan al final como alias
@@ -17,36 +18,40 @@
 
 :root {
   /* ── Superficies ───────────────────────────────────────────────────────── */
-  --bg-app:        #F3F2F8;  /* fondo general lavanda-gris */
+  /* Fondo con un tinte azul-lavanda perceptible y paneles en blanco puro: es
+     ese contraste suave lo que hace que las tarjetas "floten" sin necesidad de
+     una sombra fuerte. Antes el fondo (#F3F2F8) estaba tan cerca del blanco que
+     los paneles apenas se despegaban. */
+  --bg-app:        #EDEFF7;  /* fondo general azul-lavanda claro */
   --panel:         #FFFFFF;  /* panel/tarjeta que flota */
-  --panel-sunken:  #F7F6FB;  /* hueco dentro de un panel (pista de tabs, input) */
-  --panel-hover:   #F1F0F7;
+  --panel-sunken:  #F5F6FC;  /* hueco dentro de un panel (pista de tabs, input) */
+  --panel-hover:   #EFF1F9;
 
   /* Chrome translúcido: solo barras y overlays, nunca una tarjeta de contenido */
   --chrome:        rgba(255, 255, 255, 0.72);
   --chrome-blur:   blur(20px) saturate(180%);
 
   /* ── Texto ─────────────────────────────────────────────────────────────── */
-  /* Los grises son un paso más oscuros que el #8A8A94 del brief: verificado con
-     un script de contraste WCAG, ese valor daba 3.42:1 sobre panel blanco y
-     3.18:1 sobre --panel-sunken, por debajo del 4.5:1 que pide AA para texto
-     normal. Estos son los valores MÁS CLAROS que sí cumplen, para perder lo
-     mínimo del carácter suave. --text-disabled queda exento: no comunica
-     información (WCAG excluye controles inactivos). */
+  /* Cada valor es el MÁS CLARO que cumple 4.5:1 (AA, texto normal) contra las
+     CUATRO superficies del modo claro, no sólo contra el panel blanco. La que
+     manda es --bg-app, la más oscura de las cuatro: al teñirla de azul-lavanda
+     los grises anteriores (#6E6E7A / #70707A) caían a 4.38 y 4.27:1.
+     Verificado con script, no estimado. --text-disabled queda exento: no
+     comunica información (WCAG excluye controles inactivos). */
   --text-primary:   #1A1A1E;  /* títulos y cifras */
-  --text-secondary: #6E6E7A;  /* cuerpo secundario — 5.03:1 */
-  --text-tertiary:  #70707A;  /* etiquetas pequeñas, metadatos — 4.90:1 */
+  --text-secondary: #6C6C78;  /* cuerpo secundario — 4.51:1 peor caso */
+  --text-tertiary:  #6C6C76;  /* etiquetas pequeñas, metadatos — 4.52:1 peor caso */
   --text-disabled:  #B8B8C2;
 
   /* ── Acento único (white-label) ───────────────────────────────────────── */
   /* Solo para: toggle activo, radio/checkbox seleccionado, ítem de nav activo,
      foco, botón primario. No se usa como color decorativo ni como serie de
-     datos. #6C5CE7 es el tema por defecto ("Dra. Sol Vargas"); cada clínica
+     datos. #6656E6 es el tema por defecto ("Dra. Sol Vargas"); cada clínica
      puede sobreescribir SOLO --accent y --accent-contrast en runtime
      (utils/theme.js, según clinicas.accent_color) — hover/press/soft/ring se
      recalculan solos porque son fórmulas de color-mix() sobre --accent, no
      valores propios. Repintar toda la app queda en cambiar una sola variable. */
-  --accent:          #6C5CE7;
+  --accent:          #6656E6;
   --accent-hover:    color-mix(in srgb, var(--accent) 88%, black);
   --accent-press:    color-mix(in srgb, var(--accent) 76%, black);
   --accent-soft:     color-mix(in srgb, var(--accent) 10%, transparent);
@@ -55,7 +60,7 @@
      relación de contraste no es lineal con el color, así que color-mix() no
      puede elegir "blanco o negro" por sí solo — se calcula en JS
      (utils/theme.js → contrasteTexto()) y se fija junto a --accent. Este valor
-     es el default para #6C5CE7 (4.86:1, blanco gana). */
+     es el default para el acento por defecto (blanco gana con 4.53:1). */
   --accent-contrast: #FFFFFF;
 
   /* ── Riel de navegación ──────────────────────────────────────────────────
@@ -77,20 +82,20 @@
   --rail-divisor:    var(--hairline);
 
   /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
-  /* Mismo criterio que los grises: estos colores se usan como TEXTO (cifras,
-     etiquetas de estado), así que necesitan 4.5:1. Los tonos suaves originales
-     daban 3.38 / 3.84 / 2.97:1. Estos son los más claros que cumplen.
-     Las variantes -soft son solo fondo de badge, nunca texto. */
-  --green:      #258057;  /* al día / completado — 4.88:1 */
+  /* Mismo criterio que los grises: se usan como TEXTO (cifras, etiquetas de
+     estado), así que cada uno es el más claro que cumple 4.5:1 contra las
+     cuatro superficies del modo claro. Las variantes -soft son sólo fondo de
+     badge, nunca texto, por eso no necesitan cumplir ese piso. */
+  --green:      #247B54;  /* al día / completado — 4.53:1 peor caso */
   --green-soft: rgba(37, 128, 87, 0.11);
-  --red:        #D2344E;  /* pendiente / vencido — 4.86:1 */
+  --red:        #CC2D48;  /* pendiente / vencido — 4.53:1 peor caso */
   --red-soft:   rgba(210, 52, 78, 0.10);
   /* Texto SOBRE el rojo (badge de notificaciones, pill de estado). Mismo
      motivo que --accent-contrast: acá blanco da 4.84:1 y pasa, pero en modo
      oscuro el rojo se aclara a #E8697F y el blanco cae a 3.11:1 -- reprobaba
      AA en el número del badge. Verificado con script, no estimado. */
   --red-contrast: #FFFFFF;
-  --amber:      #966923;  /* aviso — 4.86:1 */
+  --amber:      #8F6421;  /* aviso — 4.56:1 peor caso */
   --amber-soft: rgba(150, 105, 35, 0.12);
 
   /* ── Separadores ───────────────────────────────────────────────────────── */
@@ -100,24 +105,25 @@
   --hairline-strong: rgba(26, 26, 30, 0.11);
 
   /* ── Elevación ─────────────────────────────────────────────────────────── */
-  /* --shadow-raised (= --shadow-sm = GLASS_SHADOW) queda en 'none': es lo que
-     consumen las tarjetas de contenido de las 21 vistas, y "menos tarjetas,
-     separa con líneas finas" significa que una tarjeta común no debe flotar.
-     Sólo el chrome persistente (riel, header — usan --shadow-float directo) y
-     lo genuinamente flotante (modal, dropdown, menú — --shadow-pop) llevan
-     sombra. Ver Modal.jsx, que se desacopló de este alias a propósito. */
-  --shadow-float:  0 1px 2px rgba(26, 26, 30, 0.04), 0 4px 16px rgba(26, 26, 30, 0.06);
-  --shadow-raised: none;
-  --shadow-pop:    0 8px 30px rgba(26, 26, 30, 0.16), 0 2px 8px rgba(26, 26, 30, 0.08);
+  /* Sombras grandes y muy difusas, de opacidad bajísima: la tarjeta se separa
+     del fondo por un halo apenas perceptible, no por un borde ni por una sombra
+     dura. --shadow-raised (= --shadow-sm = GLASS_SHADOW, lo que consumen las
+     tarjetas de contenido de las 21 vistas) vuelve a tener sombra: en este
+     lenguaje las tarjetas SÍ flotan sobre el fondo teñido.
+     El tono de la sombra lleva algo de azul (26,30,60) en vez de gris neutro,
+     para que se asiente sobre el fondo lavanda sin ensuciarlo. */
+  --shadow-raised: 0 1px 2px rgba(26, 30, 60, 0.04), 0 6px 16px -6px rgba(26, 30, 60, 0.10);
+  --shadow-float:  0 2px 4px rgba(26, 30, 60, 0.03), 0 12px 32px -10px rgba(26, 30, 60, 0.14);
+  --shadow-pop:    0 12px 40px -8px rgba(26, 30, 60, 0.22), 0 4px 12px rgba(26, 30, 60, 0.10);
 
   /* ── Radios ────────────────────────────────────────────────────────────── */
-  /* Moderados: 8/10/12, no 12/18/26. --radius-control cubre botón Y campo por
-     igual (el brief separa 6px botón / 8-10px campo, pero unificarlos en un
-     solo valor evita tocar cada llamada de borderRadius en las 21 vistas para
-     saber cuál es cuál -- eso queda para cuando se rediseñe cada vista). */
-  --radius-panel:   12px;  /* contenedor grande: riel, header, sección */
-  --radius-card:    10px;  /* tarjeta dentro de un panel */
-  --radius-control: 8px;   /* botón, input, badge */
+  /* Más redondeados que los 8/10/12 anteriores: en este lenguaje la esquina
+     suave es parte del carácter, no un adorno. --radius-control cubre botón Y
+     campo por igual (unificarlos en un solo valor evita tocar cada llamada de
+     borderRadius en las 21 vistas para saber cuál es cuál). */
+  --radius-panel:   18px;  /* contenedor grande: riel, header, sección */
+  --radius-card:    14px;  /* tarjeta dentro de un panel */
+  --radius-control: 10px;  /* botón, input, badge */
   --radius-pill:    999px; /* toggle, dropdown, buscador, chip */
 
   /* ── Tipografía ────────────────────────────────────────────────────────── */
@@ -135,9 +141,9 @@
      que rodea el contenido y el que separa el header son exactamente el mismo
      valor. Es lo que hace que la página se lea alineada en vez de improvisada;
      si cada zona elige su propio número, el ojo lo nota aunque no sepa por qué. */
-  --gutter: 24px;
+  --gutter: 28px;
   /* Separación entre paneles hermanos dentro de una vista. */
-  --gap-panel: 18px;
+  --gap-panel: 20px;
 }
 
 /* En pantallas de iPad y menores el canal se achica: mantener 24px a cada lado
@@ -178,13 +184,13 @@
 
     --text-primary:   #F4F4F7;
     --text-secondary: #A6A6B2;
-    --text-tertiary:  #8A8A94;
+    --text-tertiary:  #8F8F98;
     --text-disabled:  #55555F;
 
     /* Mismas fórmulas que en claro, pero hacia BLANCO en vez de negro: en una
        superficie oscura, "resaltar al pasar el mouse" es aclarar, no oscurecer.
        Si una clínica fija --accent en runtime, estas se recalculan solas. */
-    --accent:          #8B7BF5;
+    --accent:          #8E7FF5;
     --accent-hover:    color-mix(in srgb, var(--accent) 88%, white);
     --accent-press:    color-mix(in srgb, var(--accent) 76%, white);
     --accent-soft:     color-mix(in srgb, var(--accent) 16%, transparent);
@@ -206,11 +212,15 @@
     --hairline:        rgba(255, 255, 255, 0.07);
     --hairline-strong: rgba(255, 255, 255, 0.13);
 
-    /* Mismo criterio que en claro: sombra sólo en chrome persistente y en lo
-       que flota; una tarjeta de contenido normal no lleva --shadow-raised. */
-    --shadow-float:  0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
-    --shadow-raised: none;
-    --shadow-pop:    0 8px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+    /* En oscuro la elevación la carga la diferencia de luminosidad entre
+       --panel y --bg-app (una sombra negra sobre negro no se ve), así que la
+       sombra sólo agrega profundidad: se mantiene la forma difusa del modo
+       claro pero con menos peso, para no ensuciar el fondo casi negro.
+       Las superficies siguen NEUTRAS a propósito -- el tinte azul-lavanda es
+       sólo del modo claro; acá un azulado leería como "azul marino". */
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.34), 0 6px 16px -6px rgba(0, 0, 0, 0.44);
+    --shadow-float:  0 2px 4px rgba(0, 0, 0, 0.30), 0 12px 32px -10px rgba(0, 0, 0, 0.50);
+    --shadow-pop:    0 12px 40px -8px rgba(0, 0, 0, 0.62), 0 4px 12px rgba(0, 0, 0, 0.45);
   }
 
 /* ─────────────────────────────────────────────────────────────────────────────
