@@ -572,8 +572,11 @@ export default function Dashboard({ setView, clinica }) {
                   {/* Iniciales en tinta neutra sobre superficie neutra: teñirlas
                       con colorPorNombre las dejaba con muy poco contraste, porque
                       esa escala es monocromática y sus pasos claros casi se
-                      funden con el fondo. El color identifica barras, no texto. */}
-                  <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                      funden con el fondo. El color identifica barras, no texto.
+                      Círculo, no cuadrado: es el mismo avatar de iniciales que
+                      "Mayores deudores" más abajo -- el mismo paciente no puede
+                      leerse como una persona en un panel y como un ícono en otro. */}
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
@@ -661,8 +664,12 @@ export default function Dashboard({ setView, clinica }) {
             },
           ].map(m => (
             <div key={m.etiqueta} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, minWidth: 0 }}>
-              <Anillo pct={m.pct} color={m.color} tamano={96} grosor={9}>
-                <span style={{ fontSize: 21, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+              {/* Anillo más grande y con trazo más grueso: el medidor es lo que
+                  más se acerca al lenguaje del referente (donut grande y
+                  contundente con la cifra adentro) -- 96/9 se leía delgado al
+                  lado del resto de la tarjeta. */}
+              <Anillo pct={m.pct} color={m.color} tamano={108} grosor={11}>
+                <span style={{ fontSize: 23, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                   {m.pct}%
                 </span>
               </Anillo>
@@ -693,7 +700,10 @@ export default function Dashboard({ setView, clinica }) {
             {alertas.map((a, i) => (
               <div key={i} onClick={() => setView && setView(a.view)}
                 style={{ ...subCard, padding: '11px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: `color-mix(in srgb, ${a.color} 10%, transparent)`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {/* Círculo, no cuadrado: mismo lenguaje que el ícono de los
+                    Atajos y el de Stat -- un ícono sobre tinte de su color
+                    siempre es el mismo badge en toda la vista. */}
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: `color-mix(in srgb, ${a.color} 12%, transparent)`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon name={a.icon} size={13} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>

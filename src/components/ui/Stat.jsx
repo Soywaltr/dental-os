@@ -19,9 +19,13 @@ export default function Stat({ label, value, sub, subCol, col, icon, onClick }) 
       onMouseEnter={e => { if (onClick) { e.currentTarget.style.boxShadow = 'var(--shadow-pop)'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
       onMouseLeave={e => { if (onClick) { e.currentTarget.style.boxShadow = 'var(--shadow-float)'; e.currentTarget.style.transform = 'none'; } }}>
       {icon && (
+        // El comentario de arriba decía "círculo" desde siempre, pero el radio
+        // era var(--radius-control) -- un cuadrado suave, no un círculo. Ahora
+        // sí es 50%, igual que el badge de ícono de los Atajos del Dashboard
+        // (mismo concepto -- ícono sobre tinte del color -- misma forma).
         <div style={{
-          width: 36, height: 36, borderRadius: 'var(--radius-control)', marginBottom: 14,
-          background: `color-mix(in srgb, ${col || P} 11%, var(--panel))`, color: col || P,
+          width: 38, height: 38, borderRadius: '50%', marginBottom: 14,
+          background: `color-mix(in srgb, ${col || P} 14%, var(--panel))`, color: col || P,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {icon}
