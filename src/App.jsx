@@ -33,7 +33,6 @@ const Expediente  = lazy(() => import("./components/vistas/Expediente"));
 const Ortodoncia  = lazy(() => import("./components/vistas/Ortodoncia"));
 const Caja        = lazy(() => import("./components/vistas/Caja"));
 const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
-const Reportes    = lazy(() => import("./components/vistas/Reportes"));
 const AsistenteDatos = lazy(() => import("./components/vistas/AsistenteDatos"));
 const Config      = lazy(() => import("./components/vistas/Config"));
 
@@ -168,7 +167,7 @@ function useSession() {
 // ─── MAPA DE VISTAS ───────────────────────────────────────────────────────────
 const VIEWS = {
   dashboard: Dashboard, agenda: Agenda, expediente: Expediente,
-  caja: Caja, laboratorio: Laboratorio, reportes: Reportes,
+  caja: Caja, laboratorio: Laboratorio,
   ortodoncia: Ortodoncia, whatsapp: AsistenteDatos, config: Config,
 };
 
@@ -179,20 +178,19 @@ const VIEWS = {
 // de distinta naturaleza:
 //
 //   · "Finanzas" estaba dentro de "Clínica" — no es trabajo clínico, es gestión
-//     del negocio. Ahora vive con Analítica bajo "Gestión".
-//   · "Analítica" colgaba suelta al lado de Dashboard y repite buena parte de su
-//     información (deudores, por cobrar, series de ingresos). Pasa a ser
-//     subsección: el Dashboard responde "qué pasa hoy" y Analítica "cómo venimos
-//     en el tiempo". Se muestra indentada, colgando de su padre.
+//     del negocio. Ahora vive con Chat IA bajo "Gestión".
+//   · "Analítica" existió como subsección de Dashboard, pero repetía buena
+//     parte de su información (deudores, por cobrar, estado de tratamientos)
+//     y mostraba MENOS datos que Dashboard (no cruzaba ortodoncia/gastos/
+//     laboratorio). Se eliminó como vista aparte: lo que de verdad aportaba
+//     (total de pacientes, tasa de cobro) se plegó directo en Dashboard.
 //   · "Clínica" queda con lo que de verdad es asistencial: la agenda, la
 //     historia del paciente y los dos tratamientos con flujo propio.
 const SIDEBAR_SECTIONS = [
   {
     label: null, // el inicio no necesita rótulo
     items: [
-      { id: "dashboard", label: "Dashboard", icon: "dashboard", children: [
-        { id: "reportes", label: "Analítica", icon: "reportes" },
-      ] },
+      { id: "dashboard", label: "Dashboard", icon: "dashboard" },
     ],
   },
   {
@@ -215,39 +213,16 @@ const SIDEBAR_SECTIONS = [
 
 const ITEM_AJUSTES = { id: "config", label: "Ajustes", icon: "config" };
 
-// Iconos — 16px, stroke 1.75
-const IC = {
-  dashboard: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>,
-  agenda:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-  expediente: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-  caja:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
-  laboratorio:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>,
-  ortodoncia: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><circle cx="12" cy="12" r="10"/></svg>,
-  reportes:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-  whatsapp:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  config:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-  chevRight:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
-  chevLeft:   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>,
-  chevDown:   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
-  search:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-  bell:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  settings:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-  plus:       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  support:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-};
-
 // ─── ETIQUETAS DE VISTA ───────────────────────────────────────────────────────
 const VIEW_LABELS = {
   dashboard: "Dashboard", agenda: "Agenda", expediente: "Historial",
-  caja: "Finanzas", laboratorio: "Laboratorio", reportes: "Analítica",
+  caja: "Finanzas", laboratorio: "Laboratorio",
   ortodoncia: "Ortodoncia", whatsapp: "Chat IA", config: "Ajustes",
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
 // Activo = "pill" de fondo suave, nunca un borde ni un bloque de color fuerte.
-// `sub` lo indenta como subsección (Analítica bajo Dashboard), colgando de la
-// línea conectora que dibuja el grupo.
-const NavItem = memo(({ item, isActive, collapsed, contador, onClick, sub = false }) => {
+const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
   const [hov, setHov] = useState(false);
   const alto = 40; // área táctil cómoda incluso en el riel angosto
 
@@ -278,7 +253,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick, sub = fals
       }}
     >
       <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, flexShrink: 0 }}>
-        <NavIcon name={item.icon} size={sub ? 16 : 18} />
+        <NavIcon name={item.icon} size={18} />
       </span>
 
       {/* Colapsado no cabe la píldora "IA": se reduce a un punto. */}
@@ -400,50 +375,14 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {section.items.map(item => (
-                <React.Fragment key={item.id}>
-                  <NavItem
-                    item={item}
-                    isActive={view === item.id}
-                    collapsed={col}
-                    contador={contadores[item.id]}
-                    onClick={goTo}
-                  />
-                  {/* Subsecciones: indentadas y colgando de una línea vertical
-                      fina, para que se lea que dependen de su padre. */}
-                  {item.children && !col && (
-                    <div style={{ position: "relative", paddingLeft: 24, marginTop: 3, display: "flex", flexDirection: "column", gap: 3 }}>
-                      <span aria-hidden="true" style={{
-                        position: "absolute", left: 21, top: 4, bottom: 4,
-                        width: 1.5, borderRadius: 1, background: "var(--hairline-strong)",
-                      }} />
-                      {item.children.map(hijo => (
-                        <NavItem
-                          key={hijo.id}
-                          item={hijo}
-                          isActive={view === hijo.id}
-                          collapsed={false}
-                          contador={contadores[hijo.id]}
-                          onClick={goTo}
-                          sub
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {/* Colapsado el riel no tiene ancho para indentar, así que la
-                      subsección se muestra como un ícono más — si no, quedaría
-                      inalcanzable al plegar el menú. */}
-                  {item.children && col && item.children.map(hijo => (
-                    <NavItem
-                      key={hijo.id}
-                      item={hijo}
-                      isActive={view === hijo.id}
-                      collapsed
-                      contador={contadores[hijo.id]}
-                      onClick={goTo}
-                      sub
-                    />
-                  ))}
-                </React.Fragment>
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  isActive={view === item.id}
+                  collapsed={col}
+                  contador={contadores[item.id]}
+                  onClick={goTo}
+                />
               ))}
             </div>
           </div>
@@ -679,7 +618,7 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
               <option>Sucursal El Golf</option>
               <option>Sucursal Miraflores</option>
             </select>
-            <span style={{ color: C.inkFaint }}>{IC.chevDown}</span>
+            <span style={{ color: C.inkFaint, display: "flex" }}><NavIcon name="chevronDown" size={12} /></span>
           </div>
         )}
 
@@ -987,6 +926,18 @@ export default function App() {
         @keyframes pulse {
           0%, 100% { transform: scale(1); }
           50%       { transform: scale(1.05); }
+        }
+        /* Se usa en 9 lugares (Dashboard + Ortodoncia) pero nunca se había
+           definido -- esas animaciones no hacían nada. */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Punto "en vivo": un anillo que se expande y se apaga, para indicadores
+           de datos que se refrescan solos. */
+        @keyframes pulso-vivo {
+          0%   { transform: scale(1);   opacity: 0.55; }
+          100% { transform: scale(2.6); opacity: 0; }
         }
       `}</style>
 

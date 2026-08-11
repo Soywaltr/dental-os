@@ -82,7 +82,11 @@ const PAD = { l: 54, r: 18, t: 14, b: 26 };
 // Gráfico de líneas multi-serie con cruceta y tooltip. `series` es
 // [{ nombre, color, valores }] -- todas las series comparten el MISMO eje: dos
 // escalas distintas en un gráfico es la forma más fácil de mentir con datos.
-export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, colorTexto = '#64748B', colorRejilla = '#D8DCD8', colorSuperficie = '#EEEFEE' }) {
+// `mostrarCadaN` esparce las etiquetas del eje X (mostrar 1 de cada N) sin
+// alterar `etiquetas` -- el tooltip de la cruceta sigue usando la etiqueta
+// completa de cada punto, sólo el eje se aligera cuando hay muchos puntos
+// (ej. una serie diaria de 30 días no cabe legible con las 30 escritas).
+export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)' }) {
   const ref = useRef(null);
   const [idx, setIdx] = useState(null);
 
@@ -124,17 +128,20 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
           </g>
         ))}
 
-        {/* Etiquetas del eje X. */}
+        {/* Etiquetas del eje X -- sólo 1 de cada `mostrarCadaN`, y siempre la
+            última, para que el rango final (el mes/día actual) nunca falte. */}
         {etiquetas.map((lbl, i) => (
-          <text key={i} x={x(i)} y={alto - 8} textAnchor="middle" fontSize="10"
-            fill={idx === i ? '#0F172A' : colorTexto} fontWeight={idx === i ? 700 : 400}>
-            {lbl}
-          </text>
+          (i % mostrarCadaN === 0 || i === n - 1) && (
+            <text key={i} x={x(i)} y={alto - 8} textAnchor="middle" fontSize="10"
+              fill={idx === i ? 'var(--text-primary)' : colorTexto} fontWeight={idx === i ? 700 : 400}>
+              {lbl}
+            </text>
+          )
         ))}
 
         {/* Cruceta: se dibuja debajo de las líneas para no taparlas. */}
         {idx !== null && (
-          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="#94A3B8" strokeWidth="1" />
+          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="var(--hairline-strong)" strokeWidth="1" />
         )}
 
         {series.map(s => {

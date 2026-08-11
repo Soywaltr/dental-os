@@ -7,7 +7,7 @@
 // Cruza las 5 tablas de negocio (pacientes, historias, ortodoncia,
 // laboratorio_ordenes, gastos): los ingresos de ortodoncia y los gastos no
 // existían en ningún total antes.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
@@ -16,6 +16,19 @@ import { GraficoLineas, Leyenda } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
+import useNumeroAnimado from '../../utils/useNumeroAnimado';
+
+// Rangos del gráfico de tendencia. 7D/30D bucketean por día, 6M/12M por mes --
+// independiente de las cifras de "este mes" de las tarjetas de KPI, que
+// siempre significan el mes calendario actual sin importar qué rango mire el
+// gráfico.
+const RANGOS = [
+  { key: '7d', label: '7D', n: 7, dia: true },
+  { key: '30d', label: '30D', n: 30, dia: true },
+  { key: '6m', label: '6M', n: 6, dia: false },
+  { key: '12m', label: '12M', n: 12, dia: false },
+];
+const DIAS_SEMANA_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const NOMBRE_A_CAT = {};
 TRATAMIENTOS_CAT.forEach(c => c.items.forEach(n => { NOMBRE_A_CAT[n] = c.cat; }));
@@ -54,6 +67,13 @@ const dateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2
 const parseFecha = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d.getTime()) ? null : d; };
 const soles = (n) => `S/${Math.round(n).toLocaleString('es-PE')}`;
 
+// "hace 12s" / "hace 3min" -- para el indicador de auto-actualización.
+const formatoHaceTiempo = (fecha) => {
+  const seg = Math.max(0, Math.round((Date.now() - fecha.getTime()) / 1000));
+  if (seg < 60) return `${seg}s`;
+  return `${Math.round(seg / 60)}min`;
+};
+
 const getWeekDays = (anchor) => {
   const start = new Date(anchor);
   start.setHours(12, 0, 0, 0);
@@ -79,10 +99,21 @@ export default function Dashboard({ setView, clinica }) {
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [verTabla, setVerTabla] = useState(false);
+  const [rango, setRango] = useState('12m');
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
+  // Repinta el indicador "hace Xs" sin depender de que cambien los datos: un
+  // tick propio cada 15s alcanza para que se sienta vivo sin recargar nada.
+  const [, forzarTick] = useState(0);
+
+  // Sólo la PRIMERA carga muestra el "Cargando…" de pantalla completa. Las
+  // siguientes (la auto-actualización cada 60s) refrescan los datos en
+  // silencio -- si repintaran el loader, el dashboard parpadearía cada minuto.
+  const esPrimeraCargaRef = useRef(true);
 
   useEffect(() => {
+    let vivo = true;
     const cargar = async () => {
-      setLoading(true);
+      if (esPrimeraCargaRef.current) setLoading(true);
       setErrorMsg(null);
       const [
         { data: pacientesData, error: errP },
@@ -97,6 +128,7 @@ export default function Dashboard({ setView, clinica }) {
         supabase.from('laboratorio_ordenes').select('id, patient_id, patient_name, type, cost, eta, status'),
         supabase.from('gastos').select('categoria, monto, fecha'),
       ]);
+      if (!vivo) return;
       // Ortodoncia, laboratorio y gastos son secundarios para la vista: si fallan
       // (una clínica que aún no usa esas tablas) no debe caerse todo el
       // dashboard, sólo esas secciones quedan en cero.
@@ -114,16 +146,14 @@ export default function Dashboard({ setView, clinica }) {
       setLabOrders(errL ? [] : (labData || []));
       setGastos(errG ? [] : (gastosData || []));
       setLoading(false);
+      setUltimaActualizacion(new Date());
+      esPrimeraCargaRef.current = false;
     };
     cargar();
+    const intervaloDatos = setInterval(cargar, 60_000);
+    const intervaloTick = setInterval(() => forzarTick(v => v + 1), 15_000);
+    return () => { vivo = false; clearInterval(intervaloDatos); clearInterval(intervaloTick); };
   }, []);
-
-  if (loading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>Cargando dashboard…</div>;
-  }
-  if (errorMsg) {
-    return <div style={{ padding: 40, textAlign: 'center', color: RJ, fontSize: 13.5 }}>Error al cargar el dashboard: {errorMsg}</div>;
-  }
 
   const hoy = new Date();
   const todayStr = dateStr(hoy);
@@ -149,11 +179,34 @@ export default function Dashboard({ setView, clinica }) {
   const pctIngresos = mesPrevio.ingresos > 0 ? Math.round(((ingresosMes - mesPrevio.ingresos) / mesPrevio.ingresos) * 100) : null;
   const margenPct = ingresosMes > 0 ? Math.round((utilidadMes / ingresosMes) * 100) : 0;
 
-  const serieIngresos = meses12.map(m => m.ingresos);
-  const serieGastos = meses12.map(m => m.gastos);
+  // ── Serie del gráfico de tendencia: por el rango elegido (7D/30D/6M/12M),
+  // NO atada a meses12 -- las cifras "de este mes" de las tarjetas de arriba
+  // siguen siendo el mes calendario real sin importar qué rango mire el
+  // gráfico; sólo el gráfico cambia de granularidad. ─────────────────────────
+  const rangoActual = RANGOS.find(r => r.key === rango) || RANGOS[3];
+  const bucketsRango = Array.from({ length: rangoActual.n }).map((_, i) => {
+    if (rangoActual.dia) {
+      const d = new Date(hoy); d.setDate(d.getDate() - (rangoActual.n - 1 - i));
+      const label = rangoActual.n === 7
+        ? DIAS_SEMANA_CORTOS[d.getDay()]
+        : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return { clave: dateStr(d), label, ingresos: 0, gastos: 0 };
+    }
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (rangoActual.n - 1 - i), 1);
+    return { clave: `${d.getFullYear()}-${d.getMonth()}`, label: `${MESES_CORTOS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`, ingresos: 0, gastos: 0 };
+  });
+  const porClaveRango = new Map(bucketsRango.map(b => [b.clave, b]));
+  const claveDeRango = (d) => (rangoActual.dia ? dateStr(d) : `${d.getFullYear()}-${d.getMonth()}`);
+
+  tratamientos.forEach(t => { const d = parseFecha(t.date); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.ingresos += t.paid || 0; } });
+  ortoRows.forEach(o => (o.pagos?.abonos || []).forEach(a => {
+    const d = parseFecha(a.fecha); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.ingresos += Number(a.monto) || 0; }
+  }));
+  gastos.forEach(g => { const d = parseFecha(g.fecha); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.gastos += g.monto || 0; } });
+
   const seriesGrafico = [
-    { nombre: 'Ingresos', color: COLOR_INGRESOS, valores: serieIngresos },
-    { nombre: 'Gastos', color: COLOR_GASTOS, valores: serieGastos },
+    { nombre: 'Ingresos', color: COLOR_INGRESOS, valores: bucketsRango.map(b => b.ingresos) },
+    { nombre: 'Gastos', color: COLOR_GASTOS, valores: bucketsRango.map(b => b.gastos) },
   ];
 
   // ── Cobranza ─────────────────────────────────────────────────────────────
@@ -163,6 +216,15 @@ export default function Dashboard({ setView, clinica }) {
   const pendienteOrto = ortoRows.reduce((a, o) => a + (o.resumen.deuda || 0), 0);
   const saldoPendienteTotal = pendienteHistorias + pendienteOrto;
   const tasaCobro = totalFacturado > 0 ? Math.round((totalCobrado / totalFacturado) * 100) : 0;
+
+  // Cifras animadas de las 4 tarjetas de KPI: se llaman SIEMPRE (antes de los
+  // "if (loading) return" de más abajo), porque son hooks y no pueden saltarse
+  // en algunos renders sin violar las reglas de hooks. Mientras carga, tratan
+  // 0 -> 0 (no animan nada); cuando llegan los datos reales, sí.
+  const ingresosMesAnim = useNumeroAnimado(ingresosMes);
+  const gastosMesAnim = useNumeroAnimado(gastosMes);
+  const utilidadMesAnim = useNumeroAnimado(utilidadMes);
+  const saldoPendienteAnim = useNumeroAnimado(saldoPendienteTotal);
 
   // ── Pacientes / citas ────────────────────────────────────────────────────
   const estados = { activo: 0, nuevo: 0, inactivo: 0 };
@@ -274,6 +336,15 @@ export default function Dashboard({ setView, clinica }) {
   ];
 
 
+  // Recién acá, después de TODOS los hooks (incluidos los 4 useNumeroAnimado
+  // de arriba), es seguro salir temprano.
+  if (loading) {
+    return <div style={{ padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>Cargando dashboard…</div>;
+  }
+  if (errorMsg) {
+    return <div style={{ padding: 40, textAlign: 'center', color: RJ, fontSize: 13.5 }}>Error al cargar el dashboard: {errorMsg}</div>;
+  }
+
   return (
     // Un solo canal (--gap-panel) para TODA la rejilla: si una fila usa otra
     // medida, el ojo lo nota aunque no sepa por qué.
@@ -297,6 +368,12 @@ export default function Dashboard({ setView, clinica }) {
             : <>La cobranza está al día.</>}
         </p>
         <div style={{ display: 'flex', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
+          {/* "Total de pacientes" venía de Analítica (vista eliminada: repetía
+              gran parte del Dashboard y mostraba menos datos que él). Esto era
+              lo único que de verdad faltaba acá. */}
+          <span style={{ ...subCard, padding: '5px 11px', fontSize: 12, fontWeight: 600, color: 'var(--label-primary)' }}>
+            {pacientes.length} pacientes
+          </span>
           <span style={{ ...subCard, padding: '5px 11px', fontSize: 12, fontWeight: 600, color: 'var(--label-primary)' }}>
             {estados.activo} activos
           </span>
@@ -346,9 +423,25 @@ export default function Dashboard({ setView, clinica }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10, marginBottom: 6 }}>
           <div>
             <h2 style={h2}>Ingresos vs. gastos</h2>
-            <div style={{ fontSize: 12, color: MU, marginTop: 2 }}>Cobrado real de los últimos 12 meses, en soles</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 3 }}>
+              {/* Punto que respira: indica que estos datos se refrescan solos
+                  (cada 60s), no es una foto fija del momento en que se abrió
+                  la vista. */}
+              <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: VERDE, animation: 'pulso-vivo 2.2s ease-out infinite' }} />
+              </span>
+              <span style={{ fontSize: 12, color: MU }}>
+                {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <SegmentedControl
+              options={RANGOS.map(r => ({ key: r.key, label: r.label }))}
+              value={rango}
+              onChange={setRango}
+              style={{ width: 180 }}
+            />
             <Leyenda series={seriesGrafico} />
             <button onClick={() => setVerTabla(v => !v)}
               style={{ background: 'var(--panel-sunken)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: MU, cursor: 'pointer' }}>
@@ -361,24 +454,30 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ overflowX: 'auto', marginTop: 8 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
               <thead><tr>
-                {['Mes', 'Ingresos', 'Gastos', 'Utilidad'].map(x => (
-                  <th key={x} style={{ textAlign: x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                {[rangoActual.dia ? 'Fecha' : 'Mes', 'Ingresos', 'Gastos', 'Utilidad'].map(x => (
+                  <th key={x} style={{ textAlign: x === 'Fecha' || x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
                 ))}
               </tr></thead>
               <tbody>
-                {meses12.map((m, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--hairline)' }}>
-                    <td style={{ padding: '6px 8px', color: 'var(--label-primary)', fontWeight: i === 11 ? 700 : 500, textTransform: 'capitalize' }}>{m.label} {String(m.anio).slice(2)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(m.ingresos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(m.gastos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: (m.ingresos - m.gastos) >= 0 ? VERDE : RJ }}>{soles(m.ingresos - m.gastos)}</td>
+                {bucketsRango.map((b, i) => (
+                  <tr key={b.clave} style={{ borderBottom: '1px solid var(--hairline)' }}>
+                    <td style={{ padding: '6px 8px', color: 'var(--label-primary)', fontWeight: i === bucketsRango.length - 1 ? 700 : 500 }}>{b.label}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(b.ingresos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(b.gastos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: (b.ingresos - b.gastos) >= 0 ? VERDE : RJ }}>{soles(b.ingresos - b.gastos)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <GraficoLineas series={seriesGrafico} etiquetas={meses12.map(m => m.label)} formato={soles} alto={218} />
+          <GraficoLineas
+            series={seriesGrafico}
+            etiquetas={bucketsRango.map(b => b.label)}
+            formato={soles}
+            alto={218}
+            mostrarCadaN={rango === '30d' ? 3 : 1}
+          />
         )}
       </div>
 
@@ -451,33 +550,42 @@ export default function Dashboard({ setView, clinica }) {
           etiqueta + cifra + variación), como la fila de KPIs de un dashboard
           SaaS de referencia — no una tira con divisores. */}
       <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)' }}>
+        {/* Las 4 se ven idénticas, así que las 4 deben comportarse igual: antes
+            sólo "Por cobrar" tenía onClick y las otras cursor:default, una
+            inconsistencia que el ojo termina notando aunque no sepa nombrarla.
+            Las cifras vienen del hook de animación: cuando la auto-actualización
+            trae un número distinto, se ve "correr" hacia el nuevo valor en vez
+            de saltar de golpe. */}
         <Stat
           label="Ingresos del mes"
-          value={soles(ingresosMes)}
+          value={soles(ingresosMesAnim)}
           icon={<Icon name="trendingUp" size={15} />}
           col={COLOR_INGRESOS}
+          onClick={() => setView && setView('caja')}
           sub={pctIngresos === null ? null : `${pctIngresos >= 0 ? '↑' : '↓'} ${Math.abs(pctIngresos)}% vs. mes anterior`}
           subCol={pctIngresos === null ? MU : (pctIngresos >= 0 ? VERDE : RJ)}
         />
         <Stat
           label="Gastos del mes"
-          value={soles(gastosMes)}
+          value={soles(gastosMesAnim)}
           icon={<Icon name="card" size={15} />}
           col={COLOR_GASTOS}
+          onClick={() => setView && setView('caja')}
           sub={`${gastosDelMes.length} registro${gastosDelMes.length !== 1 ? 's' : ''}`}
           subCol={MU}
         />
         <Stat
           label="Utilidad neta"
-          value={soles(utilidadMes)}
+          value={soles(utilidadMesAnim)}
           icon={<Icon name="checkCircle" size={15} />}
           col={utilidadMes >= 0 ? VERDE : RJ}
+          onClick={() => setView && setView('caja')}
           sub={`${margenPct}% de margen`}
           subCol={utilidadMes >= 0 ? VERDE : RJ}
         />
         <Stat
           label="Por cobrar"
-          value={soles(saldoPendienteTotal)}
+          value={soles(saldoPendienteAnim)}
           icon={<Icon name="clock" size={15} />}
           col={saldoPendienteTotal > 0 ? RJ : VERDE}
           onClick={() => setView && setView('caja')}
@@ -485,6 +593,18 @@ export default function Dashboard({ setView, clinica }) {
             ? `${deudaPorPaciente.size} paciente${deudaPorPaciente.size !== 1 ? 's' : ''} · ${tasaCobro}% cobrado`
             : 'Todo cobrado'}
           subCol={saldoPendienteTotal > 0 ? RJ : VERDE}
+        />
+        {/* "Tasa de cobro" era el corazón del gráfico "Facturado vs. cobrado"
+            de Analítica (vista eliminada) -- acá queda como cifra de primer
+            nivel en vez de enterrada como sub-texto dentro de "Por cobrar". */}
+        <Stat
+          label="Tasa de cobro"
+          value={`${tasaCobro}%`}
+          icon={<Icon name="trendingUp" size={15} />}
+          col={tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ}
+          onClick={() => setView && setView('caja')}
+          sub={`${soles(totalCobrado)} de ${soles(totalFacturado)} facturado`}
+          subCol={MU}
         />
       </div>
 

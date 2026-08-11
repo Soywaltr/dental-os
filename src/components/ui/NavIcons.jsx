@@ -7,9 +7,9 @@
 // mapa cubre sólo el riel de navegación y el chrome del shell.
 import React from 'react';
 import {
-  LayoutDashboard, CalendarDays, FolderOpen, LineChart,
+  LayoutDashboard, CalendarDays, FolderOpen,
   Wallet, FlaskConical, Smile, MessageCircle, Settings,
-  Search, Bell, Plus, ChevronLeft, PanelLeft,
+  Search, Bell, Plus, PanelLeft, ChevronDown,
 } from 'lucide-react';
 
 // Trazo fino y uniforme, como pide el lenguaje visual.
@@ -19,7 +19,6 @@ const MAPA = {
   dashboard:   LayoutDashboard,
   agenda:      CalendarDays,
   expediente:  FolderOpen,
-  reportes:    LineChart,
   caja:        Wallet,
   laboratorio: FlaskConical,
   ortodoncia:  Smile,
@@ -29,8 +28,8 @@ const MAPA = {
   buscar:      Search,
   campana:     Bell,
   mas:         Plus,
-  chevronIzq:  ChevronLeft,
   panel:       PanelLeft,
+  chevronDown: ChevronDown,
 };
 
 export default function NavIcon({ name, size = 18, strokeWidth = STROKE, style }) {
