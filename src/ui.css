@@ -153,6 +153,54 @@
   outline-offset: 2px;
 }
 
+/* ── Ítem del riel de navegación ────────────────────────────────────────────
+   El riel va relleno con el acento, así que su hover NO es --panel-hover (que
+   es una superficie clara) sino un velo del color de contraste sobre el propio
+   acento. Reemplaza el par onMouseEnter/onMouseLeave que fijaba background
+   inline. !important: el background base se decide inline según activo/inactivo
+   y gana siempre sobre esta hoja. */
+.rail-item {
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.rail-item:hover:not([aria-current="page"]) {
+  background: var(--rail-hover) !important;
+  color: var(--rail-ink-strong) !important;
+}
+.rail-item:focus-visible {
+  outline: 2px solid var(--rail-ink-strong);
+  outline-offset: -2px;
+}
+
+/* ── Selector de tema claro/oscuro ─────────────────────────────────────────
+   Dos pastillas dentro de una pista hundida. La activa lleva la superficie de
+   panel; la inactiva sólo texto, y se aclara al pasar el mouse. */
+.tema-opcion {
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.tema-opcion:hover:not([aria-pressed="true"]) {
+  color: var(--text-primary) !important;
+}
+.tema-opcion:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Zona de acción vacía (marco punteado con "+") ─────────────────────────
+   Estado vacío accionable: en vez de un texto muerto ("Sin citas para este
+   día"), un marco punteado que invita a crear. */
+.zona-vacia {
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.zona-vacia:hover {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+.zona-vacia:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Breakpoints compartidos ───────────────────────────────────────────────
    Mismos cortes que utils/useResponsive.js (1180 tablet / 860 narrow), para
    que el CSS y el JS de layout nunca respondan a anchos distintos. */

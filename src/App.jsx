@@ -1,10 +1,10 @@
 // src/App.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 // DentalOS · Shell
-// Panel de navegación blanco flotante, colapsable a riel de íconos · pill suave
-// para el ítem activo y subsecciones colgando de una línea conectora · Ajustes
-// y "Contraer" al pie · Header con título, buscador global y perfil ·
-// Context + Reducer · Lazy views
+// Riel de navegación relleno con el acento de la clínica, pegado al borde
+// izquierdo y colapsable a sólo iconos · activo = cuadrado claro con el icono en
+// el acento · Ajustes y "Contraer" al pie · Header con título, buscador global,
+// selector claro/oscuro y perfil · Context + Reducer · Lazy views
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, {
@@ -24,6 +24,7 @@ import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
 import NavIcon from "./components/ui/NavIcons";
 import { aplicarTema } from "./utils/theme";
+import useTema from "./utils/useTema";
 import { rutaPerfil } from "./utils/storage";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
@@ -38,9 +39,10 @@ const Config      = lazy(() => import("./components/vistas/Config"));
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 // Ya no son valores fijos: cada uno apunta a una variable CSS declarada en
-// src/tokens.css (":root" + "@media (prefers-color-scheme: dark)"). Ese archivo
-// es la única fuente de verdad del color; repuntarlo cambia toda la app de una
-// vez y la deja siguiendo el modo claro/oscuro del sistema operativo.
+// src/tokens.css (":root" y ':root[data-theme="dark"]'). Ese archivo es la única
+// fuente de verdad del color; repuntarlo cambia toda la app de una vez. El tema
+// activo lo estampa como data-theme un script inline de index.html antes del
+// primer pintado, y lo cambia utils/useTema.js desde el selector del header.
 const C = {
   // Fondos.
   pageBg:      "var(--surface-secondary)",
@@ -87,7 +89,7 @@ const C = {
 // El riel arranca desplegado (con nombres), salvo en pantallas de iPad o menores,
 // donde 230px de navegación se comen la vista (ver el efecto en App).
 const INIT = {
-  view: "dashboard", selectedPat: null, subAccount: "Sede Principal",
+  view: "dashboard", selectedPat: null,
   teeth: {}, teethEvolucion: {}, patientsList: [],
   globalSearch: "", notifCount: 3,
   sidebarCollapsed: typeof window !== "undefined" && window.innerWidth <= 1180,
@@ -100,7 +102,6 @@ function reducer(st, action) {
     // ninguno abierto. Si se conservara, entrar al Historial desde el menú
     // reabriría solo al último paciente que se vio desde otra vista.
     case "SET_VIEW":        return { ...st, view: action.payload.view, selectedPat: action.payload.pat ?? null };
-    case "SET_SUB_ACCOUNT": return { ...st, subAccount: action.payload };
     case "SET_TEETH": {
       // SOLUCIÓN: Si payload es una función, la ejecutamos pasando el estado anterior
       const newTeeth = typeof action.payload === 'function' ? action.payload(st.teeth) : action.payload;
@@ -221,18 +222,20 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
-// Activo = "pill" de fondo suave, nunca un borde ni un bloque de color fuerte.
+// Vive sobre el riel relleno con el acento, así que sus colores salen de los
+// tokens --rail-*, que sólo emparejan --accent con --accent-contrast: ese par
+// está verificado como legible, por lo que el riel funciona con cualquier acento
+// que elija una clínica. Activo = cuadrado claro con el ícono en el acento.
+// El :hover lo pone .rail-item en ui.css (un inline style no puede).
 const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
-  const [hov, setHov] = useState(false);
   const alto = 40; // área táctil cómoda incluso en el riel angosto
 
   return (
     <button
       onClick={() => onClick(item.id)}
+      className="rail-item"
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
         width: collapsed ? 40 : "100%", height: alto, minHeight: alto,
@@ -241,15 +244,12 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
         borderRadius: "var(--radius-control)", border: "none",
-        // El pill activo es una superficie suave, no el acento a pleno: el
-        // violeta se reserva para el ícono y la barrita de la izquierda.
-        background: isActive ? "var(--accent-soft)" : hov ? "var(--panel-hover)" : "transparent",
-        color: isActive ? "var(--accent)" : hov ? "var(--text-primary)" : "var(--text-secondary)",
+        background: isActive ? "var(--rail-active-bg)" : "transparent",
+        color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink)",
         fontFamily: C.font, fontSize: 13.5,
-        fontWeight: isActive ? 600 : 400,
+        fontWeight: isActive ? 600 : 450,
         textAlign: "left",
-        cursor: "pointer", outline: "none", flexShrink: 0,
-        transition: "background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease)",
+        cursor: "pointer", flexShrink: 0,
       }}
     >
       <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, flexShrink: 0 }}>
@@ -261,8 +261,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         <span style={{
           position: "absolute", top: 7, right: 7,
           width: 6, height: 6, borderRadius: "50%",
-          background: "var(--accent)",
-          border: "1.5px solid var(--panel)",
+          background: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
         }} />
       )}
 
@@ -273,7 +272,8 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
             <span style={{
               fontSize: 10, fontWeight: 600, letterSpacing: "0.2px",
               padding: "3px 8px", borderRadius: "var(--radius-pill)", flexShrink: 0,
-              background: "var(--text-primary)", color: "var(--panel)",
+              background: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
+              color: isActive ? "var(--rail-active-bg)" : "var(--rail-bg)",
             }}>
               {item.badge}
             </span>
@@ -284,8 +284,8 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
               minWidth: 20, height: 20, padding: "0 6px",
               borderRadius: "var(--radius-pill)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: isActive ? "var(--panel)" : "var(--panel-sunken)",
-              color: "var(--text-secondary)",
+              background: isActive ? "var(--accent-soft)" : "var(--rail-hover)",
+              color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
               fontVariantNumeric: "tabular-nums",
             }}>
               {contador}
@@ -298,9 +298,14 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
 });
 
 // ─── COMPONENTE: RIEL DE NAVEGACIÓN ───────────────────────────────────────────
-// Un solo riel negro, no dos paneles: colapsado muestra sólo los iconos y
-// desplegado los mismos iconos con nombre y contador. Nunca se ven las secciones
-// duplicadas en pantalla.
+// Franja rellena con el acento de la clínica, pegada al borde izquierdo (sin
+// margen ni esquinas, como en la referencia): así es una zona de navegación
+// clara y no "otra tarjeta más" compitiendo con el contenido.
+//
+// Todos sus colores salen de los tokens --rail-*, que sólo emparejan --accent
+// con --accent-contrast. Ese par se calcula para cumplir AA (utils/theme.js),
+// así que el riel sigue legible con cualquier acento white-label, incluido uno
+// claro donde un ícono blanco fijo desaparecería.
 //
 // Ajustes va fijo al pie, fuera de la lista con scroll, para que siempre esté a
 // la vista sin importar cuántas secciones haya arriba.
@@ -311,21 +316,15 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
   const logoUrl = useSignedUrl(clinica?.logo_url);
   const goTo = useCallback(id => dispatch({ type: "SET_VIEW", payload: { view: id } }), [dispatch]);
   const toggle = useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 76 : 250;
+  const W = col ? 72 : 244;
 
   return (
-    // Un solo panel blanco que flota sobre el fondo lavanda, con esquinas muy
-    // redondeadas y sombra difusa. Ajustes va al pie, DENTRO del mismo panel:
-    // separarlo en cápsulas sueltas competía visualmente con las secciones.
     <aside style={{
       width: W, minWidth: W,
-      margin: "var(--gutter) 0 var(--gutter) var(--gutter)",
-      height: "calc(100vh - var(--gutter) * 2)",
-      background: "var(--panel)",
-      borderRadius: "var(--radius-panel)",
-      boxShadow: "var(--shadow-float)",
+      height: "100vh",
+      background: "var(--rail-bg)",
       display: "flex", flexDirection: "column",
-      padding: "18px 0 14px",
+      padding: "20px 0 14px",
       flexShrink: 0, zIndex: 101, overflow: "hidden",
       transition: "width var(--dur-slow) var(--ease), min-width var(--dur-slow) var(--ease)",
     }}>
@@ -333,13 +332,16 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
       {/* ── Marca ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
-        padding: col ? 0 : "0 18px", marginBottom: 20,
+        padding: col ? 0 : "0 16px", marginBottom: 22,
         justifyContent: col ? "center" : "flex-start",
       }}>
+        {/* El recuadro del logo va en el color de contraste, no en el acento:
+            sobre una franja del acento, un cuadro del mismo acento no se vería. */}
         <div style={{
           width: 36, height: 36, borderRadius: "var(--radius-control)", overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "var(--accent)",
-          display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+          background: logoUrl ? "transparent" : "var(--rail-active-bg)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "var(--rail-active-ink)",
         }}>
           {logoUrl ? (
             <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -350,7 +352,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           )}
         </div>
         {!col && (
-          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: "var(--rail-ink-strong)", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {clinica?.nombre || "DentalOS"}
           </span>
         )}
@@ -362,16 +364,18 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           <div key={si} style={{ marginBottom: 14 }}>
             {section.label && !col && (
               <div style={{
-                fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)",
+                fontSize: 11, fontWeight: 600, color: "var(--rail-ink)",
                 letterSpacing: "0.4px", textTransform: "uppercase",
                 padding: "0 12px 8px",
               }}>
                 {section.label}
               </div>
             )}
-            {/* Colapsado no hay lugar para el rótulo: un espacio extra separa
-                los grupos, en vez de una línea dura. */}
-            {section.label && col && si > 0 && <div style={{ height: 10 }} />}
+            {/* Colapsado no hay lugar para el rótulo: una línea fina del color
+                de contraste separa los grupos. */}
+            {section.label && col && si > 0 && (
+              <div style={{ height: 1, background: "var(--rail-divisor)", margin: "0 18px 10px" }} />
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {section.items.map(item => (
@@ -397,8 +401,11 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
           collapsed={col}
           onClick={goTo}
         />
+        {/* El :hover lo pone .rail-item en ui.css, igual que los ítems de nav:
+            así este botón y las secciones responden idéntico. */}
         <button
           onClick={toggle}
+          className="rail-item"
           aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
           title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
           style={{
@@ -407,12 +414,9 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores }) => {
             display: "flex", alignItems: "center", justifyContent: col ? "center" : "flex-start",
             gap: 11, padding: col ? 0 : "0 12px",
             borderRadius: "var(--radius-control)", border: "none", background: "transparent",
-            color: "var(--text-tertiary)", fontFamily: C.font, fontSize: 13.5,
-            cursor: "pointer", outline: "none",
-            transition: "background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease)",
+            color: "var(--rail-ink)", fontFamily: C.font, fontSize: 13.5,
+            cursor: "pointer",
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = "var(--panel-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-tertiary)"; }}
         >
           <span style={{ display: "flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <NavIcon name="panel" size={18} />
@@ -498,7 +502,7 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
         style={{
           width: "100%", padding: "9px 34px 9px 36px",
           borderRadius: 12, border: `1px solid ${C.border}`,
-          background: "#fff", fontSize: 13,
+          background: "var(--panel)", fontSize: 13,
           fontFamily: C.font, color: C.ink, outline: "none",
           transition: "border-color 0.12s, box-shadow 0.12s",
         }}
@@ -517,7 +521,7 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
       {abierto && hayTexto && (
         <div style={{
           position: "absolute", top: "calc(100% + 7px)", left: 0, right: 0,
-          background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`,
+          background: "var(--panel)", borderRadius: 14, border: `1px solid ${C.border}`,
           boxShadow: "0 18px 40px rgba(15,23,42,0.16)", overflow: "hidden", zIndex: 200,
         }}>
           {buscando && <div style={{ padding: "14px 15px", fontSize: 12, color: C.inkMute }}>Buscando…</div>}
@@ -550,6 +554,58 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
           ))}
         </div>
       )}
+    </div>
+  );
+});
+
+// ─── COMPONENTE: SELECTOR CLARO / OSCURO ──────────────────────────────────────
+// Dos pastillas en una pista hundida. La app ya tenía paleta oscura, pero sólo
+// se activaba por la preferencia del sistema: no había forma de elegir desde la
+// app. Mientras no se toque, sigue al sistema (y cambia con él en vivo); al
+// elegir, la decisión queda guardada (ver utils/useTema.js).
+const SelectorTema = memo(({ compacto }) => {
+  const { tema, elegir } = useTema();
+  const opciones = [
+    { key: "light", label: "Claro", icono: "sol" },
+    { key: "dark", label: "Oscuro", icono: "luna" },
+  ];
+
+  return (
+    <div
+      role="group"
+      aria-label="Tema de la interfaz"
+      style={{
+        display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
+        background: "var(--panel-sunken)", borderRadius: "var(--radius-pill)", padding: 3,
+      }}
+    >
+      {opciones.map(o => {
+        const activo = tema === o.key;
+        return (
+          <button
+            key={o.key}
+            className="tema-opcion"
+            onClick={() => elegir(o.key)}
+            aria-pressed={activo}
+            title={`Tema ${o.label.toLowerCase()}`}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              // 30px de alto real dentro de una pista de 36: el mínimo táctil de
+              // 44px lo cubre la pista completa, no cada mitad.
+              height: 30, padding: compacto ? "0 9px" : "0 12px",
+              borderRadius: "var(--radius-pill)", border: "none",
+              background: activo ? "var(--panel)" : "transparent",
+              color: activo ? "var(--text-primary)" : "var(--text-tertiary)",
+              fontFamily: C.font, fontSize: 12.5, fontWeight: activo ? 600 : 450,
+              cursor: "pointer",
+              boxShadow: activo ? "var(--shadow-float)" : "none",
+            }}
+          >
+            <NavIcon name={o.icono} size={14} />
+            {!compacto && o.label}
+          </button>
+        );
+      })}
     </div>
   );
 });
@@ -594,33 +650,13 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
       {/* Grupo derecho */}
       <div style={{ display: "flex", alignItems: "center", gap: isNarrow ? 6 : 8, flexShrink: 0, marginLeft: "auto" }}>
 
-        {/* Selector sede: no hay más de una sede real todavía, así que es
-            puramente decorativo -- lo primero que se sacrifica por espacio. */}
-        {!isNarrow && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "5px 10px", borderRadius: C.r,
-            border: `1px solid ${C.border}`, background: "#fff",
-            boxShadow: C.shadowSm,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, flexShrink: 0 }} />
-            <select
-              value={state.subAccount}
-              onChange={e => dispatch({ type: "SET_SUB_ACCOUNT", payload: e.target.value })}
-              style={{
-                border: "none", outline: "none", background: "transparent",
-                fontSize: 12.5, fontWeight: 500, color: C.inkMid,
-                cursor: "pointer", fontFamily: C.font,
-                appearance: "none", WebkitAppearance: "none",
-              }}
-            >
-              <option>Sede Principal</option>
-              <option>Sucursal El Golf</option>
-              <option>Sucursal Miraflores</option>
-            </select>
-            <span style={{ color: C.inkFaint, display: "flex" }}><NavIcon name="chevronDown" size={12} /></span>
-          </div>
-        )}
+        {/* En esta posición había un selector de "Sede" con opciones inventadas
+            ("Sucursal El Golf", "Sucursal Miraflores") que no existen en la
+            base: era decorativo y, en un producto que se vende a clínicas,
+            datos falsos en pantalla son peor que nada. El espacio lo ocupa el
+            selector de tema, que sí hace algo. La sede volverá cuando haya
+            varias sedes reales por clínica. */}
+        <SelectorTema compacto={isNarrow} />
 
         {/* Botón nueva cita: en portrait de iPad, sólo el ícono. */}
         <PrimaryBtn
@@ -646,7 +682,7 @@ const TopHeader = memo(({ state, dispatch, onLogout, avatarUrl, nombreUsuario, r
             display: "flex", alignItems: "center", gap: 9,
             padding: isNarrow ? 0 : "4px 10px 4px 4px", borderRadius: 100,
             border: isNarrow ? "none" : `1px solid ${C.border}`,
-            background: isNarrow ? "transparent" : "#fff",
+            background: isNarrow ? "transparent" : "var(--panel)",
             cursor: "pointer", outline: "none", boxShadow: isNarrow ? "none" : C.shadowSm,
             transition: "border-color 0.12s", maxWidth: isNarrow ? "none" : 190,
           }}
@@ -688,7 +724,7 @@ const PrimaryBtn = memo(({ children, onClick, title }) => {
         padding: "6px 14px", borderRadius: C.r, border: "none",
         background: GRAD_PRIMARY,
         opacity: hov ? 0.9 : 1,
-        color: "#fff", fontSize: 13, fontWeight: 600,
+        color: "var(--accent-contrast)", fontSize: 13, fontWeight: 600,
         fontFamily: C.font, cursor: "pointer", outline: "none",
         transition: "opacity 0.12s",
         boxShadow: GRAD_PRIMARY_SHADOW,
@@ -712,7 +748,7 @@ const HeaderIconBtn = memo(({ children, label, badge, onClick }) => {
       style={{
         position: "relative", width: 34, height: 34, borderRadius: C.r,
         border: `1px solid ${C.border}`,
-        background: hov ? C.hoverBg : "#fff",
+        background: hov ? C.hoverBg : "var(--panel)",
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer", color: C.inkMid, outline: "none",
         transition: "background 0.12s", flexShrink: 0,
@@ -724,9 +760,9 @@ const HeaderIconBtn = memo(({ children, label, badge, onClick }) => {
         <span style={{
           position: "absolute", top: 2, right: 2,
           width: 14, height: 14, borderRadius: "50%",
-          background: C.red, color: "#fff", fontSize: 8, fontWeight: 800,
+          background: C.red, color: "var(--red-contrast)", fontSize: 8, fontWeight: 800,
           display: "flex", alignItems: "center", justifyContent: "center",
-          border: "1.5px solid #fff", fontFamily: C.font,
+          border: "1.5px solid var(--panel)", fontFamily: C.font,
         }}>
           {badge}
         </span>
@@ -808,7 +844,7 @@ const Splash = () => (
     <div style={{
       position: "relative", zIndex: 1,
       width: 48, height: 48, borderRadius: 14, background: GRAD_PRIMARY,
-      display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+      display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent-contrast)",
       animation: "pulse 1.5s ease-in-out infinite",
       boxShadow: GRAD_PRIMARY_SHADOW,
     }}>
@@ -946,11 +982,9 @@ export default function App() {
         overflow: "hidden", background: C.pageBg,
         fontFamily: C.font, position: "relative",
       }}>
-        {/* Sin textura decorativa de fondo: "deferencia" pide una superficie
-            neutra que ceda protagonismo al contenido, no un adorno detrás. */}
-
-        {/* Un solo riel: colapsado son los iconos, desplegado los mismos con
-            nombre y contador. Nunca las secciones dos veces en pantalla. */}
+        {/* Riel de acento a sangre por la izquierda: colapsado son los iconos,
+            desplegado los mismos con nombre y contador. Nunca las secciones dos
+            veces en pantalla -- no hay pestañas arriba que las repitan. */}
         <Sidebar state={state} dispatch={dispatch} clinica={clinica} contadores={contadores} />
 
         {/* Columna derecha */}

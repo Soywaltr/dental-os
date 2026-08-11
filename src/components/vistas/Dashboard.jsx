@@ -12,7 +12,7 @@ import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
 import SegmentedControl from '../ui/SegmentedControl';
-import { GraficoLineas, Leyenda } from '../ui/Graficos';
+import { GraficoLineas, Leyenda, Anillo } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
@@ -277,6 +277,17 @@ export default function Dashboard({ setView, clinica }) {
     },
   ].filter(Boolean);
 
+  // ── Avance global de tratamientos (medidor) ──────────────────────────────
+  // Deliberadamente SIN filtrar por la pestaña de especialidad: el medidor es
+  // del consultorio entero, mientras que `conteoEstado` de más abajo sí sigue
+  // la pestaña activa. Si compartieran variable, el anillo cambiaría al tocar
+  // una pestaña y dejaría de significar lo que dice su etiqueta.
+  const conteoEstadoTotal = { pendiente: 0, en_curso: 0, completado: 0 };
+  tratamientos.forEach(t => { if (conteoEstadoTotal[t.status] !== undefined) conteoEstadoTotal[t.status]++; });
+  const pctCompletado = tratamientos.length > 0
+    ? Math.round((conteoEstadoTotal.completado / tratamientos.length) * 100)
+    : 0;
+
   // ── Pulso por especialidad ───────────────────────────────────────────────
   const tab = CAT_TABS.find(t => t.key === activeTab) || CAT_TABS[0];
   const tratamientosTab = tab.cats ? tratamientos.filter(t => tab.cats.includes(NOMBRE_A_CAT[t.name])) : tratamientos;
@@ -518,7 +529,24 @@ export default function Dashboard({ setView, clinica }) {
         </div>
 
         {citasDia.length === 0 ? (
-          <div style={{ ...subCard, padding: 16, textAlign: 'center', color: MU, fontSize: 13 }}>Sin citas para este día.</div>
+          /* Estado vacío ACCIONABLE: antes era un texto muerto. Un marco
+             punteado con "+" ofrece la acción que el usuario querría justo
+             ahí -- agendar en el día que está mirando. */
+          <button
+            className="zona-vacia"
+            onClick={() => setView && setView('agenda')}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 7, width: '100%', minHeight: 96, padding: 16,
+              background: 'transparent', color: MU,
+              border: '1.5px dashed var(--hairline-strong)',
+              borderRadius: 'var(--radius-card)',
+              fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
+            }}
+          >
+            <Icon name="plus" size={17} />
+            Agendar una cita
+          </button>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             {citasDia.slice(0, 3).map(c => (
@@ -594,23 +622,46 @@ export default function Dashboard({ setView, clinica }) {
             : 'Todo cobrado'}
           subCol={saldoPendienteTotal > 0 ? RJ : VERDE}
         />
-        {/* "Tasa de cobro" era el corazón del gráfico "Facturado vs. cobrado"
-            de Analítica (vista eliminada) -- acá queda como cifra de primer
-            nivel en vez de enterrada como sub-texto dentro de "Por cobrar". */}
-        <Stat
-          label="Tasa de cobro"
-          value={`${tasaCobro}%`}
-          icon={<Icon name="trendingUp" size={15} />}
-          col={tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ}
-          onClick={() => setView && setView('caja')}
-          sub={`${soles(totalCobrado)} de ${soles(totalFacturado)} facturado`}
-          subCol={MU}
-        />
+      </div>
+
+      {/* ─── MEDIDORES ─── (fila: 4 + 8 = 12)
+          Dos anillos de progreso: son ratios (parte sobre total), y un anillo
+          comunica "cuánto del camino va" mucho más rápido que una cifra suelta.
+          "Tasa de cobro" estuvo un momento como 5ta tarjeta de KPI, pero tenerla
+          además acá sería el mismo dato en dos formatos en la misma pantalla. */}
+      <div style={{ ...col(4), ...card }}>
+        <h2 style={{ ...h2, marginBottom: 18 }}>Medidores</h2>
+        <div style={{ display: 'flex', gap: 22, justifyContent: 'space-around', alignItems: 'center', flex: 1 }}>
+          {[
+            {
+              etiqueta: 'Cobrado', pct: tasaCobro,
+              color: tasaCobro >= 80 ? VERDE : tasaCobro >= 50 ? GL : RJ,
+              detalle: `${soles(totalCobrado)} de ${soles(totalFacturado)}`,
+            },
+            {
+              etiqueta: 'Tratamientos', pct: pctCompletado,
+              color: pctCompletado >= 80 ? VERDE : pctCompletado >= 50 ? GL : RJ,
+              detalle: `${conteoEstadoTotal.completado} de ${tratamientos.length} completados`,
+            },
+          ].map(m => (
+            <div key={m.etiqueta} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <Anillo pct={m.pct} color={m.color} tamano={96} grosor={9}>
+                <span style={{ fontSize: 21, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                  {m.pct}%
+                </span>
+              </Anillo>
+              <div style={{ textAlign: 'center', minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.etiqueta}</div>
+                <div style={{ fontSize: 11.5, color: MU, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{m.detalle}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ─── NECESITA TU ATENCIÓN ─── (fila 4: 5 + 4 + 3 = 12) — las 3 tarjetas
           comparten minHeight para no quedar despareja como antes. */}
-      <div style={{ ...col(5), ...card, minHeight: 178 }}>
+      <div style={{ ...col(8), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Necesita tu atención</h2>
           {alertas.length > 0 && (
@@ -643,7 +694,7 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── DEUDORES ─── */}
-      <div style={{ ...col(4), ...card, minHeight: 178 }}>
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Mayores deudores</h2>
           {topDeudores.length > 0 && (
@@ -671,7 +722,7 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── LABORATORIO ─── */}
-      <div style={{ ...col(3), ...card, minHeight: 178 }}>
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Laboratorio</h2>
           <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: 'var(--label-tertiary)' }}>

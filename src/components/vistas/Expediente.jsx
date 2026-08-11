@@ -15,9 +15,10 @@ import useResponsive from '../../utils/useResponsive';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
 // Ya no son hex fijos: cada entrada apunta a la MISMA variable CSS declarada en
-// el :root de App.jsx (que trae su contraparte en @media prefers-color-scheme:
-// dark). Así este archivo hereda modo oscuro sin duplicar paleta, y `C` queda
-// como un alias local de los mismos tokens que exporta utils/constants.js.
+// src/tokens.css (":root" y su contraparte ':root[data-theme="dark"]'). Así este
+// archivo hereda el modo oscuro y el acento de cada clínica sin duplicar paleta,
+// y `C` queda como un alias local de los mismos tokens que exporta
+// utils/constants.js.
 const C = {
   bg:          'var(--surface-secondary)',
   surface:     'var(--surface-primary)',

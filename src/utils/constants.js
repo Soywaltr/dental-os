@@ -33,11 +33,11 @@ export const META_APP_ID = "TU_META_APP_ID_AQUI";
 export const META_OAUTH_SCOPE = "whatsapp_business_management,whatsapp_business_messaging";
 export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 
-// Paleta — ya no hex fijos, sino alias de las variables CSS declaradas en el
-// <style> de App.jsx (":root" + "@media (prefers-color-scheme: dark)"). P es
-// el ÚNICO acento interactivo de toda la app (botones primarios, tabs activos,
-// enlaces, foco) -- por eso apunta a --accent, el azul sistema de Apple, en vez
-// de a un gris de marca. Como estas ~15 vistas ya importan de aquí, repuntar
+// Paleta — ya no hex fijos, sino alias de las variables CSS declaradas en
+// src/tokens.css (":root" y ':root[data-theme="dark"]'). P es el ÚNICO acento
+// interactivo de toda la app (botones primarios, tabs activos, enlaces, foco)
+// -- por eso apunta a --accent, que cada clínica puede fijar como su color de
+// marca (white-label). Como estas ~15 vistas ya importan de aquí, repuntar
 // un solo valor cambia toda la app y además la deja lista para modo oscuro sin
 // tocar cada archivo.
 export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--label-primary)', LT = 'var(--surface-primary)', MT = 'var(--surface-secondary)', BD = 'var(--separator)', MU = 'var(--label-secondary)', GL = 'var(--amber)', WA = 'var(--green)', AZ = 'var(--accent)', RJ = 'var(--red)';

@@ -34,7 +34,7 @@ const formatoTick = (t) => {
 
 // Mini-tendencia para las tarjetas de KPI: la línea va en el gris de
 // de-énfasis y sólo el punto del periodo actual lleva el color de acento.
-export function Sparkline({ valores, color, colorTenue = '#CBD5E1', ancho = 92, alto = 28 }) {
+export function Sparkline({ valores, color, colorTenue = 'var(--hairline-strong)', ancho = 92, alto = 28 }) {
   if (!valores || valores.length < 2) return null;
   const max = Math.max(...valores);
   const min = Math.min(...valores, 0);
@@ -47,7 +47,7 @@ export function Sparkline({ valores, color, colorTenue = '#CBD5E1', ancho = 92, 
   return (
     <svg width={ancho} height={alto} viewBox={`0 0 ${ancho} ${alto}`} aria-hidden="true" style={{ display: 'block', overflow: 'visible' }}>
       <path d={d} fill="none" stroke={colorTenue} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={ux} cy={uy} r="4" fill={color} stroke="#fff" strokeWidth="2" />
+      <circle cx={ux} cy={uy} r="4" fill={color} stroke="var(--panel)" strokeWidth="2" />
     </svg>
   );
 }
@@ -165,16 +165,20 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
           position: 'absolute', top: 0, left: `${(x(idx) / VB_W) * 100}%`,
           transform: `translateX(${idx > n / 2 ? '-100%' : '0'})`,
           marginLeft: idx > n / 2 ? -10 : 10,
-          background: '#0F172A', color: '#fff', borderRadius: 10, padding: '8px 11px',
-          fontSize: 11, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 5,
-          boxShadow: '0 8px 22px rgba(0,0,0,0.22)',
+          // Tooltip = algo que flota sobre el contenido: superficie de panel con
+          // --shadow-pop, no un bloque azul-pizarra fijo que en modo oscuro
+          // quedaba más claro que el propio panel.
+          background: 'var(--panel)', color: 'var(--text-primary)',
+          borderRadius: 'var(--radius-card)', padding: '9px 12px',
+          fontSize: 11.5, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 5,
+          boxShadow: 'var(--shadow-pop)',
         }}>
-          <div style={{ fontWeight: 700, marginBottom: 5, textTransform: 'capitalize' }}>{etiquetas[idx]}</div>
+          <div style={{ fontWeight: 600, marginBottom: 5, textTransform: 'capitalize' }}>{etiquetas[idx]}</div>
           {series.map(s => (
             <div key={s.nombre} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-              <span style={{ color: '#CBD5E1' }}>{s.nombre}</span>
-              <span style={{ fontWeight: 700, marginLeft: 'auto', paddingLeft: 10 }}>{formato(s.valores[idx])}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{s.nombre}</span>
+              <span style={{ fontWeight: 600, marginLeft: 'auto', paddingLeft: 10, fontVariantNumeric: 'tabular-nums' }}>{formato(s.valores[idx])}</span>
             </div>
           ))}
         </div>
@@ -185,7 +189,7 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
 
 // Leyenda: siempre presente con 2+ series. La identidad la carga el punto de
 // color, nunca el color del texto.
-export function Leyenda({ series, colorTexto = '#64748B' }) {
+export function Leyenda({ series, colorTexto = 'var(--text-secondary)' }) {
   return (
     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
       {series.map(s => (

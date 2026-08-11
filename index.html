@@ -1,10 +1,37 @@
 <!doctype html>
-<html lang="en">
+<!-- lang="es": toda la interfaz está en español. Con "en" un lector de
+     pantalla pronunciaría el contenido con fonética inglesa. -->
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dental-os</title>
+    <title>DentalOS</title>
+    <script>
+      /* Resuelve el tema ANTES del primer pintado y lo estampa como
+         data-theme en <html>. Dos motivos:
+
+         1. Sin esto habría un parpadeo: React monta después, así que en un
+            sistema en modo oscuro se vería un destello claro primero.
+         2. Permite que tokens.css tenga UNA sola declaración de la paleta
+            oscura (:root[data-theme="dark"]). La alternativa —un bloque
+            @media (prefers-color-scheme) más otro [data-theme]— obliga a
+            mantener los ~30 valores duplicados y sincronizados a mano.
+
+         La elección explícita del usuario (Ajustes → Apariencia) manda; si no
+         eligió nada, se sigue la preferencia del sistema. */
+      (function () {
+        try {
+          var elegido = localStorage.getItem('dentalOS_tema');
+          var oscuro = elegido === 'dark'
+            || (!elegido && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', oscuro ? 'dark' : 'light');
+        } catch (e) {
+          /* localStorage puede lanzar en modo privado: se cae a claro. */
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -58,6 +58,21 @@
      es el default para #6C5CE7 (4.86:1, blanco gana). */
   --accent-contrast: #FFFFFF;
 
+  /* ── Riel de navegación (relleno con el acento) ─────────────────────────
+     Sólo emparejan --accent con --accent-contrast, nunca un blanco fijo: ese
+     par ya está verificado como legible (contrasteTexto() elige el que gana en
+     contraste), así que el riel funciona con CUALQUIER acento que elija una
+     clínica -- incluido uno claro, donde un ícono blanco quedaría invisible.
+     No hace falta redefinirlos en modo oscuro: derivan de --accent, que sí
+     cambia, y la relación entre ambos se mantiene. */
+  --rail-bg:         var(--accent);
+  --rail-ink:        color-mix(in srgb, var(--accent-contrast) 76%, transparent);
+  --rail-ink-strong: var(--accent-contrast);
+  --rail-hover:      color-mix(in srgb, var(--accent-contrast) 14%, transparent);
+  --rail-active-bg:  var(--accent-contrast);
+  --rail-active-ink: var(--accent);
+  --rail-divisor:    color-mix(in srgb, var(--accent-contrast) 18%, transparent);
+
   /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
   /* Mismo criterio que los grises: estos colores se usan como TEXTO (cifras,
      etiquetas de estado), así que necesitan 4.5:1. Los tonos suaves originales
@@ -67,6 +82,11 @@
   --green-soft: rgba(37, 128, 87, 0.11);
   --red:        #D2344E;  /* pendiente / vencido — 4.86:1 */
   --red-soft:   rgba(210, 52, 78, 0.10);
+  /* Texto SOBRE el rojo (badge de notificaciones, pill de estado). Mismo
+     motivo que --accent-contrast: acá blanco da 4.84:1 y pasa, pero en modo
+     oscuro el rojo se aclara a #E8697F y el blanco cae a 3.11:1 -- reprobaba
+     AA en el número del badge. Verificado con script, no estimado. */
+  --red-contrast: #FFFFFF;
   --amber:      #966923;  /* aviso — 4.86:1 */
   --amber-soft: rgba(150, 105, 35, 0.12);
 
@@ -127,12 +147,20 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
- * Modo oscuro — sigue la preferencia del sistema.
+ * Modo oscuro.
+ *
+ * Se activa por el atributo data-theme="dark" en <html>, NO por
+ * @media (prefers-color-scheme). El atributo lo estampa un script inline en
+ * index.html antes del primer pintado, resolviendo: elección explícita del
+ * usuario > preferencia del sistema. Así esta paleta se declara UNA vez; con
+ * @media haría falta un segundo bloque [data-theme="dark"] para que el toggle
+ * manual pudiera ganarle al sistema, y habría que mantener ~30 valores
+ * duplicados en sincronía a mano.
+ *
  * Los paneles siguen "flotando": suben de luminosidad respecto al fondo, que es
  * como se lee la elevación en oscuro (una sombra negra sobre negro no se ve).
  * ───────────────────────────────────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
     /* Neutralizados: los valores anteriores (#131318, #1D1D24...) tenían un
        tinte frío perceptible (el canal azul por encima del rojo/verde) — eso
        es exactamente el "azul marino" que se quería evitar. Neutro real,
@@ -167,6 +195,8 @@
     --green-soft: rgba(67, 181, 131, 0.16);
     --red:        #E8697F;
     --red-soft:   rgba(232, 105, 127, 0.16);
+    /* Blanco daba 3.11:1 sobre este rojo; casi-negro da 5.93:1. */
+    --red-contrast: #141414;
     --amber:      #DCA24A;
     --amber-soft: rgba(220, 162, 74, 0.16);
 
@@ -179,7 +209,6 @@
     --shadow-raised: none;
     --shadow-pop:    0 8px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
   }
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * ALIAS DE COMPATIBILIDAD
