@@ -23,10 +23,13 @@ export default function useContadoresNav(clinicaId) {
       const hoy = hoyISO();
       // El RLS acota cada conteo a la clínica del usuario; no hace falta
       // filtrar por clinica_id acá.
+      // Los archivados no cuentan en ninguno de los dos contadores de pacientes:
+      // el badge del menú debe coincidir con lo que se ve en el Directorio.
       const [citasHoy, pacientes, orto, lab] = await Promise.all([
         supabase.from('pacientes').select('id', { count: 'exact', head: true })
-          .eq('fecha', hoy).not('hora_cita', 'is', null),
-        supabase.from('pacientes').select('id', { count: 'exact', head: true }),
+          .eq('fecha', hoy).not('hora_cita', 'is', null).is('archivado_at', null),
+        supabase.from('pacientes').select('id', { count: 'exact', head: true })
+          .is('archivado_at', null),
         supabase.from('ortodoncia').select('id', { count: 'exact', head: true }),
         supabase.from('laboratorio_ordenes').select('id', { count: 'exact', head: true })
           .neq('status', 'entregado'),

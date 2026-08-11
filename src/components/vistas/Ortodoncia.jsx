@@ -1748,7 +1748,9 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
       setLoading(true);
       const [{ data: ortoRows }, { data: pacientes }] = await Promise.all([
         supabase.from('ortodoncia').select('id, paciente_id, fotografias, pagos, plan_tratamiento, resumen'),
-        supabase.from('pacientes').select('id, name, doc'),
+        // Sin archivados: no se puede iniciar un tratamiento de ortodoncia a un
+        // paciente que salió del Directorio.
+        supabase.from('pacientes').select('id, name, doc').is('archivado_at', null),
       ]);
       if (!vivo) return;
 

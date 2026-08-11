@@ -122,7 +122,7 @@ export default function Dashboard({ setView, clinica }) {
         { data: labData, error: errL },
         { data: gastosData, error: errG },
       ] = await Promise.all([
-        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment'),
+        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment, archivado_at'),
         supabase.from('historias').select('patient_id, plan_tratamiento'),
         supabase.from('ortodoncia').select('paciente_id, pagos, plan_tratamiento, resumen'),
         supabase.from('laboratorio_ordenes').select('id, patient_id, patient_name, type, cost, eta, status'),
@@ -137,8 +137,24 @@ export default function Dashboard({ setView, clinica }) {
         setLoading(false);
         return;
       }
-      setPacientes(pacientesData || []);
-      setTratamientos((historiasData || []).flatMap(h => (h.plan_tratamiento || []).map(item => ({ ...item, patient_id: h.patient_id }))));
+      // Sólo pacientes activos: un archivado no cuenta como paciente del
+      // consultorio para ninguna cifra.
+      const activos = (pacientesData || []).filter(p => !p.archivado_at);
+      setPacientes(activos);
+
+      // Las historias se filtran contra los pacientes activos. Sin esto se
+      // colaban dos clases de datos fantasma en TODOS los totales (ingresos,
+      // facturado, tasa de cobro, avance de tratamientos):
+      //   · historias huérfanas, de pacientes borrados antes de que existiera
+      //     el archivado -- había 9 huérfanas contra 1 válida, sumando S/2.365
+      //     que no correspondían a ningún paciente real.
+      //   · historias de pacientes archivados.
+      const idsActivos = new Set(activos.map(p => p.id));
+      setTratamientos(
+        (historiasData || [])
+          .filter(h => idsActivos.has(h.patient_id))
+          .flatMap(h => (h.plan_tratamiento || []).map(item => ({ ...item, patient_id: h.patient_id })))
+      );
       setOrtoRows((errO ? [] : (ortoData || [])).map(o => {
         const fechaInicio = o.plan_tratamiento?.fecha_inicial || o.resumen?.fecha_inicial || '';
         return { ...o, fechaInicio, resumen: resumenPagosOrtodoncia(o.pagos, fechaInicio) };

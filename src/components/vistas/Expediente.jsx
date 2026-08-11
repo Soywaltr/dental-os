@@ -76,9 +76,16 @@ const IcDownload = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
   </svg>
 );
-const IcTrash = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+// El ícono de papelera se reemplazó por uno de archivar: la acción ya no borra
+// nada, y una papelera prometía lo contrario de lo que hace.
+const IcArchivar = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="10" y1="13" x2="14" y2="13"/>
+  </svg>
+);
+const IcRestaurar = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/>
   </svg>
 );
 
@@ -230,17 +237,28 @@ function usePatientsDirectory(clinicaId) {
   useEffect(() => {
     const cargar = async () => {
       setLoading(true);
+      // Se traen TODOS, archivados incluidos: el filtro "Archivados" del
+      // Directorio los necesita para poder recuperar un paciente sin recargar.
       const { data } = await supabase
         .from('pacientes')
         .select('*')
         .order('id', { ascending: false });
 
       if (data) {
+        // Deduplica por nombre, pero un archivado nunca desplaza a un activo con
+        // el mismo nombre: si no, al archivar a alguien su tocayo activo podría
+        // desaparecer del listado.
         const unicos = [];
-        const yaVistos = new Set();
+        const indicePorNombre = new Map();
         data.forEach(p => {
           const norm = normalizarTexto(p.name);
-          if (!yaVistos.has(norm)) { yaVistos.add(norm); unicos.push(p); }
+          const yaEsta = indicePorNombre.get(norm);
+          if (yaEsta === undefined) {
+            indicePorNombre.set(norm, unicos.length);
+            unicos.push(p);
+          } else if (unicos[yaEsta].archivado_at && !p.archivado_at) {
+            unicos[yaEsta] = p;
+          }
         });
         setPatientsList(unicos);
       }
@@ -297,11 +315,36 @@ function usePatientsDirectory(clinicaId) {
     }
   }, [patientsList, clinicaId]);
 
-  // NUEVA FUNCIÓN PARA BORRAR:
-  const deletePatient = useCallback(async (id) => {
-    const { error } = await supabase.from('pacientes').delete().eq('id', id);
+  // Archivar en vez de borrar. Antes esto hacía un DELETE real, y eso tenía dos
+  // problemas: fallaba con un error de Postgres en inglés si el paciente tenía
+  // órdenes de laboratorio, y cuando NO fallaba se llevaba la ortodoncia en
+  // cascada y dejaba la historia clínica huérfana e invisible (así se
+  // acumularon 9 historias sin paciente, cuyos montos además seguían sumando en
+  // el Dashboard).
+  //
+  // Una historia clínica debe conservarse, así que el paciente sale del
+  // Directorio pero ningún registro clínico se destruye. Es reversible con
+  // `desarchivarPatient`.
+  const archivarPatient = useCallback(async (id) => {
+    const { error } = await supabase
+      .from('pacientes')
+      .update({ archivado_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) throw error;
-    setPatientsList(prev => prev.filter(p => p.id !== id));
+    setPatientsList(prev => prev.map(p => (
+      p.id === id ? { ...p, archivado_at: new Date().toISOString() } : p
+    )));
+  }, []);
+
+  const desarchivarPatient = useCallback(async (id) => {
+    const { error } = await supabase
+      .from('pacientes')
+      .update({ archivado_at: null })
+      .eq('id', id);
+    if (error) throw error;
+    setPatientsList(prev => prev.map(p => (
+      p.id === id ? { ...p, archivado_at: null } : p
+    )));
   }, []);
 
   // Importación en bloque: a diferencia de upsertPatient, nunca fusiona por
@@ -344,7 +387,7 @@ function usePatientsDirectory(clinicaId) {
     return data;
   }, [clinicaId]);
 
-  return { patientsList, loading, upsertPatient, deletePatient, importarPacientes };
+  return { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, importarPacientes };
 }
 
 // ─── HOOK: FORMULARIO DE PACIENTE ────────────────────────────────────────────
@@ -397,20 +440,23 @@ const FilterPills = memo(({ active, onChange }) => (
     background: C.fill, padding: 2,
     borderRadius: C.rl, border: `1px solid ${C.border}`,
   }}>
-    {['todos', 'activo', 'nuevo', 'inactivo'].map(f => (
+    {/* "Archivados" es su propia pestaña y NO aparece en las otras: un paciente
+        archivado saldría del Directorio sin dejar forma de recuperarlo. */}
+    {['todos', 'activo', 'nuevo', 'inactivo', 'archivados'].map(f => (
       <button
         key={f}
         onClick={() => onChange(f)}
+        className="tab-item"
+        aria-selected={active === f}
         style={{
           flex: 1, padding: '0 2px', minHeight: 36,
           borderRadius: C.r, border: 'none',
           background: active === f ? C.surface : 'transparent',
           color: active === f ? C.ink : C.inkMid,
-          fontSize: 13, fontWeight: active === f ? 600 : 400,
+          fontSize: 12, fontWeight: active === f ? 600 : 400,
           cursor: 'pointer', fontFamily: C.font,
           boxShadow: active === f ? C.shadowSm : 'none',
-          textTransform: 'capitalize',
-          transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}, box-shadow 0.15s ${C.ease}`,
+          textTransform: 'capitalize', whiteSpace: 'nowrap',
         }}
       >
         {f}
@@ -420,11 +466,12 @@ const FilterPills = memo(({ active, onChange }) => (
 ));
 
 // ─── SUB-COMPONENTE: TARJETA DE PACIENTE ─────────────────────────────────────
-const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
+const PatientCard = memo(({ patient, isSelected, onClick, onArchivar }) => {
   const [hov, setHov] = useState(false);
   const { isTablet } = useResponsive();
-  const mostrarEliminar = hov || isTablet; // en tablet/iPad no hay "hover" real, asi que se muestra siempre
+  const mostrarAccion = hov || isTablet; // en tablet/iPad no hay "hover" real, asi que se muestra siempre
   const estado = estadoPaciente(patient);
+  const archivado = !!patient.archivado_at;
 
   return (
     <div
@@ -436,23 +483,26 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
       onMouseLeave={() => setHov(false)}
       aria-pressed={isSelected}
       style={{
-        padding: '10px 12px', paddingRight: mostrarEliminar ? 46 : 12,
+        padding: '10px 12px', paddingRight: mostrarAccion ? 46 : 12,
         minHeight: 44, cursor: 'pointer', borderRadius: C.rl, marginBottom: 2,
         display: 'flex', alignItems: 'center', gap: 12, position: 'relative', // position relative es clave
         background: isSelected ? C.brandSoft : hov ? C.fillHover : 'transparent',
         border: `1px solid ${isSelected ? `color-mix(in srgb, ${C.brand} 28%, transparent)` : 'transparent'}`,
-        transition: `background 0.15s ${C.ease}, border-color 0.15s ${C.ease}`, outline: 'none',
+        // Un archivado se ve atenuado, para que no se confunda con uno activo
+        // cuando se está mirando la pestaña "Archivados".
+        opacity: archivado ? 0.62 : 1,
+        transition: `background 0.15s ${C.ease}, border-color 0.15s ${C.ease}, opacity 0.15s ${C.ease}`, outline: 'none',
       }}
     >
-      {/* Botón Eliminar: discreto (icono gris) para no saturar la lista cuando
-          queda siempre visible en tablet/iPad -- se pone rojo recien al tocarlo/pasar el mouse. */}
-      {mostrarEliminar && (
+      {/* Archivar / recuperar. Discreto (ícono gris) para no saturar la lista
+          cuando queda siempre visible en tablet/iPad. Ya no es un "eliminar":
+          archivar conserva la historia clínica, así que tampoco se pinta de
+          rojo -- no es una acción destructiva. */}
+      {mostrarAccion && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if(window.confirm(`¿Seguro que deseas eliminar a ${patient.name}?`)) onDelete(patient.id);
-          }}
-          title="Eliminar paciente"
+          onClick={(e) => { e.stopPropagation(); onArchivar(patient); }}
+          title={archivado ? `Recuperar a ${patient.name}` : `Archivar a ${patient.name}`}
+          aria-label={archivado ? 'Recuperar paciente' : 'Archivar paciente'}
           style={{
             position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
             width: 36, height: 36, minHeight: 36, borderRadius: '50%', background: 'transparent', color: C.inkMute,
@@ -460,9 +510,9 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
             cursor: 'pointer', zIndex: 10,
             transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}`,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = C.redSoft; e.currentTarget.style.color = C.red; }}
+          onMouseEnter={e => { e.currentTarget.style.background = C.brandSoft; e.currentTarget.style.color = C.brand; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.inkMute; }}
-        ><IcTrash /></button>
+        >{archivado ? <IcRestaurar /> : <IcArchivar />}</button>
       )}
 
       {/* Avatar */}
@@ -491,8 +541,9 @@ const PatientCard = memo(({ patient, isSelected, onClick, onDelete }) => {
         </div>
       </div>
 
-      {/* Indicador de estado (nuevo / inactivo) */}
-      {!mostrarEliminar && estado !== 'activo' && (
+      {/* Indicador de estado (nuevo / inactivo). En un archivado no aporta: su
+          estado relevante ya es "archivado", que se comunica con la opacidad. */}
+      {!mostrarAccion && !archivado && estado !== 'activo' && (
         <span
           title={estado === 'nuevo' ? 'Paciente nuevo (≤30 días)' : 'Sin actividad hace más de 6 meses'}
           style={{ width: 8, height: 8, borderRadius: '50%', background: estado === 'nuevo' ? C.blue : C.inkMute, flexShrink: 0 }}
@@ -1005,7 +1056,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   const [patSeleccionado, setPatSeleccionado] = useState(undefined);
   const { isNarrow } = useResponsive();
 
-  const { patientsList, loading, upsertPatient, deletePatient, importarPacientes } = usePatientsDirectory(clinicaId);
+  const { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, importarPacientes } = usePatientsDirectory(clinicaId);
 
   // Permite entrar directo a la historia de un paciente desde otra vista (por
   // ejemplo el botón "Historia odontológica" de Ortodoncia). Se resuelve la fila
@@ -1016,12 +1067,17 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
     ? patSeleccionado
     : (patient?.id ? patientsList.find(p => p.id === patient.id) ?? null : null);
 
-  const handleDeleteWrapper = async (id) => {
+  const handleArchivar = async (paciente) => {
+    const archivar = !paciente.archivado_at;
+    if (archivar && !window.confirm(
+      `¿Archivar a ${paciente.name}?\n\nSale del Directorio, pero su historia clínica, órdenes de laboratorio y tratamientos se conservan. Podés recuperarlo desde el filtro "Archivados".`
+    )) return;
     try {
-      await deletePatient(id);
-      if (patActivo?.id === id) setPatSeleccionado(null);
+      if (archivar) await archivarPatient(paciente.id);
+      else await desarchivarPatient(paciente.id);
+      if (archivar && patActivo?.id === paciente.id) setPatSeleccionado(null);
     } catch (err) {
-      alert("Error al eliminar: " + err.message);
+      alert(`No se pudo ${archivar ? 'archivar' : 'recuperar'} el paciente: ${err.message}`);
     }
   };
 
@@ -1030,7 +1086,12 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
     const matchSearch =
       normalizarTexto(p.name).includes(normalizarTexto(q)) ||
       (p.doc && p.doc.includes(q));
-    const matchFilter = filter === 'todos' || estadoPaciente(p) === filter;
+    // Los archivados sólo se ven en su propia pestaña; el resto de los filtros
+    // (incluido "todos") trabaja únicamente sobre pacientes activos.
+    const estaArchivado = !!p.archivado_at;
+    const matchFilter = filter === 'archivados'
+      ? estaArchivado
+      : !estaArchivado && (filter === 'todos' || estadoPaciente(p) === filter);
     return matchSearch && matchFilter;
   });
 
@@ -1157,7 +1218,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
               patient={p}
               isSelected={patActivo?.id === p.id}
               onClick={() => setPatSeleccionado(p)}
-              onDelete={handleDeleteWrapper}
+              onArchivar={handleArchivar}
             />
           ))}
 

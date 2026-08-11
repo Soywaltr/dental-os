@@ -148,9 +148,12 @@ export default function Agenda({ clinicaId, clinica }) {
       const combinedData = [...data, ...externalGoogleApts];
       setAllApts(combinedData);
 
+      // El autocompletado de "Nueva cita" no ofrece pacientes archivados: si
+      // hay que volver a atender a alguien, primero se lo recupera desde el
+      // Directorio, y así su ficha vuelve a estar visible en todas las vistas.
       const unicos = [];
       const nombresVistos = new Set();
-      data.forEach(p => {
+      data.filter(p => !p.archivado_at).forEach(p => {
         if (!nombresVistos.has(p.name)) {
           nombresVistos.add(p.name);
           unicos.push({ name: p.name, phone: p.phone, id: p.id, doc: p.doc });

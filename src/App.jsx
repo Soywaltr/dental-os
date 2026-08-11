@@ -516,9 +516,12 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
       // Se limpian comas y paréntesis: tienen significado especial en el filtro
       // .or() de PostgREST.
       const limpio = texto.replace(/[,()]/g, "").slice(0, 60);
+      // Sin archivados: el buscador global es para llegar a un paciente en
+      // curso. Los archivados se consultan desde su pestaña del Directorio.
       const { data } = await supabase
         .from("pacientes")
         .select("id, name, doc, phone, treatment")
+        .is("archivado_at", null)
         .or(`name.ilike.%${limpio}%,doc.ilike.%${limpio}%`)
         .limit(6);
       if (!vivo) return;

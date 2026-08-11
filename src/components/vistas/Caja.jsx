@@ -87,14 +87,24 @@ export default function Caja({ clinicaId }) {
       setLoading(true);
       setErrorMsg(null);
       const [{ data: pacientesData, error: errP }, { data: historiasData, error: errH }, { data: gastosData, error: errG }] = await Promise.all([
-        supabase.from('pacientes').select('id, name, doc'),
+        supabase.from('pacientes').select('id, name, doc, archivado_at'),
         supabase.from('historias').select('patient_id, plan_tratamiento'),
         supabase.from('gastos').select('*').order('fecha', { ascending: false }),
       ]);
 
       if (errP || errH) { setErrorMsg((errP || errH).message); setLoading(false); return; }
-      setPacientes(pacientesData || []);
-      setFacturas((historiasData || []).flatMap(h => (h.plan_tratamiento || []).map(item => ({ ...item, patient_id: h.patient_id }))));
+      // Igual que en el Dashboard: sólo pacientes activos, y sólo historias que
+      // correspondan a uno de ellos. Antes entraban a los totales las historias
+      // huérfanas de pacientes ya borrados, inflando facturado y cobrado con
+      // dinero que no era de nadie.
+      const activos = (pacientesData || []).filter(p => !p.archivado_at);
+      const idsActivos = new Set(activos.map(p => p.id));
+      setPacientes(activos);
+      setFacturas(
+        (historiasData || [])
+          .filter(h => idsActivos.has(h.patient_id))
+          .flatMap(h => (h.plan_tratamiento || []).map(item => ({ ...item, patient_id: h.patient_id })))
+      );
 
       if (errG) setErrorGastos(errG.message); else setGastos(gastosData || []);
       setLoading(false);
