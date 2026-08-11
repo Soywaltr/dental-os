@@ -18,14 +18,19 @@
 
 :root {
   /* ── Superficies ───────────────────────────────────────────────────────── */
-  /* Fondo con un tinte azul-lavanda perceptible y paneles en blanco puro: es
-     ese contraste suave lo que hace que las tarjetas "floten" sin necesidad de
-     una sombra fuerte. Antes el fondo (#F3F2F8) estaba tan cerca del blanco que
-     los paneles apenas se despegaban. */
-  --bg-app:        #EDEFF7;  /* fondo general azul-lavanda claro */
-  --panel:         #FFFFFF;  /* panel/tarjeta que flota */
-  --panel-sunken:  #F5F6FC;  /* hueco dentro de un panel (pista de tabs, input) */
-  --panel-hover:   #EFF1F9;
+  /* TRES capas, no dos. Es lo que da la sensación de "tablero" del referente:
+     la página es casi blanca, el contenido vive dentro de un lienzo teñido
+     azul-lavanda claramente visible, y las tarjetas blancas flotan DENTRO de
+     ese lienzo.
+     Un intento anterior tiñó sólo --bg-app de #F3F2F8 a #EDEFF7: 6 puntos de
+     RGB, imperceptible, y además en la capa equivocada -- con tarjetas blancas
+     sobre un fondo casi blanco no hay nada que separe una cosa de la otra.
+     El tinte tiene que estar en --canvas y ser evidente. */
+  --bg-app:        #F8F9FC;  /* página: casi blanco, sólo enmarca */
+  --canvas:        #E4E9F7;  /* lienzo teñido que contiene el contenido */
+  --panel:         #FFFFFF;  /* tarjeta que flota sobre el lienzo */
+  --panel-sunken:  #F4F6FC;  /* hueco dentro de una tarjeta (tabs, input) */
+  --panel-hover:   #EEF1FA;
 
   /* Chrome translúcido: solo barras y overlays, nunca una tarjeta de contenido */
   --chrome:        rgba(255, 255, 255, 0.72);
@@ -33,25 +38,30 @@
 
   /* ── Texto ─────────────────────────────────────────────────────────────── */
   /* Cada valor es el MÁS CLARO que cumple 4.5:1 (AA, texto normal) contra las
-     CUATRO superficies del modo claro, no sólo contra el panel blanco. La que
-     manda es --bg-app, la más oscura de las cuatro: al teñirla de azul-lavanda
-     los grises anteriores (#6E6E7A / #70707A) caían a 4.38 y 4.27:1.
-     Verificado con script, no estimado. --text-disabled queda exento: no
-     comunica información (WCAG excluye controles inactivos). */
+     CINCO superficies del modo claro, no sólo contra el panel blanco. La que
+     manda es --canvas, la más oscura: hay vistas que ponen su título
+     directamente sobre el lienzo y no dentro de una tarjeta.
+     Se eligió oscurecer el texto en vez de aclarar el lienzo porque el lienzo
+     necesario para que el texto anterior cumpliera (#ECEFF9) daba 1.146:1
+     contra la tarjeta blanca -- o sea, invisible, el mismo problema que se
+     estaba arreglando. Oscurecer el texto cuesta ~2 puntos de RGB y no se
+     percibe. Verificado con script.
+     --text-disabled queda exento: no comunica información (WCAG excluye
+     controles inactivos). */
   --text-primary:   #1A1A1E;  /* títulos y cifras */
-  --text-secondary: #6C6C78;  /* cuerpo secundario — 4.51:1 peor caso */
-  --text-tertiary:  #6C6C76;  /* etiquetas pequeñas, metadatos — 4.52:1 peor caso */
+  --text-secondary: #686874;  /* cuerpo secundario — 4.51:1 sobre el lienzo */
+  --text-tertiary:  #686871;  /* etiquetas pequeñas, metadatos — 4.54:1 */
   --text-disabled:  #B8B8C2;
 
   /* ── Acento único (white-label) ───────────────────────────────────────── */
   /* Solo para: toggle activo, radio/checkbox seleccionado, ítem de nav activo,
      foco, botón primario. No se usa como color decorativo ni como serie de
-     datos. #6656E6 es el tema por defecto ("Dra. Sol Vargas"); cada clínica
+     datos. #6151E5 es el tema por defecto ("Dra. Sol Vargas"); cada clínica
      puede sobreescribir SOLO --accent y --accent-contrast en runtime
      (utils/theme.js, según clinicas.accent_color) — hover/press/soft/ring se
      recalculan solos porque son fórmulas de color-mix() sobre --accent, no
      valores propios. Repintar toda la app queda en cambiar una sola variable. */
-  --accent:          #6656E6;
+  --accent:          #6151E5;
   --accent-hover:    color-mix(in srgb, var(--accent) 88%, black);
   --accent-press:    color-mix(in srgb, var(--accent) 76%, black);
   --accent-soft:     color-mix(in srgb, var(--accent) 10%, transparent);
@@ -60,7 +70,7 @@
      relación de contraste no es lineal con el color, así que color-mix() no
      puede elegir "blanco o negro" por sí solo — se calcula en JS
      (utils/theme.js → contrasteTexto()) y se fija junto a --accent. Este valor
-     es el default para el acento por defecto (blanco gana con 4.53:1). */
+     es el default para el acento por defecto (blanco gana con 5.50:1). */
   --accent-contrast: #FFFFFF;
 
   /* ── Riel de navegación ──────────────────────────────────────────────────
@@ -84,18 +94,18 @@
   /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
   /* Mismo criterio que los grises: se usan como TEXTO (cifras, etiquetas de
      estado), así que cada uno es el más claro que cumple 4.5:1 contra las
-     cuatro superficies del modo claro. Las variantes -soft son sólo fondo de
+     cinco superficies del modo claro. Las variantes -soft son sólo fondo de
      badge, nunca texto, por eso no necesitan cumplir ese piso. */
-  --green:      #247B54;  /* al día / completado — 4.53:1 peor caso */
+  --green:      #237751;  /* al día / completado — 4.52:1 peor caso */
   --green-soft: rgba(37, 128, 87, 0.11);
-  --red:        #CC2D48;  /* pendiente / vencido — 4.53:1 peor caso */
+  --red:        #C52C46;  /* pendiente / vencido — 4.52:1 peor caso */
   --red-soft:   rgba(210, 52, 78, 0.10);
   /* Texto SOBRE el rojo (badge de notificaciones, pill de estado). Mismo
      motivo que --accent-contrast: acá blanco da 4.84:1 y pasa, pero en modo
      oscuro el rojo se aclara a #E8697F y el blanco cae a 3.11:1 -- reprobaba
      AA en el número del badge. Verificado con script, no estimado. */
   --red-contrast: #FFFFFF;
-  --amber:      #8F6421;  /* aviso — 4.56:1 peor caso */
+  --amber:      #8B6120;  /* aviso — 4.52:1 peor caso */
   --amber-soft: rgba(150, 105, 35, 0.12);
 
   /* ── Separadores ───────────────────────────────────────────────────────── */
@@ -109,7 +119,7 @@
      del fondo por un halo apenas perceptible, no por un borde ni por una sombra
      dura. --shadow-raised (= --shadow-sm = GLASS_SHADOW, lo que consumen las
      tarjetas de contenido de las 21 vistas) vuelve a tener sombra: en este
-     lenguaje las tarjetas SÍ flotan sobre el fondo teñido.
+     lenguaje las tarjetas SÍ flotan sobre el lienzo teñido.
      El tono de la sombra lleva algo de azul (26,30,60) en vez de gris neutro,
      para que se asiente sobre el fondo lavanda sin ensuciarlo. */
   --shadow-raised: 0 1px 2px rgba(26, 30, 60, 0.04), 0 6px 16px -6px rgba(26, 30, 60, 0.10);

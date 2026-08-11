@@ -40,7 +40,13 @@ export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 // marca (white-label). Como estas ~15 vistas ya importan de aquí, repuntar
 // un solo valor cambia toda la app y además la deja lista para modo oscuro sin
 // tocar cada archivo.
-export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--label-primary)', LT = 'var(--surface-primary)', MT = 'var(--surface-secondary)', BD = 'var(--separator)', MU = 'var(--label-secondary)', GL = 'var(--amber)', WA = 'var(--green)', AZ = 'var(--accent)', RJ = 'var(--red)';
+// MT apunta a --surface-TERTIARY (la superficie hundida), no a --secondary (el
+// fondo de página), porque eso es lo que significa en las ~10 llamadas que lo
+// usan: fondo de avatar sin foto, bloque de código del MFA, input
+// deshabilitado, caja de aviso. Con el fondo de página ahora casi blanco
+// (#F8F9FC, para que el lienzo teñido resalte), apuntarlo ahí dejaría todos
+// esos elementos invisibles sobre una tarjeta blanca.
+export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--label-primary)', LT = 'var(--surface-primary)', MT = 'var(--surface-tertiary)', BD = 'var(--separator)', MU = 'var(--label-secondary)', GL = 'var(--amber)', WA = 'var(--green)', AZ = 'var(--accent)', RJ = 'var(--red)';
 
 // Identidad de la serie "Ingresos" en los gráficos. NO sigue el tema: es el
 // color fijo de una serie de datos, no chrome.

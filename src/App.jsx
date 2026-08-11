@@ -1027,9 +1027,23 @@ export default function App() {
           {/* El mismo canal en los cuatro lados: el contenido queda separado del
               riel exactamente igual que del borde derecho. Antes el padding
               izquierdo era 0 y todo quedaba pegado al menú. */}
+          {/* El contenido vive dentro de un LIENZO teñido, no directo sobre la
+              página: es la capa intermedia que hace que las tarjetas blancas se
+              lean como piezas apoyadas sobre un tablero. Sin ella, tarjetas
+              blancas sobre una página casi blanca no se despegan de nada.
+              El scroll queda en <main> y el lienzo crece con el contenido
+              (minHeight 100%), así el tinte llega hasta abajo aunque la vista
+              sea más corta que la pantalla. */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: "var(--gutter)", background: "transparent" }}>
-            <div style={{ maxWidth: 2000, margin: "0 auto" }}>
-              <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
+            <div style={{
+              background: "var(--canvas)",
+              borderRadius: "var(--radius-panel)",
+              padding: "var(--gutter)",
+              minHeight: "100%", boxSizing: "border-box",
+            }}>
+              <div style={{ maxWidth: 2000, margin: "0 auto" }}>
+                <ViewRouter state={state} dispatch={dispatch} clinicaId={clinicaId} clinica={clinica} clinicaRol={clinicaRol} clinicaLoading={clinicaLoading} refrescarClinica={refrescarClinica} />
+              </div>
             </div>
           </main>
         </div>
