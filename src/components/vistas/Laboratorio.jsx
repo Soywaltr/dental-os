@@ -13,7 +13,7 @@ import { BD, P, DN, MU, LT, GL, WA, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLAS
 // el badge siga legible en modo oscuro.
 const ESTADO_COLOR = {
   en_proceso: { bg: '#FEF3C7', c: GL },
-  listo: { bg: 'rgba(14, 169, 196, 0.12)', c: P },
+  listo: { bg: 'rgba(114, 157, 238, 0.12)', c: P },
   entregado: { bg: '#DCFCE7', c: WA },
 };
 
@@ -133,9 +133,9 @@ export default function Laboratorio({ clinicaId }) {
                   <div style={{ fontSize: 12, color: MU }}>Paciente: {o.patient_name} · Pieza: {o.tooth}</div>
                   <div style={{ fontSize: 12, color: MU }}>Lab: {o.lab}</div>
                 </div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#94A0AC' }}>Enviado</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.sent}</div></div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#94A0AC' }}>ETA</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.eta || '—'}</div></div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#94A0AC' }}>Costo</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/{o.cost}</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#9AA1AC' }}>Enviado</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.sent}</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#9AA1AC' }}>ETA</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.eta || '—'}</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#9AA1AC' }}>Costo</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/{o.cost}</div></div>
                 <Badge bg={b.bg} color={b.c} style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, borderRadius: '10px' }}>{o.status.replace('_', ' ')}</Badge>
                 {o.status === 'en_proceso' && (
                   <Button onClick={() => handleMarcar(o.id, 'listo')} style={{ borderRadius: '10px', padding: '8px 14px', minHeight: 36, fontSize: 13 }}>Marcar listo</Button>
@@ -143,7 +143,7 @@ export default function Laboratorio({ clinicaId }) {
                 {o.status === 'listo' && (
                   <Button onClick={() => handleMarcar(o.id, 'entregado')} style={{ borderRadius: '10px', padding: '8px 14px', minHeight: 36, fontSize: 13 }}>Marcar entregado</Button>
                 )}
-                <span style={{ fontSize: 13, color: '#94A0AC', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>ID: {o.id}</span>
+                <span style={{ fontSize: 13, color: '#9AA1AC', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>ID: {o.id}</span>
               </div>
             );
           })}

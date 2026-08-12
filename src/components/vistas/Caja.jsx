@@ -386,11 +386,11 @@ export default function Caja({ clinicaId }) {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: '#94A0AC' }}>Total</div>
+                      <div style={{ fontSize: 11, color: '#9AA1AC' }}>Total</div>
                       <div style={{ fontSize: 15, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/{p.cost.toLocaleString()}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: '#94A0AC' }}>Saldo</div>
+                      <div style={{ fontSize: 11, color: '#9AA1AC' }}>Saldo</div>
                       <div style={{ fontSize: 15, fontWeight: 600, color: p.saldo > 0 ? RJ : WA, fontVariantNumeric: 'tabular-nums' }}>S/{p.saldo.toLocaleString()}</div>
                     </div>
                     <Badge bg={b.bg} color={b.c} style={{ fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: '10px', flexShrink: 0 }}>{p.estado}</Badge>
@@ -410,7 +410,7 @@ export default function Caja({ clinicaId }) {
                   {abierto && (
                     <div style={{ borderTop: `1px solid ${BD}`, overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                        <thead><tr style={{ background: '#DFF1F5' }}>
+                        <thead><tr style={{ background: '#F5F5F5' }}>
                           {['Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
                         </tr></thead>
                         <tbody>
@@ -515,10 +515,10 @@ export default function Caja({ clinicaId }) {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 18 }}>
                 {gastosPorCategoria.map(({ cat, monto }) => (
-                  <div key={cat} style={{ background: '#DFF1F5', border: `1px solid ${BD}`, borderRadius: '14px', padding: '14px 16px' }}>
+                  <div key={cat} style={{ background: '#F5F5F5', border: `1px solid ${BD}`, borderRadius: '14px', padding: '14px 16px' }}>
                     <div style={{ fontSize: 12, color: MU, marginBottom: 4 }}>{cat}</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: DN, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>S/{monto.toLocaleString()}</div>
-                    <div style={{ fontSize: 11, color: '#94A0AC', marginTop: 2 }}>Este mes</div>
+                    <div style={{ fontSize: 11, color: '#9AA1AC', marginTop: 2 }}>Este mes</div>
                   </div>
                 ))}
               </div>
@@ -526,7 +526,7 @@ export default function Caja({ clinicaId }) {
               {gastos.length > 0 && (
                 <div style={{ marginBottom: 18, overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead><tr style={{ background: '#DFF1F5' }}>
+                    <thead><tr style={{ background: '#F5F5F5' }}>
                       {['Categoría', 'Monto', 'Fecha', 'Nota'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${BD}` }}>{h}</th>)}
                     </tr></thead>
                     <tbody>
@@ -616,7 +616,7 @@ export default function Caja({ clinicaId }) {
 
             <div style={{ marginBottom: 16 }}>
               <label style={LABEL_CAMPO}>Incluye</label>
-              <div style={{ background: '#DFF1F5', border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 12px', fontSize: 13, color: DN }}>
+              <div style={{ background: '#F5F5F5', border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 12px', fontSize: 13, color: DN }}>
                 {emitirDraft.grupos.map(g => (
                   <div key={g.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
                     <span>{g.name}{g.toothLabel !== '—' ? ` (${g.toothLabel})` : ''}</span>
@@ -629,7 +629,7 @@ export default function Caja({ clinicaId }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <div>
                 <label style={LABEL_CAMPO}>DNI del paciente</label>
-                <div style={{ ...INPUT_CAMPO, display: 'flex', alignItems: 'center', color: docPaciente(emitirDraft.patientId) ? DN : RJ, background: '#DFF1F5', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ ...INPUT_CAMPO, display: 'flex', alignItems: 'center', color: docPaciente(emitirDraft.patientId) ? DN : RJ, background: '#F5F5F5', fontVariantNumeric: 'tabular-nums' }}>
                   {docPaciente(emitirDraft.patientId) || 'Sin DNI en Historial'}
                 </div>
               </div>
@@ -640,7 +640,7 @@ export default function Caja({ clinicaId }) {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(14, 169, 196, 0.12)', border: `1px solid color-mix(in srgb, ${P} 24%, transparent)`, borderRadius: '10px', padding: '12px 14px', fontSize: 12, color: DN, marginBottom: 18, lineHeight: 1.5 }}>
+            <div style={{ background: 'rgba(114, 157, 238, 0.12)', border: `1px solid color-mix(in srgb, ${P} 24%, transparent)`, borderRadius: '10px', padding: '12px 14px', fontSize: 12, color: DN, marginBottom: 18, lineHeight: 1.5 }}>
               {GUIA_SOL[emitirDraft.tipo]} La ruta exacta del menú puede variar según cómo esté configurado tu RUC en SUNAT; si no la encuentras igual, usa el buscador dentro de SOL.
             </div>
 

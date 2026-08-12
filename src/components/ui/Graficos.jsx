@@ -65,6 +65,42 @@ export function Anillo({ pct, color, tamano = 92, grosor = 9, barrido = 360, chi
   );
 }
 
+// Dona multi-segmento (ej. "Avance de tratamientos"): cada segmento es un arco
+// de `circle` con su propio color, apilados por stroke-dashoffset acumulado --
+// la misma técnica de Anillo pero con N colores en vez de uno. `hueco` en
+// blanco entre segmentos (gap) evita que dos colores adyacentes se lean como
+// uno solo cuando son parecidos.
+export function Dona({ segmentos, tamano = 140, grosor = 22, hueco = 2, children }) {
+  const total = segmentos.reduce((a, s) => a + (s.valor || 0), 0);
+  const r = (tamano - grosor) / 2;
+  const circ = 2 * Math.PI * r;
+  let acumulado = 0;
+  return (
+    <div style={{ position: 'relative', width: tamano, height: tamano, flexShrink: 0 }}>
+      <svg width={tamano} height={tamano} style={{ transform: 'rotate(-90deg)', display: 'block' }} aria-hidden="true">
+        {total <= 0 ? (
+          <circle cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke="#E2E2E2" strokeWidth={grosor} />
+        ) : segmentos.filter(s => s.valor > 0).map((s, i) => {
+          const largo = Math.max(0, circ * (s.valor / total) - hueco);
+          const offset = -(circ * (acumulado / total));
+          acumulado += s.valor;
+          return (
+            <circle
+              key={i} cx={tamano / 2} cy={tamano / 2} r={r} fill="none"
+              stroke={s.color} strokeWidth={grosor} strokeLinecap="round"
+              strokeDasharray={`${largo} ${circ}`} strokeDashoffset={offset}
+              style={{ transition: 'stroke-dasharray .5s ease, stroke-dashoffset .5s ease' }}
+            />
+          );
+        })}
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const VB_W = 720;
 
 // Histograma denso: muchas barras finas + una línea que traza la misma serie
@@ -75,11 +111,11 @@ const VB_W = 720;
 // este componente tenga que adivinar el calendario.
 export function GraficoBarras({
   valores, etiquetas, formato = String, alto = 236,
-  colorBarra = 'rgba(37, 39, 51, 0.11)',
-  colorLinea = '#252733',
-  colorTexto = '#94A0AC',
-  colorRejilla = 'rgba(37, 39, 51, 0.06)',
-  colorAcento = '#16A34A',
+  colorBarra = 'rgba(10, 10, 10, 0.11)',
+  colorLinea = '#0A0A0A',
+  colorTexto = '#9AA1AC',
+  colorRejilla = 'rgba(10, 10, 10, 0.06)',
+  colorAcento = '#22A55E',
   colorAcentoInk = '#FFFFFF',
   mostrarLinea = true,
   mostrarBarras = true,
@@ -204,7 +240,7 @@ export function GraficoBarras({
         )}
 
         {idx !== null && (
-          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="rgba(37, 39, 51, 0.11)" strokeWidth="1" />
+          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="rgba(10, 10, 10, 0.11)" strokeWidth="1" />
         )}
       </svg>
 
@@ -220,11 +256,11 @@ export function GraficoBarras({
           transform: `translate(${anotacion.idx > n / 2 ? '-100%' : '0'}, calc(-100% - 10px))`,
           marginLeft: anotacion.idx > n / 2 ? -8 : 8,
           background: '#FFFFFF', borderRadius: '14px',
-          border: '1px solid rgba(37, 39, 51, 0.06)', boxShadow: '0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)',
+          border: '1px solid rgba(10, 10, 10, 0.06)', boxShadow: '0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)',
           padding: '9px 12px', maxWidth: 210, pointerEvents: 'none', zIndex: 4,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#252733', fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0A0A0A', fontVariantNumeric: 'tabular-nums' }}>
               {formato(valores[anotacion.idx] ?? 0)}
             </span>
             {anotacion.delta != null && (
@@ -237,7 +273,7 @@ export function GraficoBarras({
             )}
           </div>
           {anotacion.texto && (
-            <div style={{ fontSize: 10.5, color: '#667085', marginTop: 3, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 10.5, color: '#6B7280', marginTop: 3, lineHeight: 1.4 }}>
               {anotacion.texto}
             </div>
           )}
@@ -250,7 +286,7 @@ export function GraficoBarras({
           left: `${(x(idx) / VB_W) * 100}%`,
           transform: `translate(${idx > n / 2 ? '-100%' : '0'}, calc(-100% - 8px))`,
           marginLeft: idx > n / 2 ? -6 : 6,
-          background: '#252733', color: '#FFFFFF',
+          background: '#0A0A0A', color: '#FFFFFF',
           borderRadius: '10px', padding: '5px 9px',
           fontSize: 11, fontWeight: 600, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 5,
           fontVariantNumeric: 'tabular-nums',

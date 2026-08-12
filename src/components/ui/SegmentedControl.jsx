@@ -14,7 +14,7 @@ export default function SegmentedControl({ options, value, onChange, style }) {
       role="tablist"
       style={{
         position: 'relative', display: 'grid', gridTemplateColumns: `repeat(${n}, 1fr)`,
-        background: '#DFF1F5', borderRadius: '10px', padding: pad,
+        background: '#F5F5F5', borderRadius: '10px', padding: pad,
         ...style,
       }}
     >
@@ -36,7 +36,7 @@ export default function SegmentedControl({ options, value, onChange, style }) {
           style={{
             position: 'relative', zIndex: 1, border: 'none', background: 'transparent',
             padding: '7px 12px', fontSize: 11.5, fontWeight: value === o.key ? 600 : 500,
-            color: value === o.key ? '#252733' : '#667085',
+            color: value === o.key ? '#0A0A0A' : '#6B7280',
             cursor: 'pointer', borderRadius: 'calc(10px - 2px)',
             transition: 'color 150ms ease', whiteSpace: 'nowrap', minHeight: 30,
             font: 'inherit', fontFamily: 'inherit',

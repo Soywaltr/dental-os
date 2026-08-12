@@ -36,15 +36,15 @@ export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 // Paleta — hex/rgba fijos (ya no hay tokens.css/variables CSS, ver commit
 // "Elimina el sistema de design tokens"). P es el ÚNICO acento interactivo de
 // toda la app (botones primarios, tabs activos, enlaces, foco); hoy es el
-// teal de la referencia "Dental CRM Dashboard" (Behance). Repuntar por
+// azul de la referencia "YourCRM" (UI/UX, Alina Abovyan). Repuntar por
 // clínica (white-label) ya no es posible sin tocar cada componente -- ver la
 // nota en utils/theme.js. Como estas ~15 vistas ya importan de aquí,
 // repuntar este archivo sigue cambiando toda la app sin tocar cada una.
 // MT es la superficie hundida (fondo de avatar sin foto, bloque de código del
 // MFA, input deshabilitado, caja de aviso), no el fondo de página -- con el
-// fondo de página ahora tintado (#E7F6F9), usar ese mismo tono ahí dejaría
+// fondo de página ahora tintado (#F9F9F9), usar ese mismo tono ahí dejaría
 // esos elementos invisibles sobre una tarjeta blanca.
-export const P = '#0EA9C4', PD = '#0A7D91', DN = '#252733', LT = '#FFFFFF', MT = '#DFF1F5', BD = 'rgba(37, 39, 51, 0.06)', MU = '#667085', GL = '#F59E0B', WA = '#16A34A', AZ = '#0EA9C4', RJ = '#EF4444';
+export const P = '#729DEE', PD = '#5B82D6', DN = '#0A0A0A', LT = '#FFFFFF', MT = '#F5F5F5', BD = 'rgba(10, 10, 10, 0.06)', MU = '#6B7280', GL = '#E8A63D', WA = '#22A55E', AZ = '#729DEE', RJ = '#E56868';
 
 // Identidad de la serie "Ingresos" en los gráficos. NO sigue el tema: es el
 // color fijo de una serie de datos, no chrome.
@@ -66,14 +66,14 @@ export const CAT_ACCENT = '#0D9488';
 // repuntando estas cuatro constantes, sin tocar cada archivo.
 export const GLASS_BG = '#FFFFFF';
 export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid rgba(37, 39, 51, 0.06)';
+export const GLASS_BORDER = '1px solid rgba(10, 10, 10, 0.06)';
 export const GLASS_SHADOW = '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
 // con los imports existentes (Button.jsx, Login.jsx, MFAChallenge.jsx, App.jsx).
-export const GRAD_PRIMARY = '#0EA9C4';
-export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(14, 169, 196, 0.12)';
-export const GRAD_SUCCESS = '#16A34A';
+export const GRAD_PRIMARY = '#729DEE';
+export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(114, 157, 238, 0.12)';
+export const GRAD_SUCCESS = '#22A55E';
 
 export const PATIENTS = [
   { id: 1, name: 'María López', age: 32, phone: '+51 987 654 321', email: 'maria@gmail.com', tag: 'activo', treatment: 'Ortodoncia', nextVisit: 'Hoy 9:00', since: '2023', balance: 0, doc: '72345678', blood: 'O+', allergies: 'Ninguna', meds: 'Ninguno' },

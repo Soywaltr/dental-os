@@ -10,8 +10,8 @@ import { GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from '../../utils/constants';
 // resolver "blanco o negro" por sí solo.
 const VARIANTS = {
   primary: { background: GRAD_PRIMARY, color: '#FFFFFF', boxShadow: GRAD_PRIMARY_SHADOW },
-  secondary: { background: '#DFF1F5', color: '#667085' },
-  danger: { background: '#FEE2E2', color: '#EF4444' },
+  secondary: { background: '#F5F5F5', color: '#6B7280' },
+  danger: { background: '#FEE2E2', color: '#E56868' },
 };
 
 export default function Button({ children, onClick, variant = 'primary', disabled, style, className, type = 'button' }) {

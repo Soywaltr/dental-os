@@ -14,7 +14,7 @@ import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import SegmentedControl from '../ui/SegmentedControl';
 import TabsWrap from '../ui/TabsWrap';
-import { GraficoBarras, Anillo } from '../ui/Graficos';
+import { GraficoBarras, Anillo, Dona } from '../ui/Graficos';
 import { TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
@@ -317,7 +317,7 @@ export default function Dashboard({ setView, clinica }) {
   const tratamientosTab = tab.cats ? tratamientos.filter(t => tab.cats.includes(NOMBRE_A_CAT[t.name])) : tratamientos;
   const conteoEstado = { pendiente: 0, en_curso: 0, completado: 0 };
   tratamientosTab.forEach(t => { if (conteoEstado[t.status] !== undefined) conteoEstado[t.status]++; });
-  const maxEstado = Math.max(...Object.values(conteoEstado), 1);
+  const totalEstadoTrat = Object.values(conteoEstado).reduce((a, b) => a + b, 0);
 
   const porNombre = new Map();
   tratamientosTab.forEach(t => {
@@ -849,17 +849,25 @@ export default function Dashboard({ setView, clinica }) {
             </div>
             <div>
               <div style={{ ...rotulo, marginBottom: 11 }}>Avance de tratamientos</div>
-              {ESTADO_TRAT.map(e => (
-                <div key={e.key} style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: '#0A0A0A', fontWeight: 500 }}>{e.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#0A0A0A' }}>{conteoEstado[e.key]}</span>
-                  </div>
-                  <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(conteoEstado[e.key] / maxEstado) * 100}%`, background: e.color, borderRadius: 3 }} />
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+                <Dona
+                  segmentos={ESTADO_TRAT.map(e => ({ valor: conteoEstado[e.key], color: e.color }))}
+                  tamano={112} grosor={20}
+                >
+                  <span style={{ fontSize: 20, fontWeight: 700, color: NEGRO }}>{totalEstadoTrat}</span>
+                </Dona>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {ESTADO_TRAT.map(e => (
+                    <div key={e.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: e.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: NEGRO, fontWeight: 500 }}>{e.label}</span>
+                      <span style={{ fontSize: 12, color: MU, fontWeight: 600 }}>
+                        {conteoEstado[e.key]} · {totalEstadoTrat > 0 ? Math.round((conteoEstado[e.key] / totalEstadoTrat) * 100) : 0}%
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         )}

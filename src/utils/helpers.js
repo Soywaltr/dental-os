@@ -108,7 +108,7 @@ export const resumenPagosOrtodoncia = (pagos, fechaInicio) => {
 // su mismo paso, en cualquier vista.
 const PASOS_TINTE = [0.95, 0.72, 0.52, 0.36, 0.24];
 export const CAT_COLORS = PASOS_TINTE.map(
-  a => `color-mix(in srgb, #0EA9C4 ${Math.round(a * 100)}%, #DFF1F5)`
+  a => `color-mix(in srgb, #729DEE ${Math.round(a * 100)}%, #F5F5F5)`
 );
 export const colorPorNombre = (name) => {
   let hash = 0;

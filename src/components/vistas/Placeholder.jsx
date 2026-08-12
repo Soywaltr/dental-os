@@ -19,13 +19,13 @@ export default function Placeholder({ titulo, icono }) {
     }}>
       <div style={{
         width: 52, height: 52, borderRadius: '50%',
-        background: 'rgba(14, 169, 196, 0.12)', color: '#0EA9C4',
+        background: 'rgba(114, 157, 238, 0.12)', color: '#729DEE',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <NavIcon name={icono} size={24} />
       </div>
       <div>
-        <div style={{ fontSize: 17, fontWeight: 600, color: '#252733' }}>{titulo}</div>
+        <div style={{ fontSize: 17, fontWeight: 600, color: '#0A0A0A' }}>{titulo}</div>
         <div style={{ fontSize: 13.5, color: MU, marginTop: 6, maxWidth: 320 }}>
           Sección agregada al menú, todavía sin contenido propio.
         </div>

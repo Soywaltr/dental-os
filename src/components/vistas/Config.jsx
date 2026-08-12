@@ -21,7 +21,7 @@ const TABS = [
 // Tema por defecto ("Dra. Sol Vargas") -- el mismo valor que :root en
 // tokens.css. Si accent_color es null en Supabase, la clínica todavía no
 // eligió un color propio y el selector arranca mostrando este.
-const ACENTO_DEFECTO = '#6C5CE7';
+const ACENTO_DEFECTO = '#729DEE';
 
 const cardStyle = {
   background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 20,
@@ -40,7 +40,7 @@ const labelCapsStyle = { ...labelStyle, textTransform: 'uppercase', letterSpacin
 
 const inputStyle = {
   width: '100%', minHeight: 44, padding: '10px 12px', borderRadius: '10px',
-  border: `1px solid ${BD}`, background: '#DFF1F5', fontSize: 13, color: DN,
+  border: `1px solid ${BD}`, background: '#F5F5F5', fontSize: 13, color: DN,
   outline: 'none', boxSizing: 'border-box',
   transition: `border-color .18s ${EASE}, background-color .18s ${EASE}`,
 };
@@ -245,7 +245,7 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
 
       <div style={{ marginBottom: 12 }}>
         <label style={labelStyle}>Domingo</label>
-        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: MU, background: '#DFF1F5' }}>Cerrado — la Agenda no muestra domingos</div>
+        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: MU, background: '#F5F5F5' }}>Cerrado — la Agenda no muestra domingos</div>
       </div>
 
       <div style={{ marginBottom: 14 }}>
@@ -309,11 +309,11 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
     if (!clinicaId) return;
     // El campo de texto acepta cualquier tecleo -- sin este chequeo, un hex a
     // medio escribir se guardaría tal cual, aplicarTema() lo fijaría en
-    // --accent, y CADA componente que usa #0EA9C4 quedaría inválido en
+    // --accent, y CADA componente que usa #729DEE quedaría inválido en
     // tiempo de cómputo: botones, ítem activo del menú, foco, todo a la vez.
     // Justo lo que "el diseño no debe romperse con ningún acento" pide evitar.
     if (!/^#[0-9A-Fa-f]{6}$/.test(acento)) {
-      alert('El color de acento debe ser un hex válido, por ejemplo #6C5CE7.');
+      alert('El color de acento debe ser un hex válido, por ejemplo #729DEE.');
       return;
     }
     setGuardando(true);
@@ -362,7 +362,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
         <label style={labelStyle}>Color de acento</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
           <input type="color" value={acento} onChange={e => setAcento(e.target.value)} className="color-swatch u-focusable" aria-label="Elegir color de acento" />
-          <input value={acento} onChange={e => setAcento(e.target.value)} placeholder="#6C5CE7" maxLength={7}
+          <input value={acento} onChange={e => setAcento(e.target.value)} placeholder="#729DEE" maxLength={7}
             className="field" style={{ ...inputStyle, flex: 1, fontVariantNumeric: 'tabular-nums' }} />
         </div>
         {acento !== ACENTO_DEFECTO && (
@@ -384,7 +384,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
       <div style={cardStyle}>
         <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Vista previa</div>
 
-        <div style={{ background: '#DFF1F5', borderRadius: '14px', padding: 16 }}>
+        <div style={{ background: '#F5F5F5', borderRadius: '14px', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <div style={{ width: 32, height: 32, borderRadius: '10px', overflow: 'hidden', background: logoUrl ? 'transparent' : acento, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {logoUrl
@@ -408,7 +408,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
             </button>
             {/* --accent se fija SOLO en este input (las variables CSS heredan
                 al elemento, no escalan hacia arriba): el switch real de
-                .switch:checked usa #0EA9C4, así que acá se previsualiza
+                .switch:checked usa #729DEE, así que acá se previsualiza
                 con el color en edición sin tocar el tema global de la app. */}
             <input type="checkbox" defaultChecked disabled className="switch" style={{ '--accent': acento, cursor: 'default' }} aria-hidden="true" tabIndex={-1} />
           </div>
@@ -531,7 +531,7 @@ function MiPerfil({ clinicaId }) {
         {firmaUrl ? (
           <img src={firmaUrl} alt="Firma y sello" onError={() => setFirmaUrl(null)} style={{ maxHeight: 70, maxWidth: '100%', objectFit: 'contain', display: 'block', marginBottom: 12 }} />
         ) : (
-          <div style={{ height: 70, border: `1px dashed ${BD}`, borderRadius: '14px', background: '#DFF1F5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A0AC', fontSize: 13, marginBottom: 12 }}>
+          <div style={{ height: 70, border: `1px dashed ${BD}`, borderRadius: '14px', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9AA1AC', fontSize: 13, marginBottom: 12 }}>
             Sin firma configurada
           </div>
         )}
@@ -553,7 +553,7 @@ function Integraciones({ clinicaId }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(14, 169, 196, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(114, 157, 238, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="clock" size={19} />
           </div>
           <div>

@@ -26,8 +26,8 @@ export default function TabsWrap({ options, value, onChange, style }) {
               border: 'none', cursor: 'pointer', font: 'inherit',
               padding: '7px 14px', borderRadius: '999px',
               fontSize: 12.5, fontWeight: activo ? 600 : 500,
-              background: activo ? 'rgba(14, 169, 196, 0.12)' : 'transparent',
-              color: activo ? '#0EA9C4' : '#667085',
+              background: activo ? 'rgba(114, 157, 238, 0.12)' : 'transparent',
+              color: activo ? '#729DEE' : '#6B7280',
               whiteSpace: 'nowrap', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1), color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
           >

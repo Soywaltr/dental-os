@@ -125,7 +125,7 @@ export default function Seguridad({ rol }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '10px', background: verificados.length > 0 ? '#DCFCE7' : '#FEF3C7', color: verificados.length > 0 ? WA : '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', background: verificados.length > 0 ? '#DCFCE7' : '#FEF3C7', color: verificados.length > 0 ? WA : '#E8A63D', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <IcShield />
           </div>
           <div>
@@ -140,7 +140,7 @@ export default function Seguridad({ rol }) {
         </p>
 
         {verificados.length === 1 && (
-          <div style={{ padding: '10px 12px', background: '#FEF3C7', borderLeft: '3px solid #F59E0B', borderRadius: '10px', color: DN, fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>
+          <div style={{ padding: '10px 12px', background: '#FEF3C7', borderLeft: '3px solid #E8A63D', borderRadius: '10px', color: DN, fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>
             Te recomendamos agregar un <b>segundo dispositivo</b>. Supabase no ofrece códigos de respaldo — si pierdes el único dispositivo enrolado, necesitarás que un administrador te restablezca el acceso.
           </div>
         )}
@@ -198,7 +198,7 @@ export default function Seguridad({ rol }) {
               className="field"
               style={{
                 width: '100%', minHeight: 52, padding: '12px 14px', border: `1px solid ${BD}`,
-                borderRadius: '10px', background: '#DFF1F5',
+                borderRadius: '10px', background: '#F5F5F5',
                 fontSize: 22, fontWeight: 600, letterSpacing: 8, fontVariantNumeric: 'tabular-nums',
                 textAlign: 'center', marginBottom: 12, boxSizing: 'border-box', color: DN, outline: 'none',
                 transition: `border-color .18s ${EASE}`,

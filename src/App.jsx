@@ -1,11 +1,11 @@
 // src/App.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 // DentalOS · Shell
-// Riel de navegación relleno con el acento de la clínica, pegado al borde
-// izquierdo y colapsable a sólo iconos · activo = cuadrado claro con el icono en
-// el acento · Ajustes y "Contraer" al pie · Header con título, buscador global
-// y perfil · Context + Reducer · Lazy views · Un solo modo (claro), por
-// decisión explícita del usuario -- ya no hay selector claro/oscuro.
+// Riel de navegación blanco, pegado al borde izquierdo y colapsable a sólo
+// iconos · activo = píldora negra sólida (referencia "YourCRM") · Ajustes y
+// "Contraer" al pie · Header con título, buscador global y perfil ·
+// Context + Reducer · Lazy views · Un solo modo (claro), por decisión
+// explícita del usuario -- ya no hay selector claro/oscuro.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, {
@@ -39,38 +39,38 @@ const Placeholder = lazy(() => import("./components/vistas/Placeholder"));
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 // Colores/tipografía fijos (hex/rgba) directo acá, sin variables CSS -- ver
-// commit "Elimina el sistema de design tokens". Paleta teal + Montserrat,
-// siguiendo la referencia "Dental CRM Dashboard" (Behance, Bogdan Guriev).
+// commit "Elimina el sistema de design tokens". Paleta negro/azul/coral +
+// Inter, siguiendo la referencia "YourCRM" (UI/UX, Alina Abovyan).
 const C = {
   // Fondos.
-  pageBg:      "#E7F6F9",
-  hoverBg:     "#D5EDF2",
+  pageBg:      "#F9F9F9",
+  hoverBg:     "#EDEDED",
   glassBlur:   "blur(20px) saturate(180%)",
-  glassBorder: "1px solid rgba(37, 39, 51, 0.06)",
+  glassBorder: "1px solid rgba(10, 10, 10, 0.06)",
   glassShadow: "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
   // Texto
-  ink:         "#252733",
-  inkMid:      "#667085",
-  inkMute:     "#94A0AC",
-  inkFaint:    "#B0BAC4",
+  ink:         "#0A0A0A",
+  inkMid:      "#6B7280",
+  inkMute:     "#9AA1AC",
+  inkFaint:    "#C4C4C4",
   // Acento — P en utils/constants.js es este mismo azul: es el único acento
   // interactivo de toda la app (botones primarios, tabs activos, focos).
-  brand:       "#0EA9C4",
-  brandHov:    "#0A7D91",
-  brandSoft:   "rgba(14, 169, 196, 0.12)",
-  brandText:   "#0EA9C4",
+  brand:       "#729DEE",
+  brandHov:    "#5B82D6",
+  brandSoft:   "rgba(114, 157, 238, 0.12)",
+  brandText:   "#729DEE",
   // Semánticos
-  green:       "#16A34A",
+  green:       "#22A55E",
   greenSoft:   "#DCFCE7",
-  red:         "#EF4444",
+  red:         "#E56868",
   redSoft:     "#FEE2E2",
-  amber:       "#F59E0B",
+  amber:       "#E8A63D",
   amberSoft:   "#FEF3C7",
-  blue:        "#0EA9C4",
-  blueSoft:    "rgba(14, 169, 196, 0.12)",
+  blue:        "#729DEE",
+  blueSoft:    "rgba(114, 157, 238, 0.12)",
   // Bordes
-  border:      "rgba(37, 39, 51, 0.06)",
-  borderStrong:"rgba(37, 39, 51, 0.11)",
+  border:      "rgba(10, 10, 10, 0.06)",
+  borderStrong:"rgba(10, 10, 10, 0.11)",
   // Sombras
   shadowSm:    "0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)",
   shadowMd:    "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
@@ -286,12 +286,11 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
-// Riel sólido en el acento (teal) -- el ítem activo ya no es un tinte, es una
-// "burbuja" blanca que se sale del borde derecho del riel (igual que la
-// referencia "Dental CRM Dashboard" de Behance): un pill que se ve como una
-// pestaña mordiendo el contenido. Se logra con un ancho mayor al 100% del
-// riel + `right: -14px` -- el <nav> que lo contiene necesita overflow visible
-// para que ese excedente no se recorte.
+// Riel blanco, ítem activo = píldora NEGRA sólida con texto/ícono blanco --
+// calcado de la referencia "YourCRM" (icon rail claro + nav activa en negro).
+// Ya no es un riel relleno de color con una burbuja blanca saliente (versión
+// anterior): la referencia usa un riel casi invisible, así que el contraste
+// tiene que salir del propio ítem activo, no del fondo del riel.
 // El hover ya no lo da .rail-item (ui.css se eliminó) -- se maneja con
 // useState acá mismo, sólo en el ítem inactivo.
 const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
@@ -307,25 +306,23 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
       title={collapsed ? item.label : undefined}
       style={{
         position: "relative",
-        width: collapsed ? 40 : isActive ? "calc(100% + 14px)" : "100%",
-        right: !collapsed && isActive ? -14 : 0,
+        width: collapsed ? 40 : "100%",
         height: alto, minHeight: alto,
         margin: collapsed ? "0 auto" : 0,
         display: "flex", alignItems: "center", gap: 11,
         padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
         borderRadius: "999px", border: "none",
-        background: isActive ? "#FFFFFF" : hover ? "rgba(255, 255, 255, 0.14)" : "transparent",
-        color: isActive ? "#0A7D91" : "#FFFFFF",
+        background: isActive ? "#0A0A0A" : hover ? "#EDEDED" : "transparent",
+        color: isActive ? "#FFFFFF" : "#0A0A0A",
         fontFamily: C.font, fontSize: 13.5,
         fontWeight: isActive ? 600 : 450,
         textAlign: "left",
         cursor: "pointer", flexShrink: 0,
-        boxShadow: isActive ? "0 4px 10px rgba(10, 60, 70, 0.18)" : "none",
         transition: "background-color 150ms ease",
       }}
     >
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, flexShrink: 0, opacity: isActive ? 1 : 0.85 }}>
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, flexShrink: 0, opacity: isActive ? 1 : 0.75 }}>
         <NavIcon name={item.icon} size={18} />
       </span>
 
@@ -334,7 +331,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         <span style={{
           position: "absolute", top: 7, right: 7,
           width: 6, height: 6, borderRadius: "50%",
-          background: isActive ? "#0A7D91" : "#FFFFFF",
+          background: "#729DEE",
         }} />
       )}
 
@@ -345,8 +342,8 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
             <span style={{
               fontSize: 10, fontWeight: 600, letterSpacing: "0.2px",
               padding: "3px 8px", borderRadius: "999px", flexShrink: 0,
-              background: isActive ? "#0EA9C4" : "rgba(255, 255, 255, 0.22)",
-              color: "#FFFFFF",
+              background: isActive ? "#729DEE" : "#EDEDED",
+              color: isActive ? "#FFFFFF" : "#0A0A0A",
             }}>
               {item.badge}
             </span>
@@ -357,8 +354,8 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
               minWidth: 20, height: 20, padding: "0 6px",
               borderRadius: "999px",
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: isActive ? "rgba(10, 125, 145, 0.14)" : "rgba(255, 255, 255, 0.22)",
-              color: isActive ? "#0A7D91" : "#FFFFFF",
+              background: isActive ? "rgba(255, 255, 255, 0.22)" : "#EDEDED",
+              color: isActive ? "#FFFFFF" : "#0A0A0A",
               fontVariantNumeric: "tabular-nums",
             }}>
               {contador}
@@ -371,7 +368,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
 });
 
 // Botón de pie de riel ("Contraer") -- mismo tratamiento visual que NavItem
-// (texto/icono blancos, hover translúcido) pero sin estado activo posible.
+// inactivo (texto/icono negros, hover gris claro), nunca puede estar "activo".
 const PieBoton = ({ onClick, icon, label, collapsed, ...rest }) => {
   const [hover, setHover] = useState(false);
   return (
@@ -386,12 +383,12 @@ const PieBoton = ({ onClick, icon, label, collapsed, ...rest }) => {
         display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start",
         gap: 11, padding: collapsed ? 0 : "0 12px",
         borderRadius: "999px", border: "none",
-        background: hover ? "rgba(255, 255, 255, 0.14)" : "transparent",
-        color: "#FFFFFF", fontFamily: C.font, fontSize: 13.5,
+        background: hover ? "#EDEDED" : "transparent",
+        color: "#0A0A0A", fontFamily: C.font, fontSize: 13.5,
         cursor: "pointer", transition: "background-color 150ms ease",
       }}
     >
-      <span style={{ display: "flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: 0.85 }}>
+      <span style={{ display: "flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: 0.75 }}>
         <NavIcon name={icon} size={18} />
       </span>
       {label && <span>{label}</span>}
@@ -400,9 +397,8 @@ const PieBoton = ({ onClick, icon, label, collapsed, ...rest }) => {
 };
 
 // ─── COMPONENTE: RIEL DE NAVEGACIÓN ───────────────────────────────────────────
-// Panel claro flotante. Sus colores salen de los tokens --rail-*, que derivan
-// de --accent-soft/--accent -- el ítem activo es un tinte del acento, así
-// sigue el color de marca de cada clínica sin lógica propia.
+// Panel blanco flotante, calcado de la referencia "YourCRM": riel casi
+// invisible, ítem activo = píldora negra sólida (ver NavItem arriba).
 //
 // Al pie, y en este orden: Ajustes, plegar, y el bloque de perfil del usuario.
 // El perfil vive acá (no en el header) porque es identidad de sesión, no una
@@ -421,9 +417,10 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
       width: W, minWidth: W,
       margin: "28px 0 28px 28px",
       height: "calc(100vh - 28px * 2)",
-      background: "linear-gradient(180deg, #0EA9C4, #0A93AB)",
+      background: "#FFFFFF",
+      border: "1px solid #E2E2E2",
       borderRadius: "18px",
-      boxShadow: "0 4px 16px rgba(10, 100, 115, 0.22)",
+      boxShadow: "0 8px 24px rgba(10, 10, 10, 0.05)",
       display: "flex", flexDirection: "column",
       padding: "18px 0 12px",
       flexShrink: 0, zIndex: 101, overflow: "hidden",
@@ -438,7 +435,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
       }}>
         <div style={{
           width: 36, height: 36, borderRadius: "10px", overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "rgba(255, 255, 255, 0.18)",
+          background: logoUrl ? "transparent" : "#729DEE",
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "#FFFFFF",
         }}>
@@ -452,13 +449,13 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
         </div>
         {!col && (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#FFFFFF", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#0A0A0A", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {clinica?.nombre || "DentalOS"}
             </div>
             {/* Subtítulo de dos líneas bajo el nombre, como "Business
                 Operations Platform" de la referencia -- texto genérico por
                 ahora, el usuario dijo que renombra esto después. */}
-            <div style={{ fontSize: 11, color: "rgba(255, 255, 255, 0.72)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 11, color: "#9AA1AC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               Plataforma de gestión clínica
             </div>
           </div>
@@ -466,16 +463,12 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
       </div>
 
       {/* ── Secciones ── */}
-      {/* overflowX visible: el ítem activo (NavItem) se sale del ancho del
-          riel para leerse como una pestaña/burbuja mordiendo el contenido,
-          igual que la referencia -- si esto fuera "hidden" ese excedente se
-          recortaría y la burbuja no se vería. */}
-      <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "visible", padding: col ? 0 : "0 12px" }}>
+      <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: col ? 0 : "0 12px" }}>
         {SIDEBAR_SECTIONS.map((section, si) => (
           <div key={si} style={{ marginBottom: 14 }}>
             {section.label && !col && (
               <div style={{
-                fontSize: 11, fontWeight: 600, color: "rgba(255, 255, 255, 0.6)",
+                fontSize: 11, fontWeight: 600, color: "#9AA1AC",
                 letterSpacing: "0.4px", textTransform: "uppercase",
                 padding: "0 12px 8px",
               }}>
@@ -485,7 +478,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
             {/* Colapsado no hay lugar para el rótulo: una línea fina separa los
                 grupos. */}
             {section.label && col && si > 0 && (
-              <div style={{ height: 1, background: "rgba(255, 255, 255, 0.18)", margin: "0 20px 10px" }} />
+              <div style={{ height: 1, background: "#E2E2E2", margin: "0 20px 10px" }} />
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -505,7 +498,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
       </nav>
 
       {/* ── Pie: Ajustes + plegar ── */}
-      <div style={{ flexShrink: 0, padding: col ? 0 : "0 12px", marginTop: 10, overflow: "visible" }}>
+      <div style={{ flexShrink: 0, padding: col ? 0 : "0 12px", marginTop: 10 }}>
         <NavItem
           item={ITEM_AJUSTES}
           isActive={view === ITEM_AJUSTES.id}
@@ -525,10 +518,10 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
       {/* ── Cuenta ── el perfil vive al pie del riel, no en el header: es
           identidad de sesión (quién está usando la app), no una acción de la
           vista actual. */}
-      <div style={{ flexShrink: 0, marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255, 255, 255, 0.18)" }}>
+      <div style={{ flexShrink: 0, marginTop: 12, paddingTop: 12, borderTop: "1px solid #E2E2E2" }}>
         {!col && (
           <div style={{
-            fontSize: 11, fontWeight: 600, color: "rgba(255, 255, 255, 0.6)",
+            fontSize: 11, fontWeight: 600, color: "#9AA1AC",
             letterSpacing: "0.4px", textTransform: "uppercase",
             padding: "0 24px 8px",
           }}>
@@ -551,18 +544,18 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
           >
             <span style={{
               width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(255, 255, 255, 0.22)",
+              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(114, 157, 238, 0.15)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 600, color: "#FFFFFF",
+              fontSize: 12, fontWeight: 600, color: "#729DEE",
             }}>
               {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
             </span>
             {!col && (
               <span style={{ minWidth: 0, flex: 1 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#FFFFFF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0A0A0A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {nombreUsuario}
                 </span>
-                <span style={{ display: "block", fontSize: 11.5, color: "rgba(255, 255, 255, 0.65)", textTransform: "capitalize" }}>
+                <span style={{ display: "block", fontSize: 11.5, color: "#9AA1AC", textTransform: "capitalize" }}>
                   {rol || "Cerrar sesión"}
                 </span>
               </span>
@@ -655,7 +648,7 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
         style={{
           width: "100%", padding: "9px 34px 9px 36px",
           borderRadius: "10px", border: "1px solid transparent",
-          background: "#DFF1F5", fontSize: 13,
+          background: "#F5F5F5", fontSize: 13,
           fontFamily: C.font, color: C.ink, outline: "none",
         }}
       />
@@ -1003,7 +996,7 @@ export default function App() {
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
-        :focus-visible { outline: 2px solid #0EA9C4; outline-offset: 2px; }
+        :focus-visible { outline: 2px solid #729DEE; outline-offset: 2px; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 10px; }
@@ -1080,7 +1073,7 @@ export default function App() {
                 explícitamente -- se agrega como capa ADEMÁS de --canvas, no en
                 reemplazo, así el lienzo sigue teniendo su propio color base. */}
             <div style={{
-              background: "radial-gradient(circle at top, color-mix(in srgb, #0EA9C4 8%, transparent), transparent 65%), #E7F6F9",
+              background: "radial-gradient(circle at top, color-mix(in srgb, #729DEE 8%, transparent), transparent 65%), #F9F9F9",
               borderRadius: "18px",
               padding: "28px",
               minHeight: "100%", boxSizing: "border-box",

@@ -17,7 +17,7 @@ const NAV_TRANSITION = 'background-color .15s cubic-bezier(0.25, 0.1, 0.25, 1), 
 
 // Horas cerradas: rayado diagonal con dos superficies del tema (antes dos
 // grises fijos), para que el patrón siga leyéndose en modo oscuro.
-const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, #DFF1F5, #DFF1F5 6px, #DFF1F5 6px, #DFF1F5 12px)';
+const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, #F5F5F5, #F5F5F5 6px, #F5F5F5 6px, #F5F5F5 12px)';
 
 // Tipos de bloque de cita. Antes eran tres colores saturados con texto blanco
 // (#6366f1 indigo, #0D5C6B teal, #e11d48 rojo) y el rojo era el caso POR
@@ -29,9 +29,9 @@ const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, #DFF1F5, #DFF1F5 6px, #
 // `borde` da el filo de color a la izquierda: es lo que sigue distinguiendo un
 // tipo de otro cuando el relleno es tenue.
 const TIPO_CITA = {
-  google: { tinte: 'color-mix(in srgb, #0EA9C4 14%, #FFFFFF)', borde: '#0EA9C4' },
-  nuevo:  { tinte: '#DCFCE7', borde: '#16A34A' },
-  normal: { tinte: '#DFF1F5', borde: 'rgba(37, 39, 51, 0.11)' },
+  google: { tinte: 'color-mix(in srgb, #729DEE 14%, #FFFFFF)', borde: '#729DEE' },
+  nuevo:  { tinte: '#DCFCE7', borde: '#22A55E' },
+  normal: { tinte: '#F5F5F5', borde: 'rgba(10, 10, 10, 0.11)' },
 };
 const tipoDeCita = (p) => (p.isGoogleOnly ? 'google' : p.tag === 'nuevo' ? 'nuevo' : 'normal');
 
@@ -505,7 +505,7 @@ export default function Agenda({ clinicaId, clinica }) {
                 const isCurrentMonth = d.getMonth() === currentDate.getMonth();
 
                 return (
-                  <div key={i} style={{ borderRight: `1px solid ${BD}`, borderBottom: `1px solid ${BD}`, padding: 6, background: isCurrentMonth ? LT : '#DFF1F5' }}>
+                  <div key={i} style={{ borderRight: `1px solid ${BD}`, borderBottom: `1px solid ${BD}`, padding: 6, background: isCurrentMonth ? LT : '#F5F5F5' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isCurrentMonth ? DN : MU, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>{d.getDate()}</div>
                     {/* Mismo tratamiento de tinte que la vista semanal. El tipo
                         se calcula acá porque estas filas vienen de `allApts`
@@ -542,7 +542,7 @@ export default function Agenda({ clinicaId, clinica }) {
 
               return (
               <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},minmax(0, 1fr))`, borderBottom: `1px solid ${BD}`, minHeight: 52, position: 'relative' }}>
-                <div style={{ padding: '6px 9px', fontSize: 11.5, color: '#94A0AC', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
+                <div style={{ padding: '6px 9px', fontSize: 11.5, color: '#9AA1AC', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
                 {displayDays.map((d, di) => {
                   const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
