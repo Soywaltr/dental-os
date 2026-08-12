@@ -148,7 +148,11 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
           const d = s.valores.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
           return (
             <g key={s.nombre}>
-              <path d={d} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+              {/* pathLength="1" normaliza el largo del trazo a 0-1 sin importar
+                  la geometría real -- así "dibujarse progresivamente al
+                  cargar" es una sola animación CSS (.linea-progresiva en
+                  ui.css), sin medir el path a mano con getTotalLength(). */}
+              <path d={d} pathLength="1" className="linea-progresiva" fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
               {/* Marcador sólo en el extremo y en el punto con hover: un punto
                   en cada mes serían 24 marcas compitiendo con la línea. */}
               <circle cx={x(n - 1)} cy={y(s.valores[n - 1])} r="4" fill={s.color} stroke={colorSuperficie} strokeWidth="2" />

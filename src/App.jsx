@@ -1045,8 +1045,11 @@ export default function App() {
               (minHeight 100%), así el tinte llega hasta abajo aunque la vista
               sea más corta que la pantalla. */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: "var(--gutter)", background: "transparent" }}>
+            {/* Gradiente radial verde muy suave detrás del contenido, pedido
+                explícitamente -- se agrega como capa ADEMÁS de --canvas, no en
+                reemplazo, así el lienzo sigue teniendo su propio color base. */}
             <div style={{
-              background: "var(--canvas)",
+              background: "radial-gradient(circle at top, color-mix(in srgb, var(--accent) 8%, transparent), transparent 65%), var(--canvas)",
               borderRadius: "var(--radius-panel)",
               padding: "var(--gutter)",
               minHeight: "100%", boxSizing: "border-box",

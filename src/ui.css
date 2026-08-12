@@ -225,6 +225,18 @@
   transform: translateY(-1px);
 }
 
+/* ── Gráfico: dibujo progresivo ────────────────────────────────────────────
+   El path usa pathLength="1" (ver Graficos.jsx), así stroke-dasharray/-offset
+   son siempre 0-1 sin depender de la geometría real de cada serie. */
+.linea-progresiva {
+  stroke-dasharray: 1;
+  animation: dibujar-linea 900ms var(--ease) forwards;
+}
+@keyframes dibujar-linea {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
 /* ── Breakpoints compartidos ───────────────────────────────────────────────
    Mismos cortes que utils/useResponsive.js (1180 tablet / 860 narrow), para
    que el CSS y el JS de layout nunca respondan a anchos distintos. */

@@ -2,14 +2,11 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * DentalOS · Design tokens
  *
- * Verde salvia + glassmorphism. Fondo cálido casi blanco, contenido dentro de
- * un lienzo tibio (verde muy diluido), y tarjetas de VIDRIO -- translúcidas,
- * con backdrop-filter, borde de luz de 1px, sombra suave multicapa y esquinas
- * generosas -- en vez de las tarjetas sólidas de la etapa anterior. El acento
- * único white-label pasa de violeta a verde salvia oscuro (necesita ser
- * bastante oscuro para que el texto blanco de un botón primario cumpla AA;
- * el salvia CLARO que se suele asociar a "sage" sale solo, como
- * --accent-soft, de la misma fórmula color-mix() que ya existía).
+ * Verde salvia + glassmorphism, valores tal cual los pidió el usuario en su
+ * brief -- sin ajustar por contraste WCAG AA. El usuario decidió
+ * explícitamente priorizar la estética sobre esa regla ("quiero que quite
+ * esta regla WCAG AA... prioriza la estética"), así que estos hex son los
+ * literales del brief, no una variante oscurecida para pasar 4.5:1.
  *
  * Este archivo es la ÚNICA fuente de verdad del color en la app. Los nombres
  * viejos (--label-*, --surface-*, etc.) se conservan al final como alias
@@ -22,23 +19,15 @@
 
 :root {
   /* ── Superficies ───────────────────────────────────────────────────────── */
-  /* Página casi blanca (cálida, no fría) + lienzo tibio donde vive el
-     contenido + tarjeta de vidrio flotando SOBRE el lienzo. --panel se queda
-     opaco a propósito: lo siguen usando ~10 elementos chicos (aro de un
-     marcador SVG, avatar de iniciales, badge) que necesitan una superficie
-     plana, no vidrio -- el glassmorphism vive en los tokens --panel-glass-*
-     nuevos, no en --panel. */
-  --bg-app:        #F7F7F2;  /* página: casi blanco, cálido */
-  --canvas:        #E9ECE1;  /* lienzo tibio (verde muy diluido) */
+  --bg-app:        #F5F5F0;  /* fondo general, gris cálido */
+  --canvas:        #F2F2ED;  /* lienzo donde vive el contenido */
   --panel:         #FFFFFF;  /* superficie plana chica (avatar, aro, badge) */
-  --panel-sunken:  #F1F3EC;  /* hueco dentro de una tarjeta (tabs, input) */
-  --panel-hover:   #EBEEE3;
+  --panel-sunken:  #EDEDE7;  /* hueco dentro de una tarjeta (tabs, input) */
+  --panel-hover:   #E8E8E2;
 
-  /* Tarjeta de VIDRIO: fondo translúcido + borde de luz + blur. Compuesto
-     sobre --canvas da #F8F9F5 -- suficientemente claro para que el texto siga
-     cumpliendo AA (ver bloque de Texto). El blur reusa la fórmula que ya
-     tenía --chrome-blur para el riel/header; ahora la comparten. */
-  --panel-glass-bg:     rgba(255, 255, 255, 0.68);
+  /* Tarjeta de VIDRIO: fondo translúcido + borde de luz + blur, valores
+     literales del brief. */
+  --panel-glass-bg:     rgba(255, 255, 255, 0.65);
   --panel-glass-border: rgba(255, 255, 255, 0.3);
   --panel-glass-blur:   blur(20px) saturate(180%);
 
@@ -47,53 +36,30 @@
   --chrome-blur:   blur(20px) saturate(180%);
 
   /* ── Texto ─────────────────────────────────────────────────────────────── */
-  /* Cada valor cumple 4.5:1 (AA, texto normal) contra las SEIS superficies
-     del modo claro -- las 5 de siempre más la tarjeta de vidrio COMPUESTA
-     sobre el lienzo (no contra blanco puro: sobre vidrio translúcido el
-     fondo real es la mezcla, y ahí es donde el texto se lee de verdad).
-     --text-secondary casi coincide con el gris que se pidió (#6B6B6B) pero
-     ese valor da 4.45:1 contra el lienzo -- no pasa por un pelo. Se ajustó
-     dos puntos de RGB, imperceptible. Verificado con script, no estimado.
-     --text-disabled queda exento: no comunica información (WCAG excluye
-     controles inactivos). */
   --text-primary:   #1A1A1A;  /* títulos y cifras */
-  --text-secondary: #686874;  /* cuerpo secundario — 4.59:1 peor caso */
-  --text-tertiary:  #686871;  /* etiquetas pequeñas, metadatos — 4.61:1 */
+  --text-secondary: #6B6B6B;  /* cuerpo secundario */
+  --text-tertiary:  #7A7A7A;  /* etiquetas pequeñas, metadatos */
   --text-disabled:  #B8B8C2;
 
   /* ── Acento único (white-label) ───────────────────────────────────────── */
-  /* Verde salvia. El botón primario necesita texto blanco legible encima, y
-     un salvia CLARO (el que suele venir a la mente con "sage", ~#8BA888) da
-     sólo 2-3:1 -- no pasa AA. Por eso --accent es la variante OSCURA
-     (blanco encima: 5.40:1, verificado), y el salvia claro de las
-     referencias sale SOLO, como --accent-soft, de la fórmula color-mix() de
-     siempre -- no hay que fijar dos tonos a mano, es la misma un-solo-valor
-     de antes. Cada clínica puede sobreescribir SOLO --accent y
-     --accent-contrast en runtime (utils/theme.js, según clinicas.accent_color).
-  */
-  --accent:          #3B773D;
+  /* El brief da DOS verdes: #8BA888 (más claro, "color primario"/badges) y
+     #3D7A3E (el del botón). --accent es la versión de BOTÓN -- es el token
+     interactivo/funcional (nav activo, foco, botón primario) -- y el salvia
+     claro sale solo, como --accent-soft, de la misma fórmula color-mix() de
+     siempre: no hay que fijar los dos tonos a mano. Cada clínica puede
+     sobreescribir SOLO --accent y --accent-contrast en runtime
+     (utils/theme.js, según clinicas.accent_color). */
+  --accent:          #3D7A3E;
   --accent-hover:    color-mix(in srgb, var(--accent) 88%, black);
   --accent-press:    color-mix(in srgb, var(--accent) 76%, black);
   --accent-soft:     color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-ring:     color-mix(in srgb, var(--accent) 28%, transparent);
-  /* Texto legible SOBRE el acento (botón primario). No es una fórmula CSS: la
-     relación de contraste no es lineal con el color, así que color-mix() no
-     puede elegir "blanco o negro" por sí solo — se calcula en JS
-     (utils/theme.js → contrasteTexto()) y se fija junto a --accent. Este valor
-     es el default para el acento por defecto (blanco gana con 5.40:1). */
   --accent-contrast: #FFFFFF;
 
   /* ── Riel de navegación ──────────────────────────────────────────────────
-     Panel claro, no una franja de color: el riel es chrome y debe ceder
-     protagonismo al contenido.
-
-     El ítem ACTIVO es la excepción deliberada: una píldora sólida negra con
-     texto blanco, sin relación con --accent -- así se lee igual sin importar
-     el color de marca que elija una clínica, y es exactamente lo que pide la
-     referencia (nunca un tinte del acento). --rail-active-bg/-ink NO derivan
-     de --panel/--accent por eso, y sí necesitan su propio valor en oscuro
-     (ver más abajo): una píldora negra sobre un riel ya casi negro no se
-     vería. */
+     Panel claro. El ítem activo es la excepción deliberada: píldora sólida
+     negra con texto blanco, sin relación con --accent -- así se lee igual
+     sin importar el color de marca que elija una clínica. */
   --rail-bg:         var(--panel);
   --rail-ink:        var(--text-secondary);
   --rail-ink-strong: var(--text-primary);
@@ -102,51 +68,30 @@
   --rail-active-ink: #FFFFFF;
   --rail-divisor:    var(--hairline);
 
-  /* ── Semánticos (desaturados) ──────────────────────────────────────────── */
-  /* Mismo criterio que los grises: cada uno cumple 4.5:1 contra las seis
-     superficies (ver nota de --text-*). Las variantes -soft son sólo fondo
-     de badge, nunca texto, por eso no necesitan cumplir ese piso.
-     --green se corrió de un verde-teal (#237751) a un teal más azulado: con
-     el acento ahora también verde, esos dos colores casi se tocaban (ΔE 3.3
-     en OKLab -- un badge "completado" se leía igual que el ítem de nav
-     activo). El nuevo separa por tono, no sólo por brillo (ΔE 8.1 contra el
-     acento -- por debajo del piso de 15 que se usa para una serie de datos,
-     pero estos dos no son una serie: aparecen en formas distintas, píldora
-     de nav vs. barra/badge de estado, no lado a lado). Verificado con
-     script: ni --red ni --amber necesitaron tocarse, seguían pasando contra
-     las superficies nuevas. */
-  --green:      #227573;  /* al día / completado — 4.57:1 peor caso */
-  --green-soft: rgba(34, 117, 115, 0.11);
-  --red:        #C52C46;  /* pendiente / vencido — 4.52:1 peor caso */
-  --red-soft:   rgba(210, 52, 78, 0.10);
-  /* Texto SOBRE el rojo (badge de notificaciones, pill de estado). Mismo
-     motivo que --accent-contrast: acá blanco da 4.84:1 y pasa, pero en modo
-     oscuro el rojo se aclara a #E8697F y el blanco cae a 3.11:1 -- reprobaba
-     AA en el número del badge. Verificado con script, no estimado. */
+  /* ── Semánticos ────────────────────────────────────────────────────────── */
+  /* Verde suave para estados positivos, rojo suave para alertas -- tal cual
+     el brief. --green-soft es el literal #E8F0E6 que pidió para fondos de
+     badge. */
+  --green:      #6B9668;
+  --green-soft: #E8F0E6;
+  --red:        #D64B5E;
+  --red-soft:   rgba(214, 75, 94, 0.10);
   --red-contrast: #FFFFFF;
-  --amber:      #8B6120;  /* aviso — 4.52:1 peor caso */
-  --amber-soft: rgba(150, 105, 35, 0.12);
+  --amber:      #B8823A;
+  --amber-soft: rgba(184, 130, 58, 0.12);
 
   /* ── Separadores ───────────────────────────────────────────────────────── */
   --hairline:        rgba(26, 26, 30, 0.06);
   --hairline-strong: rgba(26, 26, 30, 0.11);
 
   /* ── Elevación ─────────────────────────────────────────────────────────── */
-  /* Sombra multicapa suave: una capa ancha y difusa de opacidad muy baja más
-     una capa corta de "contacto" -- nunca un solo valor duro. --shadow-raised
-     es el reposo de una tarjeta de vidrio; --shadow-pop es el estado hover
-     (elevación + capa de contacto); --shadow-float es el chrome persistente
-     (riel, header), un paso más presente que una tarjeta porque nunca se
-     mueve. Neutras (0,0,0): con la superficie ya teñida de verde tibio, una
-     sombra tintada la ensuciaba -- se probó y se descartó. */
+  /* Valores literales del brief: sombra ancha y difusa de opacidad muy baja
+     más una capa corta de "contacto". --shadow-pop es el hover (elevación). */
   --shadow-raised: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-float:  0 4px 28px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-pop:    0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.03);
 
   /* ── Radios ────────────────────────────────────────────────────────────── */
-  /* Generosos: nunca menos de 8px en ningún elemento. --radius-control cubre
-     botón Y campo por igual (unificarlos en un solo valor evita tocar cada
-     llamada de borderRadius en las 21 vistas para saber cuál es cuál). */
   --radius-panel:   20px;  /* contenedor grande: riel, header, sección */
   --radius-card:    16px;  /* tarjeta dentro de un panel */
   --radius-control: 12px;  /* botón, input, badge */
@@ -163,17 +108,10 @@
   --dur-slow:  300ms;
 
   /* ── Espaciado ─────────────────────────────────────────────────────────── */
-  /* Un ÚNICO canal para todo el shell: el aire entre el riel y el contenido, el
-     que rodea el contenido y el que separa el header son exactamente el mismo
-     valor. Es lo que hace que la página se lea alineada en vez de improvisada;
-     si cada zona elige su propio número, el ojo lo nota aunque no sepa por qué. */
   --gutter: 28px;
-  /* Separación entre paneles hermanos dentro de una vista. */
   --gap-panel: 22px;
 }
 
-/* En pantallas de iPad y menores el canal se achica: mantener 28px a cada lado
-   le come demasiado ancho útil al contenido. */
 @media (max-width: 1180px) {
   :root {
     --gutter: 16px;
@@ -182,16 +120,12 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
- * Modo oscuro.
- *
- * Se activa por el atributo data-theme="dark" en <html>, NO por
- * @media (prefers-color-scheme). El atributo lo estampa un script inline en
- * index.html antes del primer pintado, resolviendo: elección explícita del
- * usuario > preferencia del sistema.
- *
- * Las superficies siguen NEUTRAS a propósito: el tinte verde-salvia es sólo
- * del modo claro, igual que antes el azul-lavanda -- en oscuro un tinte de
- * color sobre superficies casi negras ensucia más de lo que aporta.
+ * Modo oscuro. Se activa por el atributo data-theme="dark" en <html>, NO por
+ * @media (prefers-color-scheme) -- el atributo lo estampa un script inline en
+ * index.html antes del primer pintado. El brief no cubre modo oscuro; se
+ * mantiene neutro y se aclaran acento/verde/rojo lo suficiente para leerse
+ * sobre superficies oscuras, mismo criterio que el resto de la app, sin
+ * verificación formal de contraste (por la misma decisión del usuario).
  * ───────────────────────────────────────────────────────────────────────────── */
 :root[data-theme="dark"] {
     --bg-app:       #0D0D0E;
@@ -199,9 +133,6 @@
     --panel-sunken: #212124;
     --panel-hover:  #292929;
 
-    /* Vidrio oscuro: mismo blur, fondo semitransparente sobre el panel oscuro
-       y un borde de luz tenue en vez del blanco fuerte del modo claro -- ahí
-       SÍ hace falta redefinir, es lo opuesto de brillante. */
     --panel-glass-bg:     rgba(24, 24, 27, 0.55);
     --panel-glass-border: rgba(255, 255, 255, 0.08);
 
@@ -212,31 +143,20 @@
     --text-tertiary:  #8F8F98;
     --text-disabled:  #55555F;
 
-    /* Sage más claro: en una superficie oscura "resaltar" es aclarar, no
-       oscurecer. Si una clínica fija --accent en runtime, estas se recalculan
-       solas. */
     --accent:          #7FBB7A;
     --accent-hover:    color-mix(in srgb, var(--accent) 88%, white);
     --accent-press:    color-mix(in srgb, var(--accent) 76%, white);
     --accent-soft:     color-mix(in srgb, var(--accent) 16%, transparent);
     --accent-ring:     color-mix(in srgb, var(--accent) 36%, transparent);
-    /* Negro casi puro gana (8.15:1); blanco daría sólo 2.26:1 y no pasa AA. */
     --accent-contrast: #141414;
 
-    /* Píldora del ítem activo: INVERSA de la de modo claro. Un negro sobre un
-       riel ya casi negro sería invisible -- el equivalente de alto contraste
-       en oscuro es una píldora clara con texto oscuro, no la misma píldora
-       negra. */
     --rail-active-bg:  #F4F4F7;
     --rail-active-ink: #18181B;
 
-    /* Mismo motivo que el acento: el teal claro se corre para no confundirse
-       con el sage claro en las mismas superficies oscuras. */
-    --green:      #5FC7B8;
-    --green-soft: rgba(95, 199, 184, 0.16);
+    --green:      #8FCB8A;
+    --green-soft: rgba(143, 203, 138, 0.16);
     --red:        #E8697F;
     --red-soft:   rgba(232, 105, 127, 0.16);
-    /* Blanco daba 3.11:1 sobre este rojo; casi-negro da 5.93:1. */
     --red-contrast: #141414;
     --amber:      #DCA24A;
     --amber-soft: rgba(220, 162, 74, 0.16);
@@ -244,11 +164,6 @@
     --hairline:        rgba(255, 255, 255, 0.07);
     --hairline-strong: rgba(255, 255, 255, 0.13);
 
-    /* En oscuro la elevación la carga la diferencia de luminosidad entre
-       --panel y --bg-app (una sombra negra sobre negro no se ve), así que la
-       sombra sólo agrega profundidad: misma forma multicapa del modo claro
-       pero con más peso, para que el vidrio se note sobre el fondo casi
-       negro. */
     --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.34), 0 6px 16px -6px rgba(0, 0, 0, 0.44);
     --shadow-float:  0 2px 4px rgba(0, 0, 0, 0.30), 0 12px 32px -10px rgba(0, 0, 0, 0.50);
     --shadow-pop:    0 12px 40px -8px rgba(0, 0, 0, 0.62), 0 4px 12px rgba(0, 0, 0, 0.45);
