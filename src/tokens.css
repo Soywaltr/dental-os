@@ -120,7 +120,12 @@
      Se usa sólo en contenido SIN significado semántico de color (una serie
      de ingresos/gastos, no un medidor con anillo rojo/verde/ámbar -- ahí el
      fondo verde competiría con el color que señala "atención"). */
-  --hero-gradient: linear-gradient(160deg, #2E5A30 0%, #6FA96C 100%);
+  /* Diagonal clásica (135deg, esquina a esquina) con TRES paradas -- a 160deg
+     con sólo 2 paradas se leía casi plano en una tarjeta ancha y baja, la
+     transición ocurría toda en el borde superior. El rango también se abrió
+     mucho más (verde pino oscuro -> menta pálido) para que se note de
+     verdad, como en la referencia. */
+  --hero-gradient: linear-gradient(135deg, #1E4A22 0%, #5B9257 55%, #C3DFBB 100%);
   --hero-ink:      #FFFFFF;
   --hero-ink-soft: rgba(255, 255, 255, 0.72);
   --hero-chip-bg:  rgba(255, 255, 255, 0.18);

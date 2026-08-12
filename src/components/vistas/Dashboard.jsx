@@ -507,20 +507,43 @@ export default function Dashboard({ setView, clinica }) {
             </table>
           </div>
         ) : (
-          <GraficoLineas
-            series={seriesGrafico}
-            etiquetas={bucketsRango.map(b => b.label)}
-            formato={soles}
-            alto={218}
-            mostrarCadaN={rango === '30d' ? 3 : 1}
-            colorTexto="var(--hero-ink-soft)"
-            colorRejilla="var(--hero-grid)"
-            /* Anillo del marcador: aproxima el punto medio del degradé, no un
-               solo tono exacto (el fondo es un gradiente, no un color plano) --
-               un aro blanco fijo (el default, pensado para tarjetas de vidrio)
-               se vería como un halo recortado sobre el verde. */
-            colorSuperficie="#4C8449"
-          />
+          <>
+            <GraficoLineas
+              series={seriesGrafico}
+              etiquetas={bucketsRango.map(b => b.label)}
+              formato={soles}
+              alto={218}
+              mostrarCadaN={rango === '30d' ? 3 : 1}
+              colorTexto="var(--hero-ink-soft)"
+              colorRejilla="var(--hero-grid)"
+              /* Anillo del marcador: aproxima el punto medio del degradé, no un
+                 solo tono exacto (el fondo es un gradiente, no un color plano) --
+                 un aro blanco fijo (el default, pensado para tarjetas de vidrio)
+                 se vería como un halo recortado sobre el verde. */
+              colorSuperficie="#4C8449"
+              /* Área blanca que se apaga hacia abajo: el "glow sutil" que pedía
+                 el brief para el gráfico -- sólo tiene sentido acá, sobre el
+                 verde solido, no en el resto de la app (donde el default sigue
+                 en 'none'). */
+              area
+              colorArea="#FFFFFF"
+            />
+            {/* Chips flotantes al pie, como "Resting 98bpm / Max 112bpm /
+                Status Normal" de la referencia -- mismos 3 números que ya
+                muestran las tarjetas de KPI de abajo, no un dato nuevo. */}
+            <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+              {[
+                { l: 'Ingresos', v: soles(ingresosMes) },
+                { l: 'Gastos', v: soles(gastosMes) },
+                { l: 'Margen', v: `${margenPct}%` },
+              ].map(chip => (
+                <div key={chip.l} style={{ background: 'var(--hero-chip-bg)', borderRadius: 'var(--radius-card)', padding: '9px 14px', flex: 1, minWidth: 100 }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--hero-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 600 }}>{chip.l}</div>
+                  <div style={{ fontSize: 15, color: 'var(--hero-ink)', fontWeight: 700, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{chip.v}</div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
