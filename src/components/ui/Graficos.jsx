@@ -7,7 +7,7 @@
 //    color se reserva para UN acento (el pico, un delta positivo).
 //  · rejilla de 1px, siempre recesiva; el eje Y cae en números limpios.
 //  · el texto nunca lleva el color de la serie.
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState } from 'react';
 
 // Techo del eje Y tal que CADA marca caiga en un número limpio, no sólo el
 // techo: se redondea el valor por marca (max/divisiones) y después se multiplica.
@@ -226,112 +226,6 @@ export function GraficoBarras({
           {formato(valores[idx])}
         </div>
       )}
-    </div>
-  );
-}
-
-// Selector de rango ("brush"): la tira bajo el gráfico principal con la serie
-// completa en miniatura y una ventana arrastrable. Los dos tiradores mueven
-// cada borde y el bloque central desplaza la ventana entera. Es lo que hace
-// navegable una serie de 365 puntos sin cambiar de pantalla.
-export function SelectorRango({ valores, inicio, fin, onCambio, alto = 44 }) {
-  const ref = useRef(null);
-  const [arrastre, setArrastre] = useState(null); // 'inicio' | 'fin' | 'pan'
-  const panRef = useRef(0);
-
-  const n = valores.length;
-  const max = Math.max(...valores, 1);
-
-  const idxDesdeX = useCallback((clientX) => {
-    const el = ref.current;
-    if (!el) return 0;
-    const r = el.getBoundingClientRect();
-    const f = (clientX - r.left) / Math.max(r.width, 1);
-    return Math.max(0, Math.min(n - 1, Math.round(f * (n - 1))));
-  }, [n]);
-
-  useEffect(() => {
-    if (!arrastre) return;
-    const mover = (e) => {
-      const i = idxDesdeX(e.clientX);
-      if (arrastre === 'inicio') {
-        onCambio(Math.min(i, fin - 1), fin);
-      } else if (arrastre === 'fin') {
-        onCambio(inicio, Math.max(i, inicio + 1));
-      } else {
-        const ancho = fin - inicio;
-        let ni = inicio + (i - panRef.current);
-        let nf = ni + ancho;
-        if (ni < 0) { ni = 0; nf = ancho; }
-        if (nf > n - 1) { nf = n - 1; ni = nf - ancho; }
-        panRef.current = i;
-        onCambio(ni, nf);
-      }
-    };
-    const soltar = () => setArrastre(null);
-    // En window, no en el elemento: si el puntero sale de la tira mientras se
-    // arrastra, el gesto tiene que seguir vivo igual.
-    window.addEventListener('pointermove', mover);
-    window.addEventListener('pointerup', soltar);
-    return () => {
-      window.removeEventListener('pointermove', mover);
-      window.removeEventListener('pointerup', soltar);
-    };
-  }, [arrastre, inicio, fin, n, idxDesdeX, onCambio]);
-
-  const pct = (i) => (n <= 1 ? 0 : (i / (n - 1)) * 100);
-  const izq = pct(inicio);
-  const der = pct(fin);
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        position: 'relative', height: alto, marginTop: 10,
-        background: 'var(--panel-sunken)', borderRadius: 'var(--radius-control)',
-        overflow: 'hidden', touchAction: 'none', userSelect: 'none',
-      }}
-    >
-      {/* Serie completa en miniatura */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: 0, padding: '6px 0' }}>
-        {valores.map((v, i) => (
-          <div key={i} style={{
-            flex: 1, minWidth: 0,
-            height: `${Math.max(2, (v / max) * 100)}%`,
-            background: i >= inicio && i <= fin ? 'var(--text-tertiary)' : 'var(--hairline-strong)',
-          }} />
-        ))}
-      </div>
-
-      {/* Velos de lo NO seleccionado */}
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${izq}%`, background: 'var(--panel)', opacity: 0.62 }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${der}%`, right: 0, background: 'var(--panel)', opacity: 0.62 }} />
-
-      {/* Ventana: arrastrar el centro la desplaza entera */}
-      <div
-        onPointerDown={(e) => { panRef.current = idxDesdeX(e.clientX); setArrastre('pan'); }}
-        style={{
-          position: 'absolute', top: 0, bottom: 0, left: `${izq}%`, width: `${Math.max(der - izq, 0)}%`,
-          border: '1px solid var(--text-primary)', borderRadius: 4,
-          cursor: 'grab', background: 'transparent',
-        }}
-      />
-
-      {/* Tiradores */}
-      {[['inicio', izq], ['fin', der]].map(([lado, posicion]) => (
-        <div
-          key={lado}
-          onPointerDown={(e) => { e.stopPropagation(); setArrastre(lado); }}
-          aria-label={lado === 'inicio' ? 'Inicio del rango' : 'Fin del rango'}
-          style={{
-            position: 'absolute', top: 0, bottom: 0, left: `${posicion}%`,
-            width: 12, marginLeft: -6, cursor: 'ew-resize',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <span style={{ width: 3, height: '58%', borderRadius: 2, background: 'var(--text-primary)' }} />
-        </div>
-      ))}
     </div>
   );
 }

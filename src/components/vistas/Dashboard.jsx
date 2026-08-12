@@ -1,724 +1,826 @@
 // src/components/vistas/Dashboard.jsx
-/**
- * ============================================================================
- * ENTERPRISE DENTAL DASHBOARD MONOLITH (v3.1.0 - PATCHED)
- * ============================================================================
- * @description Monolito de alto rendimiento para el Dashboard Principal.
- * @fixes Corregido el error ts(2657) en la librería de iconos SVG. Se aplicaron
- * Fragmentos (<>...</>) para envolver elementos hermanos en JSX.
- * @architecture
- * - Sistema de Diseño Interno (Tokens)
- * - Motor de Gráficos SVG sin dependencias (Curvas Bezier matemáticas)
- * - State Management con Reducer (Predictable state container)
- * - Optimizaciones de Renderizado Extremo (React.memo, useMemo, useCallback)
- * ============================================================================
- */
+// Cruza las 5 tablas de negocio reales (pacientes, historias, ortodoncia,
+// laboratorio_ordenes, gastos), con el mismo filtro de archivados/huérfanos
+// que el resto de la app -- nada de datos de ejemplo ni Math.random(). Usa
+// los tokens de tokens.css (var(--accent), etc.), no una paleta propia: así
+// el acento sigue siendo el de la clínica (white-label), no uno fijo.
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../supabase';
+import Icon from '../ui/Icon';
+import Stat from '../ui/Stat';
+import SegmentedControl from '../ui/SegmentedControl';
+import { GraficoBarras, Anillo } from '../ui/Graficos';
+import { P, MU, BD, AZ, RJ, GL, TRATAMIENTOS_CAT, GLASS_BG, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
+import useResponsive from '../../utils/useResponsive';
+import useNumeroAnimado from '../../utils/useNumeroAnimado';
 
-import React, { useEffect, useReducer, useMemo, useState, useRef, memo } from 'react';
-import { supabase } from '../../supabase'; // Asegúrate de que esta ruta apunte a tu cliente
+const RANGOS = [
+  { key: '7d', label: '7D', n: 7, dia: true },
+  { key: '30d', label: '30D', n: 30, dia: true },
+  { key: '6m', label: '6M', n: 6, dia: false },
+  { key: '12m', label: '12M', n: 12, dia: false },
+];
+const DIAS_SEMANA_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-// ============================================================================
-// 1. DESIGN SYSTEM & TOKENS (Diccionario de Variables de Entorno Visual)
-// ============================================================================
-const TOKENS = {
-  colors: {
-    primary: '#8A74F9',
-    primaryHover: '#745BE9',
-    primaryLight: '#EAE7FD',
-    secondary: '#F97316',
-    secondaryLight: '#FEF1E8',
-    success: '#22C55E',
-    successLight: '#E6F8F3',
-    dark: '#202224',
-    darkLight: '#EBEBF2',
-    background: '#F4F5FB',
-    surface: '#FFFFFF',
-    textMain: '#202224',
-    textMuted: '#8F92A1',
-    border: '#E2E8F0',
-    borderLight: '#F1F5F9',
-    danger: '#EF4444',
-  },
-  shadows: {
-    sm: '0 2px 10px rgba(0,0,0,0.02)',
-    md: '0 4px 20px rgba(0,0,0,0.03)',
-    lg: '0 10px 40px rgba(0,0,0,0.04)',
-  },
-  radius: {
-    sm: '8px',
-    md: '12px',
-    lg: '16px',
-    xl: '20px',
-    xxl: '24px',
-    pill: '9999px',
-  },
-  transitions: {
-    fast: '0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-    normal: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  },
-  typography: {
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-  }
+// Tabs de métrica del histograma principal. Utilidad se deriva de
+// ingresos-gastos en cada bucket, nunca se guarda aparte -- así no puede
+// desincronizarse de esos dos.
+const METRICAS = [
+  { key: 'ingresos', label: 'Ingresos' },
+  { key: 'utilidad', label: 'Utilidad' },
+  { key: 'gastos', label: 'Gastos' },
+];
+
+const NOMBRE_A_CAT = {};
+TRATAMIENTOS_CAT.forEach(c => c.items.forEach(n => { NOMBRE_A_CAT[n] = c.cat; }));
+
+const CAT_TABS = [
+  { key: 'General', cats: null },
+  { key: 'Ortodoncia', cats: ['Ortodoncia'] },
+  { key: 'Endodoncia', cats: ['Endodoncia'] },
+  { key: 'Rehabilitación', cats: ['Prótesis', 'Restaurador'] },
+  { key: 'Implantes', cats: ['Implantología'] },
+];
+
+const VERDE = 'var(--green)';
+const ESTADO_TRAT = [
+  { key: 'pendiente', label: 'Pendiente', color: RJ },
+  { key: 'en_curso', label: 'En curso', color: GL },
+  { key: 'completado', label: 'Completado', color: VERDE },
+];
+const ESTADO_BADGE = {
+  activo: { label: 'Activo', color: VERDE },
+  nuevo: { label: 'Nuevo', color: AZ },
+  inactivo: { label: 'Inactivo', color: MU },
 };
 
-// ============================================================================
-// 2. UTILS & FORMATTERS (Capa de Lógica Pura y Parseo de Datos)
-// ============================================================================
-const Formatters = {
-  currency: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }),
-  date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-  time: new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-  monthYear: new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }),
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const PACIENTES_POR_PAGINA = 5;
+
+const dateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const parseFecha = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d.getTime()) ? null : d; };
+const soles = (n) => `S/${Math.round(n).toLocaleString('es-PE')}`;
+
+const formatoHaceTiempo = (fecha) => {
+  const seg = Math.max(0, Math.round((Date.now() - fecha.getTime()) / 1000));
+  if (seg < 60) return `${seg}s`;
+  return `${Math.round(seg / 60)}min`;
 };
 
-const Utils = {
-  getInitials: (name) => {
-    if (!name) return '??';
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  },
-  isToday: (dateStr) => {
-    const today = new Date();
-    const targetStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    return dateStr === targetStr;
-  },
-  /**
-   * Genera el path SVG ('d' attribute) para una curva Bezier suave.
-   * Elimina la necesidad de librerías externas de gráficos como Recharts o Chart.js.
-   */
-  generateBezierPath: (data, width, height) => {
-    if (!data || data.length === 0) return { path: '', points: [] };
-    
-    // Normalización de datos al alto y ancho del canvas SVG
-    const max = Math.max(...data.map(d => d.val), 1);
-    const min = 0;
-    
-    const points = data.map((d, i) => ({
-      x: (i / (data.length - 1)) * width,
-      y: height - ((d.val - min) / (max - min)) * height,
-      label: d.label,
-      val: d.val
-    }));
-
-    let path = `M ${points[0].x} ${points[0].y}`;
-    
-    // Iteración geométrica para suavizar las esquinas
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i];
-      const p1 = points[i + 1];
-      const cp1x = p0.x + (p1.x - p0.x) / 2;
-      const cp1y = p0.y;
-      const cp2x = p0.x + (p1.x - p0.x) / 2;
-      const cp2y = p1.y;
-      path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
-    }
-    
-    return { path, points };
-  }
+const getWeekDays = (anchor) => {
+  const start = new Date(anchor);
+  start.setHours(12, 0, 0, 0);
+  const day = start.getDay();
+  start.setDate(start.getDate() - day + (day === 0 ? -6 : 1));
+  return Array.from({ length: 6 }).map((_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return d;
+  });
 };
 
-// ============================================================================
-// 3. ZERO-DEPENDENCY ICON LIBRARY (CORREGIDA TS:2657)
-// ============================================================================
-/**
- * Usamos React.memo para evitar re-renderizados innecesarios de la UI
- * cuando el estado global cambia.
- */
-const Icon = memo(({ name, size = 20, color = 'currentColor', style = {} }) => {
-  const icons = {
-    dashboard: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />,
-    calendar: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />,
-    users: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />,
-    userPlus: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />,
-    activity: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />,
-    card: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />,
-    checkCircle: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />,
-    help: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
-    search: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />,
-    
-    // [FIX] Aquí estaba el error. Elementos hermanos de JSX envueltos en Fragmento <></>
-    settings: (
-      <>
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <circle cx={12} cy={12} r={3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      </>
-    ),
-    
-    bell: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
-    plus: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />,
-    chevronDown: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />,
-    chevronLeft: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />,
-    chevronRight: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />,
-    
-    // [FIX] Aquí estaba el segundo error. Elementos hermanos envueltos.
-    eye: (
-      <>
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-      </>
-    ),
-  };
+export default function Dashboard({ setView, clinica }) {
+  const { isTablet } = useResponsive();
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [pacientes, setPacientes] = useState([]);
+  const [tratamientos, setTratamientos] = useState([]);
+  const [ortoRows, setOrtoRows] = useState([]);
+  const [labOrders, setLabOrders] = useState([]);
+  const [gastos, setGastos] = useState([]);
+  const [activeTab, setActiveTab] = useState('General');
+  const [weekAnchor, setWeekAnchor] = useState(new Date());
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [rango, setRango] = useState('12m');
+  const [metrica, setMetrica] = useState('ingresos');
+  const [paginaPacientes, setPaginaPacientes] = useState(1);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
+  const [, forzarTick] = useState(0);
 
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} style={style} aria-hidden="true">
-      {icons[name] || icons.help}
-    </svg>
-  );
-});
-
-// ============================================================================
-// 4. ERROR BOUNDARY (Capa de Protección de Fallos React)
-// ============================================================================
-class ErrorBoundary extends React.Component {
-  constructor(props) { 
-    super(props); 
-    this.state = { hasError: false, error: null }; 
-  }
-  
-  static getDerivedStateFromError(error) { 
-    return { hasError: true, error }; 
-  }
-  
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: 40, background: TOKENS.colors.secondaryLight, color: TOKENS.colors.danger, borderRadius: TOKENS.radius.lg, margin: 24, fontFamily: TOKENS.typography.fontFamily }}>
-          <h2>Fallo Catastrófico del Sistema (ErrorBoundary)</h2>
-          <p>{this.state.error.message}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{ padding: '10px 20px', background: TOKENS.colors.danger, color: '#fff', border: 'none', borderRadius: TOKENS.radius.sm, cursor: 'pointer' }}
-          >
-            Reiniciar Workspace
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// ============================================================================
-// 5. STATE MANAGEMENT (Patrón Reducer para escalabilidad predecible)
-// ============================================================================
-const initialState = {
-  isLoading: true,
-  error: null,
-  patients: [],
-  treatments: [],
-  metrics: { revenue: 0, totalPatients: 0, newPatients: 0, completedTreatments: 0 },
-  chartData: [],
-  searchQuery: '',
-  currentPage: 1,
-  selectedDate: new Date(),
-};
-
-function dashboardReducer(state, action) {
-  switch (action.type) {
-    case 'FETCH_START':
-      return { ...state, isLoading: true, error: null };
-    case 'FETCH_SUCCESS':
-      return { 
-        ...state, 
-        isLoading: false, 
-        patients: action.payload.patients,
-        treatments: action.payload.treatments,
-        metrics: action.payload.metrics,
-        chartData: action.payload.chartData 
-      };
-    case 'FETCH_ERROR':
-      return { ...state, isLoading: false, error: action.payload };
-    case 'SET_SEARCH':
-      return { ...state, searchQuery: action.payload, currentPage: 1 };
-    case 'SET_PAGE':
-      return { ...state, currentPage: action.payload };
-    case 'SET_DATE':
-      return { ...state, selectedDate: action.payload };
-    default:
-      return state;
-  }
-}
-
-// ============================================================================
-// 6. COMPONENTES DE UI (Micro-Frontends Aislados y Optimizados)
-// ============================================================================
-
-/**
- * Skeleton Loader animado con gradiente CSS puro.
- */
-const Skeleton = ({ width, height, borderRadius, style }) => (
-  <div style={{
-    width, height, borderRadius: borderRadius || TOKENS.radius.sm,
-    background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-    backgroundSize: '200% 100%',
-    animation: 'skeleton-loading 1.5s infinite',
-    ...style
-  }}>
-    <style>{`@keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-  </div>
-);
-
-/**
- * Tarjeta de estadística (Top Row). Uso de React.memo previene repintado 
- * al escribir en el buscador de la tabla inferior.
- */
-const StatCard = memo(({ title, value, icon, bg, col }) => (
-  <div style={{
-    background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xl, padding: 24,
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    boxShadow: TOKENS.shadows.md, transition: `transform ${TOKENS.transitions.fast}`,
-    cursor: 'default', ':hover': { transform: 'translateY(-2px)' }
-  }}>
-    <div>
-      <div style={{ fontSize: 26, fontWeight: 800, color: TOKENS.colors.textMain, marginBottom: 6, letterSpacing: '-0.03em' }}>{value}</div>
-      <div style={{ fontSize: 13, color: TOKENS.colors.textMuted, fontWeight: 600 }}>{title}</div>
-    </div>
-    <div style={{ width: 56, height: 56, borderRadius: TOKENS.radius.lg, background: bg, color: col, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <Icon name={icon} size={28} />
-    </div>
-  </div>
-));
-
-/**
- * Gráfico Vectorial Sensible al Contexto. Dibuja el area map leyendo
- * el width dinámicamente con ResizeObserver.
- */
-const CustomAreaChart = memo(({ data, color }) => {
-  const containerRef = useRef(null);
-  const [width, setWidth] = useState(800);
-  const height = 220;
+  const esPrimeraCargaRef = useRef(true);
 
   useEffect(() => {
-    // Detecta el tamaño del grid y adapta el SVG (Responsive)
-    const observer = new ResizeObserver(entries => {
-      if (entries[0]) setWidth(entries[0].contentRect.width);
-    });
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const { path, points } = useMemo(() => Utils.generateBezierPath(data, width, height), [data, width]);
-  
-  if (!points || points.length === 0) return <Skeleton width="100%" height={height} />;
-
-  const areaPath = `${path} L ${width} ${height} L 0 ${height} Z`;
-  const peak = points.reduce((prev, current) => (prev.y < current.y ? prev : current), points[0]);
-  const peakData = data[points.indexOf(peak)];
-
-  return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height, marginTop: 32 }}>
-      <svg viewBox={`0 -20 ${width} ${height + 40}`} preserveAspectRatio="none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-        <defs>
-          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
-          </linearGradient>
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
-        
-        {/* Grilla Eje Y */}
-        {[0, 0.33, 0.66, 1].map(pct => (
-          <g key={pct}>
-            <line x1="0" y1={height * pct} x2={width} y2={height * pct} stroke={TOKENS.colors.borderLight} strokeWidth="1" strokeDasharray="4 4" />
-            <text x="-10" y={height * pct + 4} fill={TOKENS.colors.textMuted} fontSize="11" textAnchor="end" fontWeight="500">
-              {Math.round(Math.max(...data.map(d=>d.val)) * (1 - pct))}
-            </text>
-          </g>
-        ))}
-
-        <path d={areaPath} fill="url(#chartGradient)" style={{ transition: 'd 0.3s ease' }} />
-        <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ transition: 'd 0.3s ease' }} />
-        
-        {/* Tooltip Interactivo fijado en el Pico Máximo */}
-        <g style={{ transform: `translate(${peak.x}px, ${peak.y}px)`, transition: 'transform 0.3s ease' }}>
-          <circle cx="0" cy="0" r="6" fill={color} stroke="#fff" strokeWidth="3" filter="url(#glow)" />
-          <rect x="-60" y="-45" width="120" height="28" rx="14" fill={TOKENS.colors.textMain} />
-          <text x="0" y="-26" fill="#fff" fontSize="12" fontWeight="700" textAnchor="middle">{peakData.val} Consultas</text>
-        </g>
-
-        {/* Etiquetas Eje X */}
-        {points.map((p, i) => (
-          <text key={i} x={p.x} y={height + 25} fill={TOKENS.colors.textMuted} fontSize="12" textAnchor="middle" fontWeight="600">
-            {data[i].label}
-          </text>
-        ))}
-      </svg>
-    </div>
-  );
-});
-
-/**
- * Tabla Principal Paginada
- */
-const PatientTable = memo(({ data, searchQuery, onSearch, currentPage, setPage }) => {
-  const ITEMS_PER_PAGE = 5;
-  
-  // Algoritmo de filtrado memoizado
-  const filteredData = useMemo(() => {
-    return data.filter(p => 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (p.treatment && p.treatment.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [data, searchQuery]);
-
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1;
-  const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  return (
-    <div style={{ background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xxl, padding: 24, boxShadow: TOKENS.shadows.md, display: 'flex', flexDirection: 'column', minHeight: 450 }}>
-      
-      {/* Header Tabla */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: TOKENS.colors.textMain, margin: 0 }}>Current Patients</h2>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 10, left: 12, color: TOKENS.colors.textMuted }}><Icon name="search" size={16} /></div>
-            <input 
-              type="text" 
-              placeholder="Search patients..." 
-              value={searchQuery}
-              onChange={(e) => onSearch(e.target.value)}
-              style={{ padding: '10px 16px 10px 36px', borderRadius: TOKENS.radius.pill, border: `1px solid ${TOKENS.colors.border}`, outline: 'none', fontSize: 13, color: TOKENS.colors.textMain, width: 200, transition: TOKENS.transitions.fast }}
-            />
-          </div>
-          <button style={{ background: TOKENS.colors.surface, border: `1.5px solid ${TOKENS.colors.primary}`, color: TOKENS.colors.primary, borderRadius: TOKENS.radius.pill, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: TOKENS.transitions.fast }}>
-            <Icon name="plus" size={16} /> Add Patients
-          </button>
-        </div>
-      </div>
-
-      {/* Body Tabla (Responsive Grid) */}
-      <div style={{ flex: 1, overflowX: 'auto' }}>
-        <div style={{ minWidth: 700 }}>
-          <div style={{ background: TOKENS.colors.primary, color: '#fff', padding: '16px 24px', borderRadius: `${TOKENS.radius.md} ${TOKENS.radius.md} 0 0`, display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 0.5fr', fontSize: 13, fontWeight: 700, letterSpacing: '0.02em' }}>
-            <div>Patients Info</div><div>Treatment</div><div>Date</div><div>Time</div><div>Chair No.</div><div></div>
-          </div>
-          {paginatedData.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: TOKENS.colors.textMuted, fontSize: 14 }}>No patients found.</div>
-          ) : (
-            paginatedData.map((p, i) => (
-              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 0.5fr', padding: '16px 24px', borderBottom: `1px solid ${TOKENS.colors.borderLight}`, alignItems: 'center', fontSize: 14, color: TOKENS.colors.textMain, transition: 'background 0.2s', ':hover': { background: '#fafafa' } }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: TOKENS.colors.primaryLight, color: TOKENS.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
-                    {Utils.getInitials(p.name)}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{p.name}</div>
-                    <div style={{ fontSize: 12, color: TOKENS.colors.textMuted, marginTop: 2 }}>{p.status === 'nuevo' ? '1st visit' : 'Returning'}</div>
-                  </div>
-                </div>
-                <div style={{ fontWeight: 600, color: TOKENS.colors.textMain }}>{p.treatment || p.reason || 'Dental Checkup'}</div>
-                <div style={{ color: TOKENS.colors.textMuted, fontWeight: 500 }}>{Utils.isToday(p.fecha) ? 'Today' : (p.fecha ? Formatters.date.format(new Date(p.fecha)) : 'N/A')}</div>
-                <div style={{ color: TOKENS.colors.textMuted, fontWeight: 500 }}>{p.hora_cita || 'TBD'}</div>
-                <div style={{ color: TOKENS.colors.textMuted, fontWeight: 600 }}>A - {10 + i}</div>
-                <div style={{ textAlign: 'right', color: TOKENS.colors.textMuted, cursor: 'pointer' }}><Icon name="eye" size={18} /></div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-      
-      {/* Footer / Control Paginación */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 'auto', paddingTop: 24 }}>
-        <button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} style={{ border: 'none', background: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? TOKENS.colors.border : TOKENS.colors.textMuted, padding: 8 }}><Icon name="chevronLeft" size={18} /></button>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-          <button key={page} onClick={() => setPage(page)} style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: currentPage === page ? TOKENS.colors.primary : 'transparent', color: currentPage === page ? '#fff' : TOKENS.colors.textMuted, fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: TOKENS.transitions.fast }}>
-            {page}
-          </button>
-        ))}
-        <button disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)} style={{ border: 'none', background: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? TOKENS.colors.border : TOKENS.colors.textMuted, padding: 8 }}><Icon name="chevronRight" size={18} /></button>
-      </div>
-    </div>
-  );
-});
-
-/**
- * Sidebar Derecho (Agenda)
- */
-const AgendaSidebar = memo(({ date, setDate, appointments }) => {
-  // Lógica de manipulación de Fechas (Rango de 7 días relativo a selección)
-  const dates = useMemo(() => {
-    const arr = [];
-    const curr = new Date(date);
-    curr.setDate(curr.getDate() - 3); // 3 days before
-    for (let i = 0; i < 7; i++) {
-      arr.push(new Date(curr));
-      curr.setDate(curr.getDate() + 1);
-    }
-    return arr;
-  }, [date]);
-
-  const activeDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  
-  const daysAppointments = useMemo(() => {
-    return appointments.filter(a => a.fecha === activeDateStr).sort((a, b) => (a.hora_cita || '').localeCompare(b.hora_cita || ''));
-  }, [appointments, activeDateStr]);
-
-  return (
-    <div style={{ background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xxl, padding: 28, boxShadow: TOKENS.shadows.md, display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: TOKENS.colors.textMain, margin: '0 0 24px 0' }}>Upcoming Appointments</h2>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 8px' }}>
-        <button onClick={() => { const nd = new Date(date); nd.setMonth(nd.getMonth() - 1); setDate(nd); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: TOKENS.colors.textMuted }}><Icon name="chevronLeft" size={18} /></button>
-        <span style={{ fontSize: 15, fontWeight: 700, color: TOKENS.colors.textMain }}>{Formatters.monthYear.format(date)}</span>
-        <button onClick={() => { const nd = new Date(date); nd.setMonth(nd.getMonth() + 1); setDate(nd); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: TOKENS.colors.textMuted }}><Icon name="chevronRight" size={18} /></button>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 32 }}>
-        {dates.map((d, i) => {
-          const isAct = d.getDate() === date.getDate() && d.getMonth() === date.getMonth();
-          return (
-            <div key={i} onClick={() => setDate(d)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 8px', borderRadius: TOKENS.radius.lg, border: `2px solid ${isAct ? TOKENS.colors.primary : 'transparent'}`, background: isAct ? TOKENS.colors.surface : 'transparent', cursor: 'pointer', transition: TOKENS.transitions.fast, minWidth: 44 }}>
-              <div style={{ fontSize: 11, color: isAct ? TOKENS.colors.primary : TOKENS.colors.textMuted, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase' }}>
-                {new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(d)}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: isAct ? TOKENS.colors.primary : TOKENS.colors.textMain }}>
-                {d.getDate()}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ fontSize: 14, color: TOKENS.colors.primary, fontWeight: 700, marginBottom: 20 }}>
-        {Utils.isToday(activeDateStr) ? 'Today' : new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date)}, {Formatters.date.format(date)}
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {daysAppointments.length === 0 ? (
-          <div style={{ textAlign: 'center', color: TOKENS.colors.textMuted, marginTop: 40, fontSize: 14, fontWeight: 500 }}>No appointments scheduled for this date.</div>
-        ) : (
-          daysAppointments.map(cita => (
-            <div key={cita.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-              <div style={{ width: 75, fontSize: 13, fontWeight: 700, color: TOKENS.colors.textMain, paddingTop: 14, flexShrink: 0 }}>
-                {cita.hora_cita || 'TBD'}
-              </div>
-              <div style={{ background: TOKENS.colors.background, borderRadius: TOKENS.radius.lg, padding: 16, flex: 1, position: 'relative', display: 'flex', alignItems: 'center', gap: 14, transition: TOKENS.transitions.fast, cursor: 'pointer', ':hover': { filter: 'brightness(0.97)' } }}>
-                {cita.status === 'nuevo' && (
-                  <div style={{ position: 'absolute', top: 12, right: 12, background: TOKENS.colors.secondary, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: TOKENS.radius.pill, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    New Patient
-                  </div>
-                )}
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: TOKENS.colors.surface, color: TOKENS.colors.textMain, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0, boxShadow: TOKENS.shadows.sm }}>
-                  {Utils.getInitials(cita.name)}
-                </div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: TOKENS.colors.textMain, marginBottom: 4, paddingRight: 80 }}>{cita.name}</div>
-                  <div style={{ fontSize: 13, color: TOKENS.colors.textMuted, fontWeight: 600 }}>{cita.treatment || cita.reason || 'General Consultation'}</div>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-});
-
-// ============================================================================
-// 7. MAIN DASHBOARD COMPONENT (EL CONTROLADOR MADRE)
-// ============================================================================
-const DashboardMonolith = ({ setView, clinica }) => {
-  const [state, dispatch] = useReducer(dashboardReducer, initialState);
-  const isTablet = window.innerWidth <= 1024;
-
-  // Carga Masiva de Datos Empresariales (Data Fetching Controller)
-  useEffect(() => {
-    let isMounted = true;
-    const loadEnterpriseData = async () => {
-      dispatch({ type: 'FETCH_START' });
-      try {
-        const [
-          { data: patientsData, error: pErr },
-          { data: historiesData, error: hErr }
-        ] = await Promise.all([
-          supabase.from('pacientes').select('*'),
-          supabase.from('historias').select('patient_id, plan_tratamiento')
-        ]);
-
-        if (pErr || hErr) throw new Error((pErr || hErr).message);
-        if (!isMounted) return;
-
-        // Limpieza y Transformación de Datos
-        const activePatients = (patientsData || []).filter(p => !p.archivado_at).map(p => ({
-          ...p, status: p.tag === 'nuevo' || (new Date() - new Date(p.created_at))/(1000*60*60*24) < 30 ? 'nuevo' : 'recurrente'
-        }));
-        
-        let totalRev = 0;
-        let completed = 0;
-        const validIds = new Set(activePatients.map(p=>p.id));
-        const allTreatments = [];
-
-        (historiesData || []).forEach(h => {
-          if(validIds.has(h.patient_id)) {
-            (h.plan_tratamiento || []).forEach(t => {
-              allTreatments.push({...t, pId: h.patient_id});
-              totalRev += (t.paid || 0);
-              if(t.status === 'completado') completed++;
-            });
-          }
-        });
-
-        // Simulación de pipeline algorítmico
-        const generateChart = () => {
-          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          return months.map(m => ({ label: m, val: Math.floor(Math.random() * 30) + 20 }));
-        };
-
-        dispatch({
-          type: 'FETCH_SUCCESS',
-          payload: {
-            patients: activePatients,
-            treatments: allTreatments,
-            metrics: {
-              revenue: totalRev,
-              totalPatients: activePatients.length,
-              newPatients: activePatients.filter(p=>p.status === 'nuevo').length,
-              completedTreatments: completed
-            },
-            chartData: generateChart()
-          }
-        });
-
-      } catch (err) {
-        if (isMounted) dispatch({ type: 'FETCH_ERROR', payload: err.message });
+    let vivo = true;
+    const cargar = async () => {
+      if (esPrimeraCargaRef.current) setLoading(true);
+      setErrorMsg(null);
+      const [
+        { data: pacientesData, error: errP },
+        { data: historiasData, error: errH },
+        { data: ortoData, error: errO },
+        { data: labData, error: errL },
+        { data: gastosData, error: errG },
+      ] = await Promise.all([
+        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment, archivado_at'),
+        supabase.from('historias').select('patient_id, plan_tratamiento'),
+        supabase.from('ortodoncia').select('paciente_id, pagos, plan_tratamiento, resumen'),
+        supabase.from('laboratorio_ordenes').select('id, patient_id, patient_name, type, cost, eta, status'),
+        supabase.from('gastos').select('categoria, monto, fecha'),
+      ]);
+      if (!vivo) return;
+      // Ortodoncia, laboratorio y gastos son secundarios: si fallan (una
+      // clínica que aún no usa esas tablas) no debe caerse todo el dashboard.
+      if (errP || errH) {
+        setErrorMsg((errP || errH).message);
+        setLoading(false);
+        return;
       }
-    };
+      const activos = (pacientesData || []).filter(p => !p.archivado_at);
+      setPacientes(activos);
 
-    loadEnterpriseData();
-    return () => { isMounted = false; };
+      // Historias filtradas contra pacientes activos: sin esto se cuelan
+      // historias huérfanas/archivadas en todos los totales financieros.
+      const idsActivos = new Set(activos.map(p => p.id));
+      setTratamientos(
+        (historiasData || [])
+          .filter(h => idsActivos.has(h.patient_id))
+          .flatMap(h => (h.plan_tratamiento || []).map(item => ({ ...item, patient_id: h.patient_id })))
+      );
+      setOrtoRows((errO ? [] : (ortoData || [])).map(o => {
+        const fechaInicio = o.plan_tratamiento?.fecha_inicial || o.resumen?.fecha_inicial || '';
+        return { ...o, fechaInicio, resumen: resumenPagosOrtodoncia(o.pagos, fechaInicio) };
+      }));
+      setLabOrders(errL ? [] : (labData || []));
+      setGastos(errG ? [] : (gastosData || []));
+      setLoading(false);
+      setUltimaActualizacion(new Date());
+      esPrimeraCargaRef.current = false;
+    };
+    cargar();
+    const intervaloDatos = setInterval(cargar, 60_000);
+    const intervaloTick = setInterval(() => forzarTick(v => v + 1), 15_000);
+    return () => { vivo = false; clearInterval(intervaloDatos); clearInterval(intervaloTick); };
   }, []);
 
-  if (state.error) throw new Error(state.error); // Pasa la barrera al ErrorBoundary
+  const hoy = new Date();
+  const todayStr = dateStr(hoy);
 
-  // Layout Maestro
-  const layoutStyle = {
-    background: TOKENS.colors.background,
-    minHeight: '100vh',
-    fontFamily: TOKENS.typography.fontFamily,
-    padding: isTablet ? '16px' : '32px',
-    boxSizing: 'border-box',
-    color: TOKENS.colors.textMain,
-  };
+  // ── Serie de 12 meses: ingresos/gastos (utilidad se deriva al leer) ───────
+  const meses12 = Array.from({ length: 12 }).map((_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (11 - i), 1);
+    return { anio: d.getFullYear(), mes: d.getMonth(), label: MESES_CORTOS[d.getMonth()], ingresos: 0, gastos: 0 };
+  });
+  const bucketDe = (d) => meses12.find(m => m.anio === d.getFullYear() && m.mes === d.getMonth());
 
-  const topNavStyle = {
-    background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xxl, padding: '16px 32px',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    boxShadow: TOKENS.shadows.sm, marginBottom: 32, flexWrap: 'wrap', gap: 20
+  tratamientos.forEach(t => { const d = parseFecha(t.date); if (d) { const b = bucketDe(d); if (b) b.ingresos += t.paid || 0; } });
+  ortoRows.forEach(o => (o.pagos?.abonos || []).forEach(a => {
+    const d = parseFecha(a.fecha); if (d) { const b = bucketDe(d); if (b) b.ingresos += Number(a.monto) || 0; }
+  }));
+  gastos.forEach(g => { const d = parseFecha(g.fecha); if (d) { const b = bucketDe(d); if (b) b.gastos += g.monto || 0; } });
+
+  const mesActual = meses12[11];
+  const mesPrevio = meses12[10];
+  const ingresosMes = mesActual.ingresos;
+  const gastosMes = mesActual.gastos;
+  const utilidadMes = ingresosMes - gastosMes;
+  const utilidadPrevia = mesPrevio.ingresos - mesPrevio.gastos;
+  const margenPct = ingresosMes > 0 ? Math.round((utilidadMes / ingresosMes) * 100) : 0;
+
+  const deltaPct = (actual, previo) => (previo > 0 ? Math.round(((actual - previo) / previo) * 100) : null);
+  const pctIngresos = deltaPct(ingresosMes, mesPrevio.ingresos);
+  const pctUtilidad = deltaPct(utilidadMes, utilidadPrevia);
+  const pctGastos = deltaPct(gastosMes, mesPrevio.gastos);
+
+  // ── Serie del histograma: por el rango elegido (7D/30D/6M/12M) ───────────
+  const rangoActual = RANGOS.find(r => r.key === rango) || RANGOS[3];
+  const bucketsRango = Array.from({ length: rangoActual.n }).map((_, i) => {
+    if (rangoActual.dia) {
+      const d = new Date(hoy); d.setDate(d.getDate() - (rangoActual.n - 1 - i));
+      const label = rangoActual.n === 7
+        ? DIAS_SEMANA_CORTOS[d.getDay()]
+        : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return { clave: dateStr(d), label, ingresos: 0, gastos: 0 };
+    }
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (rangoActual.n - 1 - i), 1);
+    return { clave: `${d.getFullYear()}-${d.getMonth()}`, label: `${MESES_CORTOS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`, ingresos: 0, gastos: 0 };
+  });
+  const porClaveRango = new Map(bucketsRango.map(b => [b.clave, b]));
+  const claveDeRango = (d) => (rangoActual.dia ? dateStr(d) : `${d.getFullYear()}-${d.getMonth()}`);
+
+  tratamientos.forEach(t => { const d = parseFecha(t.date); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.ingresos += t.paid || 0; } });
+  ortoRows.forEach(o => (o.pagos?.abonos || []).forEach(a => {
+    const d = parseFecha(a.fecha); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.ingresos += Number(a.monto) || 0; }
+  }));
+  gastos.forEach(g => { const d = parseFecha(g.fecha); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.gastos += g.monto || 0; } });
+
+  const valoresHistograma = bucketsRango.map(b => (
+    metrica === 'ingresos' ? b.ingresos : metrica === 'gastos' ? b.gastos : b.ingresos - b.gastos
+  ));
+  // Sólo 1 de cada N etiquetas para no amontonar el eje en 30D (30 barras) --
+  // '' en el array le dice a GraficoBarras "no rotules este punto".
+  const pasoEtiqueta = rango === '30d' ? 5 : 1;
+  const etiquetasHistograma = bucketsRango.map((b, i) => (i % pasoEtiqueta === 0 || i === bucketsRango.length - 1) ? b.label : '');
+  const pctMetricaActiva = metrica === 'ingresos' ? pctIngresos : metrica === 'gastos' ? pctGastos : pctUtilidad;
+
+  // ── Cobranza ─────────────────────────────────────────────────────────────
+  const totalFacturado = tratamientos.reduce((a, t) => a + (t.cost || 0), 0);
+  const totalCobrado = tratamientos.reduce((a, t) => a + (t.paid || 0), 0);
+  const pendienteHistorias = tratamientos.reduce((a, t) => a + Math.max(0, (t.cost || 0) - (t.paid || 0)), 0);
+  const pendienteOrto = ortoRows.reduce((a, o) => a + (o.resumen.deuda || 0), 0);
+  const saldoPendienteTotal = pendienteHistorias + pendienteOrto;
+  const tasaCobro = totalFacturado > 0 ? Math.round((totalCobrado / totalFacturado) * 100) : 0;
+
+  // Un solo hook animado para la cifra enorme del hero: "corre" hacia el
+  // nuevo valor cuando se cambia de tab de métrica o llega la auto-actualización.
+  const valorMetricaAnim = useNumeroAnimado(metrica === 'ingresos' ? ingresosMes : metrica === 'gastos' ? gastosMes : utilidadMes);
+
+  // ── Pacientes / citas ────────────────────────────────────────────────────
+  const estados = { activo: 0, nuevo: 0, inactivo: 0 };
+  pacientes.forEach(p => { estados[estadoPaciente(p)]++; });
+  const citasHoy = pacientes.filter(p => p.fecha === todayStr && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
+
+  // ── Próximas citas agrupadas por día (hoy + 4 días) ───────────────────────
+  const gruposProximos = Array.from({ length: 5 }).map((_, i) => {
+    const d = new Date(hoy); d.setDate(d.getDate() + i);
+    const clave = dateStr(d);
+    const etiqueta = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'short' }).replace(/^./, c => c.toUpperCase());
+    const citas = pacientes.filter(p => p.fecha === clave && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
+    return { etiqueta, citas };
+  }).filter(g => g.citas.length > 0);
+
+  // ── Deudores combinados ──────────────────────────────────────────────────
+  const deudaPorPaciente = new Map();
+  tratamientos.forEach(t => {
+    const saldo = (t.cost || 0) - (t.paid || 0);
+    if (saldo > 0) deudaPorPaciente.set(t.patient_id, (deudaPorPaciente.get(t.patient_id) || 0) + saldo);
+  });
+  ortoRows.forEach(o => {
+    if (o.resumen.deuda > 0) deudaPorPaciente.set(o.paciente_id, (deudaPorPaciente.get(o.paciente_id) || 0) + o.resumen.deuda);
+  });
+  const topDeudores = Array.from(deudaPorPaciente.entries())
+    .map(([id, saldo]) => ({ paciente: pacientes.find(p => p.id === id), saldo }))
+    .filter(d => d.paciente)
+    .sort((a, b) => b.saldo - a.saldo)
+    .slice(0, 4);
+  const maxDeuda = Math.max(...topDeudores.map(d => d.saldo), 1);
+
+  // ── Laboratorio ──────────────────────────────────────────────────────────
+  const labEnProceso = labOrders.filter(o => o.status === 'en_proceso');
+  const labListo = labOrders.filter(o => o.status === 'listo');
+  const labAtrasadas = labEnProceso.filter(o => o.eta && new Date(`${o.eta}T00:00:00`) < hoy);
+  const ortoAtrasados = ortoRows.filter(o => o.resumen.deuda > 0);
+
+  const alertas = [
+    labAtrasadas.length > 0 && {
+      color: RJ, icon: 'clock', view: 'laboratorio',
+      texto: `${labAtrasadas.length} orden${labAtrasadas.length !== 1 ? 'es' : ''} de laboratorio atrasada${labAtrasadas.length !== 1 ? 's' : ''}`,
+      etiqueta: 'Urgente',
+    },
+    ortoAtrasados.length > 0 && {
+      color: GL, icon: 'warning', view: 'ortodoncia',
+      texto: `${ortoAtrasados.length} paciente${ortoAtrasados.length !== 1 ? 's' : ''} de ortodoncia atrasado${ortoAtrasados.length !== 1 ? 's' : ''} en su cuota`,
+      etiqueta: 'Cobranza',
+    },
+    labListo.length > 0 && {
+      color: AZ, icon: 'checkCircle', view: 'laboratorio',
+      texto: `${labListo.length} trabajo${labListo.length !== 1 ? 's' : ''} de laboratorio listo${labListo.length !== 1 ? 's' : ''} para retirar`,
+      etiqueta: 'Laboratorio',
+    },
+    estados.inactivo > 0 && {
+      color: MU, icon: 'users', view: 'expediente',
+      texto: `${estados.inactivo} paciente${estados.inactivo !== 1 ? 's' : ''} sin cita hace 6+ meses`,
+      etiqueta: 'Seguimiento',
+    },
+  ].filter(Boolean);
+
+  // ── Pulso por especialidad ───────────────────────────────────────────────
+  const tab = CAT_TABS.find(t => t.key === activeTab) || CAT_TABS[0];
+  const tratamientosTab = tab.cats ? tratamientos.filter(t => tab.cats.includes(NOMBRE_A_CAT[t.name])) : tratamientos;
+  const conteoEstado = { pendiente: 0, en_curso: 0, completado: 0 };
+  tratamientosTab.forEach(t => { if (conteoEstado[t.status] !== undefined) conteoEstado[t.status]++; });
+  const maxEstado = Math.max(...Object.values(conteoEstado), 1);
+
+  const porNombre = new Map();
+  tratamientosTab.forEach(t => {
+    const prev = porNombre.get(t.name) || { n: 0, monto: 0 };
+    porNombre.set(t.name, { n: prev.n + 1, monto: prev.monto + (t.cost || 0) });
+  });
+  const topTratamientos = Array.from(porNombre.entries())
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a, b) => b.monto - a.monto).slice(0, 4);
+  const maxTrat = Math.max(...topTratamientos.map(t => t.monto), 1);
+
+  // ── Semana / agenda ──────────────────────────────────────────────────────
+  const weekDays = getWeekDays(weekAnchor);
+  const idxHoy = weekDays.findIndex(d => dateStr(d) === todayStr);
+  const dayIdx = selectedIdx !== null ? selectedIdx : (idxHoy >= 0 ? idxHoy : 0);
+  const selectedDateStr = dateStr(weekDays[dayIdx]);
+  const citasDia = pacientes
+    .filter(p => p.fecha === selectedDateStr && p.hora_cita)
+    .sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
+
+  // ── Gastos del mes (conteo para el KPI) ───────────────────────────────────
+  const gastosDelMes = gastos.filter(g => { const d = parseFecha(g.fecha); return d && d.getFullYear() === mesActual.anio && d.getMonth() === mesActual.mes; });
+
+  // ── Pacientes recientes, con paginación ───────────────────────────────────
+  // Orden: created_at desc si existe, si no por fecha de cita -- así una
+  // clínica sin historial de altas igual ve algo razonable.
+  const pacientesRecientes = [...pacientes].sort((a, b) => {
+    const ca = a.created_at || a.fecha || '';
+    const cb = b.created_at || b.fecha || '';
+    return cb.localeCompare(ca);
+  });
+  const totalPaginasPacientes = Math.max(1, Math.ceil(pacientesRecientes.length / PACIENTES_POR_PAGINA));
+  const paginaActual = Math.min(paginaPacientes, totalPaginasPacientes);
+  const pacientesPagina = pacientesRecientes.slice((paginaActual - 1) * PACIENTES_POR_PAGINA, paginaActual * PACIENTES_POR_PAGINA);
+
+  // ── Estilos base ─────────────────────────────────────────────────────────
+  // GLASS_* de utils/constants.js, no valores sueltos: son las mismas 4
+  // constantes que ya usan las otras 12 vistas -- si vuelven a cambiar (ya
+  // pasó dos veces esta sesión), Dashboard las sigue automáticamente en vez
+  // de quedar con su propia copia desincronizada.
+  const card = {
+    background: GLASS_BG, border: GLASS_BORDER,
+    borderRadius: 'var(--radius-panel)', padding: 24,
+    boxShadow: GLASS_SHADOW,
+    display: 'flex', flexDirection: 'column',
   };
+  const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' };
+  const rotulo = { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
+  const subCard = { background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)' };
+  const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
+
+  const nombreClinica = (clinica?.nombre || '').replace(/^Consultorio\s+/i, '').trim();
+
+  const atajos = [
+    { icon: 'calendar', titulo: 'Nueva cita', sub: 'Agendar paciente', view: 'agenda' },
+    { icon: 'card', titulo: 'Registrar pago', sub: 'Cobrar saldo', view: 'caja' },
+    { icon: 'userPlus', titulo: 'Nuevo paciente', sub: 'Abrir historial', view: 'expediente' },
+    { icon: 'chat', titulo: 'Preguntar a la IA', sub: 'Sobre tus datos', view: 'whatsapp' },
+  ];
+
+  if (loading) {
+    return <div style={{ padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>Cargando dashboard…</div>;
+  }
+  if (errorMsg) {
+    return <div style={{ padding: 40, textAlign: 'center', color: RJ, fontSize: 13.5 }}>Error al cargar el dashboard: {errorMsg}</div>;
+  }
 
   return (
-    <div style={layoutStyle}>
-      {/* NAVEGACIÓN SUPERIOR */}
-      <nav style={topNavStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em' }}>
-          <div style={{ width: 36, height: 36, background: TOKENS.colors.primary, borderRadius: TOKENS.radius.md, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-10deg)' }}>
-            <Icon name="plus" size={20} />
-          </div>
-          Dental
-        </div>
+    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-        <div style={{ display: 'flex', gap: 8, background: TOKENS.colors.background, padding: 8, borderRadius: TOKENS.radius.pill }}>
-          <button style={{ background: TOKENS.colors.primary, color: '#fff', border: 'none', padding: '10px 24px', borderRadius: TOKENS.radius.pill, fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', boxShadow: `0 4px 12px ${TOKENS.colors.primary}40` }}>
-            <Icon name="dashboard" size={18} /> Dashboard
-          </button>
-          {[
-            { icon: 'calendar', view: 'agenda' },
-            { icon: 'users', view: 'expediente' },
-            { icon: 'activity', view: 'laboratorio' },
-            { icon: 'chat', view: 'whatsapp' },
-          ].map((item, i) => (
-            <button key={i} onClick={() => setView && setView(item.view)} style={{ background: 'transparent', color: TOKENS.colors.textMuted, border: 'none', padding: '10px 16px', borderRadius: TOKENS.radius.pill, cursor: 'pointer', transition: TOKENS.transitions.fast, ':hover': { background: TOKENS.colors.borderLight, color: TOKENS.colors.textMain } }}>
-              <Icon name={item.icon} size={20} />
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Icon name="search" size={22} color={TOKENS.colors.textMuted} style={{ cursor: 'pointer' }} />
-          <Icon name="settings" size={22} color={TOKENS.colors.textMuted} style={{ cursor: 'pointer' }} />
-          <div style={{ position: 'relative', cursor: 'pointer' }}>
-            <Icon name="bell" size={22} color={TOKENS.colors.textMuted} />
-            <div style={{ position: 'absolute', top: 0, right: 2, width: 8, height: 8, background: TOKENS.colors.danger, borderRadius: '50%', border: `2px solid ${TOKENS.colors.surface}` }} />
-          </div>
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: `url('https://api.dicebear.com/7.x/notionists/svg?seed=${clinica?.nombre || 'Admin'}')`, backgroundColor: TOKENS.colors.secondaryLight, backgroundSize: 'cover', border: `2px solid ${TOKENS.colors.borderLight}`, cursor: 'pointer' }} />
-        </div>
-      </nav>
-
-      {/* REJILLA PRINCIPAL */}
-      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '2.5fr 1fr', gap: 32, alignItems: 'start' }}>
-        
-        {/* COLUMNA IZQUIERDA (DATA INTENSIVA) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          
+      {/* ─── HERO ─── saludo, tabs de métrica, cifra grande + variación,
+          selector de rango e histograma anotado. La línea/barras van en el
+          acento de la clínica (var(--accent)), no en un violeta fijo: así
+          sigue el white-label en vez de clonar el color de la referencia. */}
+      <div style={{ ...col(8), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
           <div>
-            <h1 style={{ fontSize: 32, fontWeight: 900, color: TOKENS.colors.textMain, margin: '0 0 8px 0', letterSpacing: '-0.03em' }}>
-              Welcome Back, {(clinica?.nombre || 'Doctor').split(' ')[0]}
+            <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+              Hola{nombreClinica ? `, ${nombreClinica}` : ''}
             </h1>
-            <p style={{ fontSize: 15, color: TOKENS.colors.textMuted, margin: 0, fontWeight: 500 }}>
-              Here are today's enterprise analytics updates!
+            <p style={{ fontSize: 13, color: MU, margin: '4px 0 0' }}>
+              {citasHoy.length > 0
+                ? <>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''} hoy, la próxima a las {citasHoy[0].hora_cita}.</>
+                : <>Hoy no tienes citas agendadas.</>}
             </p>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: VERDE, animation: 'pulso-vivo 2.2s ease-out infinite' }} />
+            </span>
+            <span style={{ fontSize: 11.5, color: MU }}>
+              {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
+            </span>
+          </div>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
-            {state.isLoading ? (
-              Array.from({length:4}).map((_, i) => <Skeleton key={i} height={110} borderRadius={TOKENS.radius.xl} />)
-            ) : (
-              <>
-                <StatCard title="Total Earnings" value={Formatters.currency.format(state.metrics.revenue)} icon="card" bg={TOKENS.colors.primaryLight} col={TOKENS.colors.primary} />
-                <StatCard title="Total Patients" value={state.metrics.totalPatients} icon="users" bg={TOKENS.colors.secondaryLight} col={TOKENS.colors.secondary} />
-                <StatCard title="New Patients" value={state.metrics.newPatients} icon="userPlus" bg={TOKENS.colors.successLight} col={TOKENS.colors.success} />
-                <StatCard title="Treatment Done" value={state.metrics.completedTreatments} icon="checkCircle" bg={TOKENS.colors.darkLight} col={TOKENS.colors.dark} />
-              </>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+          <div>
+            <div style={{ display: 'flex', gap: 18, marginBottom: 10 }}>
+              {METRICAS.map(m => (
+                <button key={m.key} onClick={() => setMetrica(m.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
+                    padding: 0, cursor: 'pointer', font: 'inherit',
+                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? 'var(--text-primary)' : MU,
+                  }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    border: `1.5px solid ${metrica === m.key ? P : 'var(--hairline-strong)'}`,
+                    background: metrica === m.key ? P : 'transparent',
+                  }} />
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                {soles(valorMetricaAnim)}
+              </span>
+              {pctMetricaActiva !== null && (
+                <span style={{
+                  fontSize: 12, fontWeight: 700, color: pctMetricaActiva >= 0 ? VERDE : RJ,
+                  background: `color-mix(in srgb, ${pctMetricaActiva >= 0 ? 'var(--green)' : RJ} 12%, transparent)`,
+                  padding: '3px 8px', borderRadius: 'var(--radius-pill)',
+                }}>
+                  {pctMetricaActiva >= 0 ? '↑' : '↓'} {Math.abs(pctMetricaActiva)}%
+                </span>
+              )}
+            </div>
+          </div>
+          <SegmentedControl
+            options={RANGOS.map(r => ({ key: r.key, label: r.label }))}
+            value={rango}
+            onChange={setRango}
+            style={{ width: 180 }}
+          />
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          <GraficoBarras
+            valores={valoresHistograma}
+            etiquetas={etiquetasHistograma}
+            formato={soles}
+            alto={200}
+            colorBarra="var(--accent-soft)"
+            colorLinea="var(--accent)"
+            colorAcento={pctMetricaActiva === null || pctMetricaActiva >= 0 ? 'var(--green)' : RJ}
+            anotacion={{
+              idx: valoresHistograma.length - 1,
+              delta: pctMetricaActiva,
+              texto: `${METRICAS.find(m => m.key === metrica)?.label} vs. período anterior`,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ─── INSIGHT ─── anillo de cobranza + el dato más notable de ahora. */}
+      <div style={{ ...col(4), ...card }}>
+        <div style={rotulo}>Cobranza</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '12px 0' }}>
+          <Anillo pct={tasaCobro} color={P} tamano={78} grosor={8}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>{tasaCobro}%</span>
+          </Anillo>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Cobrado <b style={{ color: 'var(--text-primary)' }}>{soles(totalCobrado)}</b></div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Pendiente <b style={{ color: saldoPendienteTotal > 0 ? RJ : 'var(--text-primary)' }}>{soles(saldoPendienteTotal)}</b></div>
+          </div>
+        </div>
+        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+          {saldoPendienteTotal > 0
+            ? <>Hay <b style={{ color: RJ }}>{soles(saldoPendienteTotal)}</b> por cobrar entre {deudaPorPaciente.size} paciente{deudaPorPaciente.size !== 1 ? 's' : ''}.</>
+            : <>La cobranza está <b style={{ color: VERDE }}>al día</b>.</>}
+        </div>
+      </div>
+
+      {/* ─── ATAJOS ─── */}
+      <div style={{ ...col(12), ...card, flexDirection: isTablet ? 'column' : 'row', padding: 6, gap: 0 }}>
+        {atajos.map((a, i) => (
+          <button key={a.titulo} onClick={() => setView && setView(a.view)}
+            style={{
+              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12,
+              padding: '13px 14px', cursor: 'pointer', borderRadius: 'var(--radius-md)', textAlign: 'left',
+              background: 'transparent', border: 'none', font: 'inherit', minHeight: 44,
+              borderLeft: (!isTablet && i > 0) ? `1px solid var(--hairline)` : 'none',
+              borderTop: (isTablet && i > 0) ? `1px solid var(--hairline)` : 'none',
+              transition: 'background-color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--fill-quaternary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
+              <Icon name={a.icon} size={15} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--label-primary)', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
+              <div style={{ fontSize: 12, color: MU, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.sub}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* ─── INDICADORES ─── */}
+      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)' }}>
+        <Stat
+          label="Ingresos del mes" value={soles(ingresosMes)} icon={<Icon name="trendingUp" size={15} />}
+          col={VERDE} onClick={() => setView && setView('caja')}
+          sub={pctIngresos === null ? null : `${pctIngresos >= 0 ? '↑' : '↓'} ${Math.abs(pctIngresos)}% vs. mes anterior`}
+          subCol={pctIngresos === null ? MU : (pctIngresos >= 0 ? VERDE : RJ)}
+        />
+        <Stat
+          label="Gastos del mes" value={soles(gastosMes)} icon={<Icon name="card" size={15} />}
+          col={GL} onClick={() => setView && setView('caja')}
+          sub={`${gastosDelMes.length} registro${gastosDelMes.length !== 1 ? 's' : ''}`} subCol={MU}
+        />
+        <Stat
+          label="Utilidad neta" value={soles(utilidadMes)} icon={<Icon name="checkCircle" size={15} />}
+          col={utilidadMes >= 0 ? VERDE : RJ} onClick={() => setView && setView('caja')}
+          sub={`${margenPct}% de margen`} subCol={utilidadMes >= 0 ? VERDE : RJ}
+        />
+        <Stat
+          label="Pacientes activos" value={String(pacientes.length)} icon={<Icon name="users" size={15} />}
+          col={P} onClick={() => setView && setView('expediente')}
+          sub={`${estados.nuevo} nuevo${estados.nuevo !== 1 ? 's' : ''} este mes`} subCol={MU}
+        />
+      </div>
+
+      {/* ─── PRÓXIMAS CITAS ─── agrupadas por día, no sólo el día elegido en
+          el mini-calendario de abajo -- lo que de verdad hace falta para
+          "qué viene" de un vistazo. */}
+      <div style={{ ...col(4), ...card, minHeight: 178 }}>
+        <h2 style={{ ...h2, marginBottom: 14 }}>Próximas citas</h2>
+        {gruposProximos.length === 0 ? (
+          <div style={{ fontSize: 13.5, color: MU }}>Sin citas en los próximos días.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 340 }}>
+            {gruposProximos.map(g => (
+              <div key={g.etiqueta}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'capitalize', marginBottom: 7 }}>{g.etiqueta}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {g.citas.map(c => (
+                    <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '9px 11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9 }}>
+                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                        <div style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── AGENDA (mini-calendario semanal) ─── */}
+      <div style={{ ...col(4), ...card, minHeight: 178 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h2 style={h2}>{weekDays[0].toLocaleString('es-PE', { month: 'long' }).replace(/^./, c => c.toUpperCase())} {weekDays[0].getFullYear()}</h2>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
+              <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
+                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: 'var(--panel-sunken)' }}>
+                {lbl}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+          {weekDays.map((d, i) => {
+            const isSel = i === dayIdx;
+            const isToday = dateStr(d) === todayStr;
+            const nCitas = pacientes.filter(p => p.fecha === dateStr(d) && p.hora_cita).length;
+            return (
+              <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
+                <span style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? 'var(--accent-contrast)' : (isToday ? P : 'var(--text-primary)'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color var(--dur-fast) var(--ease)' }}>
+                  {d.getDate()}
+                </div>
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: nCitas > 0 ? P : 'transparent' }} />
+              </div>
+            );
+          })}
+        </div>
+
+        {citasDia.length === 0 ? (
+          <button
+            className="zona-vacia"
+            onClick={() => setView && setView('agenda')}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 7, width: '100%', minHeight: 96, padding: 16,
+              background: 'transparent', color: MU,
+              border: '1.5px dashed var(--hairline-strong)',
+              borderRadius: 'var(--radius-card)',
+              fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
+            }}
+          >
+            <Icon name="plus" size={17} />
+            Agendar una cita
+          </button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {citasDia.slice(0, 3).map(c => (
+              <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
+                <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                    <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {citasDia.length > 3 && (
+              <div onClick={() => setView && setView('agenda')} style={{ fontSize: 12, color: MU, textAlign: 'center', cursor: 'pointer', fontWeight: 600, paddingTop: 2 }}>
+                +{citasDia.length - 3} más →
+              </div>
             )}
           </div>
-
-          <div style={{ background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xxl, padding: 32, boxShadow: TOKENS.shadows.md }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: TOKENS.colors.textMain, margin: 0 }}>Appointments Status</h2>
-              <div style={{ border: `1px solid ${TOKENS.colors.border}`, padding: '8px 16px', borderRadius: TOKENS.radius.sm, fontSize: 13, color: TOKENS.colors.textMuted, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                Monthly <Icon name="chevronDown" size={14} />
-              </div>
-            </div>
-            {state.isLoading ? <Skeleton height={250} style={{marginTop: 20}} /> : <CustomAreaChart data={state.chartData} color={TOKENS.colors.primary} />}
-          </div>
-
-          {state.isLoading ? <Skeleton height={450} borderRadius={TOKENS.radius.xxl} /> : (
-            <PatientTable 
-              data={state.patients} 
-              searchQuery={state.searchQuery}
-              onSearch={(q) => dispatch({ type: 'SET_SEARCH', payload: q })}
-              currentPage={state.currentPage}
-              setPage={(p) => dispatch({ type: 'SET_PAGE', payload: p })}
-            />
-          )}
-        </div>
-
-        {/* COLUMNA DERECHA (BARRA DE AGENDA LATERAL) */}
-        <div style={{ height: '100%', minHeight: 800 }}>
-          {state.isLoading ? <Skeleton height="100%" borderRadius={TOKENS.radius.xxl} /> : (
-            <AgendaSidebar 
-              date={state.selectedDate} 
-              setDate={(d) => dispatch({ type: 'SET_DATE', payload: d })}
-              appointments={state.patients.filter(p => p.hora_cita)}
-            />
-          )}
-        </div>
-
+        )}
       </div>
-    </div>
-  );
-};
 
-// ============================================================================
-// 8. EXPORT WITH BOUNDARY
-// ============================================================================
-export default function Dashboard(props) {
-  return (
-    <ErrorBoundary>
-      <DashboardMonolith {...props} />
-    </ErrorBoundary>
+      {/* ─── NECESITA TU ATENCIÓN ─── */}
+      <div style={{ ...col(4), ...card, minHeight: 178 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h2 style={h2}>Necesita tu atención</h2>
+          {alertas.length > 0 && (
+            <span style={{ background: `color-mix(in srgb, ${RJ} 12%, transparent)`, color: RJ, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 100 }}>{alertas.length}</span>
+          )}
+        </div>
+        {alertas.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, color: VERDE, fontSize: 13.5, fontWeight: 600, padding: '8px 0' }}>
+            <Icon name="checkCircle" size={16} /> Todo al día. Sin pendientes.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {alertas.map((a, i) => (
+              <div key={i} onClick={() => setView && setView(a.view)}
+                style={{ ...subCard, padding: '11px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: `color-mix(in srgb, ${a.color} 12%, transparent)`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon name={a.icon} size={13} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', lineHeight: 1.35 }}>{a.texto}</div>
+                  <span style={{ display: 'inline-block', marginTop: 5, fontSize: 11, fontWeight: 600, color: a.color, background: `color-mix(in srgb, ${a.color} 8%, transparent)`, padding: '2px 7px', borderRadius: 100, letterSpacing: '0.3px' }}>
+                    {a.etiqueta}
+                  </span>
+                </div>
+                <span style={{ fontSize: 15, color: MU, flexShrink: 0 }}>→</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── PACIENTES RECIENTES ─── tabla con paginación, dato real (orden
+          por alta/última cita), como la referencia -- sin inventar columnas
+          que la app no registra (no hay "número de silla" en dental-os).
+          Ancho completo: col(8) dejaba un hueco de 4 columnas sin nada al
+          lado, y una tabla de 5 columnas respira mejor a lo ancho. */}
+      <div style={{ ...col(12), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h2 style={h2}>Pacientes recientes</h2>
+          <span onClick={() => setView && setView('expediente')} style={{ fontSize: 12, color: MU, cursor: 'pointer', fontWeight: 600 }}>ver todo →</span>
+        </div>
+        {pacientesRecientes.length === 0 ? (
+          <div style={{ fontSize: 13.5, color: MU }}>Sin pacientes registrados.</div>
+        ) : (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr>
+                  {['Paciente', 'Tratamiento', 'Fecha', 'Hora', 'Estado'].map(x => (
+                    <th key={x} style={{ textAlign: 'left', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {pacientesPagina.map(p => {
+                    const badge = ESTADO_BADGE[estadoPaciente(p)];
+                    return (
+                      <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
+                        <td style={{ padding: '9px 8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--panel-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11.5, flexShrink: 0 }}>{ini(p.name || '?')}</div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{p.name}</div>
+                              <div style={{ fontSize: 11, color: MU }}>{p.doc || '—'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '9px 8px', color: 'var(--label-primary)' }}>{p.treatment || p.reason || 'Consulta'}</td>
+                        <td style={{ padding: '9px 8px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.fecha || '—'}</td>
+                        <td style={{ padding: '9px 8px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.hora_cita || '—'}</td>
+                        <td style={{ padding: '9px 8px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `color-mix(in srgb, ${badge.color} 12%, transparent)`, padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
+                            {badge.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {totalPaginasPacientes > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 14 }}>
+                <button onClick={() => setPaginaPacientes(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
+                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === 1 ? 'var(--text-disabled)' : MU, cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: 15 }}>‹</button>
+                {Array.from({ length: totalPaginasPacientes }, (_, i) => i + 1).map(n => (
+                  <button key={n} onClick={() => setPaginaPacientes(n)}
+                    style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: n === paginaActual ? P : 'transparent', color: n === paginaActual ? 'var(--accent-contrast)' : MU }}>
+                    {n}
+                  </button>
+                ))}
+                <button onClick={() => setPaginaPacientes(p => Math.min(totalPaginasPacientes, p + 1))} disabled={paginaActual === totalPaginasPacientes}
+                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === totalPaginasPacientes ? 'var(--text-disabled)' : MU, cursor: paginaActual === totalPaginasPacientes ? 'default' : 'pointer', fontSize: 15 }}>›</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ─── MAYORES DEUDORES ─── */}
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h2 style={h2}>Mayores deudores</h2>
+          {topDeudores.length > 0 && (
+            <span onClick={() => setView && setView('caja')} style={{ fontSize: 12, color: MU, cursor: 'pointer', fontWeight: 600 }}>ver todo →</span>
+          )}
+        </div>
+        {topDeudores.length === 0 ? (
+          <div style={{ fontSize: 13.5, color: MU }}>Nadie tiene saldo pendiente. Al día.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+            {topDeudores.map(d => (
+              <div key={d.paciente.id} onClick={() => setView && setView('caja')} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--panel-sunken)', border: 'none', color: 'var(--label-primary)', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: RJ, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</div>
+                </div>
+                <div style={{ height: 5, background: BD, borderRadius: 3, overflow: 'hidden', marginLeft: 35 }}>
+                  <div style={{ height: '100%', width: `${(d.saldo / maxDeuda) * 100}%`, background: RJ, borderRadius: 3 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── LABORATORIO ─── */}
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h2 style={h2}>Laboratorio</h2>
+          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: 'var(--label-tertiary)' }}>
+            <Icon name="activity" size={14} />
+          </div>
+        </div>
+        {labOrders.length === 0 ? (
+          <div style={{ fontSize: 13.5, color: MU }}>Sin órdenes registradas.</div>
+        ) : (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { l: 'En proceso', v: labEnProceso.length, c: 'var(--info)' },
+              { l: 'Atrasadas', v: labAtrasadas.length, c: labAtrasadas.length > 0 ? RJ : MU },
+              { l: 'Listas', v: labListo.length, c: VERDE },
+            ].map(s => (
+              <div key={s.l} style={{ ...subCard, flex: 1, padding: '12px 6px', textAlign: 'center' }}>
+                <div style={{ fontSize: 19, fontWeight: 600, color: s.c }}>{s.v}</div>
+                <div style={{ fontSize: 11, color: MU, marginTop: 3 }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── PULSO POR ESPECIALIDAD ─── */}
+      <div style={{ ...col(12), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={h2}>Pulso por especialidad</h2>
+          <SegmentedControl
+            options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
+            value={activeTab}
+            onChange={setActiveTab}
+            style={{ maxWidth: isTablet ? '100%' : 420 }}
+          />
+        </div>
+
+        {tratamientosTab.length === 0 ? (
+          <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '24px 0' }}>
+            Sin tratamientos de {activeTab.toLowerCase()} registrados aún.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: 22 }}>
+            <div>
+              <div style={{ ...rotulo, marginBottom: 11 }}>Más facturados</div>
+              {topTratamientos.map(t => (
+                <div key={t.name} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, color: 'var(--label-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: 'var(--label-primary)' }}>{soles(t.monto)}</b></span>
+                  </div>
+                  <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(t.monto / maxTrat) * 100}%`, background: colorPorNombre(t.name), borderRadius: 3 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ ...rotulo, marginBottom: 11 }}>Avance de tratamientos</div>
+              {ESTADO_TRAT.map(e => (
+                <div key={e.key} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, color: 'var(--label-primary)', fontWeight: 500 }}>{e.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)' }}>{conteoEstado[e.key]}</span>
+                  </div>
+                  <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(conteoEstado[e.key] / maxEstado) * 100}%`, background: e.color, borderRadius: 3 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+    </div>
   );
 }
