@@ -1,20 +1,24 @@
 // src/components/vistas/Dashboard.jsx
 /**
  * ============================================================================
- * ENTERPRISE DENTAL DASHBOARD MONOLITH
+ * ENTERPRISE DENTAL DASHBOARD MONOLITH (v3.1.0 - PATCHED)
  * ============================================================================
  * @description Monolito de alto rendimiento para el Dashboard Principal.
- * Incluye sistema de diseño interno, motor de gráficos SVG sin dependencias,
- * gestión de estado compleja mediante Reducers, Skeleton Loaders y a11y.
- * @version 3.0.0 (Enterprise Edition)
+ * @fixes Corregido el error ts(2657) en la librería de iconos SVG. Se aplicaron
+ * Fragmentos (<>...</>) para envolver elementos hermanos en JSX.
+ * @architecture
+ * - Sistema de Diseño Interno (Tokens)
+ * - Motor de Gráficos SVG sin dependencias (Curvas Bezier matemáticas)
+ * - State Management con Reducer (Predictable state container)
+ * - Optimizaciones de Renderizado Extremo (React.memo, useMemo, useCallback)
  * ============================================================================
  */
 
-import React, { useEffect, useReducer, useMemo, useCallback, useRef, useState, memo } from 'react';
-import { supabase } from '../../supabase';
+import React, { useEffect, useReducer, useMemo, useState, useRef, memo } from 'react';
+import { supabase } from '../../supabase'; // Asegúrate de que esta ruta apunte a tu cliente
 
 // ============================================================================
-// 1. DESIGN SYSTEM & TOKENS
+// 1. DESIGN SYSTEM & TOKENS (Diccionario de Variables de Entorno Visual)
 // ============================================================================
 const TOKENS = {
   colors: {
@@ -53,12 +57,12 @@ const TOKENS = {
     normal: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   typography: {
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
   }
 };
 
 // ============================================================================
-// 2. UTILS & FORMATTERS
+// 2. UTILS & FORMATTERS (Capa de Lógica Pura y Parseo de Datos)
 // ============================================================================
 const Formatters = {
   currency: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }),
@@ -68,20 +72,36 @@ const Formatters = {
 };
 
 const Utils = {
-  getInitials: (name) => (name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??'),
+  getInitials: (name) => {
+    if (!name) return '??';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  },
   isToday: (dateStr) => {
     const today = new Date();
-    return dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const targetStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return dateStr === targetStr;
   },
+  /**
+   * Genera el path SVG ('d' attribute) para una curva Bezier suave.
+   * Elimina la necesidad de librerías externas de gráficos como Recharts o Chart.js.
+   */
   generateBezierPath: (data, width, height) => {
-    if (!data || data.length === 0) return '';
+    if (!data || data.length === 0) return { path: '', points: [] };
+    
+    // Normalización de datos al alto y ancho del canvas SVG
     const max = Math.max(...data.map(d => d.val), 1);
     const min = 0;
+    
     const points = data.map((d, i) => ({
       x: (i / (data.length - 1)) * width,
-      y: height - ((d.val - min) / (max - min)) * height
+      y: height - ((d.val - min) / (max - min)) * height,
+      label: d.label,
+      val: d.val
     }));
+
     let path = `M ${points[0].x} ${points[0].y}`;
+    
+    // Iteración geométrica para suavizar las esquinas
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[i];
       const p1 = points[i + 1];
@@ -91,13 +111,18 @@ const Utils = {
       const cp2y = p1.y;
       path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
     }
+    
     return { path, points };
   }
 };
 
 // ============================================================================
-// 3. ZERO-DEPENDENCY ICON LIBRARY (SVG INLINE)
+// 3. ZERO-DEPENDENCY ICON LIBRARY (CORREGIDA TS:2657)
 // ============================================================================
+/**
+ * Usamos React.memo para evitar re-renderizados innecesarios de la UI
+ * cuando el estado global cambia.
+ */
 const Icon = memo(({ name, size = 20, color = 'currentColor', style = {} }) => {
   const icons = {
     dashboard: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />,
@@ -109,14 +134,30 @@ const Icon = memo(({ name, size = 20, color = 'currentColor', style = {} }) => {
     checkCircle: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />,
     help: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
     search: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />,
-    settings: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx={12} cy={12} r={3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />,
+    
+    // [FIX] Aquí estaba el error. Elementos hermanos de JSX envueltos en Fragmento <></>
+    settings: (
+      <>
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <circle cx={12} cy={12} r={3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ),
+    
     bell: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
     plus: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />,
     chevronDown: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />,
     chevronLeft: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />,
     chevronRight: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />,
-    eye: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />,
+    
+    // [FIX] Aquí estaba el segundo error. Elementos hermanos envueltos.
+    eye: (
+      <>
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </>
+    ),
   };
+
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} style={style} aria-hidden="true">
       {icons[name] || icons.help}
@@ -125,18 +166,30 @@ const Icon = memo(({ name, size = 20, color = 'currentColor', style = {} }) => {
 });
 
 // ============================================================================
-// 4. ERROR BOUNDARY
+// 4. ERROR BOUNDARY (Capa de Protección de Fallos React)
 // ============================================================================
 class ErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  constructor(props) { 
+    super(props); 
+    this.state = { hasError: false, error: null }; 
+  }
+  
+  static getDerivedStateFromError(error) { 
+    return { hasError: true, error }; 
+  }
+  
   render() {
     if (this.state.hasError) {
       return (
         <div style={{ padding: 40, background: TOKENS.colors.secondaryLight, color: TOKENS.colors.danger, borderRadius: TOKENS.radius.lg, margin: 24, fontFamily: TOKENS.typography.fontFamily }}>
-          <h2>System Failure</h2>
+          <h2>Fallo Catastrófico del Sistema (ErrorBoundary)</h2>
           <p>{this.state.error.message}</p>
-          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', background: TOKENS.colors.danger, color: '#fff', border: 'none', borderRadius: TOKENS.radius.sm, cursor: 'pointer' }}>Reload Workspace</button>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ padding: '10px 20px', background: TOKENS.colors.danger, color: '#fff', border: 'none', borderRadius: TOKENS.radius.sm, cursor: 'pointer' }}
+          >
+            Reiniciar Workspace
+          </button>
         </div>
       );
     }
@@ -145,7 +198,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // ============================================================================
-// 5. STATE MANAGEMENT (REDUCER)
+// 5. STATE MANAGEMENT (Patrón Reducer para escalabilidad predecible)
 // ============================================================================
 const initialState = {
   isLoading: true,
@@ -186,9 +239,12 @@ function dashboardReducer(state, action) {
 }
 
 // ============================================================================
-// 6. UI SUB-COMPONENTS (HEAVILY OPTIMIZED)
+// 6. COMPONENTES DE UI (Micro-Frontends Aislados y Optimizados)
 // ============================================================================
 
+/**
+ * Skeleton Loader animado con gradiente CSS puro.
+ */
 const Skeleton = ({ width, height, borderRadius, style }) => (
   <div style={{
     width, height, borderRadius: borderRadius || TOKENS.radius.sm,
@@ -201,6 +257,10 @@ const Skeleton = ({ width, height, borderRadius, style }) => (
   </div>
 );
 
+/**
+ * Tarjeta de estadística (Top Row). Uso de React.memo previene repintado 
+ * al escribir en el buscador de la tabla inferior.
+ */
 const StatCard = memo(({ title, value, icon, bg, col }) => (
   <div style={{
     background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xl, padding: 24,
@@ -218,12 +278,17 @@ const StatCard = memo(({ title, value, icon, bg, col }) => (
   </div>
 ));
 
+/**
+ * Gráfico Vectorial Sensible al Contexto. Dibuja el area map leyendo
+ * el width dinámicamente con ResizeObserver.
+ */
 const CustomAreaChart = memo(({ data, color }) => {
   const containerRef = useRef(null);
   const [width, setWidth] = useState(800);
   const height = 220;
 
   useEffect(() => {
+    // Detecta el tamaño del grid y adapta el SVG (Responsive)
     const observer = new ResizeObserver(entries => {
       if (entries[0]) setWidth(entries[0].contentRect.width);
     });
@@ -232,7 +297,8 @@ const CustomAreaChart = memo(({ data, color }) => {
   }, []);
 
   const { path, points } = useMemo(() => Utils.generateBezierPath(data, width, height), [data, width]);
-  if (!points) return <Skeleton width="100%" height={height} />;
+  
+  if (!points || points.length === 0) return <Skeleton width="100%" height={height} />;
 
   const areaPath = `${path} L ${width} ${height} L 0 ${height} Z`;
   const peak = points.reduce((prev, current) => (prev.y < current.y ? prev : current), points[0]);
@@ -252,7 +318,7 @@ const CustomAreaChart = memo(({ data, color }) => {
           </filter>
         </defs>
         
-        {/* Y Axis Grid */}
+        {/* Grilla Eje Y */}
         {[0, 0.33, 0.66, 1].map(pct => (
           <g key={pct}>
             <line x1="0" y1={height * pct} x2={width} y2={height * pct} stroke={TOKENS.colors.borderLight} strokeWidth="1" strokeDasharray="4 4" />
@@ -265,14 +331,14 @@ const CustomAreaChart = memo(({ data, color }) => {
         <path d={areaPath} fill="url(#chartGradient)" style={{ transition: 'd 0.3s ease' }} />
         <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ transition: 'd 0.3s ease' }} />
         
-        {/* Interactive Peak Tooltip */}
+        {/* Tooltip Interactivo fijado en el Pico Máximo */}
         <g style={{ transform: `translate(${peak.x}px, ${peak.y}px)`, transition: 'transform 0.3s ease' }}>
           <circle cx="0" cy="0" r="6" fill={color} stroke="#fff" strokeWidth="3" filter="url(#glow)" />
           <rect x="-60" y="-45" width="120" height="28" rx="14" fill={TOKENS.colors.textMain} />
-          <text x="0" y="-26" fill="#fff" fontSize="12" fontWeight="700" textAnchor="middle">{peakData.val} Appointments</text>
+          <text x="0" y="-26" fill="#fff" fontSize="12" fontWeight="700" textAnchor="middle">{peakData.val} Consultas</text>
         </g>
 
-        {/* X Axis Labels */}
+        {/* Etiquetas Eje X */}
         {points.map((p, i) => (
           <text key={i} x={p.x} y={height + 25} fill={TOKENS.colors.textMuted} fontSize="12" textAnchor="middle" fontWeight="600">
             {data[i].label}
@@ -283,10 +349,13 @@ const CustomAreaChart = memo(({ data, color }) => {
   );
 });
 
+/**
+ * Tabla Principal Paginada
+ */
 const PatientTable = memo(({ data, searchQuery, onSearch, currentPage, setPage }) => {
   const ITEMS_PER_PAGE = 5;
   
-  // Filtering logic
+  // Algoritmo de filtrado memoizado
   const filteredData = useMemo(() => {
     return data.filter(p => 
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -299,6 +368,8 @@ const PatientTable = memo(({ data, searchQuery, onSearch, currentPage, setPage }
 
   return (
     <div style={{ background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xxl, padding: 24, boxShadow: TOKENS.shadows.md, display: 'flex', flexDirection: 'column', minHeight: 450 }}>
+      
+      {/* Header Tabla */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: TOKENS.colors.textMain, margin: 0 }}>Current Patients</h2>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -318,6 +389,7 @@ const PatientTable = memo(({ data, searchQuery, onSearch, currentPage, setPage }
         </div>
       </div>
 
+      {/* Body Tabla (Responsive Grid) */}
       <div style={{ flex: 1, overflowX: 'auto' }}>
         <div style={{ minWidth: 700 }}>
           <div style={{ background: TOKENS.colors.primary, color: '#fff', padding: '16px 24px', borderRadius: `${TOKENS.radius.md} ${TOKENS.radius.md} 0 0`, display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 0.5fr', fontSize: 13, fontWeight: 700, letterSpacing: '0.02em' }}>
@@ -348,7 +420,7 @@ const PatientTable = memo(({ data, searchQuery, onSearch, currentPage, setPage }
         </div>
       </div>
       
-      {/* Pagination Controller */}
+      {/* Footer / Control Paginación */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 'auto', paddingTop: 24 }}>
         <button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} style={{ border: 'none', background: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? TOKENS.colors.border : TOKENS.colors.textMuted, padding: 8 }}><Icon name="chevronLeft" size={18} /></button>
         {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
@@ -362,7 +434,11 @@ const PatientTable = memo(({ data, searchQuery, onSearch, currentPage, setPage }
   );
 });
 
+/**
+ * Sidebar Derecho (Agenda)
+ */
 const AgendaSidebar = memo(({ date, setDate, appointments }) => {
+  // Lógica de manipulación de Fechas (Rango de 7 días relativo a selección)
   const dates = useMemo(() => {
     const arr = [];
     const curr = new Date(date);
@@ -442,13 +518,13 @@ const AgendaSidebar = memo(({ date, setDate, appointments }) => {
 });
 
 // ============================================================================
-// 7. MAIN DASHBOARD COMPONENT (THE MONOLITH CONTROLLER)
+// 7. MAIN DASHBOARD COMPONENT (EL CONTROLADOR MADRE)
 // ============================================================================
 const DashboardMonolith = ({ setView, clinica }) => {
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
-  const isTablet = window.innerWidth <= 1024; // Simple fallback for responsive
+  const isTablet = window.innerWidth <= 1024;
 
-  // Extracción masiva de datos (Data Fetching Logic)
+  // Carga Masiva de Datos Empresariales (Data Fetching Controller)
   useEffect(() => {
     let isMounted = true;
     const loadEnterpriseData = async () => {
@@ -465,7 +541,7 @@ const DashboardMonolith = ({ setView, clinica }) => {
         if (pErr || hErr) throw new Error((pErr || hErr).message);
         if (!isMounted) return;
 
-        // Transformación de datos pesada (Simulando lógica empresarial profunda)
+        // Limpieza y Transformación de Datos
         const activePatients = (patientsData || []).filter(p => !p.archivado_at).map(p => ({
           ...p, status: p.tag === 'nuevo' || (new Date() - new Date(p.created_at))/(1000*60*60*24) < 30 ? 'nuevo' : 'recurrente'
         }));
@@ -485,7 +561,7 @@ const DashboardMonolith = ({ setView, clinica }) => {
           }
         });
 
-        // Simulación algorítmica de curva de pacientes (Chart Data)
+        // Simulación de pipeline algorítmico
         const generateChart = () => {
           const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
           return months.map(m => ({ label: m, val: Math.floor(Math.random() * 30) + 20 }));
@@ -502,7 +578,7 @@ const DashboardMonolith = ({ setView, clinica }) => {
               newPatients: activePatients.filter(p=>p.status === 'nuevo').length,
               completedTreatments: completed
             },
-            chartData: generateChart() // En prod, se agrupa por mes real
+            chartData: generateChart()
           }
         });
 
@@ -515,9 +591,9 @@ const DashboardMonolith = ({ setView, clinica }) => {
     return () => { isMounted = false; };
   }, []);
 
-  if (state.error) throw new Error(state.error); // Delegado al ErrorBoundary
+  if (state.error) throw new Error(state.error); // Pasa la barrera al ErrorBoundary
 
-  // Layout Styles encapsulados
+  // Layout Maestro
   const layoutStyle = {
     background: TOKENS.colors.background,
     minHeight: '100vh',
@@ -535,7 +611,7 @@ const DashboardMonolith = ({ setView, clinica }) => {
 
   return (
     <div style={layoutStyle}>
-      {/* ─── TOP NAVIGATION BAR ─── */}
+      {/* NAVEGACIÓN SUPERIOR */}
       <nav style={topNavStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em' }}>
           <div style={{ width: 36, height: 36, background: TOKENS.colors.primary, borderRadius: TOKENS.radius.md, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-10deg)' }}>
@@ -552,7 +628,7 @@ const DashboardMonolith = ({ setView, clinica }) => {
             { icon: 'calendar', view: 'agenda' },
             { icon: 'users', view: 'expediente' },
             { icon: 'activity', view: 'laboratorio' },
-            { icon: 'chat', view: 'whatsapp' }, // IA Integration
+            { icon: 'chat', view: 'whatsapp' },
           ].map((item, i) => (
             <button key={i} onClick={() => setView && setView(item.view)} style={{ background: 'transparent', color: TOKENS.colors.textMuted, border: 'none', padding: '10px 16px', borderRadius: TOKENS.radius.pill, cursor: 'pointer', transition: TOKENS.transitions.fast, ':hover': { background: TOKENS.colors.borderLight, color: TOKENS.colors.textMain } }}>
               <Icon name={item.icon} size={20} />
@@ -571,12 +647,12 @@ const DashboardMonolith = ({ setView, clinica }) => {
         </div>
       </nav>
 
+      {/* REJILLA PRINCIPAL */}
       <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '2.5fr 1fr', gap: 32, alignItems: 'start' }}>
         
-        {/* ─── LEFT COLUMN (METRICS & DATA) ─── */}
+        {/* COLUMNA IZQUIERDA (DATA INTENSIVA) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           
-          {/* Header */}
           <div>
             <h1 style={{ fontSize: 32, fontWeight: 900, color: TOKENS.colors.textMain, margin: '0 0 8px 0', letterSpacing: '-0.03em' }}>
               Welcome Back, {(clinica?.nombre || 'Doctor').split(' ')[0]}
@@ -586,7 +662,6 @@ const DashboardMonolith = ({ setView, clinica }) => {
             </p>
           </div>
 
-          {/* Stats Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
             {state.isLoading ? (
               Array.from({length:4}).map((_, i) => <Skeleton key={i} height={110} borderRadius={TOKENS.radius.xl} />)
@@ -600,7 +675,6 @@ const DashboardMonolith = ({ setView, clinica }) => {
             )}
           </div>
 
-          {/* Analytics Chart */}
           <div style={{ background: TOKENS.colors.surface, borderRadius: TOKENS.radius.xxl, padding: 32, boxShadow: TOKENS.shadows.md }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: 18, fontWeight: 800, color: TOKENS.colors.textMain, margin: 0 }}>Appointments Status</h2>
@@ -611,7 +685,6 @@ const DashboardMonolith = ({ setView, clinica }) => {
             {state.isLoading ? <Skeleton height={250} style={{marginTop: 20}} /> : <CustomAreaChart data={state.chartData} color={TOKENS.colors.primary} />}
           </div>
 
-          {/* Master Data Table */}
           {state.isLoading ? <Skeleton height={450} borderRadius={TOKENS.radius.xxl} /> : (
             <PatientTable 
               data={state.patients} 
@@ -623,13 +696,13 @@ const DashboardMonolith = ({ setView, clinica }) => {
           )}
         </div>
 
-        {/* ─── RIGHT COLUMN (AGENDA SIDEBAR) ─── */}
+        {/* COLUMNA DERECHA (BARRA DE AGENDA LATERAL) */}
         <div style={{ height: '100%', minHeight: 800 }}>
           {state.isLoading ? <Skeleton height="100%" borderRadius={TOKENS.radius.xxl} /> : (
             <AgendaSidebar 
               date={state.selectedDate} 
               setDate={(d) => dispatch({ type: 'SET_DATE', payload: d })}
-              appointments={state.patients.filter(p => p.hora_cita)} // Asumiendo que pacientes tiene la data de cita (simplificado para el monolito)
+              appointments={state.patients.filter(p => p.hora_cita)}
             />
           )}
         </div>
