@@ -110,6 +110,21 @@
   /* ── Espaciado ─────────────────────────────────────────────────────────── */
   --gutter: 28px;
   --gap-panel: 22px;
+
+  /* ── Tarjeta "hero" (destacada) ────────────────────────────────────────── */
+  /* Para la tarjeta de contenido que se quiere resaltar entre las demás (ej.
+     el gráfico de tendencia del Dashboard) -- un degradé verde sólido con
+     texto claro encima, en vez del vidrio neutro del resto de las tarjetas.
+     Deliberadamente NO sigue el tema claro/oscuro (a diferencia de --panel):
+     una tarjeta destacada tiene su propia identidad fija, como --rail-active-*.
+     Se usa sólo en contenido SIN significado semántico de color (una serie
+     de ingresos/gastos, no un medidor con anillo rojo/verde/ámbar -- ahí el
+     fondo verde competiría con el color que señala "atención"). */
+  --hero-gradient: linear-gradient(160deg, #2E5A30 0%, #6FA96C 100%);
+  --hero-ink:      #FFFFFF;
+  --hero-ink-soft: rgba(255, 255, 255, 0.72);
+  --hero-chip-bg:  rgba(255, 255, 255, 0.18);
+  --hero-grid:     rgba(255, 255, 255, 0.18);
 }
 
 @media (max-width: 1180px) {

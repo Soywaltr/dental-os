@@ -449,19 +449,24 @@ export default function Dashboard({ setView, clinica }) {
         ))}
       </div>
 
-      {/* ─── TENDENCIA ─── (fila 2: 8 + 4 = 12) */}
-      <div style={{ ...col(8), ...card }}>
+      {/* ─── TENDENCIA ─── (fila 2: 8 + 4 = 12)
+          Tarjeta "hero": degradé verde sólido, no el vidrio del resto. Es la
+          única del Dashboard sin color semántico propio (Ingresos/Gastos son
+          series informativas, no un medidor rojo/verde/ámbar de alerta) --
+          por eso es la elegida para destacar, como en la referencia. */}
+      <div style={{ ...col(8), ...card, background: 'var(--hero-gradient)', border: 'none', color: 'var(--hero-ink)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10, marginBottom: 6 }}>
           <div>
-            <h2 style={h2}>Ingresos vs. gastos</h2>
+            <h2 style={{ ...h2, color: 'var(--hero-ink)' }}>Ingresos vs. gastos</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 3 }}>
               {/* Punto que respira: indica que estos datos se refrescan solos
                   (cada 60s), no es una foto fija del momento en que se abrió
-                  la vista. */}
-              <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: VERDE, animation: 'pulso-vivo 2.2s ease-out infinite' }} />
+                  la vista. Blanco, no VERDE: sobre el propio degradé verde el
+                  punto se perdía. */}
+              <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: 'var(--hero-ink)', flexShrink: 0 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'var(--hero-ink)', animation: 'pulso-vivo 2.2s ease-out infinite' }} />
               </span>
-              <span style={{ fontSize: 12, color: MU }}>
+              <span style={{ fontSize: 12, color: 'var(--hero-ink-soft)' }}>
                 {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
               </span>
             </div>
@@ -473,9 +478,9 @@ export default function Dashboard({ setView, clinica }) {
               onChange={setRango}
               style={{ width: 180 }}
             />
-            <Leyenda series={seriesGrafico} />
+            <Leyenda series={seriesGrafico} colorTexto="var(--hero-ink-soft)" />
             <button onClick={() => setVerTabla(v => !v)}
-              style={{ background: 'var(--panel-sunken)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: MU, cursor: 'pointer' }}>
+              style={{ background: 'var(--hero-chip-bg)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: 'var(--hero-ink)', cursor: 'pointer' }}>
               {verTabla ? 'Ver gráfico' : 'Ver tabla'}
             </button>
           </div>
@@ -486,16 +491,16 @@ export default function Dashboard({ setView, clinica }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
               <thead><tr>
                 {[rangoActual.dia ? 'Fecha' : 'Mes', 'Ingresos', 'Gastos', 'Utilidad'].map(x => (
-                  <th key={x} style={{ textAlign: x === 'Fecha' || x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                  <th key={x} style={{ textAlign: x === 'Fecha' || x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: 'var(--hero-ink-soft)', fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hero-chip-bg)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
                 ))}
               </tr></thead>
               <tbody>
                 {bucketsRango.map((b, i) => (
-                  <tr key={b.clave} style={{ borderBottom: '1px solid var(--hairline)' }}>
-                    <td style={{ padding: '6px 8px', color: 'var(--label-primary)', fontWeight: i === bucketsRango.length - 1 ? 700 : 500 }}>{b.label}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(b.ingresos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(b.gastos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: (b.ingresos - b.gastos) >= 0 ? VERDE : RJ }}>{soles(b.ingresos - b.gastos)}</td>
+                  <tr key={b.clave} style={{ borderBottom: '1px solid var(--hero-chip-bg)' }}>
+                    <td style={{ padding: '6px 8px', color: 'var(--hero-ink)', fontWeight: i === bucketsRango.length - 1 ? 700 : 500 }}>{b.label}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--hero-ink)' }}>{soles(b.ingresos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--hero-ink)' }}>{soles(b.gastos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--hero-ink)' }}>{soles(b.ingresos - b.gastos)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -508,6 +513,13 @@ export default function Dashboard({ setView, clinica }) {
             formato={soles}
             alto={218}
             mostrarCadaN={rango === '30d' ? 3 : 1}
+            colorTexto="var(--hero-ink-soft)"
+            colorRejilla="var(--hero-grid)"
+            /* Anillo del marcador: aproxima el punto medio del degradé, no un
+               solo tono exacto (el fondo es un gradiente, no un color plano) --
+               un aro blanco fijo (el default, pensado para tarjetas de vidrio)
+               se vería como un halo recortado sobre el verde. */
+            colorSuperficie="#4C8449"
           />
         )}
       </div>

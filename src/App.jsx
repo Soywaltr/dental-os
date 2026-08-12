@@ -295,6 +295,14 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
               {contador}
             </span>
           )}
+          {/* Flecha de afordancia al final del ítem, como en la referencia --
+              sólo cuando no hay badge/contador con quien competir por el
+              espacio (ej. "Chat IA" ya trae su propia píldora). */}
+          {!item.badge && !(typeof contador === "number" && contador > 0) && (
+            <span style={{ display: "flex", flexShrink: 0, color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink)", opacity: isActive ? 0.9 : 0.55 }}>
+              <NavIcon name="flecha" size={15} />
+            </span>
+          )}
         </>
       )}
     </button>
