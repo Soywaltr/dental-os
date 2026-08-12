@@ -660,12 +660,10 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── MEDIDORES ─── (fila: 4 + 8 = 12)
-          Dos anillos de progreso: son ratios (parte sobre total), y un anillo
-          comunica "cuánto del camino va" mucho más rápido que una cifra suelta.
-          "Tasa de cobro" estuvo un momento como 5ta tarjeta de KPI, pero tenerla
-          además acá sería el mismo dato en dos formatos en la misma pantalla. */}
-      <div style={{ ...col(4), ...card }}>
-        <h2 style={{ ...h2, marginBottom: 18 }}>Medidores</h2>
+          Tarjeta "hero" también, igual que "Ingresos vs. gastos": mismo
+          degradé verde de la referencia. */}
+      <div style={{ ...col(4), ...card, background: 'var(--hero-gradient)', border: 'none', color: 'var(--hero-ink)' }}>
+        <h2 style={{ ...h2, marginBottom: 18, color: 'var(--hero-ink)' }}>Medidores</h2>
         <div style={{ display: 'flex', gap: 22, justifyContent: 'space-around', alignItems: 'center', flex: 1 }}>
           {[
             {
@@ -683,15 +681,18 @@ export default function Dashboard({ setView, clinica }) {
               {/* Anillo más grande y con trazo más grueso: el medidor es lo que
                   más se acerca al lenguaje del referente (donut grande y
                   contundente con la cifra adentro) -- 96/9 se leía delgado al
-                  lado del resto de la tarjeta. */}
-              <Anillo pct={m.pct} color={m.color} tamano={108} grosor={11}>
-                <span style={{ fontSize: 23, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                  lado del resto de la tarjeta. La pista sin llenar pasa a un
+                  overlay blanco translúcido (no un tinte del propio color):
+                  sobre el degradé verde, un tinte de --color al 15/18% se
+                  perdía contra el fondo, que ya es verde. */}
+              <Anillo pct={m.pct} color={m.color} pistaColor="var(--hero-chip-bg)" tamano={108} grosor={11}>
+                <span style={{ fontSize: 23, fontWeight: 700, color: 'var(--hero-ink)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                   {m.pct}%
                 </span>
               </Anillo>
               <div style={{ textAlign: 'center', minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.etiqueta}</div>
-                <div style={{ fontSize: 11.5, color: MU, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{m.detalle}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--hero-ink)' }}>{m.etiqueta}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--hero-ink-soft)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{m.detalle}</div>
               </div>
             </div>
           ))}
