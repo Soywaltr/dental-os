@@ -7,7 +7,7 @@
 //    color se reserva para UN acento (el pico, un delta positivo).
 //  · rejilla de 1px, siempre recesiva; el eje Y cae en números limpios.
 //  · el texto nunca lleva el color de la serie.
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useId } from 'react';
 
 // Techo del eje Y tal que CADA marca caiga en un número limpio, no sólo el
 // techo: se redondea el valor por marca (max/divisiones) y después se multiplica.
@@ -82,12 +82,16 @@ export function GraficoBarras({
   colorAcento = 'var(--green)',
   colorAcentoInk = '#FFFFFF',
   mostrarLinea = true,
+  mostrarBarras = true,
+  mostrarArea = false,
+  colorArea,
   ejeDerecha = false,
   mostrarEjeY = true,
   anotacion = null,
 }) {
   const ref = useRef(null);
   const [idx, setIdx] = useState(null);
+  const gradId = useId();
 
   const n = valores.length;
   const anchoEje = mostrarEjeY ? 44 : 8;
@@ -152,7 +156,7 @@ export function GraficoBarras({
           ) : null
         ))}
 
-        {valores.map((v, i) => {
+        {mostrarBarras && valores.map((v, i) => {
           const esHover = idx === i;
           const esAnotado = anotacion && anotacion.idx === i;
           return (
@@ -166,9 +170,37 @@ export function GraficoBarras({
           );
         })}
 
+        {/* Área bajo la curva: un degradé que se apaga hacia abajo, no un
+            relleno plano -- la línea sola encima ya alcanza para que se lea
+            como serie. Sólo tiene sentido con la línea activa. */}
+        {mostrarArea && dLinea && (
+          <>
+            <defs>
+              <linearGradient id={`area-${gradId}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={colorArea || colorLinea} stopOpacity="0.22" />
+                <stop offset="100%" stopColor={colorArea || colorLinea} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path
+              d={`${dLinea} L${x(n - 1).toFixed(1)},${baseY.toFixed(1)} L${x(0).toFixed(1)},${baseY.toFixed(1)} Z`}
+              fill={`url(#area-${gradId})`} stroke="none"
+            />
+          </>
+        )}
+
         {dLinea && (
           <path d={dLinea} pathLength="1" className="linea-progresiva" fill="none"
             stroke={colorLinea} strokeWidth="1.25" strokeLinejoin="round" strokeLinecap="round" />
+        )}
+
+        {/* Marcador sobre la línea en el punto anotado: sin barras, la línea
+            sola no deja ninguna marca ahí -- el pill flotante quedaría
+            "señalando a la nada". */}
+        {dLinea && !mostrarBarras && anotacion && (
+          <circle cx={x(anotacion.idx)} cy={y(valores[anotacion.idx] ?? 0)} r="4" fill={colorAcento} stroke="var(--panel)" strokeWidth="2" />
+        )}
+        {dLinea && !mostrarBarras && idx !== null && idx !== anotacion?.idx && (
+          <circle cx={x(idx)} cy={y(valores[idx])} r="4" fill={colorLinea} stroke="var(--panel)" strokeWidth="2" />
         )}
 
         {idx !== null && (

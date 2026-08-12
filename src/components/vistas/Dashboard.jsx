@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
-import Stat from '../ui/Stat';
 import SegmentedControl from '../ui/SegmentedControl';
 import { GraficoBarras, Anillo } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, TRATAMIENTOS_CAT, GLASS_BG, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
@@ -96,6 +95,7 @@ export default function Dashboard({ setView, clinica }) {
   const [rango, setRango] = useState('12m');
   const [metrica, setMetrica] = useState('ingresos');
   const [paginaPacientes, setPaginaPacientes] = useState(1);
+  const [buscarPaciente, setBuscarPaciente] = useState('');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [, forzarTick] = useState(0);
 
@@ -176,7 +176,6 @@ export default function Dashboard({ setView, clinica }) {
   const gastosMes = mesActual.gastos;
   const utilidadMes = ingresosMes - gastosMes;
   const utilidadPrevia = mesPrevio.ingresos - mesPrevio.gastos;
-  const margenPct = ingresosMes > 0 ? Math.round((utilidadMes / ingresosMes) * 100) : 0;
 
   const deltaPct = (actual, previo) => (previo > 0 ? Math.round(((actual - previo) / previo) * 100) : null);
   const pctIngresos = deltaPct(ingresosMes, mesPrevio.ingresos);
@@ -311,17 +310,16 @@ export default function Dashboard({ setView, clinica }) {
     .filter(p => p.fecha === selectedDateStr && p.hora_cita)
     .sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
-  // ── Gastos del mes (conteo para el KPI) ───────────────────────────────────
-  const gastosDelMes = gastos.filter(g => { const d = parseFecha(g.fecha); return d && d.getFullYear() === mesActual.anio && d.getMonth() === mesActual.mes; });
-
   // ── Pacientes recientes, con paginación ───────────────────────────────────
   // Orden: created_at desc si existe, si no por fecha de cita -- así una
   // clínica sin historial de altas igual ve algo razonable.
-  const pacientesRecientes = [...pacientes].sort((a, b) => {
-    const ca = a.created_at || a.fecha || '';
-    const cb = b.created_at || b.fecha || '';
-    return cb.localeCompare(ca);
-  });
+  const pacientesRecientes = [...pacientes]
+    .filter(p => !buscarPaciente.trim() || (p.name || '').toLowerCase().includes(buscarPaciente.trim().toLowerCase()))
+    .sort((a, b) => {
+      const ca = a.created_at || a.fecha || '';
+      const cb = b.created_at || b.fecha || '';
+      return cb.localeCompare(ca);
+    });
   const totalPaginasPacientes = Math.max(1, Math.ceil(pacientesRecientes.length / PACIENTES_POR_PAGINA));
   const paginaActual = Math.min(paginaPacientes, totalPaginasPacientes);
   const pacientesPagina = pacientesRecientes.slice((paginaActual - 1) * PACIENTES_POR_PAGINA, paginaActual * PACIENTES_POR_PAGINA);
@@ -435,7 +433,8 @@ export default function Dashboard({ setView, clinica }) {
             etiquetas={etiquetasHistograma}
             formato={soles}
             alto={200}
-            colorBarra="var(--accent-soft)"
+            mostrarBarras={false}
+            mostrarArea
             colorLinea="var(--accent)"
             colorAcento={pctMetricaActiva === null || pctMetricaActiva >= 0 ? 'var(--green)' : RJ}
             anotacion={{
@@ -492,29 +491,28 @@ export default function Dashboard({ setView, clinica }) {
         ))}
       </div>
 
-      {/* ─── INDICADORES ─── */}
+      {/* ─── INDICADORES ─── calcadas de la referencia: cifra grande en el
+          color de la tarjeta a la izquierda, ícono en círculo del mismo
+          color a la derecha -- no el Stat.jsx compartido (ese es de icono a
+          la izquierda y cifra neutra), porque cambiarlo ahí correría este
+          look a Agenda/Caja/Laboratorio/Ortodoncia sin que lo hayan pedido. */}
       <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)' }}>
-        <Stat
-          label="Ingresos del mes" value={soles(ingresosMes)} icon={<Icon name="trendingUp" size={15} />}
-          col={VERDE} onClick={() => setView && setView('caja')}
-          sub={pctIngresos === null ? null : `${pctIngresos >= 0 ? '↑' : '↓'} ${Math.abs(pctIngresos)}% vs. mes anterior`}
-          subCol={pctIngresos === null ? MU : (pctIngresos >= 0 ? VERDE : RJ)}
-        />
-        <Stat
-          label="Gastos del mes" value={soles(gastosMes)} icon={<Icon name="card" size={15} />}
-          col={GL} onClick={() => setView && setView('caja')}
-          sub={`${gastosDelMes.length} registro${gastosDelMes.length !== 1 ? 's' : ''}`} subCol={MU}
-        />
-        <Stat
-          label="Utilidad neta" value={soles(utilidadMes)} icon={<Icon name="checkCircle" size={15} />}
-          col={utilidadMes >= 0 ? VERDE : RJ} onClick={() => setView && setView('caja')}
-          sub={`${margenPct}% de margen`} subCol={utilidadMes >= 0 ? VERDE : RJ}
-        />
-        <Stat
-          label="Pacientes activos" value={String(pacientes.length)} icon={<Icon name="users" size={15} />}
-          col={P} onClick={() => setView && setView('expediente')}
-          sub={`${estados.nuevo} nuevo${estados.nuevo !== 1 ? 's' : ''} este mes`} subCol={MU}
-        />
+        {[
+          { label: 'Ingresos del mes', value: soles(ingresosMes), icon: 'trendingUp', color: VERDE, view: 'caja' },
+          { label: 'Gastos del mes', value: soles(gastosMes), icon: 'card', color: GL, view: 'caja' },
+          { label: 'Utilidad neta', value: soles(utilidadMes), icon: 'checkCircle', color: P, view: 'caja' },
+          { label: 'Pacientes activos', value: String(pacientes.length), icon: 'users', color: 'var(--info)', view: 'expediente' },
+        ].map(k => (
+          <div key={k.label} onClick={() => setView && setView(k.view)} style={{ ...card, flex: 1, minWidth: 180, padding: '20px 22px', cursor: 'pointer', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: k.color, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15, whiteSpace: 'nowrap' }}>{k.value}</div>
+              <div style={{ fontSize: 12.5, color: MU, marginTop: 4, fontWeight: 500 }}>{k.label}</div>
+            </div>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: `color-mix(in srgb, ${k.color} 14%, var(--panel))`, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Icon name={k.icon} size={20} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ─── PRÓXIMAS CITAS ─── agrupadas por día, no sólo el día elegido en
@@ -534,7 +532,12 @@ export default function Dashboard({ setView, clinica }) {
                     <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '9px 11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9 }}>
                       <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                          {estadoPaciente(c) === 'nuevo' && (
+                            <span style={{ fontSize: 9.5, fontWeight: 700, color: GL, background: `color-mix(in srgb, ${GL} 14%, transparent)`, padding: '1px 6px', borderRadius: 'var(--radius-pill)', flexShrink: 0 }}>Nuevo</span>
+                          )}
+                        </div>
                         <div style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
@@ -656,19 +659,41 @@ export default function Dashboard({ setView, clinica }) {
           Ancho completo: col(8) dejaba un hueco de 4 columnas sin nada al
           lado, y una tabla de 5 columnas respira mejor a lo ancho. */}
       <div style={{ ...col(12), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
           <h2 style={h2}>Pacientes recientes</h2>
-          <span onClick={() => setView && setView('expediente')} style={{ fontSize: 12, color: MU, cursor: 'pointer', fontWeight: 600 }}>ver todo →</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: MU, display: 'flex' }}>
+                <Icon name="search" size={13} />
+              </span>
+              <input
+                className="field" type="search" placeholder="Buscar…"
+                value={buscarPaciente} onChange={e => { setBuscarPaciente(e.target.value); setPaginaPacientes(1); }}
+                style={{ padding: '7px 10px 7px 30px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--hairline)', background: 'var(--panel-sunken)', fontSize: 12.5, width: 160, fontFamily: 'inherit', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <button onClick={() => setView && setView('expediente')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: 'var(--accent-contrast)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', font: 'inherit', whiteSpace: 'nowrap' }}>
+              <Icon name="userPlus" size={13} /> Nuevo paciente
+            </button>
+          </div>
         </div>
         {pacientesRecientes.length === 0 ? (
-          <div style={{ fontSize: 13.5, color: MU }}>Sin pacientes registrados.</div>
+          <div style={{ fontSize: 13.5, color: MU }}>{buscarPaciente ? 'Ningún paciente coincide.' : 'Sin pacientes registrados.'}</div>
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead><tr>
-                  {['Paciente', 'Tratamiento', 'Fecha', 'Hora', 'Estado'].map(x => (
-                    <th key={x} style={{ textAlign: 'left', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                {/* Encabezado sólido en el acento: es lo más "calcado" que tiene
+                    la referencia -- el resto de las tablas de la app usa un
+                    encabezado neutro, pero esta réplica lo pide explícito. */}
+                <thead><tr style={{ background: P }}>
+                  {['Paciente', 'Tratamiento', 'Fecha', 'Hora', 'Estado'].map((x, i) => (
+                    <th key={x} style={{
+                      textAlign: 'left', padding: '10px 12px', color: 'var(--accent-contrast)', fontSize: 11, fontWeight: 600,
+                      textTransform: 'uppercase', letterSpacing: '0.4px',
+                      borderRadius: i === 0 ? 'var(--radius-control) 0 0 var(--radius-control)' : i === 4 ? '0 var(--radius-control) var(--radius-control) 0' : 0,
+                    }}>{x}</th>
                   ))}
                 </tr></thead>
                 <tbody>
@@ -676,7 +701,7 @@ export default function Dashboard({ setView, clinica }) {
                     const badge = ESTADO_BADGE[estadoPaciente(p)];
                     return (
                       <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
-                        <td style={{ padding: '9px 8px' }}>
+                        <td style={{ padding: '10px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                             <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--panel-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11.5, flexShrink: 0 }}>{ini(p.name || '?')}</div>
                             <div style={{ minWidth: 0 }}>
@@ -685,10 +710,10 @@ export default function Dashboard({ setView, clinica }) {
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '9px 8px', color: 'var(--label-primary)' }}>{p.treatment || p.reason || 'Consulta'}</td>
-                        <td style={{ padding: '9px 8px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.fecha || '—'}</td>
-                        <td style={{ padding: '9px 8px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.hora_cita || '—'}</td>
-                        <td style={{ padding: '9px 8px' }}>
+                        <td style={{ padding: '10px 12px', color: 'var(--label-primary)' }}>{p.treatment || p.reason || 'Consulta'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.fecha || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.hora_cita || '—'}</td>
+                        <td style={{ padding: '10px 12px' }}>
                           <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `color-mix(in srgb, ${badge.color} 12%, transparent)`, padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
                             {badge.label}
                           </span>
