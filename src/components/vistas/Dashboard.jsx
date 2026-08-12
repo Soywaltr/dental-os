@@ -13,7 +13,7 @@ import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
 import SegmentedControl from '../ui/SegmentedControl';
 import { GraficoLineas, Leyenda, Anillo } from '../ui/Graficos';
-import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, TRATAMIENTOS_CAT } from '../../utils/constants';
+import { P, MU, BD, AZ, RJ, GL, CAT_ACCENT, TRATAMIENTOS_CAT, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 import useNumeroAnimado from '../../utils/useNumeroAnimado';
@@ -338,16 +338,17 @@ export default function Dashboard({ setView, clinica }) {
   const maxGasto = Math.max(...gastosPorCategoria.map(([, v]) => v), 1);
 
   // ── Estilos base ─────────────────────────────────────────────────────────
-  // Tarjeta de vidrio: mismo tratamiento que las otras 12 vistas (GLASS_BG/
-  // GLASS_BLUR/GLASS_BORDER en utils/constants.js) -- antes el Dashboard usaba
-  // var(--panel) opaco directo, por su cuenta, y quedaba desalineado del resto
-  // de la app apenas se activó el vidrio en todas las demás.
+  // GLASS_* de utils/constants.js, no --panel-glass-* a mano: esos tokens se
+  // retiraron cuando la app volvió al lenguaje plano (violeta) y este objeto
+  // seguía apuntando a ellos -- el fondo quedaba transparente de verdad, no
+  // sólo "poco visible". Bug real, arrastrado dos rondas sin que se notara
+  // del todo porque el fondo de página ya es casi blanco.
   const card = {
-    background: 'var(--panel-glass-bg)',
-    backdropFilter: 'var(--panel-glass-blur)', WebkitBackdropFilter: 'var(--panel-glass-blur)',
-    border: '1px solid var(--panel-glass-border)',
+    background: GLASS_BG,
+    backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
+    border: GLASS_BORDER,
     borderRadius: 'var(--radius-panel)', padding: 24,
-    boxShadow: 'var(--shadow-raised)',
+    boxShadow: GLASS_SHADOW,
     display: 'flex', flexDirection: 'column',
   };
   const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' };
