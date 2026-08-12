@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import SegmentedControl from '../ui/SegmentedControl';
-import TabsScroll from '../ui/TabsScroll';
+import TabsWrap from '../ui/TabsWrap';
 import { GraficoBarras, Anillo } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, TRATAMIENTOS_CAT, GLASS_BG, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
@@ -822,18 +822,21 @@ export default function Dashboard({ setView, clinica }) {
           Era "Pulso por especialidad" -- lenguaje que no dice qué muestra la
           tarjeta. El filtro también era un SegmentedControl de ancho fijo
           (420px): con 5 nombres de largo muy distinto ("12M" vs.
-          "Rehabilitación") esas columnas iguales no entran sin apretarse --
-          por eso "Implantes" se veía cortado. TabsScroll no fuerza columnas
-          iguales: cada pestaña mide lo que su texto necesita, y si no entran
-          todas hace scroll horizontal en vez de desbordar la tarjeta. */}
+          "Rehabilitación") esas columnas iguales no entraban sin apretarse.
+          El primer intento (TabsScroll, con scroll horizontal) TAMBIÉN
+          quedaba acotado a ese mismo 420px fijo, así que "Implantes" seguía
+          cortado -- el límite de ancho artificial era el problema, no la
+          falta de scroll. TabsWrap no lleva ningún ancho fijo: usa el que
+          sobra en la fila del título, y si no alcanza, las pestañas bajan a
+          una segunda línea dentro de la misma tarjeta -- nunca recorte, nunca
+          una barra para deslizar. */}
       <div style={{ ...col(12), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
           <h2 style={h2}>Tratamientos por especialidad</h2>
-          <TabsScroll
+          <TabsWrap
             options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
             value={activeTab}
             onChange={setActiveTab}
-            style={{ maxWidth: isTablet ? '100%' : 420 }}
           />
         </div>
 
