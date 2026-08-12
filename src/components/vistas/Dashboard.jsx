@@ -1,15 +1,4 @@
 // src/components/vistas/Dashboard.jsx
-// Reconstruido desde cero siguiendo la referencia "Ledgerix": monocromo con
-// UN acento verde, usado sólo para deltas positivos y el pico del gráfico.
-// Cruza las mismas 5 tablas de negocio que la versión anterior (pacientes,
-// historias, ortodoncia, laboratorio_ordenes, gastos) -- ningún dato nuevo,
-// sólo una composición distinta de la misma información real.
-//
-// v2 (re-skin Ledgerix, sin tocar lógica ni Supabase):
-//   - Hero con la cifra ENORME centrada como protagonista + delta.
-//   - Selector de rango como toggle limpio arriba a la derecha.
-//   - Barra "Pregúntale a la IA" (estilo command bar de la referencia) que
-//     enruta al asistente ya existente. Solo presentación; ningún dato nuevo.
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
@@ -21,7 +10,6 @@ import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../
 import useResponsive from '../../utils/useResponsive';
 import useNumeroAnimado from '../../utils/useNumeroAnimado';
 
-// Rangos del histograma principal. 7D/30D bucketean por día, 6M/12M por mes.
 const RANGOS = [
   { key: '7d', label: '7D', n: 7, dia: true },
   { key: '30d', label: '30D', n: 30, dia: true },
@@ -30,10 +18,6 @@ const RANGOS = [
 ];
 const DIAS_SEMANA_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-// Las 3 métricas que se pueden mirar en el histograma -- "tabs" tipo radio,
-// como Income/New Profit/Expenses en la referencia. Utilidad no se guarda
-// aparte: se deriva de ingresos-gastos en cada bucket, así nunca puede
-// desincronizarse de esos dos.
 const METRICAS = [
   { key: 'ingresos', label: 'Ingresos' },
   { key: 'utilidad', label: 'Utilidad' },
@@ -83,8 +67,6 @@ const getWeekDays = (anchor) => {
   });
 };
 
-// Preguntas sugeridas para la command bar -- solo enrutan al asistente ya
-// existente, no consultan nada nuevo.
 const SUGERENCIAS_IA = [
   '¿Cuánto facturé este mes?',
   '¿Quién me debe más?',
@@ -162,7 +144,6 @@ export default function Dashboard({ setView, clinica }) {
   const hoy = new Date();
   const todayStr = dateStr(hoy);
 
-  // ── Serie de 12 meses: ingresos/gastos (utilidad se deriva al leer) ───────
   const meses12 = Array.from({ length: 12 }).map((_, i) => {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() - (11 - i), 1);
     return { anio: d.getFullYear(), mes: d.getMonth(), label: MESES_CORTOS[d.getMonth()], ingresos: 0, gastos: 0 };
@@ -183,15 +164,11 @@ export default function Dashboard({ setView, clinica }) {
   const utilidadPrevia = mesPrevio.ingresos - mesPrevio.gastos;
   const margenPct = ingresosMes > 0 ? Math.round((utilidadMes / ingresosMes) * 100) : 0;
 
-  // Delta genérico "este mes vs el anterior" -- se reusa para las 3 métricas
-  // del histograma, en vez de calcular pctIngresos una vez y clavarlo a
-  // Ingresos: así Utilidad y Gastos también muestran su propia variación.
   const deltaPct = (actual, previo) => (previo > 0 ? Math.round(((actual - previo) / previo) * 100) : null);
   const pctIngresos = deltaPct(ingresosMes, mesPrevio.ingresos);
   const pctUtilidad = deltaPct(utilidadMes, utilidadPrevia);
   const pctGastos = deltaPct(gastosMes, mesPrevio.gastos);
 
-  // ── Serie del histograma: por el rango elegido (7D/30D/6M/12M) ───────────
   const rangoActual = RANGOS.find(r => r.key === rango) || RANGOS[3];
   const bucketsRango = Array.from({ length: rangoActual.n }).map((_, i) => {
     if (rangoActual.dia) {
@@ -217,7 +194,6 @@ export default function Dashboard({ setView, clinica }) {
     metrica === 'ingresos' ? b.ingresos : metrica === 'gastos' ? b.gastos : b.ingresos - b.gastos
   ));
 
-  // ── Cobranza ─────────────────────────────────────────────────────────────
   const totalFacturado = tratamientos.reduce((a, t) => a + (t.cost || 0), 0);
   const totalCobrado = tratamientos.reduce((a, t) => a + (t.paid || 0), 0);
   const pendienteHistorias = tratamientos.reduce((a, t) => a + Math.max(0, (t.cost || 0) - (t.paid || 0)), 0);
@@ -225,18 +201,12 @@ export default function Dashboard({ setView, clinica }) {
   const saldoPendienteTotal = pendienteHistorias + pendienteOrto;
   const tasaCobro = totalFacturado > 0 ? Math.round((totalCobrado / totalFacturado) * 100) : 0;
 
-  // Un solo hook animado para la cifra enorme del hero: cambia de valor cuando
-  // se cambia de tab de métrica, y el hook lo hace "correr" hacia el nuevo
-  // número en vez de saltar de golpe -- el mismo efecto que antes, ahora
-  // parametrizado por la métrica activa en vez de fijo a ingresos.
   const valorMetricaAnim = useNumeroAnimado(metrica === 'ingresos' ? ingresosMes : metrica === 'gastos' ? gastosMes : utilidadMes);
 
-  // ── Pacientes / citas ────────────────────────────────────────────────────
   const estados = { activo: 0, nuevo: 0, inactivo: 0 };
   pacientes.forEach(p => { estados[estadoPaciente(p)]++; });
   const citasHoy = pacientes.filter(p => p.fecha === todayStr && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
-  // ── Deudores combinados ──────────────────────────────────────────────────
   const deudaPorPaciente = new Map();
   tratamientos.forEach(t => {
     const saldo = (t.cost || 0) - (t.paid || 0);
@@ -252,7 +222,6 @@ export default function Dashboard({ setView, clinica }) {
     .slice(0, 4);
   const maxDeuda = Math.max(...topDeudores.map(d => d.saldo), 1);
 
-  // ── Laboratorio ──────────────────────────────────────────────────────────
   const labEnProceso = labOrders.filter(o => o.status === 'en_proceso');
   const labListo = labOrders.filter(o => o.status === 'listo');
   const labAtrasadas = labEnProceso.filter(o => o.eta && new Date(`${o.eta}T00:00:00`) < hoy);
@@ -281,7 +250,6 @@ export default function Dashboard({ setView, clinica }) {
     },
   ].filter(Boolean);
 
-  // ── Pulso por especialidad ───────────────────────────────────────────────
   const tab = CAT_TABS.find(t => t.key === activeTab) || CAT_TABS[0];
   const tratamientosTab = tab.cats ? tratamientos.filter(t => tab.cats.includes(NOMBRE_A_CAT[t.name])) : tratamientos;
   const conteoEstado = { pendiente: 0, en_curso: 0, completado: 0 };
@@ -298,7 +266,6 @@ export default function Dashboard({ setView, clinica }) {
     .sort((a, b) => b.monto - a.monto).slice(0, 4);
   const maxTrat = Math.max(...topTratamientos.map(t => t.monto), 1);
 
-  // ── Semana / agenda ──────────────────────────────────────────────────────
   const weekDays = getWeekDays(weekAnchor);
   const idxHoy = weekDays.findIndex(d => dateStr(d) === todayStr);
   const dayIdx = selectedIdx !== null ? selectedIdx : (idxHoy >= 0 ? idxHoy : 0);
@@ -307,13 +274,11 @@ export default function Dashboard({ setView, clinica }) {
     .filter(p => p.fecha === selectedDateStr && p.hora_cita)
     .sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
-  // ── Gastos del mes por categoría ─────────────────────────────────────────
   const gastosDelMes = gastos.filter(g => { const d = parseFecha(g.fecha); return d && d.getFullYear() === mesActual.anio && d.getMonth() === mesActual.mes; });
   const gastosPorCategoria = Array.from(
     gastosDelMes.reduce((m, g) => m.set(g.categoria || 'Sin categoría', (m.get(g.categoria || 'Sin categoría') || 0) + (g.monto || 0)), new Map())
   ).sort((a, b) => b[1] - a[1]).slice(0, 4);
 
-  // ── Ingresos de los últimos 7 días (tarjeta "pronóstico") ─────────────────
   const ultimos7 = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(hoy); d.setDate(d.getDate() - (6 - i));
     return { clave: dateStr(d), label: DIAS_SEMANA_CORTOS[d.getDay()], ingresos: 0 };
@@ -325,7 +290,6 @@ export default function Dashboard({ setView, clinica }) {
   }));
   const ingresosSemana = ultimos7.reduce((a, b) => a + b.ingresos, 0);
 
-  // ── Insight: el dato más notable de hoy, no un texto fijo ─────────────────
   const insight = (() => {
     if (pctIngresos !== null && Math.abs(pctIngresos) >= 5) {
       return pctIngresos >= 0
@@ -338,17 +302,19 @@ export default function Dashboard({ setView, clinica }) {
     return <>La cobranza está <b style={{ color: VERDE }}>al día</b> y no hay saldos pendientes.</>;
   })();
 
-  // ── Estilos base ─────────────────────────────────────────────────────────
+  // ESTILOS MEJORADOS (Box Sizing para evitar overflows)
   const card = {
+    boxSizing: 'border-box', // Añadido vital
     background: 'var(--panel)', border: '1px solid var(--hairline)',
     borderRadius: 'var(--radius-panel)', padding: 24,
     boxShadow: 'var(--shadow-raised)',
     display: 'flex', flexDirection: 'column',
+    overflow: 'hidden' // Previene cortes abruptos
   };
   const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' };
   const rotulo = { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
-  const subCard = { background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)' };
-  const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
+  const subCard = { background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)', boxSizing: 'border-box' };
+  const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}`, minWidth: 0 }); // minWidth: 0 vital para flex/grid hijos
 
   const nombreClinica = (clinica?.nombre || '').replace(/^Consultorio\s+/i, '').trim();
 
@@ -356,7 +322,7 @@ export default function Dashboard({ setView, clinica }) {
     { icon: 'calendar', titulo: 'Nueva cita', sub: 'Agendar paciente', view: 'agenda' },
     { icon: 'card', titulo: 'Registrar pago', sub: 'Cobrar saldo', view: 'caja' },
     { icon: 'userPlus', titulo: 'Nuevo paciente', sub: 'Abrir historial', view: 'expediente' },
-    { icon: 'chat', titulo: 'Preguntar a la IA', sub: 'Sobre tus datos', view: 'whatsapp' },
+    { icon: 'chat', titulo: 'Asistente Virtual', sub: 'Consultas IA', view: 'whatsapp' },
   ];
 
   if (loading) {
@@ -370,14 +336,10 @@ export default function Dashboard({ setView, clinica }) {
   const labelMetrica = METRICAS.find(m => m.key === metrica)?.label;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
-
-      {/* ─── HERO ─── El patrón de la referencia "Ledgerix": tabs de métrica a
-          la izquierda, selector de rango a la derecha, y sobre todo la CIFRA
-          ENORME centrada como protagonista, con el histograma corriendo debajo.
-          Todo con datos reales (ingresos/gastos/utilidad ya calculados). */}
+    <div style={{ display: 'grid', boxSizing: 'border-box', width: '100%', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
+      
+      {/* ─── HERO ─── */}
       <div style={{ ...col(12), ...card }}>
-        {/* saludo + latido de "en vivo" */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
           <div>
             <h1 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
@@ -399,12 +361,9 @@ export default function Dashboard({ setView, clinica }) {
           </div>
         </div>
 
-        {/* fila de controles: label + tabs de métrica (izq)  |  rango (der) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, marginTop: 22 }}>
           <div>
             <div style={{ ...rotulo, marginBottom: 11 }}>Estado de resultados</div>
-            {/* Tabs de métrica: radio-dot, como Income/New Profit/Expenses de la
-                referencia -- cambian qué valor muestran la cifra y el histograma. */}
             <div style={{ display: 'flex', gap: 20 }}>
               {METRICAS.map(m => (
                 <button key={m.key} onClick={() => setMetrica(m.key)}
@@ -424,8 +383,6 @@ export default function Dashboard({ setView, clinica }) {
             </div>
           </div>
 
-          {/* Selector de rango: toggle limpio, tipo Week/Month/Quarter/Year de
-              la referencia. Activo = pastilla blanca elevada sobre el hundido. */}
           <div style={{ display: 'flex', gap: 2, background: 'var(--panel-sunken)', padding: 3, borderRadius: 'var(--radius-pill)' }}>
             {RANGOS.map(r => {
               const activo = rango === r.key;
@@ -446,7 +403,6 @@ export default function Dashboard({ setView, clinica }) {
           </div>
         </div>
 
-        {/* LA CIFRA -- protagonista, centrada y enorme */}
         <div style={{ textAlign: 'center', margin: '30px 0 4px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             <span style={{
@@ -480,9 +436,7 @@ export default function Dashboard({ setView, clinica }) {
         />
       </div>
 
-      {/* ─── COMMAND BAR ─── El elemento más icónico de la referencia: barra
-          oscura "pregúntame lo que sea" con botón de acción verde. No consulta
-          nada nuevo; enruta al asistente de IA ya existente. */}
+      {/* ─── COMMAND BAR ─── */}
       <div style={{ ...col(12) }}>
         <div
           onClick={() => setView && setView('whatsapp')}
@@ -496,8 +450,8 @@ export default function Dashboard({ setView, clinica }) {
           }}
         >
           <Icon name="chat" size={16} />
-          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13.5, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Pregúntale a la IA sobre tu clínica…
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13.5, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Pregúntale a Sofia sobre tu clínica…
           </span>
           <div style={{
             width: 38, height: 38, borderRadius: '50%', background: VERDE, flexShrink: 0,
@@ -507,7 +461,6 @@ export default function Dashboard({ setView, clinica }) {
           </div>
         </div>
 
-        {/* chips de sugerencia -- también enrutan al asistente */}
         <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           {SUGERENCIAS_IA.map(q => (
             <button key={q} onClick={() => setView && setView('whatsapp')}
@@ -526,7 +479,7 @@ export default function Dashboard({ setView, clinica }) {
         </div>
       </div>
 
-      {/* ─── FILA DE 4: pronóstico semanal, gastos, cobranza, insight ─── */}
+      {/* ─── ROW 2 ─── */}
       <div style={{ ...col(3), ...card }}>
         <div style={rotulo}>Ingresos de la semana</div>
         <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4, marginBottom: 10, fontVariantNumeric: 'tabular-nums' }}>{soles(ingresosSemana)}</div>
@@ -794,16 +747,20 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-      {/* ─── PULSO POR ESPECIALIDAD ─── */}
+      {/* ─── PULSO POR ESPECIALIDAD (FIXED OVERFLOW) ─── */}
       <div style={{ ...col(12), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
           <h2 style={h2}>Pulso por especialidad</h2>
-          <SegmentedControl
-            options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
-            value={activeTab}
-            onChange={setActiveTab}
-            style={{ maxWidth: isTablet ? '100%' : 420 }}
-          />
+          
+          {/* Contenedor que soluciona el overflow permitiendo scroll horizontal oculto */}
+          <div style={{ maxWidth: '100%', overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+            <SegmentedControl
+              options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
+              value={activeTab}
+              onChange={setActiveTab}
+              style={{ minWidth: 'max-content' }}
+            />
+          </div>
         </div>
 
         {tratamientosTab.length === 0 ? (
