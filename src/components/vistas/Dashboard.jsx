@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
 import SegmentedControl from '../ui/SegmentedControl';
+import TabsScroll from '../ui/TabsScroll';
 import { GraficoBarras, Anillo } from '../ui/Graficos';
 import { P, MU, BD, AZ, RJ, GL, TRATAMIENTOS_CAT, GLASS_BG, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
@@ -284,7 +285,7 @@ export default function Dashboard({ setView, clinica }) {
     },
   ].filter(Boolean);
 
-  // ── Pulso por especialidad ───────────────────────────────────────────────
+  // ── Tratamientos por especialidad ─────────────────────────────────────────
   const tab = CAT_TABS.find(t => t.key === activeTab) || CAT_TABS[0];
   const tratamientosTab = tab.cats ? tratamientos.filter(t => tab.cats.includes(NOMBRE_A_CAT[t.name])) : tratamientos;
   const conteoEstado = { pendiente: 0, en_curso: 0, completado: 0 };
@@ -419,11 +420,14 @@ export default function Dashboard({ setView, clinica }) {
               )}
             </div>
           </div>
+          {/* 180px alcanzaba justo para el ancho MÍNIMO de las 4 etiquetas
+              (7D/30D/6M/12M) sin ningún margen -- por eso se veía apretado/
+              desbordado. 232 les da aire real. */}
           <SegmentedControl
             options={RANGOS.map(r => ({ key: r.key, label: r.label }))}
             value={rango}
             onChange={setRango}
-            style={{ width: 180 }}
+            style={{ width: 232 }}
           />
         </div>
 
@@ -814,11 +818,18 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-      {/* ─── PULSO POR ESPECIALIDAD ─── */}
+      {/* ─── TRATAMIENTOS POR ESPECIALIDAD ───
+          Era "Pulso por especialidad" -- lenguaje que no dice qué muestra la
+          tarjeta. El filtro también era un SegmentedControl de ancho fijo
+          (420px): con 5 nombres de largo muy distinto ("12M" vs.
+          "Rehabilitación") esas columnas iguales no entran sin apretarse --
+          por eso "Implantes" se veía cortado. TabsScroll no fuerza columnas
+          iguales: cada pestaña mide lo que su texto necesita, y si no entran
+          todas hace scroll horizontal en vez de desbordar la tarjeta. */}
       <div style={{ ...col(12), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={h2}>Pulso por especialidad</h2>
-          <SegmentedControl
+          <h2 style={h2}>Tratamientos por especialidad</h2>
+          <TabsScroll
             options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
             value={activeTab}
             onChange={setActiveTab}
