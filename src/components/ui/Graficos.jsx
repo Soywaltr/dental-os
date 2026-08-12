@@ -86,7 +86,7 @@ const PAD = { l: 54, r: 18, t: 14, b: 26 };
 // alterar `etiquetas` -- el tooltip de la cruceta sigue usando la etiqueta
 // completa de cada punto, sólo el eje se aligera cuando hay muchos puntos
 // (ej. una serie diaria de 30 días no cabe legible con las 30 escritas).
-export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)', resaltarPico = false }) {
+export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)', resaltarPico = false, colorPico = 'var(--green)', colorPicoInk = '#FFFFFF' }) {
   const ref = useRef(null);
   const [idx, setIdx] = useState(null);
 
@@ -100,10 +100,11 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
   const x = (i) => PAD.l + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const y = (v) => baseY - (v / maxY) * plotH;
 
-  // Pico de la serie principal: la marca lima persistente (no sólo al pasar
-  // el mouse) que copia el "654" flotando sobre la barra destacada de la
-  // referencia. Sólo tiene sentido con >0 en la serie -- un pico de 0 no es
-  // "un pico", es que no hay datos todavía.
+  // Pico de la serie principal: marca persistente (no sólo al pasar el
+  // mouse) en colorPico -- el color es un prop, no un token fijo, porque
+  // cada referencia visual que pidió esto (verde, lima, etc.) traía el suyo.
+  // Sólo tiene sentido con >0 en la serie -- un pico de 0 no es "un pico",
+  // es que no hay datos todavía.
   const picoIdx = resaltarPico && series[0]
     ? series[0].valores.reduce((mejor, v, i) => (v > series[0].valores[mejor] ? i : mejor), 0)
     : null;
@@ -169,20 +170,20 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
               {/* Marcador sólo en el extremo, en el pico (si resaltarPico) y en
                   el punto con hover: un punto en cada mes serían 24 marcas
                   compitiendo con la línea. */}
-              <circle cx={x(n - 1)} cy={y(s.valores[n - 1])} r="4" fill={esPico(n - 1) ? 'var(--highlight)' : s.color} stroke={colorSuperficie} strokeWidth="2" />
+              <circle cx={x(n - 1)} cy={y(s.valores[n - 1])} r="4" fill={esPico(n - 1) ? colorPico : s.color} stroke={colorSuperficie} strokeWidth="2" />
               {idx !== null && idx !== n - 1 && (
-                <circle cx={x(idx)} cy={y(s.valores[idx])} r="4" fill={esPico(idx) ? 'var(--highlight)' : s.color} stroke={colorSuperficie} strokeWidth="2" />
+                <circle cx={x(idx)} cy={y(s.valores[idx])} r="4" fill={esPico(idx) ? colorPico : s.color} stroke={colorSuperficie} strokeWidth="2" />
               )}
               {picoIdx !== null && esPico(picoIdx) && picoIdx !== n - 1 && picoIdx !== idx && (
-                <circle cx={x(picoIdx)} cy={y(s.valores[picoIdx])} r="4" fill="var(--highlight)" stroke={colorSuperficie} strokeWidth="2" />
+                <circle cx={x(picoIdx)} cy={y(s.valores[picoIdx])} r="4" fill={colorPico} stroke={colorSuperficie} strokeWidth="2" />
               )}
             </g>
           );
         })}
       </svg>
 
-      {/* Pill lima persistente sobre el pico -- no depende del hover, a
-          diferencia del tooltip de abajo. Se oculta mientras el tooltip de
+      {/* Pill persistente sobre el pico (colorPico) -- no depende del hover,
+          a diferencia del tooltip de abajo. Se oculta mientras el tooltip de
           hover está sobre el mismo punto, para no superponer dos globos. */}
       {picoIdx !== null && picoValor > 0 && idx !== picoIdx && (
         <div style={{
@@ -193,7 +194,7 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
           // corresponde para centrarlo y apoyarlo arriba del punto.
           position: 'absolute', top: y(picoValor), left: `${(x(picoIdx) / VB_W) * 100}%`,
           transform: 'translate(-50%, calc(-100% - 8px))',
-          background: 'var(--highlight)', color: 'var(--highlight-ink)',
+          background: colorPico, color: colorPicoInk,
           borderRadius: 'var(--radius-pill)', padding: '3px 9px',
           fontSize: 11, fontWeight: 700, pointerEvents: 'none', whiteSpace: 'nowrap',
           fontVariantNumeric: 'tabular-nums',
@@ -223,6 +224,113 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
               <span style={{ fontWeight: 600, marginLeft: 'auto', paddingLeft: 10, fontVariantNumeric: 'tabular-nums' }}>{formato(s.valores[idx])}</span>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Histograma de barras finas + línea superpuesta (una sola serie): el
+// "Call Reporting"/"Half-Year Income Statement" de las referencias tipo
+// contable -- muchas barras angostas y grises, una línea oscura que traza la
+// misma serie encima, y el pico marcado en colorPico con un pill persistente.
+// Comparte PAD/VB_W con GraficoLineas para que ambos se alineen si conviven
+// en la misma tarjeta.
+export function GraficoBarras({ valores, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorBarra = 'var(--hairline-strong)', colorLinea = 'var(--text-primary)', colorTexto = 'var(--text-tertiary)', mostrarLinea = true, resaltarPico = false, colorPico = 'var(--green)', colorPicoInk = '#FFFFFF' }) {
+  const ref = useRef(null);
+  const [idx, setIdx] = useState(null);
+
+  const n = etiquetas.length;
+  const plotW = VB_W - PAD.l - PAD.r;
+  const plotH = alto - PAD.t - PAD.b;
+  const baseY = alto - PAD.b;
+
+  const maxY = maximoLimpio(Math.max(...valores, 0));
+  const x = (i) => PAD.l + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const y = (v) => baseY - (v / maxY) * plotH;
+  const anchoBarra = Math.max(1.5, (plotW / Math.max(n, 1)) * 0.5);
+
+  const picoIdx = resaltarPico
+    ? valores.reduce((mejor, v, i) => (v > valores[mejor] ? i : mejor), 0)
+    : null;
+  const picoValor = picoIdx !== null ? valores[picoIdx] : 0;
+
+  const alMover = (e) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    const xVb = ((e.clientX - rect.left) / rect.width) * VB_W;
+    const i = Math.round(((xVb - PAD.l) / plotW) * (n - 1));
+    setIdx(Math.max(0, Math.min(n - 1, i)));
+  };
+
+  const dLinea = mostrarLinea
+    ? valores.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+    : null;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <svg
+        ref={ref} viewBox={`0 0 ${VB_W} ${alto}`} width="100%" height={alto}
+        onMouseMove={alMover} onMouseLeave={() => setIdx(null)}
+        style={{ display: 'block', touchAction: 'none' }}
+        role="img" aria-label="Gráfico de barras"
+      >
+        {etiquetas.map((lbl, i) => (
+          (i % mostrarCadaN === 0 || i === n - 1) && (
+            <text key={i} x={x(i)} y={alto - 8} textAnchor="middle" fontSize="10"
+              fill={idx === i ? 'var(--text-primary)' : colorTexto} fontWeight={idx === i ? 700 : 400}>
+              {lbl}
+            </text>
+          )
+        ))}
+
+        {valores.map((v, i) => {
+          const esPico = resaltarPico && i === picoIdx && picoValor > 0;
+          const esHover = idx === i;
+          return (
+            <rect
+              key={i}
+              x={x(i) - anchoBarra / 2} y={y(v)} width={anchoBarra} height={Math.max(0, baseY - y(v))}
+              rx={anchoBarra / 2}
+              fill={esPico ? colorPico : (esHover ? colorLinea : colorBarra)}
+              opacity={esPico || esHover ? 1 : 0.55}
+            />
+          );
+        })}
+
+        {mostrarLinea && (
+          <path d={dLinea} pathLength="1" className="linea-progresiva" fill="none" stroke={colorLinea} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+        )}
+
+        {idx !== null && (
+          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="var(--hairline-strong)" strokeWidth="1" />
+        )}
+      </svg>
+
+      {picoIdx !== null && picoValor > 0 && idx !== picoIdx && (
+        <div style={{
+          position: 'absolute', top: y(picoValor), left: `${(x(picoIdx) / VB_W) * 100}%`,
+          transform: 'translate(-50%, calc(-100% - 8px))',
+          background: colorPico, color: colorPicoInk,
+          borderRadius: 'var(--radius-pill)', padding: '3px 9px',
+          fontSize: 11, fontWeight: 700, pointerEvents: 'none', whiteSpace: 'nowrap',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {formato(picoValor)}
+        </div>
+      )}
+
+      {idx !== null && idx !== picoIdx && (
+        <div style={{
+          position: 'absolute', top: y(valores[idx]), left: `${(x(idx) / VB_W) * 100}%`,
+          transform: `translate(${idx > n / 2 ? '-100%' : '0'}, calc(-100% - 8px))`,
+          marginLeft: idx > n / 2 ? -6 : 6,
+          background: 'var(--panel)', color: 'var(--text-primary)',
+          borderRadius: 'var(--radius-card)', padding: '6px 10px',
+          fontSize: 11.5, fontWeight: 600, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 5,
+          boxShadow: 'var(--shadow-pop)', fontVariantNumeric: 'tabular-nums',
+        }}>
+          {formato(valores[idx])}
         </div>
       )}
     </div>

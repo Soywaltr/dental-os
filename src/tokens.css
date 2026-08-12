@@ -111,21 +111,6 @@
   /* ── Espaciado ─────────────────────────────────────────────────────────── */
   --gutter: 28px;
   --gap-panel: 20px;
-
-  /* ── Tarjeta destacada azul marino + acento lima ─────────────────────────── */
-  /* Para UNA tarjeta puntual del Dashboard (el saludo, con anillo y cifra
-     grande), no para la app entera -- la referencia tampoco tiñe todo, sólo
-     ese panel; el resto sigue en --accent (violeta). Fijo, no sigue el tema
-     claro/oscuro, igual que --rail-active-* en su momento: una tarjeta
-     destacada tiene identidad propia. --highlight es el acento de énfasis
-     puntual (un pico en un gráfico, un dato que se quiere resaltar), NUNCA
-     el fondo de una tarjeta completa -- por eso lleva su propio color de
-     texto (oscuro: el lima es muy claro para texto blanco encima). */
-  --navy:          #1E3A5F;
-  --navy-ink:      #FFFFFF;
-  --navy-ink-soft: rgba(255, 255, 255, 0.68);
-  --highlight:     #D7F24B;
-  --highlight-ink: #16161D;
 }
 
 @media (max-width: 1180px) {
