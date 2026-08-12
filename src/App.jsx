@@ -3,8 +3,9 @@
 // DentalOS · Shell
 // Riel de navegación relleno con el acento de la clínica, pegado al borde
 // izquierdo y colapsable a sólo iconos · activo = cuadrado claro con el icono en
-// el acento · Ajustes y "Contraer" al pie · Header con título, buscador global,
-// selector claro/oscuro y perfil · Context + Reducer · Lazy views
+// el acento · Ajustes y "Contraer" al pie · Header con título, buscador global
+// y perfil · Context + Reducer · Lazy views · Un solo modo (claro), por
+// decisión explícita del usuario -- ya no hay selector claro/oscuro.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, {
@@ -24,7 +25,6 @@ import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
 import NavIcon from "./components/ui/NavIcons";
 import { aplicarTema } from "./utils/theme";
-import useTema from "./utils/useTema";
 import { rutaPerfil } from "./utils/storage";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
@@ -40,10 +40,9 @@ const Placeholder = lazy(() => import("./components/vistas/Placeholder"));
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 // Ya no son valores fijos: cada uno apunta a una variable CSS declarada en
-// src/tokens.css (":root" y ':root[data-theme="dark"]'). Ese archivo es la única
-// fuente de verdad del color; repuntarlo cambia toda la app de una vez. El tema
-// activo lo estampa como data-theme un script inline de index.html antes del
-// primer pintado, y lo cambia utils/useTema.js desde el selector del header.
+// src/tokens.css (":root"). Ese archivo es la única fuente de verdad del
+// color; repuntarlo cambia toda la app de una vez. Un solo modo (claro) --
+// ya no hay paleta oscura ni atributo data-theme que resolver.
 const C = {
   // Fondos.
   pageBg:      "var(--surface-secondary)",
@@ -688,58 +687,6 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
   );
 });
 
-// ─── COMPONENTE: SELECTOR CLARO / OSCURO ──────────────────────────────────────
-// Dos pastillas en una pista hundida. La app ya tenía paleta oscura, pero sólo
-// se activaba por la preferencia del sistema: no había forma de elegir desde la
-// app. Mientras no se toque, sigue al sistema (y cambia con él en vivo); al
-// elegir, la decisión queda guardada (ver utils/useTema.js).
-const SelectorTema = memo(({ compacto }) => {
-  const { tema, elegir } = useTema();
-  const opciones = [
-    { key: "light", label: "Claro", icono: "sol" },
-    { key: "dark", label: "Oscuro", icono: "luna" },
-  ];
-
-  return (
-    <div
-      role="group"
-      aria-label="Tema de la interfaz"
-      style={{
-        display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
-        background: "var(--panel-sunken)", borderRadius: "var(--radius-pill)", padding: 3,
-      }}
-    >
-      {opciones.map(o => {
-        const activo = tema === o.key;
-        return (
-          <button
-            key={o.key}
-            className="tema-opcion"
-            onClick={() => elegir(o.key)}
-            aria-pressed={activo}
-            title={`Tema ${o.label.toLowerCase()}`}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              // 30px de alto real dentro de una pista de 36: el mínimo táctil de
-              // 44px lo cubre la pista completa, no cada mitad.
-              height: 30, padding: compacto ? "0 9px" : "0 12px",
-              borderRadius: "var(--radius-pill)", border: "none",
-              background: activo ? "var(--panel)" : "transparent",
-              color: activo ? "var(--text-primary)" : "var(--text-tertiary)",
-              fontFamily: C.font, fontSize: 12.5, fontWeight: activo ? 600 : 450,
-              cursor: "pointer",
-              boxShadow: activo ? "var(--shadow-float)" : "none",
-            }}
-          >
-            <NavIcon name={o.icono} size={14} />
-            {!compacto && o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-});
-
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
 const TopHeader = memo(({ state, dispatch, onAbrirPaciente }) => {
   const label = VIEW_LABELS[state.view] ?? state.view;
@@ -779,14 +726,6 @@ const TopHeader = memo(({ state, dispatch, onAbrirPaciente }) => {
 
       {/* Grupo derecho */}
       <div style={{ display: "flex", alignItems: "center", gap: isNarrow ? 6 : 8, flexShrink: 0, marginLeft: "auto" }}>
-
-        {/* En esta posición había un selector de "Sede" con opciones inventadas
-            ("Sucursal El Golf", "Sucursal Miraflores") que no existen en la
-            base: era decorativo y, en un producto que se vende a clínicas,
-            datos falsos en pantalla son peor que nada. El espacio lo ocupa el
-            selector de tema, que sí hace algo. La sede volverá cuando haya
-            varias sedes reales por clínica. */}
-        <SelectorTema compacto={isNarrow} />
 
         {/* Botón nueva cita: en portrait de iPad, sólo el ícono. */}
         <PrimaryBtn

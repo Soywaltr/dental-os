@@ -34,12 +34,11 @@ export const META_OAUTH_SCOPE = "whatsapp_business_management,whatsapp_business_
 export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 
 // Paleta — ya no hex fijos, sino alias de las variables CSS declaradas en
-// src/tokens.css (":root" y ':root[data-theme="dark"]'). P es el ÚNICO acento
-// interactivo de toda la app (botones primarios, tabs activos, enlaces, foco)
-// -- por eso apunta a --accent, que cada clínica puede fijar como su color de
-// marca (white-label). Como estas ~15 vistas ya importan de aquí, repuntar
-// un solo valor cambia toda la app y además la deja lista para modo oscuro sin
-// tocar cada archivo.
+// src/tokens.css (":root"). P es el ÚNICO acento interactivo de toda la app
+// (botones primarios, tabs activos, enlaces, foco) -- por eso apunta a
+// --accent, que cada clínica puede fijar como su color de marca (white-label).
+// Como estas ~15 vistas ya importan de aquí, repuntar un solo valor cambia
+// toda la app sin tocar cada archivo.
 // MT apunta a --surface-TERTIARY (la superficie hundida), no a --secondary (el
 // fondo de página), porque eso es lo que significa en las ~10 llamadas que lo
 // usan: fondo de avatar sin foto, bloque de código del MFA, input

@@ -9,7 +9,7 @@ import React from 'react';
 import {
   LayoutDashboard, CalendarDays, FolderOpen,
   Wallet, FlaskConical, Smile, MessageCircle, Settings,
-  Search, Bell, Plus, PanelLeft, ChevronDown, Sun, Moon,
+  Search, Bell, Plus, PanelLeft, ChevronDown,
   Gauge, Radio, ListOrdered, BookOpen, Tag, Users, Star,
   Landmark, Banknote, Receipt, Store, CreditCard, Share2,
 } from 'lucide-react';
@@ -48,8 +48,6 @@ const MAPA = {
   mas:         Plus,
   panel:       PanelLeft,
   chevronDown: ChevronDown,
-  sol:         Sun,
-  luna:        Moon,
 };
 
 export default function NavIcon({ name, size = 18, strokeWidth = STROKE, style }) {

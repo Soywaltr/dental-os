@@ -503,12 +503,30 @@ export default function Dashboard({ setView, clinica }) {
           { label: 'Utilidad neta', value: soles(utilidadMes), icon: 'checkCircle', color: P, view: 'caja' },
           { label: 'Pacientes activos', value: String(pacientes.length), icon: 'users', color: 'var(--info)', view: 'expediente' },
         ].map(k => (
-          <div key={k.label} onClick={() => setView && setView(k.view)} style={{ ...card, flex: 1, minWidth: 180, padding: '20px 22px', cursor: 'pointer', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div
+            key={k.label} onClick={() => setView && setView(k.view)}
+            style={{
+              ...card, flex: 1, minWidth: 180, padding: '20px 22px', cursor: 'pointer',
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              borderTop: `3px solid ${k.color}`, borderRadius: 'var(--radius-panel)',
+              transition: 'box-shadow var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-pop)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = GLASS_SHADOW; e.currentTarget.style.transform = 'none'; }}
+          >
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 24, fontWeight: 700, color: k.color, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15, whiteSpace: 'nowrap' }}>{k.value}</div>
               <div style={{ fontSize: 12.5, color: MU, marginTop: 4, fontWeight: 500 }}>{k.label}</div>
             </div>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: `color-mix(in srgb, ${k.color} 14%, var(--panel))`, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Degradé de dos paradas del mismo color (no un tinte plano): le
+                da algo de profundidad al círculo sin salirse del color de la
+                tarjeta -- sigue siendo "el mismo color", sólo con más cuerpo. */}
+            <div style={{
+              width: 48, height: 48, borderRadius: '50%',
+              background: `linear-gradient(145deg, color-mix(in srgb, ${k.color} 22%, var(--panel)), color-mix(in srgb, ${k.color} 10%, var(--panel)))`,
+              color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              boxShadow: `0 2px 8px color-mix(in srgb, ${k.color} 25%, transparent)`,
+            }}>
               <Icon name={k.icon} size={20} />
             </div>
           </div>

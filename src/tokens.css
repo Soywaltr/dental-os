@@ -2,12 +2,12 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * DentalOS · Design tokens
  *
- * Lenguaje SaaS morado y plano ("Neue AI"): tarjetas blancas opacas, sombra
- * muy suave, radios moderados, acento violeta -- ya NO glassmorphism ni la
- * tarjeta "hero" con degradé verde de la ronda anterior. Se retiraron a
- * propósito: el usuario mostró una referencia nueva y pidió copiar esa UI
- * completa, así que el vidrio, el negro del riel activo y el degradé verde
- * quedan reemplazados, no coexistiendo con lo nuevo.
+ * Un solo modo (claro), por decisión explícita del usuario: ya no existe
+ * paleta oscura ni bloque :root[data-theme="dark"] -- se retiró junto con el
+ * selector de tema del header (ver App.jsx) y el script de index.html que
+ * resolvía el tema antes del primer pintado. Si en algún momento se vuelve a
+ * pedir modo oscuro, hay que reconstruir las tres piezas juntas, no sólo el
+ * CSS.
  *
  * Este archivo es la ÚNICA fuente de verdad del color en la app. Los nombres
  * viejos (--label-*, --surface-*, etc.) se conservan al final como alias
@@ -119,53 +119,6 @@
     --gap-panel: 14px;
   }
 }
-
-/* ─────────────────────────────────────────────────────────────────────────────
- * Modo oscuro. Se activa por el atributo data-theme="dark" en <html>, NO por
- * @media (prefers-color-scheme) -- el atributo lo estampa un script inline en
- * index.html antes del primer pintado. La referencia no cubre modo oscuro;
- * se mantiene neutro y se aclaran acento/semánticos lo suficiente para verse
- * sobre superficies oscuras. --rail-active-* ya NO necesita su propio valor
- * en oscuro: al derivar de --accent-soft/--accent (fórmulas), se recalculan
- * solos con los valores de acento de abajo.
- * ───────────────────────────────────────────────────────────────────────────── */
-:root[data-theme="dark"] {
-    --bg-app:       #0D0D0E;
-    --panel:        #18181B;
-    --panel-sunken: #212124;
-    --panel-hover:  #292929;
-
-    --chrome:       rgba(24, 24, 27, 0.72);
-
-    --text-primary:   #F4F4F7;
-    --text-secondary: #A6A6B2;
-    --text-tertiary:  #8F8F98;
-    --text-disabled:  #55555F;
-
-    --accent:          #A28BFF;
-    --accent-hover:    color-mix(in srgb, var(--accent) 88%, white);
-    --accent-press:    color-mix(in srgb, var(--accent) 76%, white);
-    --accent-soft:     color-mix(in srgb, var(--accent) 18%, transparent);
-    --accent-ring:     color-mix(in srgb, var(--accent) 36%, transparent);
-    --accent-contrast: #141414;
-
-    --green:      #4ADE80;
-    --green-soft: rgba(74, 222, 128, 0.16);
-    --red:        #F87171;
-    --red-soft:   rgba(248, 113, 113, 0.16);
-    --red-contrast: #141414;
-    --amber:      #FBBF24;
-    --amber-soft: rgba(251, 191, 36, 0.16);
-    --info:       #60A5FA;
-    --info-soft:  rgba(96, 165, 250, 0.16);
-
-    --hairline:        rgba(255, 255, 255, 0.07);
-    --hairline-strong: rgba(255, 255, 255, 0.13);
-
-    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.34), 0 6px 16px -6px rgba(0, 0, 0, 0.44);
-    --shadow-float:  0 2px 4px rgba(0, 0, 0, 0.30), 0 12px 32px -10px rgba(0, 0, 0, 0.50);
-    --shadow-pop:    0 12px 40px -8px rgba(0, 0, 0, 0.62), 0 4px 12px rgba(0, 0, 0, 0.45);
-  }
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * ALIAS DE COMPATIBILIDAD

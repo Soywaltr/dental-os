@@ -171,20 +171,6 @@
   outline-offset: -2px;
 }
 
-/* ── Selector de tema claro/oscuro ─────────────────────────────────────────
-   Dos pastillas dentro de una pista hundida. La activa lleva la superficie de
-   panel; la inactiva sólo texto, y se aclara al pasar el mouse. */
-.tema-opcion {
-  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-.tema-opcion:hover:not([aria-pressed="true"]) {
-  color: var(--text-primary) !important;
-}
-.tema-opcion:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* ── Zona de acción vacía (marco punteado con "+") ─────────────────────────
    Estado vacío accionable: en vez de un texto muerto ("Sin citas para este
    día"), un marco punteado que invita a crear. */
