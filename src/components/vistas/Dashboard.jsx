@@ -22,7 +22,7 @@ import useResponsive from '../../utils/useResponsive';
 import useNumeroAnimado from '../../utils/useNumeroAnimado';
 
 // ── Paleta local (referencia "YourCRM") ─────────────────────────────────────
-const NEGRO = '#0A0A0A';
+const NEGRO = '#030303';
 const P = '#729DEE';   // azul primario -- línea de gráfico, día seleccionado, foco
 const AZ = P;
 const RJ = '#E56868';  // coral -- deuda, alertas urgentes
@@ -247,7 +247,6 @@ export default function Dashboard({ setView, clinica }) {
   // citas hoy, se cae a los pacientes más recientes -- la tira nunca se
   // queda vacía mientras haya al menos un paciente.
   const avataresStrip = (citasHoy.length > 0 ? citasHoy : [...pacientes].sort((a, b) => (b.created_at || b.fecha || '').localeCompare(a.created_at || a.fecha || ''))).slice(0, 8);
-  const COLOR_ESTADO = { activo: VERDE, nuevo: P, inactivo: MU };
 
   // ── Próximas citas agrupadas por día (hoy + 4 días) ───────────────────────
   const gruposProximos = Array.from({ length: 5 }).map((_, i) => {
@@ -266,6 +265,14 @@ export default function Dashboard({ setView, clinica }) {
   });
   ortoRows.forEach(o => {
     if (o.resumen.deuda > 0) deudaPorPaciente.set(o.paciente_id, (deudaPorPaciente.get(o.paciente_id) || 0) + o.resumen.deuda);
+  });
+  // Cuántos tratamientos con saldo pendiente tiene cada paciente -- para la
+  // insignia bajo cada avatar de la tira (ver más abajo), no cuánto debe.
+  const pendientesCountPorPaciente = new Map();
+  tratamientos.forEach(t => {
+    if ((t.cost || 0) - (t.paid || 0) > 0) {
+      pendientesCountPorPaciente.set(t.patient_id, (pendientesCountPorPaciente.get(t.patient_id) || 0) + 1);
+    }
   });
   const topDeudores = Array.from(deudaPorPaciente.entries())
     .map(([id, saldo]) => ({ paciente: pacientes.find(p => p.id === id), saldo }))
@@ -382,27 +389,43 @@ export default function Dashboard({ setView, clinica }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: '20px', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-      {/* ─── TIRA DE AVATARES ─── calcada de "Case Allocation": círculos
-          superpuestos arriba de todo, con un anillo de color por estado del
-          paciente (verde activo / azul nuevo / gris inactivo) en vez de la
-          foto real -- dental-os no guarda fotos de paciente. */}
-      <div style={{ ...col(12), ...card, flexDirection: 'row', alignItems: 'center', padding: '14px 22px', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {avataresStrip.map((p, i) => (
-            <div
-              key={p.id} onClick={() => setView && setView('expediente')} title={p.name}
-              style={{
-                width: 38, height: 38, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
-                marginLeft: i === 0 ? 0 : -10, zIndex: avataresStrip.length - i,
-                border: `2.5px solid ${COLOR_ESTADO[estadoPaciente(p)] || MU}`,
-                background: '#F5F5F5', boxShadow: '0 0 0 2px #FFFFFF',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12.5, fontWeight: 700, color: NEGRO,
-              }}
-            >
-              {ini(p.name || '?')}
-            </div>
-          ))}
+      {/* ─── TIRA DE AVATARES ─── calcada al pixel de "Case Allocation": NO se
+          superponen (la versión anterior los solapaba con margin negativo,
+          la referencia los deja parejos con separación real) y cada uno
+          lleva su propia insignia circular ABAJO -- no un anillo de color
+          alrededor. La insignia es coral con el número de tratamientos
+          pendientes de ese paciente, o un "+" neutro si no debe nada
+          (mismo patrón visual que los "+" de la referencia para "sin dato"). */}
+      <div style={{ ...col(12), ...card, flexDirection: 'row', alignItems: 'center', padding: '14px 22px', gap: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {avataresStrip.map(p => {
+            const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
+            return (
+              <div key={p.id} style={{ position: 'relative', flexShrink: 0 }}>
+                <div
+                  onClick={() => setView && setView('expediente')} title={p.name}
+                  style={{
+                    width: 44, height: 44, borderRadius: '50%', cursor: 'pointer',
+                    background: '#F5F5F5',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13.5, fontWeight: 700, color: NEGRO,
+                  }}
+                >
+                  {ini(p.name || '?')}
+                </div>
+                <span style={{
+                  position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
+                  minWidth: 22, height: 22, padding: '0 3px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, border: '2px solid #FFFFFF',
+                  background: pendientes > 0 ? RJ : '#FFFFFF', color: pendientes > 0 ? '#FFFFFF' : NEGRO,
+                  boxShadow: pendientes > 0 ? 'none' : '0 0 0 1px #E2E2E2',
+                }}>
+                  {pendientes > 0 ? pendientes : '+'}
+                </span>
+              </div>
+            );
+          })}
         </div>
         <div style={{ fontSize: 12.5, color: MU, fontWeight: 500 }}>
           {citasHoy.length > 0
@@ -418,7 +441,7 @@ export default function Dashboard({ setView, clinica }) {
       <div style={{ ...col(8), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#0A0A0A', margin: 0, letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#030303', margin: 0, letterSpacing: '-0.01em' }}>
               Hola{nombreClinica ? `, ${nombreClinica}` : ''}
             </h1>
             <p style={{ fontSize: 13, color: MU, margin: '4px 0 0' }}>
@@ -445,7 +468,7 @@ export default function Dashboard({ setView, clinica }) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
                     padding: 0, cursor: 'pointer', font: 'inherit',
-                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? '#0A0A0A' : MU,
+                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? '#030303' : MU,
                   }}>
                   <span style={{
                     width: 8, height: 8, borderRadius: '50%',
@@ -457,7 +480,7 @@ export default function Dashboard({ setView, clinica }) {
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: '#0A0A0A', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: '#030303', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                 {soles(valorMetricaAnim)}
               </span>
               {pctMetricaActiva !== null && (
@@ -548,7 +571,7 @@ export default function Dashboard({ setView, clinica }) {
               <Icon name={a.icon} size={15} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#0A0A0A', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#030303', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
               <div style={{ fontSize: 12, color: MU, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.sub}</div>
             </div>
           </button>
@@ -606,14 +629,14 @@ export default function Dashboard({ setView, clinica }) {
                       <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#0A0A0A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#030303', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
                           {estadoPaciente(c) === 'nuevo' && (
                             <span style={{ fontSize: 9.5, fontWeight: 700, color: GL, background: `color-mix(in srgb, ${GL} 14%, transparent)`, padding: '1px 6px', borderRadius: '999px', flexShrink: 0 }}>Nuevo</span>
                           )}
                         </div>
                         <div style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#0A0A0A', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#030303', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                     </div>
                   ))}
                 </div>
@@ -645,7 +668,7 @@ export default function Dashboard({ setView, clinica }) {
             return (
               <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
                 <span style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#FFFFFF' : (isToday ? P : '#0A0A0A'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#FFFFFF' : (isToday ? P : '#030303'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
                   {d.getDate()}
                 </div>
                 <div style={{ width: 4, height: 4, borderRadius: '50%', background: nCitas > 0 ? P : 'transparent' }} />
@@ -678,7 +701,7 @@ export default function Dashboard({ setView, clinica }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                   <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#0A0A0A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#030303', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                   </div>
                 </div>
@@ -714,7 +737,7 @@ export default function Dashboard({ setView, clinica }) {
                   <Icon name={a.icon} size={13} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0A0A0A', lineHeight: 1.35 }}>{a.texto}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#030303', lineHeight: 1.35 }}>{a.texto}</div>
                   <span style={{ display: 'inline-block', marginTop: 5, fontSize: 11, fontWeight: 600, color: a.color, background: `color-mix(in srgb, ${a.color} 8%, transparent)`, padding: '2px 7px', borderRadius: 100, letterSpacing: '0.3px' }}>
                     {a.etiqueta}
                   </span>
@@ -741,7 +764,7 @@ export default function Dashboard({ setView, clinica }) {
             width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', textAlign: 'left',
           }}>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0A0A0A', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#030303', display: 'flex', alignItems: 'center', gap: 8 }}>
               Pacientes nuevos
               <span style={{ fontSize: 12, fontWeight: 600, color: MU }}>({pacientesNuevos.length})</span>
             </span>
@@ -761,8 +784,8 @@ export default function Dashboard({ setView, clinica }) {
                   <tbody>
                     {pacientesNuevos.map(p => (
                       <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderTop: '1px solid rgba(10, 10, 10, 0.06)', cursor: 'pointer' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0A0A0A', whiteSpace: 'nowrap' }}>{p.name}</td>
-                        <td style={{ padding: '10px 12px', color: '#0A0A0A' }}>{p.treatment || p.reason || '—'}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#030303', whiteSpace: 'nowrap' }}>{p.name}</td>
+                        <td style={{ padding: '10px 12px', color: '#030303' }}>{p.treatment || p.reason || '—'}</td>
                         <td style={{ padding: '10px 12px', color: MU }}>{p.fuente_captacion || 'Directo'}</td>
                         <td style={{ padding: '10px 12px', color: MU, fontVariantNumeric: 'tabular-nums' }}>{p.fecha ? `${p.fecha} · ${p.hora_cita || ''}` : 'Sin agendar'}</td>
                       </tr>
@@ -782,7 +805,7 @@ export default function Dashboard({ setView, clinica }) {
             width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', textAlign: 'left',
           }}>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0A0A0A', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#030303', display: 'flex', alignItems: 'center', gap: 8 }}>
               Tratamiento pendiente de pago
               <span style={{ fontSize: 12, fontWeight: 600, color: MU }}>({topDeudores.length})</span>
             </span>
@@ -802,8 +825,8 @@ export default function Dashboard({ setView, clinica }) {
                   <tbody>
                     {topDeudores.map(d => (
                       <tr key={d.paciente.id} onClick={() => setView && setView('caja')} className="row-hoverable" style={{ borderTop: '1px solid rgba(10, 10, 10, 0.06)', cursor: 'pointer' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0A0A0A', whiteSpace: 'nowrap' }}>{d.paciente.name}</td>
-                        <td style={{ padding: '10px 12px', color: '#0A0A0A' }}>{tratamientoDeudaPorPaciente.get(d.paciente.id) || d.paciente.treatment || d.paciente.reason || '—'}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#030303', whiteSpace: 'nowrap' }}>{d.paciente.name}</td>
+                        <td style={{ padding: '10px 12px', color: '#030303' }}>{tratamientoDeudaPorPaciente.get(d.paciente.id) || d.paciente.treatment || d.paciente.reason || '—'}</td>
                         <td style={{ padding: '10px 12px', color: MU }}>{d.paciente.fuente_captacion || 'Directo'}</td>
                         <td style={{ padding: '10px 12px', color: RJ, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</td>
                       </tr>
@@ -875,8 +898,8 @@ export default function Dashboard({ setView, clinica }) {
               {topTratamientos.map(t => (
                 <div key={t.name} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: '#0A0A0A', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: '#0A0A0A' }}>{soles(t.monto)}</b></span>
+                    <span style={{ fontSize: 13, color: '#030303', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: '#030303' }}>{soles(t.monto)}</b></span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(t.monto / maxTrat) * 100}%`, background: colorPorNombre(t.name), borderRadius: 3 }} />

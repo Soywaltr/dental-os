@@ -49,7 +49,7 @@ const C = {
   glassBorder: "1px solid rgba(10, 10, 10, 0.06)",
   glassShadow: "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
   // Texto
-  ink:         "#0A0A0A",
+  ink:         "#030303",
   inkMid:      "#6B7280",
   inkMute:     "#9AA1AC",
   inkFaint:    "#C4C4C4",
@@ -75,7 +75,7 @@ const C = {
   shadowSm:    "0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)",
   shadowMd:    "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
   // Tipografía
-  font:        "'Montserrat', -apple-system, system-ui, sans-serif",
+  font:        "'Inter', -apple-system, system-ui, sans-serif",
   fontMono:    "'JetBrains Mono', monospace",
   // Radios
   r:           "10px",
@@ -275,11 +275,11 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
       aria-current={isActive ? "page" : undefined}
       style={{
         display: "flex", alignItems: "center", gap: 6,
-        height: 34, padding: "0 14px", flexShrink: 0,
+        height: 40, padding: "0 18px", flexShrink: 0,
         borderRadius: "999px", border: "none",
-        background: isActive ? "#0A0A0A" : hover ? "#EDEDED" : "transparent",
-        color: isActive ? "#FFFFFF" : "#0A0A0A",
-        fontFamily: C.font, fontSize: 13.5, fontWeight: isActive ? 600 : 500,
+        background: isActive ? "#030303" : hover ? "#EDEDED" : "transparent",
+        color: isActive ? "#FFFFFF" : "#030303",
+        fontFamily: C.font, fontSize: 14, fontWeight: isActive ? 600 : 450,
         cursor: "pointer", whiteSpace: "nowrap",
         transition: "background-color 150ms ease",
       }}
@@ -290,7 +290,7 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
           fontSize: 9.5, fontWeight: 700, letterSpacing: "0.2px",
           padding: "2px 6px", borderRadius: "999px",
           background: isActive ? "#729DEE" : "#EDEDED",
-          color: isActive ? "#FFFFFF" : "#0A0A0A",
+          color: isActive ? "#FFFFFF" : "#030303",
         }}>
           {item.badge}
         </span>
@@ -322,7 +322,7 @@ const IconRailButton = memo(({ icon, title, onClick, badge }) => {
       style={{
         position: "relative", width: 36, height: 36, borderRadius: "50%",
         border: "none", background: hover ? "#EDEDED" : "transparent",
-        color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#030303", display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer", flexShrink: 0, transition: "background-color 150ms ease",
       }}
     >
@@ -371,7 +371,7 @@ const MasPanel = memo(({ view, onSelect, onClose }) => {
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 10,
                 padding: "7px 14px", border: "none", background: view === item.id ? "#EDEDED" : "transparent",
-                color: "#0A0A0A", fontFamily: C.font, fontSize: 13, cursor: "pointer", textAlign: "left",
+                color: "#030303", fontFamily: C.font, fontSize: 13, cursor: "pointer", textAlign: "left",
               }}
               onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
               onMouseLeave={e => { e.currentTarget.style.background = view === item.id ? "#EDEDED" : "transparent"; }}
@@ -623,14 +623,14 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
           )}
         </div>
         {!isNarrow && (
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0A", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: "#030303", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
             {(clinica?.nombre || "DentalOS").replace(/^Consultorio\s+/i, '')}
           </span>
         )}
       </div>
 
       {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia */}
-      <nav style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", flex: 1, minWidth: 0 }}>
+      <nav style={{ display: "flex", alignItems: "center", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
         {PRIMARY_NAV.map(item => (
           <TopNavPill
             key={item.id} item={item} isActive={state.view === item.id}
@@ -671,10 +671,10 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
             onClick={() => setMenuAbierto(v => !v)}
             aria-label={`${nombreUsuario} — cuenta`}
             style={{
-              width: 34, height: 34, borderRadius: "50%", border: "1.5px solid #E2E2E2", padding: 0,
-              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(114, 157, 238, 0.15)",
+              width: 38, height: 38, borderRadius: "50%", border: "none", padding: 0,
+              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "#EDEDED",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 600, color: "#729DEE", cursor: "pointer",
+              fontSize: 12, fontWeight: 600, color: "#030303", cursor: "pointer",
             }}
           >
             {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
@@ -686,7 +686,7 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
               borderRadius: "14px", boxShadow: "0 8px 20px rgba(10, 10, 10, 0.10)", padding: 8,
             }}>
               <div style={{ padding: "6px 8px 10px" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombreUsuario}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#030303", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombreUsuario}</div>
                 <div style={{ fontSize: 11.5, color: "#9AA1AC", textTransform: "capitalize" }}>{rol || "Usuario"}</div>
               </div>
               <button
@@ -694,7 +694,7 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 9,
                   padding: "8px 8px", border: "none", background: "transparent",
-                  color: "#0A0A0A", fontFamily: C.font, fontSize: 13, cursor: "pointer",
+                  color: "#030303", fontFamily: C.font, fontSize: 13, cursor: "pointer",
                   borderRadius: "8px", borderTop: "1px solid #E2E2E2",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
@@ -712,6 +712,9 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
 });
 
 // ─── MICRO: ICONO HEADER ──────────────────────────────────────────────────────
+// Círculo gris claro sin borde ni sombra, ícono negro -- calcado pixel a
+// pixel del recorte de la referencia (búsqueda/mensajes/campana), no el
+// botón bordeado-con-sombra de la versión anterior.
 const HeaderIconBtn = memo(({ children, label, badge, onClick }) => {
   const [hov, setHov] = useState(false);
   return (
@@ -721,23 +724,22 @@ const HeaderIconBtn = memo(({ children, label, badge, onClick }) => {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        position: "relative", width: 34, height: 34, borderRadius: C.r,
-        border: `1px solid ${C.border}`,
-        background: hov ? C.hoverBg : "#FFFFFF",
+        position: "relative", width: 38, height: 38, borderRadius: "50%",
+        border: "none",
+        background: hov ? "#E2E2E2" : "#EDEDED",
         display: "flex", alignItems: "center", justifyContent: "center",
-        cursor: "pointer", color: C.inkMid, outline: "none",
+        cursor: "pointer", color: "#030303", outline: "none",
         transition: "background 0.12s", flexShrink: 0,
-        boxShadow: C.shadowSm,
       }}
     >
       {children}
       {badge > 0 && (
         <span style={{
-          position: "absolute", top: 2, right: 2,
+          position: "absolute", top: 1, right: 1,
           width: 14, height: 14, borderRadius: "50%",
           background: C.red, color: "#FFFFFF", fontSize: 8, fontWeight: 800,
           display: "flex", alignItems: "center", justifyContent: "center",
-          border: "1.5px solid #FFFFFF", fontFamily: C.font,
+          border: "1.5px solid #EDEDED", fontFamily: C.font,
         }}>
           {badge}
         </span>
