@@ -450,27 +450,50 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── TENDENCIA ─── (fila 2: 8 + 4 = 12)
-          Tarjeta "hero": degradé verde sólido, no el vidrio del resto. Es la
-          única del Dashboard sin color semántico propio (Ingresos/Gastos son
-          series informativas, no un medidor rojo/verde/ámbar de alerta) --
-          por eso es la elegida para destacar, como en la referencia. */}
-      <div style={{ ...col(8), ...card, background: 'var(--hero-gradient)', border: 'none', color: 'var(--hero-ink)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10, marginBottom: 6 }}>
+          Tarjeta blanca plana otra vez (no el degradé "hero" de la ronda
+          anterior): la referencia nueva no tiñe tarjetas, tiñe acentos
+          puntuales. Los dos números junto al selector de rango ("Ingresos
+          del mes" + variación, "Pico" del rango visible) copian el patrón
+          "Average Score / Peak Score" de la referencia -- son datos reales
+          ya calculados (ingresosMes/pctIngresos arriba), no un agregado nuevo. */}
+      <div style={{ ...col(8), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 6 }}>
           <div>
-            <h2 style={{ ...h2, color: 'var(--hero-ink)' }}>Ingresos vs. gastos</h2>
+            <h2 style={h2}>Ingresos vs. gastos</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 3 }}>
               {/* Punto que respira: indica que estos datos se refrescan solos
                   (cada 60s), no es una foto fija del momento en que se abrió
-                  la vista. Blanco, no VERDE: sobre el propio degradé verde el
-                  punto se perdía. */}
-              <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: 'var(--hero-ink)', flexShrink: 0 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'var(--hero-ink)', animation: 'pulso-vivo 2.2s ease-out infinite' }} />
+                  la vista. */}
+              <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: VERDE, animation: 'pulso-vivo 2.2s ease-out infinite' }} />
               </span>
-              <span style={{ fontSize: 12, color: 'var(--hero-ink-soft)' }}>
+              <span style={{ fontSize: 12, color: MU }}>
                 {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
               </span>
             </div>
           </div>
+
+          {(() => {
+            const picoIngresos = Math.max(...bucketsRango.map(b => b.ingresos), 0);
+            return (
+              <div style={{ display: 'flex', gap: 22 }}>
+                <div>
+                  <div style={rotulo}>Ingresos del mes</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginTop: 3 }}>
+                    <span style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{soles(ingresosMes)}</span>
+                    {pctIngresos !== null && (
+                      <span style={{ fontSize: 11.5, fontWeight: 600, color: pctIngresos >= 0 ? VERDE : RJ }}>{pctIngresos >= 0 ? '↑' : '↓'} {Math.abs(pctIngresos)}%</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={rotulo}>Pico ({rangoActual.label})</div>
+                  <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-primary)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>{soles(picoIngresos)}</div>
+                </div>
+              </div>
+            );
+          })()}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <SegmentedControl
               options={RANGOS.map(r => ({ key: r.key, label: r.label }))}
@@ -478,9 +501,9 @@ export default function Dashboard({ setView, clinica }) {
               onChange={setRango}
               style={{ width: 180 }}
             />
-            <Leyenda series={seriesGrafico} colorTexto="var(--hero-ink-soft)" />
+            <Leyenda series={seriesGrafico} />
             <button onClick={() => setVerTabla(v => !v)}
-              style={{ background: 'var(--hero-chip-bg)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: 'var(--hero-ink)', cursor: 'pointer' }}>
+              style={{ background: 'var(--panel-sunken)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '4px 11px', fontSize: 12, fontWeight: 600, color: MU, cursor: 'pointer' }}>
               {verTabla ? 'Ver gráfico' : 'Ver tabla'}
             </button>
           </div>
@@ -491,59 +514,29 @@ export default function Dashboard({ setView, clinica }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
               <thead><tr>
                 {[rangoActual.dia ? 'Fecha' : 'Mes', 'Ingresos', 'Gastos', 'Utilidad'].map(x => (
-                  <th key={x} style={{ textAlign: x === 'Fecha' || x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: 'var(--hero-ink-soft)', fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hero-chip-bg)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                  <th key={x} style={{ textAlign: x === 'Fecha' || x === 'Mes' ? 'left' : 'right', padding: '6px 8px', color: MU, fontSize: 11, fontWeight: 600, borderBottom: '1px solid var(--hairline)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
                 ))}
               </tr></thead>
               <tbody>
                 {bucketsRango.map((b, i) => (
-                  <tr key={b.clave} style={{ borderBottom: '1px solid var(--hero-chip-bg)' }}>
-                    <td style={{ padding: '6px 8px', color: 'var(--hero-ink)', fontWeight: i === bucketsRango.length - 1 ? 700 : 500 }}>{b.label}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--hero-ink)' }}>{soles(b.ingresos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--hero-ink)' }}>{soles(b.gastos)}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--hero-ink)' }}>{soles(b.ingresos - b.gastos)}</td>
+                  <tr key={b.clave} style={{ borderBottom: '1px solid var(--hairline)' }}>
+                    <td style={{ padding: '6px 8px', color: 'var(--label-primary)', fontWeight: i === bucketsRango.length - 1 ? 700 : 500 }}>{b.label}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(b.ingresos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--label-primary)' }}>{soles(b.gastos)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: (b.ingresos - b.gastos) >= 0 ? VERDE : RJ }}>{soles(b.ingresos - b.gastos)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <>
-            <GraficoLineas
-              series={seriesGrafico}
-              etiquetas={bucketsRango.map(b => b.label)}
-              formato={soles}
-              alto={218}
-              mostrarCadaN={rango === '30d' ? 3 : 1}
-              colorTexto="var(--hero-ink-soft)"
-              colorRejilla="var(--hero-grid)"
-              /* Anillo del marcador: aproxima el punto medio del degradé, no un
-                 solo tono exacto (el fondo es un gradiente, no un color plano) --
-                 un aro blanco fijo (el default, pensado para tarjetas de vidrio)
-                 se vería como un halo recortado sobre el verde. */
-              colorSuperficie="#4C8449"
-              /* Área blanca que se apaga hacia abajo: el "glow sutil" que pedía
-                 el brief para el gráfico -- sólo tiene sentido acá, sobre el
-                 verde solido, no en el resto de la app (donde el default sigue
-                 en 'none'). */
-              area
-              colorArea="#FFFFFF"
-            />
-            {/* Chips flotantes al pie, como "Resting 98bpm / Max 112bpm /
-                Status Normal" de la referencia -- mismos 3 números que ya
-                muestran las tarjetas de KPI de abajo, no un dato nuevo. */}
-            <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-              {[
-                { l: 'Ingresos', v: soles(ingresosMes) },
-                { l: 'Gastos', v: soles(gastosMes) },
-                { l: 'Margen', v: `${margenPct}%` },
-              ].map(chip => (
-                <div key={chip.l} style={{ background: 'var(--hero-chip-bg)', borderRadius: 'var(--radius-card)', padding: '9px 14px', flex: 1, minWidth: 100 }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--hero-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 600 }}>{chip.l}</div>
-                  <div style={{ fontSize: 15, color: 'var(--hero-ink)', fontWeight: 700, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{chip.v}</div>
-                </div>
-              ))}
-            </div>
-          </>
+          <GraficoLineas
+            series={seriesGrafico}
+            etiquetas={bucketsRango.map(b => b.label)}
+            formato={soles}
+            alto={218}
+            mostrarCadaN={rango === '30d' ? 3 : 1}
+          />
         )}
       </div>
 
@@ -683,10 +676,11 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── MEDIDORES ─── (fila: 4 + 8 = 12)
-          Tarjeta "hero" también, igual que "Ingresos vs. gastos": mismo
-          degradé verde de la referencia. */}
-      <div style={{ ...col(4), ...card, background: 'var(--hero-gradient)', border: 'none', color: 'var(--hero-ink)' }}>
-        <h2 style={{ ...h2, marginBottom: 18, color: 'var(--hero-ink)' }}>Medidores</h2>
+          Tarjeta blanca plana otra vez, como el resto -- la ronda anterior le
+          había puesto el mismo degradé "hero" que a Tendencia; ya no aplica
+          con este lenguaje. */}
+      <div style={{ ...col(4), ...card }}>
+        <h2 style={{ ...h2, marginBottom: 18 }}>Medidores</h2>
         <div style={{ display: 'flex', gap: 22, justifyContent: 'space-around', alignItems: 'center', flex: 1 }}>
           {[
             {
@@ -704,18 +698,15 @@ export default function Dashboard({ setView, clinica }) {
               {/* Anillo más grande y con trazo más grueso: el medidor es lo que
                   más se acerca al lenguaje del referente (donut grande y
                   contundente con la cifra adentro) -- 96/9 se leía delgado al
-                  lado del resto de la tarjeta. La pista sin llenar pasa a un
-                  overlay blanco translúcido (no un tinte del propio color):
-                  sobre el degradé verde, un tinte de --color al 15/18% se
-                  perdía contra el fondo, que ya es verde. */}
-              <Anillo pct={m.pct} color={m.color} pistaColor="var(--hero-chip-bg)" tamano={108} grosor={11}>
-                <span style={{ fontSize: 23, fontWeight: 700, color: 'var(--hero-ink)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                  lado del resto de la tarjeta. */}
+              <Anillo pct={m.pct} color={m.color} tamano={108} grosor={11}>
+                <span style={{ fontSize: 23, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                   {m.pct}%
                 </span>
               </Anillo>
               <div style={{ textAlign: 'center', minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--hero-ink)' }}>{m.etiqueta}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--hero-ink-soft)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{m.detalle}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.etiqueta}</div>
+                <div style={{ fontSize: 11.5, color: MU, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{m.detalle}</div>
               </div>
             </div>
           ))}
@@ -800,7 +791,7 @@ export default function Dashboard({ setView, clinica }) {
         ) : (
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { l: 'En proceso', v: labEnProceso.length, c: 'var(--label-primary)' },
+              { l: 'En proceso', v: labEnProceso.length, c: 'var(--info)' },
               { l: 'Atrasadas', v: labAtrasadas.length, c: labAtrasadas.length > 0 ? RJ : MU },
               { l: 'Listas', v: labListo.length, c: VERDE },
             ].map(s => (

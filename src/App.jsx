@@ -222,9 +222,9 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
-// Colores desde los tokens --rail-*. Activo = píldora sólida negra (blanca en
-// modo oscuro) con texto en el color opuesto, NO un tinte de --accent -- así
-// se lee igual sin importar qué color de marca elija cada clínica.
+// Colores desde los tokens --rail-*. Activo = tinte del acento (rectángulo
+// lavanda suave, esquinas moderadas) -- la referencia nueva no usa una
+// píldora sólida negra como la anterior.
 // El :hover lo pone .rail-item en ui.css (un inline style no puede).
 const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
   const alto = 40; // área táctil cómoda incluso en el riel angosto
@@ -242,7 +242,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         display: "flex", alignItems: "center", gap: 11,
         padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
-        borderRadius: "var(--radius-pill)", border: "none",
+        borderRadius: "var(--radius-control)", border: "none",
         background: isActive ? "var(--rail-active-bg)" : "transparent",
         color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink)",
         fontFamily: C.font, fontSize: 13.5,
@@ -278,11 +278,6 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
             </span>
           )}
           {typeof contador === "number" && contador > 0 && (
-            // Sobre la píldora activa (sólida, sin relación con --accent) un
-            // tinte del acento se veía como una mancha al azar -- el overlay
-            // translúcido en el color OPUESTO de la píldora (blanco sobre
-            // negro, negro sobre blanco en oscuro) es lo que de verdad separa
-            // el número del fondo sólido.
             <span style={{
               fontSize: 11, fontWeight: 600, flexShrink: 0,
               minWidth: 20, height: 20, padding: "0 6px",
@@ -295,14 +290,6 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
               {contador}
             </span>
           )}
-          {/* Flecha de afordancia al final del ítem, como en la referencia --
-              sólo cuando no hay badge/contador con quien competir por el
-              espacio (ej. "Chat IA" ya trae su propia píldora). */}
-          {!item.badge && !(typeof contador === "number" && contador > 0) && (
-            <span style={{ display: "flex", flexShrink: 0, color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink)", opacity: isActive ? 0.9 : 0.55 }}>
-              <NavIcon name="flecha" size={15} />
-            </span>
-          )}
         </>
       )}
     </button>
@@ -310,9 +297,9 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
 });
 
 // ─── COMPONENTE: RIEL DE NAVEGACIÓN ───────────────────────────────────────────
-// Panel claro flotante. Sus colores salen de los tokens --rail-*. Ítem activo
-// = píldora sólida (negra en claro, blanca en oscuro) con texto en el color
-// opuesto -- ver el comentario de --rail-active-bg en tokens.css.
+// Panel claro flotante. Sus colores salen de los tokens --rail-*, que derivan
+// de --accent-soft/--accent -- el ítem activo es un tinte del acento, así
+// sigue el color de marca de cada clínica sin lógica propia.
 //
 // Al pie, y en este orden: Ajustes, plegar, y el bloque de perfil del usuario.
 // El perfil vive acá (no en el header) porque es identidad de sesión, no una

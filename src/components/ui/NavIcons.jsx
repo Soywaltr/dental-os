@@ -9,7 +9,7 @@ import React from 'react';
 import {
   LayoutDashboard, CalendarDays, FolderOpen,
   Wallet, FlaskConical, Smile, MessageCircle, Settings,
-  Search, Bell, Plus, PanelLeft, ChevronDown, ChevronRight, Sun, Moon,
+  Search, Bell, Plus, PanelLeft, ChevronDown, Sun, Moon,
 } from 'lucide-react';
 
 // Trazo fino y uniforme, como pide el lenguaje visual.
@@ -30,7 +30,6 @@ const MAPA = {
   mas:         Plus,
   panel:       PanelLeft,
   chevronDown: ChevronDown,
-  flecha:      ChevronRight,
   sol:         Sun,
   luna:        Moon,
 };

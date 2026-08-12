@@ -2,100 +2,101 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * DentalOS · Design tokens
  *
- * Verde salvia + glassmorphism, valores tal cual los pidió el usuario en su
- * brief -- sin ajustar por contraste WCAG AA. El usuario decidió
- * explícitamente priorizar la estética sobre esa regla ("quiero que quite
- * esta regla WCAG AA... prioriza la estética"), así que estos hex son los
- * literales del brief, no una variante oscurecida para pasar 4.5:1.
+ * Lenguaje SaaS morado y plano ("Neue AI"): tarjetas blancas opacas, sombra
+ * muy suave, radios moderados, acento violeta -- ya NO glassmorphism ni la
+ * tarjeta "hero" con degradé verde de la ronda anterior. Se retiraron a
+ * propósito: el usuario mostró una referencia nueva y pidió copiar esa UI
+ * completa, así que el vidrio, el negro del riel activo y el degradé verde
+ * quedan reemplazados, no coexistiendo con lo nuevo.
  *
  * Este archivo es la ÚNICA fuente de verdad del color en la app. Los nombres
  * viejos (--label-*, --surface-*, etc.) se conservan al final como alias
  * porque los consumen ~21 archivos vía utils/constants.js; así el rediseño
- * entero se aplica cambiando este archivo, sin tocar cada vista. Las tarjetas
- * de vidrio en concreto salen de GLASS_BG/GLASS_BLUR/GLASS_BORDER/GLASS_SHADOW
- * en utils/constants.js, que ya estaban cableadas en 12 vistas + Login/Modal/
- * MFA -- sólo hizo falta repuntar esas cuatro constantes a los tokens nuevos.
+ * entero se aplica cambiando este archivo, sin tocar cada vista.
  * ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
   /* ── Superficies ───────────────────────────────────────────────────────── */
-  --bg-app:        #F5F5F0;  /* fondo general, gris cálido */
-  --canvas:        #F2F2ED;  /* lienzo donde vive el contenido */
-  --panel:         #FFFFFF;  /* superficie plana chica (avatar, aro, badge) */
-  --panel-sunken:  #EDEDE7;  /* hueco dentro de una tarjeta (tabs, input) */
-  --panel-hover:   #E8E8E2;
+  /* Página y lienzo casi idénticos (a diferencia de la etapa anterior, que
+     los separaba con un tinte fuerte): en este lenguaje las tarjetas se
+     despegan por sombra suave, no por contraste de fondo. --panel vuelve a
+     ser opaco y sólido -- sin blur, sin transparencia. */
+  --bg-app:        #F7F7FB;
+  --canvas:        #F5F5FA;
+  --panel:         #FFFFFF;
+  --panel-sunken:  #F1F1F7;
+  --panel-hover:   #ECECF5;
 
-  /* Tarjeta de VIDRIO: fondo translúcido + borde de luz + blur, valores
-     literales del brief. */
-  --panel-glass-bg:     rgba(255, 255, 255, 0.65);
-  --panel-glass-border: rgba(255, 255, 255, 0.3);
-  --panel-glass-blur:   blur(20px) saturate(180%);
-
-  /* Chrome translúcido: barras y overlays (riel, header, modales). */
+  /* Chrome translúcido: sólo barras y overlays (riel, header, modales). */
   --chrome:        rgba(255, 255, 255, 0.72);
   --chrome-blur:   blur(20px) saturate(180%);
 
   /* ── Texto ─────────────────────────────────────────────────────────────── */
-  --text-primary:   #1A1A1A;  /* títulos y cifras */
-  --text-secondary: #6B6B6B;  /* cuerpo secundario */
-  --text-tertiary:  #7A7A7A;  /* etiquetas pequeñas, metadatos */
+  --text-primary:   #16161D;
+  --text-secondary: #6B6B78;
+  --text-tertiary:  #8A8A96;
   --text-disabled:  #B8B8C2;
 
   /* ── Acento único (white-label) ───────────────────────────────────────── */
-  /* El brief da DOS verdes: #8BA888 (más claro, "color primario"/badges) y
-     #3D7A3E (el del botón). --accent es la versión de BOTÓN -- es el token
-     interactivo/funcional (nav activo, foco, botón primario) -- y el salvia
-     claro sale solo, como --accent-soft, de la misma fórmula color-mix() de
-     siempre: no hay que fijar los dos tonos a mano. Cada clínica puede
-     sobreescribir SOLO --accent y --accent-contrast en runtime
-     (utils/theme.js, según clinicas.accent_color). */
-  --accent:          #3D7A3E;
+  /* Violeta, no verde salvia: la referencia nueva es un lenguaje distinto por
+     completo. Cada clínica puede sobreescribir SOLO --accent y
+     --accent-contrast en runtime (utils/theme.js, según clinicas.accent_color)
+     -- hover/press/soft/ring siguen siendo fórmulas color-mix() sobre
+     --accent, no valores propios. */
+  --accent:          #7B5CFA;
   --accent-hover:    color-mix(in srgb, var(--accent) 88%, black);
   --accent-press:    color-mix(in srgb, var(--accent) 76%, black);
-  --accent-soft:     color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-soft:     color-mix(in srgb, var(--accent) 12%, transparent);
   --accent-ring:     color-mix(in srgb, var(--accent) 28%, transparent);
   --accent-contrast: #FFFFFF;
 
   /* ── Riel de navegación ──────────────────────────────────────────────────
-     Panel claro. El ítem activo es la excepción deliberada: píldora sólida
-     negra con texto blanco, sin relación con --accent -- así se lee igual
-     sin importar el color de marca que elija una clínica. */
+     El ítem activo vuelve a ser un tinte del acento (rectángulo lavanda
+     suave, esquinas moderadas), NO la píldora negra de la referencia
+     anterior -- en ésta el activo es --accent-soft/--accent, como antes de
+     esa vuelta. */
   --rail-bg:         var(--panel);
   --rail-ink:        var(--text-secondary);
   --rail-ink-strong: var(--text-primary);
   --rail-hover:      var(--panel-hover);
-  --rail-active-bg:  #1A1A1A;
-  --rail-active-ink: #FFFFFF;
+  --rail-active-bg:  var(--accent-soft);
+  --rail-active-ink: var(--accent);
   --rail-divisor:    var(--hairline);
 
   /* ── Semánticos ────────────────────────────────────────────────────────── */
-  /* Verde suave para estados positivos, rojo suave para alertas -- tal cual
-     el brief. --green-soft es el literal #E8F0E6 que pidió para fondos de
-     badge. */
-  --green:      #6B9668;
-  --green-soft: #E8F0E6;
-  --red:        #D64B5E;
-  --red-soft:   rgba(214, 75, 94, 0.10);
+  /* Vívidos, con badge de fondo pastel sólido (no rgba difusa): así se ven
+     las píldoras de estado de la referencia ("Completed"/"In Progress"/
+     "Pending"). --info es NUEVO -- no existía un azul en la app; la
+     referencia usa uno para "en curso/en proceso", que antes no tenía color
+     propio (ver Dashboard.jsx, resumen de Laboratorio). */
+  --green:      #16A34A;
+  --green-soft: #DCFCE7;
+  --red:        #EF4444;
+  --red-soft:   #FEE2E2;
   --red-contrast: #FFFFFF;
-  --amber:      #B8823A;
-  --amber-soft: rgba(184, 130, 58, 0.12);
+  --amber:      #F59E0B;
+  --amber-soft: #FEF3C7;
+  --info:       #3B82F6;
+  --info-soft:  #DBEAFE;
 
   /* ── Separadores ───────────────────────────────────────────────────────── */
-  --hairline:        rgba(26, 26, 30, 0.06);
-  --hairline-strong: rgba(26, 26, 30, 0.11);
+  --hairline:        rgba(22, 22, 29, 0.06);
+  --hairline-strong: rgba(22, 22, 29, 0.11);
 
   /* ── Elevación ─────────────────────────────────────────────────────────── */
-  /* Valores literales del brief: sombra ancha y difusa de opacidad muy baja
-     más una capa corta de "contacto". --shadow-pop es el hover (elevación). */
-  --shadow-raised: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-float:  0 4px 28px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-pop:    0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.03);
+  /* Muy suave, casi de contacto: la referencia separa tarjeta de fondo con
+     una sombra apenas perceptible, no con un halo grande. Tinte azul-gris
+     neutro (16,24,40), el mismo que usan Stripe/Linear/etc. para "sombra que
+     no se nota pero se siente". */
+  --shadow-raised: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05);
+  --shadow-float:  0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+  --shadow-pop:    0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05);
 
   /* ── Radios ────────────────────────────────────────────────────────────── */
-  --radius-panel:   20px;  /* contenedor grande: riel, header, sección */
-  --radius-card:    16px;  /* tarjeta dentro de un panel */
-  --radius-control: 12px;  /* botón, input, badge */
-  --radius-pill:    999px; /* toggle, dropdown, buscador, chip, ítem de nav activo */
+  --radius-panel:   18px;  /* contenedor grande: riel, header, sección */
+  --radius-card:    14px;  /* tarjeta dentro de un panel */
+  --radius-control: 10px;  /* botón, input, badge */
+  --radius-pill:    999px; /* toggle, dropdown, buscador, chip de estado */
 
   /* ── Tipografía ────────────────────────────────────────────────────────── */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -105,31 +106,11 @@
   --ease:      cubic-bezier(0.25, 0.1, 0.25, 1);
   --dur-fast:  150ms;
   --dur-base:  200ms;
-  --dur-slow:  300ms;
+  --dur-slow:  250ms;
 
   /* ── Espaciado ─────────────────────────────────────────────────────────── */
   --gutter: 28px;
-  --gap-panel: 22px;
-
-  /* ── Tarjeta "hero" (destacada) ────────────────────────────────────────── */
-  /* Para la tarjeta de contenido que se quiere resaltar entre las demás (ej.
-     el gráfico de tendencia del Dashboard) -- un degradé verde sólido con
-     texto claro encima, en vez del vidrio neutro del resto de las tarjetas.
-     Deliberadamente NO sigue el tema claro/oscuro (a diferencia de --panel):
-     una tarjeta destacada tiene su propia identidad fija, como --rail-active-*.
-     Se usa sólo en contenido SIN significado semántico de color (una serie
-     de ingresos/gastos, no un medidor con anillo rojo/verde/ámbar -- ahí el
-     fondo verde competiría con el color que señala "atención"). */
-  /* Diagonal clásica (135deg, esquina a esquina) con TRES paradas -- a 160deg
-     con sólo 2 paradas se leía casi plano en una tarjeta ancha y baja, la
-     transición ocurría toda en el borde superior. El rango también se abrió
-     mucho más (verde pino oscuro -> menta pálido) para que se note de
-     verdad, como en la referencia. */
-  --hero-gradient: linear-gradient(135deg, #1E4A22 0%, #5B9257 55%, #C3DFBB 100%);
-  --hero-ink:      #FFFFFF;
-  --hero-ink-soft: rgba(255, 255, 255, 0.72);
-  --hero-chip-bg:  rgba(255, 255, 255, 0.18);
-  --hero-grid:     rgba(255, 255, 255, 0.18);
+  --gap-panel: 20px;
 }
 
 @media (max-width: 1180px) {
@@ -142,19 +123,17 @@
 /* ─────────────────────────────────────────────────────────────────────────────
  * Modo oscuro. Se activa por el atributo data-theme="dark" en <html>, NO por
  * @media (prefers-color-scheme) -- el atributo lo estampa un script inline en
- * index.html antes del primer pintado. El brief no cubre modo oscuro; se
- * mantiene neutro y se aclaran acento/verde/rojo lo suficiente para leerse
- * sobre superficies oscuras, mismo criterio que el resto de la app, sin
- * verificación formal de contraste (por la misma decisión del usuario).
+ * index.html antes del primer pintado. La referencia no cubre modo oscuro;
+ * se mantiene neutro y se aclaran acento/semánticos lo suficiente para verse
+ * sobre superficies oscuras. --rail-active-* ya NO necesita su propio valor
+ * en oscuro: al derivar de --accent-soft/--accent (fórmulas), se recalculan
+ * solos con los valores de acento de abajo.
  * ───────────────────────────────────────────────────────────────────────────── */
 :root[data-theme="dark"] {
     --bg-app:       #0D0D0E;
     --panel:        #18181B;
     --panel-sunken: #212124;
     --panel-hover:  #292929;
-
-    --panel-glass-bg:     rgba(24, 24, 27, 0.55);
-    --panel-glass-border: rgba(255, 255, 255, 0.08);
 
     --chrome:       rgba(24, 24, 27, 0.72);
 
@@ -163,23 +142,22 @@
     --text-tertiary:  #8F8F98;
     --text-disabled:  #55555F;
 
-    --accent:          #7FBB7A;
+    --accent:          #A28BFF;
     --accent-hover:    color-mix(in srgb, var(--accent) 88%, white);
     --accent-press:    color-mix(in srgb, var(--accent) 76%, white);
-    --accent-soft:     color-mix(in srgb, var(--accent) 16%, transparent);
+    --accent-soft:     color-mix(in srgb, var(--accent) 18%, transparent);
     --accent-ring:     color-mix(in srgb, var(--accent) 36%, transparent);
     --accent-contrast: #141414;
 
-    --rail-active-bg:  #F4F4F7;
-    --rail-active-ink: #18181B;
-
-    --green:      #8FCB8A;
-    --green-soft: rgba(143, 203, 138, 0.16);
-    --red:        #E8697F;
-    --red-soft:   rgba(232, 105, 127, 0.16);
+    --green:      #4ADE80;
+    --green-soft: rgba(74, 222, 128, 0.16);
+    --red:        #F87171;
+    --red-soft:   rgba(248, 113, 113, 0.16);
     --red-contrast: #141414;
-    --amber:      #DCA24A;
-    --amber-soft: rgba(220, 162, 74, 0.16);
+    --amber:      #FBBF24;
+    --amber-soft: rgba(251, 191, 36, 0.16);
+    --info:       #60A5FA;
+    --info-soft:  rgba(96, 165, 250, 0.16);
 
     --hairline:        rgba(255, 255, 255, 0.07);
     --hairline-strong: rgba(255, 255, 255, 0.13);

@@ -9,7 +9,7 @@
 //  · el texto nunca lleva el color de la serie: la identidad la da la marca de
 //    color al lado (punto de leyenda), no el color de la letra.
 //  · el eje Y cae en números limpios, no en el máximo crudo de los datos.
-import React, { useRef, useState, useId } from 'react';
+import React, { useRef, useState } from 'react';
 
 // Techo del eje Y tal que CADA marca caiga en un número limpio, no sólo el
 // techo: se redondea el valor por marca (max/divisiones) y después se multiplica.
@@ -55,16 +55,14 @@ export function Sparkline({ valores, color, colorTenue = 'var(--hairline-strong)
 // Anillo de progreso (medidor). La pista sin llenar va en un paso claro del
 // MISMO color del relleno, no en gris neutro: así el estado se lee a lo largo de
 // todo el anillo y no sólo en el tramo lleno.
-export function Anillo({ pct, color, pistaColor, tamano = 92, grosor = 9, children }) {
+export function Anillo({ pct, color, tamano = 92, grosor = 9, children }) {
   const valor = Math.max(0, Math.min(100, pct || 0));
   const r = (tamano - grosor) / 2;
   const circ = 2 * Math.PI * r;
   return (
     <div style={{ position: 'relative', width: tamano, height: tamano, flexShrink: 0 }}>
       <svg width={tamano} height={tamano} style={{ transform: 'rotate(-90deg)', display: 'block' }} aria-hidden="true">
-        {/* pistaColor: override para fondos donde un tinte del propio color
-            (el default) se pierde -- ej. una tarjeta "hero" ya verde. */}
-        <circle cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={pistaColor || `color-mix(in srgb, ${color} 18%, transparent)`} strokeWidth={grosor} />
+        <circle cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={`color-mix(in srgb, ${color} 18%, transparent)`} strokeWidth={grosor} />
         <circle
           cx={tamano / 2} cy={tamano / 2} r={r} fill="none" stroke={color} strokeWidth={grosor}
           strokeDasharray={circ} strokeDashoffset={circ * (1 - valor / 100)} strokeLinecap="round"
@@ -88,13 +86,9 @@ const PAD = { l: 54, r: 18, t: 14, b: 26 };
 // alterar `etiquetas` -- el tooltip de la cruceta sigue usando la etiqueta
 // completa de cada punto, sólo el eje se aligera cuando hay muchos puntos
 // (ej. una serie diaria de 30 días no cabe legible con las 30 escritas).
-export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)', area = false, colorArea }) {
+export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)' }) {
   const ref = useRef(null);
   const [idx, setIdx] = useState(null);
-  // Id único por instancia para el <linearGradient> del área -- si dos
-  // gráficos con área estuvieran montados a la vez, un id fijo ("area-fill")
-  // haría que el segundo pisara el degradé del primero.
-  const gradId = useId();
 
   const n = etiquetas.length;
   const plotW = VB_W - PAD.l - PAD.r;
@@ -144,27 +138,6 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
             </text>
           )
         ))}
-
-        {/* Área bajo la curva de la serie principal: un degradé que se apaga
-            hacia abajo, no un relleno plano -- así queda "área", no una
-            silueta sólida encima de la grilla. Sólo la primera serie: dos
-            áreas superpuestas (Ingresos y Gastos) se verían turbias. */}
-        {area && series[0] && (() => {
-          const s0 = series[0];
-          const dLinea = s0.valores.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-          const dArea = `${dLinea} L${x(n - 1).toFixed(1)},${baseY.toFixed(1)} L${x(0).toFixed(1)},${baseY.toFixed(1)} Z`;
-          return (
-            <React.Fragment key="area">
-              <defs>
-                <linearGradient id={`area-${gradId}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={colorArea || s0.color} stopOpacity="0.4" />
-                  <stop offset="100%" stopColor={colorArea || s0.color} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={dArea} fill={`url(#area-${gradId})`} stroke="none" />
-            </React.Fragment>
-          );
-        })()}
 
         {/* Cruceta: se dibuja debajo de las líneas para no taparlas. */}
         {idx !== null && (

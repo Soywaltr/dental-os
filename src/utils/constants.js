@@ -61,15 +61,14 @@ export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--labe
 // verde/teal, hay que remedir con validate_palette.js antes de elegirla.
 export const CAT_ACCENT = '#0D9488';
 
-// Superficies de tarjeta — vidrio de verdad: fondo translúcido + blur +
-// borde de luz, no la superficie sólida y plana de la etapa anterior (ese
-// diseño evitaba blur a propósito; el rediseño actual lo pide explícitamente
-// en las 12 vistas que ya importan estas cuatro constantes, más Login.jsx,
-// Modal.jsx y MFAChallenge.jsx -- repuntar sólo esto les da vidrio a todas
-// sin tocar cada archivo). Los tokens --panel-glass-* están en tokens.css.
-export const GLASS_BG = 'var(--panel-glass-bg)';
-export const GLASS_BLUR = 'var(--panel-glass-blur)';
-export const GLASS_BORDER = '1px solid var(--panel-glass-border)';
+// Superficies de tarjeta — otra vez sólidas y planas, sin vidrio esmerilado.
+// La referencia nueva ("Neue AI") es tarjetas blancas opacas con una sombra
+// casi imperceptible, no glassmorphism -- se vuelve a lo mismo que estas 12
+// vistas + Login.jsx, Modal.jsx y MFAChallenge.jsx ya importan, sólo
+// repuntando estas cuatro constantes, sin tocar cada archivo.
+export const GLASS_BG = 'var(--panel)';
+export const GLASS_BLUR = 'none';
+export const GLASS_BORDER = '1px solid var(--hairline)';
 export const GLASS_SHADOW = 'var(--shadow-raised)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
