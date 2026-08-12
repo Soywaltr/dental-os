@@ -86,7 +86,7 @@ const PAD = { l: 54, r: 18, t: 14, b: 26 };
 // alterar `etiquetas` -- el tooltip de la cruceta sigue usando la etiqueta
 // completa de cada punto, sólo el eje se aligera cuando hay muchos puntos
 // (ej. una serie diaria de 30 días no cabe legible con las 30 escritas).
-export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)' }) {
+export function GraficoLineas({ series, etiquetas, formato = String, alto = 236, mostrarCadaN = 1, colorTexto = 'var(--text-tertiary)', colorRejilla = 'var(--hairline)', colorSuperficie = 'var(--panel)', resaltarPico = false }) {
   const ref = useRef(null);
   const [idx, setIdx] = useState(null);
 
@@ -99,6 +99,15 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
   const maxY = maximoLimpio(maxCrudo);
   const x = (i) => PAD.l + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const y = (v) => baseY - (v / maxY) * plotH;
+
+  // Pico de la serie principal: la marca lima persistente (no sólo al pasar
+  // el mouse) que copia el "654" flotando sobre la barra destacada de la
+  // referencia. Sólo tiene sentido con >0 en la serie -- un pico de 0 no es
+  // "un pico", es que no hay datos todavía.
+  const picoIdx = resaltarPico && series[0]
+    ? series[0].valores.reduce((mejor, v, i) => (v > series[0].valores[mejor] ? i : mejor), 0)
+    : null;
+  const picoValor = picoIdx !== null ? series[0].valores[picoIdx] : 0;
 
   const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f * maxY);
 
@@ -144,8 +153,12 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
           <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="var(--hairline-strong)" strokeWidth="1" />
         )}
 
-        {series.map(s => {
+        {series.map((s, si) => {
           const d = s.valores.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+          // El pico sólo se marca en la serie principal (si===0): marcarlo en
+          // todas volvería a leerse turbio, mismo motivo que el área bajo la
+          // curva de rondas anteriores sólo tomaba la primera serie.
+          const esPico = (i) => si === 0 && picoIdx !== null && i === picoIdx && picoValor > 0;
           return (
             <g key={s.nombre}>
               {/* pathLength="1" normaliza el largo del trazo a 0-1 sin importar
@@ -153,16 +166,41 @@ export function GraficoLineas({ series, etiquetas, formato = String, alto = 236,
                   cargar" es una sola animación CSS (.linea-progresiva en
                   ui.css), sin medir el path a mano con getTotalLength(). */}
               <path d={d} pathLength="1" className="linea-progresiva" fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-              {/* Marcador sólo en el extremo y en el punto con hover: un punto
-                  en cada mes serían 24 marcas compitiendo con la línea. */}
-              <circle cx={x(n - 1)} cy={y(s.valores[n - 1])} r="4" fill={s.color} stroke={colorSuperficie} strokeWidth="2" />
+              {/* Marcador sólo en el extremo, en el pico (si resaltarPico) y en
+                  el punto con hover: un punto en cada mes serían 24 marcas
+                  compitiendo con la línea. */}
+              <circle cx={x(n - 1)} cy={y(s.valores[n - 1])} r="4" fill={esPico(n - 1) ? 'var(--highlight)' : s.color} stroke={colorSuperficie} strokeWidth="2" />
               {idx !== null && idx !== n - 1 && (
-                <circle cx={x(idx)} cy={y(s.valores[idx])} r="4" fill={s.color} stroke={colorSuperficie} strokeWidth="2" />
+                <circle cx={x(idx)} cy={y(s.valores[idx])} r="4" fill={esPico(idx) ? 'var(--highlight)' : s.color} stroke={colorSuperficie} strokeWidth="2" />
+              )}
+              {picoIdx !== null && esPico(picoIdx) && picoIdx !== n - 1 && picoIdx !== idx && (
+                <circle cx={x(picoIdx)} cy={y(s.valores[picoIdx])} r="4" fill="var(--highlight)" stroke={colorSuperficie} strokeWidth="2" />
               )}
             </g>
           );
         })}
       </svg>
+
+      {/* Pill lima persistente sobre el pico -- no depende del hover, a
+          diferencia del tooltip de abajo. Se oculta mientras el tooltip de
+          hover está sobre el mismo punto, para no superponer dos globos. */}
+      {picoIdx !== null && picoValor > 0 && idx !== picoIdx && (
+        <div style={{
+          // top en PX, no %: el SVG mide `alto` en px reales (no se re-escala
+          // con el ancho), así que la coordenada de y() ya es un px de CSS
+          // directo. El -50%/-100% de la transform sí puede ser porcentual
+          // -- ésos son relativos al tamaño del propio pill, que es lo que
+          // corresponde para centrarlo y apoyarlo arriba del punto.
+          position: 'absolute', top: y(picoValor), left: `${(x(picoIdx) / VB_W) * 100}%`,
+          transform: 'translate(-50%, calc(-100% - 8px))',
+          background: 'var(--highlight)', color: 'var(--highlight-ink)',
+          borderRadius: 'var(--radius-pill)', padding: '3px 9px',
+          fontSize: 11, fontWeight: 700, pointerEvents: 'none', whiteSpace: 'nowrap',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {formato(picoValor)}
+        </div>
+      )}
 
       {idx !== null && (
         <div style={{

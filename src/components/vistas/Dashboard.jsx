@@ -381,39 +381,45 @@ export default function Dashboard({ setView, clinica }) {
     // medida, el ojo lo nota aunque no sepa por qué.
     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-      {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12) */}
-      {/* Es un panel como sus vecinos: antes era texto suelto al borde de la
-          rejilla mientras al lado había una tarjeta, y esa mezcla se leía como
-          un elemento fuera de sitio. */}
-      <div style={{ ...col(4), ...card, justifyContent: 'center' }}>
-        <h1 style={{ fontSize: 27, fontWeight: 600, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-          Hola{nombreClinica ? `, ${nombreClinica}` : ''}
-          <br />¿qué tienes para hoy?
-        </h1>
-        <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: '12px 0 0', fontWeight: 400, lineHeight: 1.6, maxWidth: 340 }}>
-          {citasHoy.length > 0
-            ? <>Tienes <b style={{ color: 'var(--label-primary)' }}>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''}</b> hoy, la próxima a las {citasHoy[0].hora_cita}. </>
-            : <>Hoy no tienes citas agendadas. </>}
-          {saldoPendienteTotal > 0
-            ? <>Quedan <b style={{ color: 'var(--label-primary)' }}>{soles(saldoPendienteTotal)}</b> por cobrar.</>
-            : <>La cobranza está al día.</>}
-        </p>
-        <div style={{ display: 'flex', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
-          {/* "Total de pacientes" venía de Analítica (vista eliminada: repetía
-              gran parte del Dashboard y mostraba menos datos que él). Esto era
-              lo único que de verdad faltaba acá. */}
-          <span style={{ ...subCard, padding: '5px 11px', fontSize: 12, fontWeight: 600, color: 'var(--label-primary)' }}>
-            {pacientes.length} pacientes
-          </span>
-          <span style={{ ...subCard, padding: '5px 11px', fontSize: 12, fontWeight: 600, color: 'var(--label-primary)' }}>
-            {estados.activo} activos
-          </span>
-          <span style={{ ...subCard, padding: '5px 11px', fontSize: 12, fontWeight: 600, color: AZ }}>
-            {estados.nuevo} nuevos
-          </span>
-          <span style={{ ...subCard, padding: '5px 11px', fontSize: 12, fontWeight: 600, color: MU }}>
-            {tratamientos.length} tratamientos
-          </span>
+      {/* ─── SALUDO ─── (fila 1: 4 + 8 = 12)
+          Tarjeta azul marino, no blanca: sólo ÉSTA, como en la referencia --
+          el resto del Dashboard sigue en el acento violeta de siempre. Anillo
+          + cifra grande con los MISMOS datos que ya mostraba el saludo
+          anterior (tratamientos, no un concepto nuevo), reordenados al
+          patrón "anillo + leyenda + cifra grande" de la referencia. */}
+      <div style={{ ...col(4), background: 'var(--navy)', border: 'none', color: 'var(--navy-ink)', borderRadius: 'var(--radius-panel)', padding: 24, boxShadow: 'var(--shadow-raised)', display: 'flex', flexDirection: 'column' }}>
+        <div>
+          <h1 style={{ fontSize: 21, fontWeight: 600, color: 'var(--navy-ink)', margin: 0, letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+            Hola{nombreClinica ? `, ${nombreClinica}` : ''}
+          </h1>
+          <p style={{ fontSize: 12.5, color: 'var(--navy-ink-soft)', margin: '6px 0 0', lineHeight: 1.5 }}>
+            {citasHoy.length > 0
+              ? <>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''} hoy, la próxima a las {citasHoy[0].hora_cita}.</>
+              : <>Hoy no tienes citas agendadas.</>}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, margin: '18px 0' }}>
+          <Anillo pct={pctCompletado} color="var(--navy-ink)" tamano={124} grosor={10}>
+            <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--navy-ink)', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{pctCompletado}%</span>
+            <span style={{ fontSize: 10.5, color: 'var(--navy-ink-soft)', marginTop: 2 }}>{conteoEstadoTotal.completado} de {tratamientos.length}</span>
+          </Anillo>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {ESTADO_TRAT.map(e => (
+              <div key={e.key} style={{ textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'center', fontSize: 11, color: 'var(--navy-ink-soft)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: e.color, flexShrink: 0 }} />
+                  {e.label}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--navy-ink)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{conteoEstadoTotal[e.key]}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 'auto' }}>
+          <div style={{ fontSize: 11, color: 'var(--navy-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 600 }}>Tratamientos</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--navy-ink)', letterSpacing: '-0.02em', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>{tratamientos.length}</div>
         </div>
       </div>
 
@@ -536,6 +542,9 @@ export default function Dashboard({ setView, clinica }) {
             formato={soles}
             alto={218}
             mostrarCadaN={rango === '30d' ? 3 : 1}
+            /* Pill lima sobre el mes de mayor ingreso, como el "654" flotando
+               sobre la barra destacada de la referencia. */
+            resaltarPico
           />
         )}
       </div>
