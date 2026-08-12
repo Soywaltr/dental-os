@@ -38,8 +38,8 @@ export default function Stat({ label, value, sub, subCol, col, icon, onClick }) 
       {/* La cifra va en tinta neutra; el color vive en el ícono y en la
           píldora de variación. Así una fila de tarjetas no se vuelve un
           arcoíris. */}
-      <div style={{ fontSize: 11, color: '#8A8A96', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', color: '#16161D', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#94A0AC', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', color: '#252733', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {/* Píldora, no texto suelto de color -- así se ve como el badge de la
           referencia sin depender de que el texto sea corto: 4 de los 5 usos
           de `sub` en la app son frases largas ("cuotas iniciales + mensuales

@@ -198,7 +198,7 @@ export default function Seguridad({ rol }) {
               className="field"
               style={{
                 width: '100%', minHeight: 52, padding: '12px 14px', border: `1px solid ${BD}`,
-                borderRadius: '10px', background: '#F1F1F7',
+                borderRadius: '10px', background: '#DFF1F5',
                 fontSize: 22, fontWeight: 600, letterSpacing: 8, fontVariantNumeric: 'tabular-nums',
                 textAlign: 'center', marginBottom: 12, boxSizing: 'border-box', color: DN, outline: 'none',
                 transition: `border-color .18s ${EASE}`,

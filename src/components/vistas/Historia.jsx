@@ -128,7 +128,7 @@ function OcclusalMap({ num, surfs, activeTool, onSurf, size = 160 }) {
               <rect x={tx - 14} y={ty - 6} width="28" height="13" rx="2" fill={RJ} />
             )}
             <text x={tx} y={ty + 4} textAnchor="middle" fontSize={sf === sf0 ? 13 : 11}
-              fontWeight="600" fill={esExtraer || h ? '#fff' : '#8A8A96'} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+              fontWeight="600" fill={esExtraer || h ? '#fff' : '#94A0AC'} style={{ pointerEvents: 'none', userSelect: 'none' }}>
               {esExtraer ? 'EXT' : (h && t.sig ? t.sig : sf)}
             </text>
           </g>
@@ -371,7 +371,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
             {TOOLS.filter(t => t.g === g).map(t => (
               <div key={t.id} onClick={() => setAct(t.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', minHeight: 36, boxSizing: 'border-box', borderRadius: '10px', cursor: 'pointer', marginBottom: 2, background: act === t.id ? t.col : 'transparent', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
-                onMouseEnter={e => { if (act !== t.id) e.currentTarget.style.background = '#ECECF5' }}
+                onMouseEnter={e => { if (act !== t.id) e.currentTarget.style.background = '#D5EDF2' }}
                 onMouseLeave={e => { if (act !== t.id) e.currentTarget.style.background = 'transparent' }}>
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: t.col, border: `1px solid ${BD}`, flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: act === t.id ? '#fff' : DN, fontWeight: act === t.id ? 600 : 500 }}>{t.lbl}</span>
@@ -408,7 +408,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           {/* PLANO OCLUSAL */}
           <div style={{ margin: '12px 0 10px', borderTop: '2px solid #374151', position: 'relative', width: '100%' }}>
-            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%) translateY(-50%)', background: LT, padding: '0 12px', fontSize: 11, color: '#8A8A96', fontWeight: 600, letterSpacing: .4, whiteSpace: 'nowrap' }}>PLANO OCLUSAL</span>
+            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%) translateY(-50%)', background: LT, padding: '0 12px', fontSize: 11, color: '#94A0AC', fontWeight: 600, letterSpacing: .4, whiteSpace: 'nowrap' }}>PLANO OCLUSAL</span>
           </div>
 
           {showP && (
@@ -425,7 +425,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           <div style={{ marginTop: 20, borderTop: `1px solid ${BD}`, paddingTop: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: DN }}>ESPECIFICACIONES CLÍNICAS: </span>
             <textarea value={specs} onChange={e => setSpecs(e.target.value)} placeholder="Ej. Hallazgos múltiples o anotaciones no gráficas..."
-              style={{ width: '100%', minHeight: 40, marginTop: 6, padding: '8px 10px', border: '1px solid transparent', borderBottom: `1px solid ${BD}`, fontSize: 13, lineHeight: 1.5, resize: 'vertical', outline: 'none', color: DN, background: '#F1F1F7', borderRadius: '10px 10px 0 0', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+              style={{ width: '100%', minHeight: 40, marginTop: 6, padding: '8px 10px', border: '1px solid transparent', borderBottom: `1px solid ${BD}`, fontSize: 13, lineHeight: 1.5, resize: 'vertical', outline: 'none', color: DN, background: '#DFF1F5', borderRadius: '10px 10px 0 0', fontFamily: 'inherit', boxSizing: 'border-box' }} />
           </div>
 
           {/* EVALUACIÓN PERIODONTAL — a nivel de boca completa, no por pieza */}
@@ -477,7 +477,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         <div style={{ width: 250, background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderLeft: `1px solid ${BD}`, overflowY: 'auto', flexShrink: 0, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
             <div><div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: P, fontVariantNumeric: 'tabular-nums' }}>Pieza {sel}</div><div style={{ fontSize: 13, color: MU, fontWeight: 500 }}>{TNAME[sel] || '—'}</div></div>
-            <button onClick={() => setSel(null)} style={{ background: '#F1F1F7', border: 'none', borderRadius: '50%', width: 36, height: 36, minHeight: 36, fontSize: 17, cursor: 'pointer', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            <button onClick={() => setSel(null)} style={{ background: '#DFF1F5', border: 'none', borderRadius: '50%', width: 36, height: 36, minHeight: 36, fontSize: 17, cursor: 'pointer', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
 
           {mode === 'evolución' && (
@@ -538,9 +538,9 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
             const bad = has && isBad(c);
             return (
               <div key={sf} onClick={() => applySurf(sel, sf)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '10px 12px', minHeight: 44, boxSizing: 'border-box', borderRadius: '10px', cursor: 'pointer', background: has ? (t.g === 'r' ? '#FEE2E2' : 'rgba(123, 92, 250, 0.12)') : LT, border: `1px solid ${has ? `color-mix(in srgb, ${t.g === 'r' ? RJ : AZ} 27%, transparent)` : BD}` }}>
-                <div style={{ width: 28, height: 28, borderRadius: '10px', background: has ? (t.g === 'r' ? RJ : AZ) : '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 12, color: has ? '#fff' : '#8A8A96', fontWeight: 600 }}>{sf}</span>
+                style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, padding: '10px 12px', minHeight: 44, boxSizing: 'border-box', borderRadius: '10px', cursor: 'pointer', background: has ? (t.g === 'r' ? '#FEE2E2' : 'rgba(14, 169, 196, 0.12)') : LT, border: `1px solid ${has ? `color-mix(in srgb, ${t.g === 'r' ? RJ : AZ} 27%, transparent)` : BD}` }}>
+                <div style={{ width: 28, height: 28, borderRadius: '10px', background: has ? (t.g === 'r' ? RJ : AZ) : '#DFF1F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 12, color: has ? '#fff' : '#94A0AC', fontWeight: 600 }}>{sf}</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: has ? 600 : 500, color: has ? (t.g === 'r' ? RJ : AZ) : MU }}>{has ? t.lbl : 'Sin hallazgo'}</div>
@@ -563,7 +563,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           <div style={{ fontSize: 12, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Notas de pieza</div>
           <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel] = JSON.parse(JSON.stringify(currentTeeth[sel] || {})); next[sel].note = e.target.value; return next; })}
-            style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: '10px', fontSize: 13, lineHeight: 1.5, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#F1F1F7' }} />
+            style={{ width: '100%', minHeight: 60, padding: 10, border: `1px solid ${BD}`, borderRadius: '10px', fontSize: 13, lineHeight: 1.5, resize: 'vertical', outline: 'none', color: DN, fontFamily: 'inherit', boxSizing: 'border-box', background: '#DFF1F5' }} />
         </div>
       )}
       </div>
@@ -1189,7 +1189,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             <Icon name="phone" size={12} /> {patData?.phone || 'Sin celular'} · <Icon name="mail" size={12} /> {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años · {patData?.blood || 'O+'} {patData?.sexo ? `· ${patData.sexo}` : ''}
           </div>
           {(patData?.direccion) && (
-            <div style={{ fontSize: 11, color: '#8A8A96', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ fontSize: 11, color: '#94A0AC', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
               <Icon name="pin" size={11} /> {patData.direccion}
             </div>
           )}
@@ -1203,10 +1203,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             círculo teñido + etiqueta + cifra) en vez de un texto suelto. */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
-          background: '#F1F1F7', border: `1px solid ${BD}`, borderRadius: '14px',
+          background: '#DFF1F5', border: `1px solid ${BD}`, borderRadius: '14px',
           padding: '7px 14px 7px 8px',
         }}>
-          <div style={{ width: 30, height: 30, borderRadius: '10px', background: 'rgba(123, 92, 250, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 30, height: 30, borderRadius: '10px', background: 'rgba(14, 169, 196, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="calendar" size={14} />
           </div>
           <div>
@@ -1257,7 +1257,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 <h2 style={{ margin: 0, color: DN, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em' }}>Datos Personales</h2>
                 <div>
                   {!isEditingFiliacion ? (
-                    <button onClick={() => setIsEditingFiliacion(true)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#F1F1F7', color: MU, border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
+                    <button onClick={() => setIsEditingFiliacion(true)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#DFF1F5', color: MU, border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
                       <Icon name="edit" size={14} /> Editar Campos
                     </button>
                   ) : (
@@ -1272,20 +1272,20 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                <div><label style={labelDoc}>Nombres y Apellidos</label><input disabled={!isEditingFiliacion} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div><label style={labelDoc}>N° HC</label><input readOnly disabled value={editForm.num_hc || ''} placeholder="Autogenerado" style={{ ...inputDoc, background: '#F1F1F7', borderColor: 'transparent', cursor: 'not-allowed', fontWeight: 600, color: MU, fontVariantNumeric: 'tabular-nums' }} /></div>
-                <div><label style={labelDoc}>Sexo</label><select disabled={!isEditingFiliacion} value={editForm.sexo || ''} onChange={e => setEditForm({ ...editForm, sexo: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Mujer">Mujer</option><option value="Hombre">Hombre</option></select></div>
-                <div><label style={labelDoc}>Documento</label><div style={{ display: 'grid', gridTemplateColumns: '85px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.tipo_doc || ''} onChange={e => setEditForm({ ...editForm, tipo_doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="DNI">DNI</option><option value="CE">C.E.</option><option value="Pasaporte">Pasap.</option><option value="RUC">RUC</option></select><input disabled={!isEditingFiliacion} value={editForm.doc || ''} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
-                <div><label style={labelDoc}>Teléfono</label><div style={{ display: 'grid', gridTemplateColumns: '95px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.cod_pais || '+51'} onChange={e => setEditForm({ ...editForm, cod_pais: e.target.value })} style={{ ...inputDoc, padding: '9px 6px', background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }}>{TODAS_NACIONES.map(n => <option key={n.n} value={n.c}>{n.b} {n.c}</option>)}</select><input disabled={!isEditingFiliacion} value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
-                <div><label style={labelDoc}>Email</label><input disabled={!isEditingFiliacion} value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div><label style={labelDoc}>F. nacimiento y Edad</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 70px', gap: '8px' }}><input disabled={!isEditingFiliacion} type="date" value={editForm.birthDate || ''} onChange={e => { const bDay = e.target.value; let calculatedAge = editForm.age; if (bDay) { const today = new Date(); const birth = new Date(bDay); calculatedAge = today.getFullYear() - birth.getFullYear(); } setEditForm({ ...editForm, birthDate: bDay, age: calculatedAge }); }} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /><input value={editForm.age || ''} readOnly placeholder="Edad" style={{ ...inputDoc, background: '#F1F1F7', textAlign: 'center', borderColor: 'transparent', fontVariantNumeric: 'tabular-nums' }} /></div></div>
-                <div><label style={labelDoc}>País de nacimiento</label><select disabled={!isEditingFiliacion} value={editForm.pais_nacimiento || ''} onChange={e => setEditForm({ ...editForm, pais_nacimiento: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option>{TODAS_NACIONES.map(n => <option key={n.n} value={n.n}>{n.b} {n.n}</option>)}</select></div>
-                <div><label style={labelDoc}>Ocupación</label><input disabled={!isEditingFiliacion} value={editForm.ocupacion || ''} onChange={e => setEditForm({ ...editForm, ocupacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div style={{ gridColumn: 'span 2' }}><label style={labelDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div><label style={labelDoc}>Grupo Sanguíneo</label><input disabled={!isEditingFiliacion} value={editForm.blood || ''} onChange={e => setEditForm({ ...editForm, blood: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div><label style={labelDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option><option value="Tiktok">Tiktok</option><option value="Google">Google</option><option value="Referido por paciente">Referido por paciente</option><option value="Referido por doctor">Referido por doctor</option><option value="Amigos y familiares">Amigos y familiares</option><option value="Fachada">Fachada</option></select></div>
-                <div><label style={labelDoc}>Línea de negocio</label><select disabled={!isEditingFiliacion} value={editForm.linea_negocio || ''} onChange={e => setEditForm({ ...editForm, linea_negocio: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Ortodoncia">Ortodoncia</option><option value="Rehabilitación">Rehabilitación</option><option value="Estética">Estética</option><option value="Endodoncia">Endodoncia</option><option value="Tratamiento integral">Tratamiento integral</option><option value="Odontopediatría">Odontopediatría</option></select></div>
-                <div><label style={labelDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Nombres y Apellidos</label><input disabled={!isEditingFiliacion} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>N° HC</label><input readOnly disabled value={editForm.num_hc || ''} placeholder="Autogenerado" style={{ ...inputDoc, background: '#DFF1F5', borderColor: 'transparent', cursor: 'not-allowed', fontWeight: 600, color: MU, fontVariantNumeric: 'tabular-nums' }} /></div>
+                <div><label style={labelDoc}>Sexo</label><select disabled={!isEditingFiliacion} value={editForm.sexo || ''} onChange={e => setEditForm({ ...editForm, sexo: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Mujer">Mujer</option><option value="Hombre">Hombre</option></select></div>
+                <div><label style={labelDoc}>Documento</label><div style={{ display: 'grid', gridTemplateColumns: '85px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.tipo_doc || ''} onChange={e => setEditForm({ ...editForm, tipo_doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="DNI">DNI</option><option value="CE">C.E.</option><option value="Pasaporte">Pasap.</option><option value="RUC">RUC</option></select><input disabled={!isEditingFiliacion} value={editForm.doc || ''} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
+                <div><label style={labelDoc}>Teléfono</label><div style={{ display: 'grid', gridTemplateColumns: '95px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.cod_pais || '+51'} onChange={e => setEditForm({ ...editForm, cod_pais: e.target.value })} style={{ ...inputDoc, padding: '9px 6px', background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}>{TODAS_NACIONES.map(n => <option key={n.n} value={n.c}>{n.b} {n.c}</option>)}</select><input disabled={!isEditingFiliacion} value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
+                <div><label style={labelDoc}>Email</label><input disabled={!isEditingFiliacion} value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>F. nacimiento y Edad</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 70px', gap: '8px' }}><input disabled={!isEditingFiliacion} type="date" value={editForm.birthDate || ''} onChange={e => { const bDay = e.target.value; let calculatedAge = editForm.age; if (bDay) { const today = new Date(); const birth = new Date(bDay); calculatedAge = today.getFullYear() - birth.getFullYear(); } setEditForm({ ...editForm, birthDate: bDay, age: calculatedAge }); }} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /><input value={editForm.age || ''} readOnly placeholder="Edad" style={{ ...inputDoc, background: '#DFF1F5', textAlign: 'center', borderColor: 'transparent', fontVariantNumeric: 'tabular-nums' }} /></div></div>
+                <div><label style={labelDoc}>País de nacimiento</label><select disabled={!isEditingFiliacion} value={editForm.pais_nacimiento || ''} onChange={e => setEditForm({ ...editForm, pais_nacimiento: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option>{TODAS_NACIONES.map(n => <option key={n.n} value={n.n}>{n.b} {n.n}</option>)}</select></div>
+                <div><label style={labelDoc}>Ocupación</label><input disabled={!isEditingFiliacion} value={editForm.ocupacion || ''} onChange={e => setEditForm({ ...editForm, ocupacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div style={{ gridColumn: 'span 2' }}><label style={labelDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Grupo Sanguíneo</label><input disabled={!isEditingFiliacion} value={editForm.blood || ''} onChange={e => setEditForm({ ...editForm, blood: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option><option value="Tiktok">Tiktok</option><option value="Google">Google</option><option value="Referido por paciente">Referido por paciente</option><option value="Referido por doctor">Referido por doctor</option><option value="Amigos y familiares">Amigos y familiares</option><option value="Fachada">Fachada</option></select></div>
+                <div><label style={labelDoc}>Línea de negocio</label><select disabled={!isEditingFiliacion} value={editForm.linea_negocio || ''} onChange={e => setEditForm({ ...editForm, linea_negocio: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Ortodoncia">Ortodoncia</option><option value="Rehabilitación">Rehabilitación</option><option value="Estética">Estética</option><option value="Endodoncia">Endodoncia</option><option value="Tratamiento integral">Tratamiento integral</option><option value="Odontopediatría">Odontopediatría</option></select></div>
+                <div><label style={labelDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
               </div>
 
               {editForm.age < 18 && (
@@ -1295,10 +1295,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   </h3>
                   <div style={{ border: `1px solid ${BD}`, borderRadius: '14px', overflow: 'hidden' }}>
                     <div style={{ background: P, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '12px 20px' }}><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>Nombre</div><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>N° doc</div><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>Parentesco</div></div>
-                    <div style={{ background: '#F1F1F7', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px', padding: '20px' }}>
-                      <input disabled={!isEditingFiliacion} value={editForm.apoderado || ''} onChange={e => setEditForm({ ...editForm, apoderado: e.target.value })} placeholder="Nombre completo" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
-                      <input disabled={!isEditingFiliacion} value={editForm.apoderado_dni || ''} onChange={e => setEditForm({ ...editForm, apoderado_dni: e.target.value })} placeholder="DNI/CE" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
-                      <input disabled={!isEditingFiliacion} value={editForm.parentesco || ''} onChange={e => setEditForm({ ...editForm, parentesco: e.target.value })} placeholder="Ej: Madre, Padre" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F1F1F7', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
+                    <div style={{ background: '#DFF1F5', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px', padding: '20px' }}>
+                      <input disabled={!isEditingFiliacion} value={editForm.apoderado || ''} onChange={e => setEditForm({ ...editForm, apoderado: e.target.value })} placeholder="Nombre completo" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
+                      <input disabled={!isEditingFiliacion} value={editForm.apoderado_dni || ''} onChange={e => setEditForm({ ...editForm, apoderado_dni: e.target.value })} placeholder="DNI/CE" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
+                      <input disabled={!isEditingFiliacion} value={editForm.parentesco || ''} onChange={e => setEditForm({ ...editForm, parentesco: e.target.value })} placeholder="Ej: Madre, Padre" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#DFF1F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} />
                     </div>
                   </div>
                 </div>
@@ -1459,7 +1459,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               {cat.items.map(item => (
                 <div key={item} onClick={() => setDraftTreatment({ name: item, cost: PRECIOS[item] || 0, tooth: '', date: new Date().toISOString().slice(0,10), sessions: 1, notes: '' })}
                   style={{ fontSize: 13, color: DN, padding: '8px 10px', minHeight: 36, display: 'flex', alignItems: 'center', boxSizing: 'border-box', borderRadius: '10px', cursor: 'pointer', marginBottom: 2, fontVariantNumeric: 'tabular-nums', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1), color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#ECECF5'; e.currentTarget.style.color = P }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#D5EDF2'; e.currentTarget.style.color = P }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DN }}>
                   {item} — S/{PRECIOS[item] || 0}
                 </div>
@@ -1575,7 +1575,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
             );
           })}
-          {items.length === 0 && <div style={{ fontSize: 13, color: '#8A8A96', fontStyle: 'italic', padding: '6px 8px' }}>Sin tratamientos en este estado</div>}
+          {items.length === 0 && <div style={{ fontSize: 13, color: '#94A0AC', fontStyle: 'italic', padding: '6px 8px' }}>Sin tratamientos en este estado</div>}
         </div>
       );
     })}
@@ -1662,7 +1662,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               <div style={{ fontSize: 13, fontWeight: 600, color: DN, marginBottom: 10 }}>Rp:</div>
 
               {(!recetaActual || recetaActual.meds.length === 0) && (
-                <div style={{ fontSize: 13, color: '#8A8A96', fontStyle: 'italic', marginBottom: 12 }}>Sin medicamentos agregados aún.</div>
+                <div style={{ fontSize: 13, color: '#94A0AC', fontStyle: 'italic', marginBottom: 12 }}>Sin medicamentos agregados aún.</div>
               )}
 
               {recetaActual?.meds.map(r => (
@@ -1688,7 +1688,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   style={{ padding: '9px 11px', minHeight: 36, border: `1px solid ${BD}`, borderRadius: '10px', fontSize: 13, color: DN, background: LT, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <button onClick={handleAgregarMedicamento} disabled={savingReceta}
-                style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', background: savingReceta ? '#F1F1F7' : LT, color: savingReceta ? '#8A8A96' : P, border: `1px solid ${savingReceta ? BD : P}`, borderRadius: '10px', padding: '10px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: savingReceta ? 'not-allowed' : 'pointer' }}>
+                style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', background: savingReceta ? '#DFF1F5' : LT, color: savingReceta ? '#94A0AC' : P, border: `1px solid ${savingReceta ? BD : P}`, borderRadius: '10px', padding: '10px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: savingReceta ? 'not-allowed' : 'pointer' }}>
                 <Icon name="plus" size={13} /> {savingReceta ? 'Guardando...' : 'Agregar medicamento'}
               </button>
 
@@ -1697,7 +1697,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 {firmaDoctorUrl ? (
                   <img src={firmaDoctorUrl} alt="Firma y sello" onError={() => setFirmaDoctorUrl(null)} style={{ maxHeight: 44, maxWidth: '100%', objectFit: 'contain' }} />
                 ) : (
-                  <div style={{ fontSize: 12, color: '#8A8A96', fontStyle: 'italic' }}>Configura tu firma en Ajustes → Mi perfil</div>
+                  <div style={{ fontSize: 12, color: '#94A0AC', fontStyle: 'italic' }}>Configura tu firma en Ajustes → Mi perfil</div>
                 )}
               </div>
 
@@ -1777,7 +1777,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
               <label htmlFor="file-upload" style={{ background: LT, border: `2px dashed ${BD}`, borderRadius: '14px', height: 148, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 6, transition: 'border-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = P} onMouseLeave={e => e.currentTarget.style.borderColor = BD}>
-                <div style={{ fontSize: 28, color: '#8A8A96' }}>+</div>
+                <div style={{ fontSize: 28, color: '#94A0AC' }}>+</div>
                 <div style={{ fontSize: 12, color: MU, fontWeight: 500 }}>Subir archivo</div>
               </label>
             </div>
@@ -1819,7 +1819,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
-                  <tr style={{ background: '#F1F1F7', borderBottom: `1px solid ${BD}` }}>
+                  <tr style={{ background: '#DFF1F5', borderBottom: `1px solid ${BD}` }}>
                     <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Tratamiento</th>
                     <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Pieza</th>
                     <th style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: MU }}>Costo (S/)</th>
@@ -1838,7 +1838,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                     </tr>
                   ))}
                 </tbody>
-                <tfoot style={{ background: '#F1F1F7', borderTop: `2px solid ${BD}` }}>
+                <tfoot style={{ background: '#DFF1F5', borderTop: `2px solid ${BD}` }}>
                   <tr>
                     <td colSpan={2} style={{ padding: '14px 16px', fontSize: 13.5, fontWeight: 600, color: DN, textAlign: 'right' }}>TOTALES:</td>
                     <td style={{ padding: '14px 16px', fontSize: 15, fontWeight: 700, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/ {totalCosto.toFixed(2)}</td>
@@ -1854,8 +1854,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             <div
               onClick={() => { setPagoDraft({ itemId: plan.find(i => (i.cost - i.paid) > 0)?.id ? String(plan.find(i => (i.cost - i.paid) > 0).id) : '', monto: '' }); setShowPagoModal(true); }}
               style={{ marginTop: 20, background: LT, border: `1px dashed ${BD}`, borderRadius: '14px', padding: 16, minHeight: 44, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'background-color .18s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#ECECF5'} onMouseLeave={e => e.currentTarget.style.background = LT}>
-              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(123, 92, 250, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600 }}>$</div>
+              onMouseEnter={e => e.currentTarget.style.background = '#D5EDF2'} onMouseLeave={e => e.currentTarget.style.background = LT}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(14, 169, 196, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600 }}>$</div>
               <span style={{ fontSize: 13.5, fontWeight: 600, color: P }}>Registrar nuevo pago / abono</span>
             </div>
 

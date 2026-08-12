@@ -75,10 +75,10 @@ const VB_W = 720;
 // este componente tenga que adivinar el calendario.
 export function GraficoBarras({
   valores, etiquetas, formato = String, alto = 236,
-  colorBarra = 'rgba(22, 22, 29, 0.11)',
-  colorLinea = '#16161D',
-  colorTexto = '#8A8A96',
-  colorRejilla = 'rgba(22, 22, 29, 0.06)',
+  colorBarra = 'rgba(37, 39, 51, 0.11)',
+  colorLinea = '#252733',
+  colorTexto = '#94A0AC',
+  colorRejilla = 'rgba(37, 39, 51, 0.06)',
   colorAcento = '#16A34A',
   colorAcentoInk = '#FFFFFF',
   mostrarLinea = true,
@@ -204,7 +204,7 @@ export function GraficoBarras({
         )}
 
         {idx !== null && (
-          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="rgba(22, 22, 29, 0.11)" strokeWidth="1" />
+          <line x1={x(idx)} y1={PAD.t} x2={x(idx)} y2={baseY} stroke="rgba(37, 39, 51, 0.11)" strokeWidth="1" />
         )}
       </svg>
 
@@ -220,11 +220,11 @@ export function GraficoBarras({
           transform: `translate(${anotacion.idx > n / 2 ? '-100%' : '0'}, calc(-100% - 10px))`,
           marginLeft: anotacion.idx > n / 2 ? -8 : 8,
           background: '#FFFFFF', borderRadius: '14px',
-          border: '1px solid rgba(22, 22, 29, 0.06)', boxShadow: '0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)',
+          border: '1px solid rgba(37, 39, 51, 0.06)', boxShadow: '0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)',
           padding: '9px 12px', maxWidth: 210, pointerEvents: 'none', zIndex: 4,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#16161D', fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: '#252733', fontVariantNumeric: 'tabular-nums' }}>
               {formato(valores[anotacion.idx] ?? 0)}
             </span>
             {anotacion.delta != null && (
@@ -237,7 +237,7 @@ export function GraficoBarras({
             )}
           </div>
           {anotacion.texto && (
-            <div style={{ fontSize: 10.5, color: '#6B6B78', marginTop: 3, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 10.5, color: '#667085', marginTop: 3, lineHeight: 1.4 }}>
               {anotacion.texto}
             </div>
           )}
@@ -250,7 +250,7 @@ export function GraficoBarras({
           left: `${(x(idx) / VB_W) * 100}%`,
           transform: `translate(${idx > n / 2 ? '-100%' : '0'}, calc(-100% - 8px))`,
           marginLeft: idx > n / 2 ? -6 : 6,
-          background: '#16161D', color: '#FFFFFF',
+          background: '#252733', color: '#FFFFFF',
           borderRadius: '10px', padding: '5px 9px',
           fontSize: 11, fontWeight: 600, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 5,
           fontVariantNumeric: 'tabular-nums',

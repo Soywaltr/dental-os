@@ -23,7 +23,7 @@ const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 
 // Las burbujas y las sugerencias se apoyan SOBRE el panel, que ya es
 // --surface-primary: por eso usan la terciaria, si no quedarían invisibles.
-const SUP_BURBUJA = '#F1F1F7';
+const SUP_BURBUJA = '#DFF1F5';
 
 const TITULO_MAX = 42;
 const tituloDesde = (texto) => (texto.length > TITULO_MAX ? texto.slice(0, TITULO_MAX - 1).trimEnd() + '…' : texto);
@@ -183,7 +183,7 @@ export default function AsistenteDatos({ clinicaId }) {
         <Button onClick={nuevaConversacion} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, padding: '12px 14px', minHeight: 44, borderRadius: '10px' }}>
           <Icon name="plus" size={15} /> Nueva conversación
         </Button>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#8A8A96', textTransform: 'uppercase', letterSpacing: 0.5, padding: '2px 2px 0' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#94A0AC', textTransform: 'uppercase', letterSpacing: 0.5, padding: '2px 2px 0' }}>
           Historial
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -197,7 +197,7 @@ export default function AsistenteDatos({ clinicaId }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', minHeight: 44,
                 borderRadius: '10px', cursor: 'pointer',
-                background: conv.id === conversacionActivaId ? 'rgba(123, 92, 250, 0.12)' : 'transparent',
+                background: conv.id === conversacionActivaId ? 'rgba(14, 169, 196, 0.12)' : 'transparent',
                 transition: `background-color .18s ${EASE}`,
               }}
             >
@@ -208,13 +208,13 @@ export default function AsistenteDatos({ clinicaId }) {
                 }}>
                   {conv.titulo}
                 </div>
-                <div style={{ fontSize: 12, color: '#8A8A96', fontVariantNumeric: 'tabular-nums' }}>{fechaRelativa(conv.updated_at)}</div>
+                <div style={{ fontSize: 12, color: '#94A0AC', fontVariantNumeric: 'tabular-nums' }}>{fechaRelativa(conv.updated_at)}</div>
               </div>
               <button
                 onClick={(e) => eliminarConversacion(conv.id, e)}
                 title="Eliminar conversación"
                 style={{
-                  border: 'none', background: 'none', cursor: 'pointer', color: '#8A8A96',
+                  border: 'none', background: 'none', cursor: 'pointer', color: '#94A0AC',
                   width: 32, height: 32, borderRadius: '10px', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: `color .18s ${EASE}, background-color .18s ${EASE}`,
@@ -233,7 +233,7 @@ export default function AsistenteDatos({ clinicaId }) {
         flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
       }}>
         <div style={{ padding: '14px 18px', borderBottom: `1px solid ${BD}`, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(123, 92, 250, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(14, 169, 196, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="chat" size={18} />
           </div>
           <div>

@@ -153,6 +153,8 @@ const PATHS = {
       <line x1="1" y1="10" x2="23" y2="10" />
     </>
   ),
+  chevronUp: <polyline points="18 15 12 9 6 15" />,
+  chevronDown: <polyline points="6 9 12 15 18 9" />,
 };
 
 export default function Icon({ name, size = 14, color = 'currentColor', strokeWidth = 1.75, style }) {

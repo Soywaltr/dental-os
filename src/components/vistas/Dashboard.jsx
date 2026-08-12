@@ -2,7 +2,7 @@
 // Cruza las 5 tablas de negocio reales (pacientes, historias, ortodoncia,
 // laboratorio_ordenes, gastos), con el mismo filtro de archivados/huérfanos
 // que el resto de la app -- nada de datos de ejemplo ni Math.random(). Usa
-// los tokens de tokens.css (#7B5CFA, etc.), no una paleta propia: así
+// los tokens de tokens.css (#0EA9C4, etc.), no una paleta propia: así
 // el acento sigue siendo el de la clínica (white-label), no uno fijo.
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
@@ -49,15 +49,8 @@ const ESTADO_TRAT = [
   { key: 'en_curso', label: 'En curso', color: GL },
   { key: 'completado', label: 'Completado', color: VERDE },
 ];
-const ESTADO_BADGE = {
-  activo: { label: 'Activo', color: VERDE },
-  nuevo: { label: 'Nuevo', color: AZ },
-  inactivo: { label: 'Inactivo', color: MU },
-};
-
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const PACIENTES_POR_PAGINA = 5;
 
 const dateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseFecha = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d.getTime()) ? null : d; };
@@ -95,10 +88,10 @@ export default function Dashboard({ setView, clinica }) {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [rango, setRango] = useState('12m');
   const [metrica, setMetrica] = useState('ingresos');
-  const [paginaPacientes, setPaginaPacientes] = useState(1);
-  const [buscarPaciente, setBuscarPaciente] = useState('');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [, forzarTick] = useState(0);
+  const [abiertoNuevos, setAbiertoNuevos] = useState(true);
+  const [abiertoPendientes, setAbiertoPendientes] = useState(true);
 
   const esPrimeraCargaRef = useRef(true);
 
@@ -114,7 +107,7 @@ export default function Dashboard({ setView, clinica }) {
         { data: labData, error: errL },
         { data: gastosData, error: errG },
       ] = await Promise.all([
-        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment, archivado_at'),
+        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment, archivado_at, fuente_captacion'),
         supabase.from('historias').select('patient_id, plan_tratamiento'),
         supabase.from('ortodoncia').select('paciente_id, pagos, plan_tratamiento, resumen'),
         supabase.from('laboratorio_ordenes').select('id, patient_id, patient_name, type, cost, eta, status'),
@@ -253,8 +246,25 @@ export default function Dashboard({ setView, clinica }) {
     .map(([id, saldo]) => ({ paciente: pacientes.find(p => p.id === id), saldo }))
     .filter(d => d.paciente)
     .sort((a, b) => b.saldo - a.saldo)
-    .slice(0, 4);
-  const maxDeuda = Math.max(...topDeudores.map(d => d.saldo), 1);
+    .slice(0, 5);
+  // Primer tratamiento con saldo encontrado para ese paciente -- deudaPorPaciente
+  // sólo suma montos, no guarda a qué tratamiento corresponden.
+  const tratamientoDeudaPorPaciente = new Map();
+  tratamientos.forEach(t => {
+    if ((t.cost || 0) - (t.paid || 0) > 0 && !tratamientoDeudaPorPaciente.has(t.patient_id)) {
+      tratamientoDeudaPorPaciente.set(t.patient_id, t.name);
+    }
+  });
+
+  // ── "Oportunidades de hoy" ────────────────────────────────────────────────
+  // Pacientes nuevos (por altas recientes) y pacientes con saldo pendiente,
+  // con su fuente de captación real (pacientes.fuente_captacion) -- no hay
+  // campo de "nota" libre en el esquema, así que en su lugar se muestra la
+  // próxima cita agendada, que es el dato equivalente más útil que sí existe.
+  const pacientesNuevos = pacientes
+    .filter(p => estadoPaciente(p) === 'nuevo')
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    .slice(0, 5);
 
   // ── Laboratorio ──────────────────────────────────────────────────────────
   const labEnProceso = labOrders.filter(o => o.status === 'en_proceso');
@@ -311,19 +321,6 @@ export default function Dashboard({ setView, clinica }) {
     .filter(p => p.fecha === selectedDateStr && p.hora_cita)
     .sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
-  // ── Pacientes recientes, con paginación ───────────────────────────────────
-  // Orden: created_at desc si existe, si no por fecha de cita -- así una
-  // clínica sin historial de altas igual ve algo razonable.
-  const pacientesRecientes = [...pacientes]
-    .filter(p => !buscarPaciente.trim() || (p.name || '').toLowerCase().includes(buscarPaciente.trim().toLowerCase()))
-    .sort((a, b) => {
-      const ca = a.created_at || a.fecha || '';
-      const cb = b.created_at || b.fecha || '';
-      return cb.localeCompare(ca);
-    });
-  const totalPaginasPacientes = Math.max(1, Math.ceil(pacientesRecientes.length / PACIENTES_POR_PAGINA));
-  const paginaActual = Math.min(paginaPacientes, totalPaginasPacientes);
-  const pacientesPagina = pacientesRecientes.slice((paginaActual - 1) * PACIENTES_POR_PAGINA, paginaActual * PACIENTES_POR_PAGINA);
 
   // ── Estilos base ─────────────────────────────────────────────────────────
   // GLASS_* de utils/constants.js, no valores sueltos: son las mismas 4
@@ -336,9 +333,9 @@ export default function Dashboard({ setView, clinica }) {
     boxShadow: GLASS_SHADOW,
     display: 'flex', flexDirection: 'column',
   };
-  const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: '#16161D', letterSpacing: '-0.01em' };
-  const rotulo = { fontSize: 11, color: '#8A8A96', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
-  const subCard = { background: '#F1F1F7', borderRadius: '14px' };
+  const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: '#252733', letterSpacing: '-0.01em' };
+  const rotulo = { fontSize: 11, color: '#94A0AC', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
+  const subCard = { background: '#DFF1F5', borderRadius: '14px' };
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
   const nombreClinica = (clinica?.nombre || '').replace(/^Consultorio\s+/i, '').trim();
@@ -362,12 +359,12 @@ export default function Dashboard({ setView, clinica }) {
 
       {/* ─── HERO ─── saludo, tabs de métrica, cifra grande + variación,
           selector de rango e histograma anotado. La línea/barras van en el
-          acento de la clínica (#7B5CFA), no en un violeta fijo: así
+          acento de la clínica (#0EA9C4), no en un violeta fijo: así
           sigue el white-label en vez de clonar el color de la referencia. */}
       <div style={{ ...col(8), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#16161D', margin: 0, letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#252733', margin: 0, letterSpacing: '-0.01em' }}>
               Hola{nombreClinica ? `, ${nombreClinica}` : ''}
             </h1>
             <p style={{ fontSize: 13, color: MU, margin: '4px 0 0' }}>
@@ -394,11 +391,11 @@ export default function Dashboard({ setView, clinica }) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
                     padding: 0, cursor: 'pointer', font: 'inherit',
-                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? '#16161D' : MU,
+                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? '#252733' : MU,
                   }}>
                   <span style={{
                     width: 8, height: 8, borderRadius: '50%',
-                    border: `1.5px solid ${metrica === m.key ? P : 'rgba(22, 22, 29, 0.11)'}`,
+                    border: `1.5px solid ${metrica === m.key ? P : 'rgba(37, 39, 51, 0.11)'}`,
                     background: metrica === m.key ? P : 'transparent',
                   }} />
                   {m.label}
@@ -406,7 +403,7 @@ export default function Dashboard({ setView, clinica }) {
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: '#16161D', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: '#252733', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                 {soles(valorMetricaAnim)}
               </span>
               {pctMetricaActiva !== null && (
@@ -439,7 +436,7 @@ export default function Dashboard({ setView, clinica }) {
             alto={200}
             mostrarBarras={false}
             mostrarArea
-            colorLinea="#7B5CFA"
+            colorLinea="#0EA9C4"
             colorAcento={pctMetricaActiva === null || pctMetricaActiva >= 0 ? '#16A34A' : RJ}
             anotacion={{
               idx: valoresHistograma.length - 1,
@@ -455,14 +452,14 @@ export default function Dashboard({ setView, clinica }) {
         <div style={rotulo}>Cobranza</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '12px 0' }}>
           <Anillo pct={tasaCobro} color={P} tamano={78} grosor={8}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#16161D' }}>{tasaCobro}%</span>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#252733' }}>{tasaCobro}%</span>
           </Anillo>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <div style={{ fontSize: 12, color: '#6B6B78' }}>Cobrado <b style={{ color: '#16161D' }}>{soles(totalCobrado)}</b></div>
-            <div style={{ fontSize: 12, color: '#6B6B78' }}>Pendiente <b style={{ color: saldoPendienteTotal > 0 ? RJ : '#16161D' }}>{soles(saldoPendienteTotal)}</b></div>
+            <div style={{ fontSize: 12, color: '#667085' }}>Cobrado <b style={{ color: '#252733' }}>{soles(totalCobrado)}</b></div>
+            <div style={{ fontSize: 12, color: '#667085' }}>Pendiente <b style={{ color: saldoPendienteTotal > 0 ? RJ : '#252733' }}>{soles(saldoPendienteTotal)}</b></div>
           </div>
         </div>
-        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: '#16161D', lineHeight: 1.5 }}>
+        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: '#252733', lineHeight: 1.5 }}>
           {saldoPendienteTotal > 0
             ? <>Hay <b style={{ color: RJ }}>{soles(saldoPendienteTotal)}</b> por cobrar entre {deudaPorPaciente.size} paciente{deudaPorPaciente.size !== 1 ? 's' : ''}.</>
             : <>La cobranza está <b style={{ color: VERDE }}>al día</b>.</>}
@@ -477,18 +474,18 @@ export default function Dashboard({ setView, clinica }) {
               flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12,
               padding: '13px 14px', cursor: 'pointer', borderRadius: '14px', textAlign: 'left',
               background: 'transparent', border: 'none', font: 'inherit', minHeight: 44,
-              borderLeft: (!isTablet && i > 0) ? `1px solid rgba(22, 22, 29, 0.06)` : 'none',
-              borderTop: (isTablet && i > 0) ? `1px solid rgba(22, 22, 29, 0.06)` : 'none',
+              borderLeft: (!isTablet && i > 0) ? `1px solid rgba(37, 39, 51, 0.06)` : 'none',
+              borderTop: (isTablet && i > 0) ? `1px solid rgba(37, 39, 51, 0.06)` : 'none',
               transition: 'background-color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#ECECF5'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#D5EDF2'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(123, 92, 250, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(14, 169, 196, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
               <Icon name={a.icon} size={15} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#16161D', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#252733', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
               <div style={{ fontSize: 12, color: MU, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.sub}</div>
             </div>
           </button>
@@ -552,17 +549,17 @@ export default function Dashboard({ setView, clinica }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {g.citas.map(c => (
                     <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '9px 11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B78', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667085', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#252733', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
                           {estadoPaciente(c) === 'nuevo' && (
                             <span style={{ fontSize: 9.5, fontWeight: 700, color: GL, background: `color-mix(in srgb, ${GL} 14%, transparent)`, padding: '1px 6px', borderRadius: '999px', flexShrink: 0 }}>Nuevo</span>
                           )}
                         </div>
                         <div style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#16161D', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#252733', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                     </div>
                   ))}
                 </div>
@@ -579,7 +576,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', gap: 4 }}>
             {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
               <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
-                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: '#F1F1F7' }}>
+                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: '#DFF1F5' }}>
                 {lbl}
               </div>
             ))}
@@ -594,7 +591,7 @@ export default function Dashboard({ setView, clinica }) {
             return (
               <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
                 <span style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#FFFFFF' : (isToday ? P : '#16161D'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#FFFFFF' : (isToday ? P : '#252733'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
                   {d.getDate()}
                 </div>
                 <div style={{ width: 4, height: 4, borderRadius: '50%', background: nCitas > 0 ? P : 'transparent' }} />
@@ -611,7 +608,7 @@ export default function Dashboard({ setView, clinica }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 7, width: '100%', minHeight: 96, padding: 16,
               background: 'transparent', color: MU,
-              border: '1.5px dashed rgba(22, 22, 29, 0.11)',
+              border: '1.5px dashed rgba(37, 39, 51, 0.11)',
               borderRadius: '14px',
               fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
             }}
@@ -625,9 +622,9 @@ export default function Dashboard({ setView, clinica }) {
               <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
                 <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B78', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667085', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#252733', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                   </div>
                 </div>
@@ -663,7 +660,7 @@ export default function Dashboard({ setView, clinica }) {
                   <Icon name={a.icon} size={13} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#16161D', lineHeight: 1.35 }}>{a.texto}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#252733', lineHeight: 1.35 }}>{a.texto}</div>
                   <span style={{ display: 'inline-block', marginTop: 5, fontSize: 11, fontWeight: 600, color: a.color, background: `color-mix(in srgb, ${a.color} 8%, transparent)`, padding: '2px 7px', borderRadius: 100, letterSpacing: '0.3px' }}>
                     {a.etiqueta}
                   </span>
@@ -675,128 +672,101 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-      {/* ─── PACIENTES RECIENTES ─── tabla con paginación, dato real (orden
-          por alta/última cita), como la referencia -- sin inventar columnas
-          que la app no registra (no hay "número de silla" en dental-os).
-          Ancho completo: col(8) dejaba un hueco de 4 columnas sin nada al
-          lado, y una tabla de 5 columnas respira mejor a lo ancho. */}
-      <div style={{ ...col(12), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={h2}>Pacientes recientes</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: MU, display: 'flex' }}>
-                <Icon name="search" size={13} />
-              </span>
-              <input
-                className="field" type="search" placeholder="Buscar…"
-                value={buscarPaciente} onChange={e => { setBuscarPaciente(e.target.value); setPaginaPacientes(1); }}
-                style={{ padding: '7px 10px 7px 30px', borderRadius: '999px', border: '1px solid rgba(22, 22, 29, 0.06)', background: '#F1F1F7', fontSize: 12.5, width: 160, fontFamily: 'inherit', color: '#16161D' }}
-              />
-            </div>
-            <button onClick={() => setView && setView('expediente')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#FFFFFF', border: 'none', borderRadius: '999px', padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', font: 'inherit', whiteSpace: 'nowrap' }}>
-              <Icon name="userPlus" size={13} /> Nuevo paciente
-            </button>
-          </div>
-        </div>
-        {pacientesRecientes.length === 0 ? (
-          <div style={{ fontSize: 13.5, color: MU }}>{buscarPaciente ? 'Ningún paciente coincide.' : 'Sin pacientes registrados.'}</div>
-        ) : (
-          <>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                {/* Encabezado sólido en el acento: es lo más "calcado" que tiene
-                    la referencia -- el resto de las tablas de la app usa un
-                    encabezado neutro, pero esta réplica lo pide explícito. */}
-                <thead><tr style={{ background: P }}>
-                  {['Paciente', 'Tratamiento', 'Fecha', 'Hora', 'Estado'].map((x, i) => (
-                    <th key={x} style={{
-                      textAlign: 'left', padding: '10px 12px', color: '#FFFFFF', fontSize: 11, fontWeight: 600,
-                      textTransform: 'uppercase', letterSpacing: '0.4px',
-                      borderRadius: i === 0 ? '10px 0 0 10px' : i === 4 ? '0 10px 10px 0' : 0,
-                    }}>{x}</th>
-                  ))}
-                </tr></thead>
-                <tbody>
-                  {pacientesPagina.map(p => {
-                    const badge = ESTADO_BADGE[estadoPaciente(p)];
-                    return (
-                      <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderBottom: '1px solid rgba(22, 22, 29, 0.06)', cursor: 'pointer' }}>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B78', fontWeight: 600, fontSize: 11.5, flexShrink: 0 }}>{ini(p.name || '?')}</div>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{p.name}</div>
-                              <div style={{ fontSize: 11, color: MU }}>{p.doc || '—'}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: '#16161D' }}>{p.treatment || p.reason || 'Consulta'}</td>
-                        <td style={{ padding: '10px 12px', color: '#16161D', fontVariantNumeric: 'tabular-nums' }}>{p.fecha || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: '#16161D', fontVariantNumeric: 'tabular-nums' }}>{p.hora_cita || '—'}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `color-mix(in srgb, ${badge.color} 12%, transparent)`, padding: '2px 8px', borderRadius: '999px' }}>
-                            {badge.label}
-                          </span>
-                        </td>
+      {/* ─── OPORTUNIDADES DE HOY ─── calcada de "Today's Opportunities" de la
+          referencia: dos tablas apiladas, cada una con su cabecera (título +
+          contador + chevron de colapso) y un encabezado de columna gris
+          discreto -- no el thead sólido en el acento de la versión anterior
+          (ese look ya lo tiene "Pacientes recientes" en Config/Directorio;
+          acá se busca el look específico de la referencia). "Referido de"
+          sale de pacientes.fuente_captacion, un campo real que ya existe en
+          Supabase pero que ninguna vista mostraba todavía. */}
+      <div style={{ ...col(12), ...card, padding: 0, gap: 0 }}>
+        {/* Nuevos pacientes */}
+        <div style={{ padding: '18px 22px' }}>
+          <button onClick={() => setAbiertoNuevos(v => !v)} style={{
+            width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', textAlign: 'left',
+          }}>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#252733', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Pacientes nuevos
+              <span style={{ fontSize: 12, fontWeight: 600, color: MU }}>({pacientesNuevos.length})</span>
+            </span>
+            <Icon name={abiertoNuevos ? 'chevronUp' : 'chevronDown'} size={15} />
+          </button>
+          {abiertoNuevos && (
+            pacientesNuevos.length === 0 ? (
+              <div style={{ fontSize: 13, color: MU, marginTop: 12 }}>Sin altas nuevas por ahora.</div>
+            ) : (
+              <div style={{ overflowX: 'auto', marginTop: 12 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead><tr>
+                    {['Nombre', 'Interesado en', 'Referido de', 'Próxima cita'].map(x => (
+                      <th key={x} style={{ textAlign: 'left', padding: '6px 12px', color: MU, fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {pacientesNuevos.map(p => (
+                      <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderTop: '1px solid rgba(37, 39, 51, 0.06)', cursor: 'pointer' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#252733', whiteSpace: 'nowrap' }}>{p.name}</td>
+                        <td style={{ padding: '10px 12px', color: '#252733' }}>{p.treatment || p.reason || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: MU }}>{p.fuente_captacion || 'Directo'}</td>
+                        <td style={{ padding: '10px 12px', color: MU, fontVariantNumeric: 'tabular-nums' }}>{p.fecha ? `${p.fecha} · ${p.hora_cita || ''}` : 'Sin agendar'}</td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {totalPaginasPacientes > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 14 }}>
-                <button onClick={() => setPaginaPacientes(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
-                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === 1 ? '#B8B8C2' : MU, cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: 15 }}>‹</button>
-                {Array.from({ length: totalPaginasPacientes }, (_, i) => i + 1).map(n => (
-                  <button key={n} onClick={() => setPaginaPacientes(n)}
-                    style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: n === paginaActual ? P : 'transparent', color: n === paginaActual ? '#FFFFFF' : MU }}>
-                    {n}
-                  </button>
-                ))}
-                <button onClick={() => setPaginaPacientes(p => Math.min(totalPaginasPacientes, p + 1))} disabled={paginaActual === totalPaginasPacientes}
-                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === totalPaginasPacientes ? '#B8B8C2' : MU, cursor: paginaActual === totalPaginasPacientes ? 'default' : 'pointer', fontSize: 15 }}>›</button>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ─── MAYORES DEUDORES ─── */}
-      <div style={{ ...col(6), ...card, minHeight: 178 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h2 style={h2}>Mayores deudores</h2>
-          {topDeudores.length > 0 && (
-            <span onClick={() => setView && setView('caja')} style={{ fontSize: 12, color: MU, cursor: 'pointer', fontWeight: 600 }}>ver todo →</span>
+            )
           )}
         </div>
-        {topDeudores.length === 0 ? (
-          <div style={{ fontSize: 13.5, color: MU }}>Nadie tiene saldo pendiente. Al día.</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-            {topDeudores.map(d => (
-              <div key={d.paciente.id} onClick={() => setView && setView('caja')} style={{ cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#F1F1F7', border: 'none', color: '#16161D', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: RJ, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</div>
-                </div>
-                <div style={{ height: 5, background: BD, borderRadius: 3, overflow: 'hidden', marginLeft: 35 }}>
-                  <div style={{ height: '100%', width: `${(d.saldo / maxDeuda) * 100}%`, background: RJ, borderRadius: 3 }} />
-                </div>
+
+        <div style={{ height: 1, background: 'rgba(37, 39, 51, 0.06)' }} />
+
+        {/* Tratamiento pendiente */}
+        <div style={{ padding: '18px 22px' }}>
+          <button onClick={() => setAbiertoPendientes(v => !v)} style={{
+            width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', textAlign: 'left',
+          }}>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#252733', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Tratamiento pendiente de pago
+              <span style={{ fontSize: 12, fontWeight: 600, color: MU }}>({topDeudores.length})</span>
+            </span>
+            <Icon name={abiertoPendientes ? 'chevronUp' : 'chevronDown'} size={15} />
+          </button>
+          {abiertoPendientes && (
+            topDeudores.length === 0 ? (
+              <div style={{ fontSize: 13, color: MU, marginTop: 12 }}>Nadie tiene saldo pendiente. Al día.</div>
+            ) : (
+              <div style={{ overflowX: 'auto', marginTop: 12 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead><tr>
+                    {['Nombre', 'Tratamiento', 'Referido de', 'Saldo'].map(x => (
+                      <th key={x} style={{ textAlign: 'left', padding: '6px 12px', color: MU, fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {topDeudores.map(d => (
+                      <tr key={d.paciente.id} onClick={() => setView && setView('caja')} className="row-hoverable" style={{ borderTop: '1px solid rgba(37, 39, 51, 0.06)', cursor: 'pointer' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#252733', whiteSpace: 'nowrap' }}>{d.paciente.name}</td>
+                        <td style={{ padding: '10px 12px', color: '#252733' }}>{tratamientoDeudaPorPaciente.get(d.paciente.id) || d.paciente.treatment || d.paciente.reason || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: MU }}>{d.paciente.fuente_captacion || 'Directo'}</td>
+                        <td style={{ padding: '10px 12px', color: RJ, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
 
       {/* ─── LABORATORIO ─── */}
       <div style={{ ...col(6), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Laboratorio</h2>
-          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: '#8A8A96' }}>
+          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: '#94A0AC' }}>
             <Icon name="activity" size={14} />
           </div>
         </div>
@@ -851,8 +821,8 @@ export default function Dashboard({ setView, clinica }) {
               {topTratamientos.map(t => (
                 <div key={t.name} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: '#16161D', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: '#16161D' }}>{soles(t.monto)}</b></span>
+                    <span style={{ fontSize: 13, color: '#252733', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: '#252733' }}>{soles(t.monto)}</b></span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(t.monto / maxTrat) * 100}%`, background: colorPorNombre(t.name), borderRadius: 3 }} />
@@ -865,8 +835,8 @@ export default function Dashboard({ setView, clinica }) {
               {ESTADO_TRAT.map(e => (
                 <div key={e.key} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: '#16161D', fontWeight: 500 }}>{e.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#16161D' }}>{conteoEstado[e.key]}</span>
+                    <span style={{ fontSize: 13, color: '#252733', fontWeight: 500 }}>{e.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#252733' }}>{conteoEstado[e.key]}</span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(conteoEstado[e.key] / maxEstado) * 100}%`, background: e.color, borderRadius: 3 }} />

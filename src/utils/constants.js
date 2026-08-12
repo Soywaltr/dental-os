@@ -33,19 +33,18 @@ export const META_APP_ID = "TU_META_APP_ID_AQUI";
 export const META_OAUTH_SCOPE = "whatsapp_business_management,whatsapp_business_messaging";
 export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 
-// Paleta — ya no hex fijos, sino alias de las variables CSS declaradas en
-// src/tokens.css (":root"). P es el ÚNICO acento interactivo de toda la app
-// (botones primarios, tabs activos, enlaces, foco) -- por eso apunta a
-// --accent, que cada clínica puede fijar como su color de marca (white-label).
-// Como estas ~15 vistas ya importan de aquí, repuntar un solo valor cambia
-// toda la app sin tocar cada archivo.
-// MT apunta a --surface-TERTIARY (la superficie hundida), no a --secondary (el
-// fondo de página), porque eso es lo que significa en las ~10 llamadas que lo
-// usan: fondo de avatar sin foto, bloque de código del MFA, input
-// deshabilitado, caja de aviso. Con el fondo de página ahora casi blanco
-// (#F8F9FC, para que el lienzo teñido resalte), apuntarlo ahí dejaría todos
+// Paleta — hex/rgba fijos (ya no hay tokens.css/variables CSS, ver commit
+// "Elimina el sistema de design tokens"). P es el ÚNICO acento interactivo de
+// toda la app (botones primarios, tabs activos, enlaces, foco); hoy es el
+// teal de la referencia "Dental CRM Dashboard" (Behance). Repuntar por
+// clínica (white-label) ya no es posible sin tocar cada componente -- ver la
+// nota en utils/theme.js. Como estas ~15 vistas ya importan de aquí,
+// repuntar este archivo sigue cambiando toda la app sin tocar cada una.
+// MT es la superficie hundida (fondo de avatar sin foto, bloque de código del
+// MFA, input deshabilitado, caja de aviso), no el fondo de página -- con el
+// fondo de página ahora tintado (#E7F6F9), usar ese mismo tono ahí dejaría
 // esos elementos invisibles sobre una tarjeta blanca.
-export const P = '#7B5CFA', PD = '#5D46BE', DN = '#16161D', LT = '#FFFFFF', MT = '#F1F1F7', BD = 'rgba(22, 22, 29, 0.06)', MU = '#6B6B78', GL = '#F59E0B', WA = '#16A34A', AZ = '#7B5CFA', RJ = '#EF4444';
+export const P = '#0EA9C4', PD = '#0A7D91', DN = '#252733', LT = '#FFFFFF', MT = '#DFF1F5', BD = 'rgba(37, 39, 51, 0.06)', MU = '#667085', GL = '#F59E0B', WA = '#16A34A', AZ = '#0EA9C4', RJ = '#EF4444';
 
 // Identidad de la serie "Ingresos" en los gráficos. NO sigue el tema: es el
 // color fijo de una serie de datos, no chrome.
@@ -67,13 +66,13 @@ export const CAT_ACCENT = '#0D9488';
 // repuntando estas cuatro constantes, sin tocar cada archivo.
 export const GLASS_BG = '#FFFFFF';
 export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid rgba(22, 22, 29, 0.06)';
+export const GLASS_BORDER = '1px solid rgba(37, 39, 51, 0.06)';
 export const GLASS_SHADOW = '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
 // con los imports existentes (Button.jsx, Login.jsx, MFAChallenge.jsx, App.jsx).
-export const GRAD_PRIMARY = '#7B5CFA';
-export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(123, 92, 250, 0.12)';
+export const GRAD_PRIMARY = '#0EA9C4';
+export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(14, 169, 196, 0.12)';
 export const GRAD_SUCCESS = '#16A34A';
 
 export const PATIENTS = [

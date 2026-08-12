@@ -10,7 +10,7 @@ import { GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from '../../utils/constants';
 // resolver "blanco o negro" por sí solo.
 const VARIANTS = {
   primary: { background: GRAD_PRIMARY, color: '#FFFFFF', boxShadow: GRAD_PRIMARY_SHADOW },
-  secondary: { background: '#F1F1F7', color: '#6B6B78' },
+  secondary: { background: '#DFF1F5', color: '#667085' },
   danger: { background: '#FEE2E2', color: '#EF4444' },
 };
 
