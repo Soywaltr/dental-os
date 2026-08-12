@@ -36,6 +36,7 @@ const Caja        = lazy(() => import("./components/vistas/Caja"));
 const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
 const AsistenteDatos = lazy(() => import("./components/vistas/AsistenteDatos"));
 const Config      = lazy(() => import("./components/vistas/Config"));
+const Placeholder = lazy(() => import("./components/vistas/Placeholder"));
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 // Ya no son valores fijos: cada uno apunta a una variable CSS declarada en
@@ -165,11 +166,33 @@ function useSession() {
   return { session, loading, logout };
 }
 
+// Fábrica de componentes para las secciones placeholder: VIEWS necesita un
+// componente por clave, y las 13 secciones nuevas comparten el mismo
+// Placeholder.jsx -- esto le fija el título/ícono a cada una sin escribir 13
+// componentes idénticos a mano.
+const placeholderVista = (titulo, icono) => (props) => <Placeholder titulo={titulo} icono={icono} {...props} />;
+
 // ─── MAPA DE VISTAS ───────────────────────────────────────────────────────────
 const VIEWS = {
   dashboard: Dashboard, agenda: Agenda, expediente: Expediente,
   caja: Caja, laboratorio: Laboratorio,
   ortodoncia: Ortodoncia, whatsapp: AsistenteDatos, config: Config,
+  // Secciones agregadas por la referencia "Confidency OS" (ver
+  // SIDEBAR_SECTIONS más abajo) -- sin pantalla propia todavía.
+  overview:       placeholderVista("Overview", "overview"),
+  liveMonitor:    placeholderVista("Live Monitor", "liveMonitor"),
+  alerts:         placeholderVista("Alerts", "alerts"),
+  orderQueue:     placeholderVista("Order Queue", "orderQueue"),
+  catalog:        placeholderVista("Catalog", "catalog"),
+  pricingEngine:  placeholderVista("Pricing Engine", "pricingEngine"),
+  customers:      placeholderVista("Customers", "customers"),
+  reviews:        placeholderVista("Reviews", "reviews"),
+  revenueDesk:    placeholderVista("Revenue Desk", "revenueDesk"),
+  payouts:        placeholderVista("Payouts", "payouts"),
+  taxEngine:      placeholderVista("Tax Engine", "taxEngine"),
+  marketplace:    placeholderVista("Marketplace", "marketplace"),
+  pos:            placeholderVista("POS", "pos"),
+  socialChannels: placeholderVista("Social Channels", "socialChannels"),
 };
 
 // ─── ESTRUCTURA SIDEBAR ───────────────────────────────────────────────────────
@@ -210,6 +233,45 @@ const SIDEBAR_SECTIONS = [
       { id: "whatsapp", label: "Chat IA",  icon: "whatsapp", badge: "IA" },
     ],
   },
+  // Grupos agregados por la referencia "Confidency OS" -- pedido explícito
+  // del usuario: "agregar a lo que ya tiene, no quites nada actual". Rótulos
+  // en inglés, tal cual la referencia; el usuario dijo que los renombra él
+  // mismo después. Cada ítem apunta a Placeholder.jsx (ver VIEWS arriba) --
+  // no tienen pantalla propia todavía.
+  {
+    label: "Command",
+    items: [
+      { id: "overview",    label: "Overview",     icon: "overview" },
+      { id: "liveMonitor", label: "Live Monitor", icon: "liveMonitor" },
+      { id: "alerts",      label: "Alerts",       icon: "alerts" },
+    ],
+  },
+  {
+    label: "Commerce",
+    items: [
+      { id: "orderQueue",    label: "Order Queue",    icon: "orderQueue" },
+      { id: "catalog",       label: "Catalog",        icon: "catalog" },
+      { id: "pricingEngine", label: "Pricing Engine", icon: "pricingEngine" },
+      { id: "customers",     label: "Customers",      icon: "customers" },
+      { id: "reviews",       label: "Reviews",        icon: "reviews" },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { id: "revenueDesk", label: "Revenue Desk", icon: "revenueDesk" },
+      { id: "payouts",     label: "Payouts",      icon: "payouts" },
+      { id: "taxEngine",   label: "Tax Engine",   icon: "taxEngine" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { id: "marketplace",    label: "Marketplace",     icon: "marketplace" },
+      { id: "pos",            label: "POS",              icon: "pos" },
+      { id: "socialChannels", label: "Social Channels", icon: "socialChannels" },
+    ],
+  },
 ];
 
 const ITEM_AJUSTES = { id: "config", label: "Ajustes", icon: "config" };
@@ -219,6 +281,11 @@ const VIEW_LABELS = {
   dashboard: "Dashboard", agenda: "Agenda", expediente: "Historial",
   caja: "Finanzas", laboratorio: "Laboratorio",
   ortodoncia: "Ortodoncia", whatsapp: "Chat IA", config: "Ajustes",
+  overview: "Overview", liveMonitor: "Live Monitor", alerts: "Alerts",
+  orderQueue: "Order Queue", catalog: "Catalog", pricingEngine: "Pricing Engine",
+  customers: "Customers", reviews: "Reviews",
+  revenueDesk: "Revenue Desk", payouts: "Payouts", taxEngine: "Tax Engine",
+  marketplace: "Marketplace", pos: "POS", socialChannels: "Social Channels",
 };
 
 // ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
@@ -348,9 +415,17 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
           )}
         </div>
         {!col && (
-          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: "var(--rail-ink-strong)", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {clinica?.nombre || "DentalOS"}
-          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--rail-ink-strong)", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {clinica?.nombre || "DentalOS"}
+            </div>
+            {/* Subtítulo de dos líneas bajo el nombre, como "Business
+                Operations Platform" de la referencia -- texto genérico por
+                ahora, el usuario dijo que renombra esto después. */}
+            <div style={{ fontSize: 11, color: "var(--rail-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              Plataforma de gestión clínica
+            </div>
+          </div>
         )}
       </div>
 
@@ -745,7 +820,9 @@ const PrimaryBtn = memo(({ children, onClick, title }) => {
       onMouseLeave={() => setHov(false)}
       style={{
         display: "flex", alignItems: "center", gap: 5,
-        padding: "6px 14px", borderRadius: C.r, border: "none",
+        // Píldora, no radio de control: el botón primario de la referencia es
+        // completamente redondeado en los extremos, no un rectángulo suave.
+        padding: "6px 14px", borderRadius: "var(--radius-pill)", border: "none",
         background: GRAD_PRIMARY,
         opacity: hov ? 0.9 : 1,
         color: "var(--accent-contrast)", fontSize: 13, fontWeight: 600,

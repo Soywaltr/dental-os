@@ -10,6 +10,8 @@ import {
   LayoutDashboard, CalendarDays, FolderOpen,
   Wallet, FlaskConical, Smile, MessageCircle, Settings,
   Search, Bell, Plus, PanelLeft, ChevronDown, Sun, Moon,
+  Gauge, Radio, ListOrdered, BookOpen, Tag, Users, Star,
+  Landmark, Banknote, Receipt, Store, CreditCard, Share2,
 } from 'lucide-react';
 
 // Trazo fino y uniforme, como pide el lenguaje visual.
@@ -24,6 +26,22 @@ const MAPA = {
   ortodoncia:  Smile,
   whatsapp:    MessageCircle,
   config:      Settings,
+  // Secciones nuevas (placeholder, referencia "Confidency OS") -- ver
+  // App.jsx SIDEBAR_SECTIONS, grupos Command/Commerce/Finance/Platform.
+  overview:      Gauge,
+  liveMonitor:   Radio,
+  alerts:        Bell,
+  orderQueue:    ListOrdered,
+  catalog:       BookOpen,
+  pricingEngine: Tag,
+  customers:     Users,
+  reviews:       Star,
+  revenueDesk:   Landmark,
+  payouts:       Banknote,
+  taxEngine:     Receipt,
+  marketplace:   Store,
+  pos:           CreditCard,
+  socialChannels: Share2,
   // chrome del shell
   buscar:      Search,
   campana:     Bell,
