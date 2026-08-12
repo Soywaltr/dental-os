@@ -12,6 +12,7 @@ import {
   Search, Bell, Plus, PanelLeft, ChevronDown,
   Gauge, Radio, ListOrdered, BookOpen, Tag, Users, Star,
   Landmark, Banknote, Receipt, Store, CreditCard, Share2,
+  LayoutGrid, LogOut, Mail, UserPlus,
 } from 'lucide-react';
 
 // Trazo fino y uniforme, como pide el lenguaje visual.
@@ -48,6 +49,12 @@ const MAPA = {
   mas:         Plus,
   panel:       PanelLeft,
   chevronDown: ChevronDown,
+  // Riel delgado de iconos (referencia "YourCRM") y menú de cuenta.
+  grid:        LayoutGrid,
+  logout:      LogOut,
+  mail:        Mail,
+  cardPlus:    CreditCard,
+  userPlus:    UserPlus,
 };
 
 export default function NavIcon({ name, size = 18, strokeWidth = STROKE, style }) {

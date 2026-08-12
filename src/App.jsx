@@ -84,13 +84,10 @@ const C = {
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
-// El riel arranca desplegado (con nombres), salvo en pantallas de iPad o menores,
-// donde 230px de navegación se comen la vista (ver el efecto en App).
 const INIT = {
   view: "dashboard", selectedPat: null,
   teeth: {}, teethEvolucion: {}, patientsList: [],
   globalSearch: "", notifCount: 3,
-  sidebarCollapsed: typeof window !== "undefined" && window.innerWidth <= 1180,
 };
 
 function reducer(st, action) {
@@ -112,8 +109,6 @@ function reducer(st, action) {
     }
     case "SET_PATIENTS":    return { ...st, patientsList: action.payload };
     case "SET_SEARCH":      return { ...st, globalSearch: action.payload };
-    case "TOGGLE_SIDEBAR":  return { ...st, sidebarCollapsed: !st.sidebarCollapsed };
-    case "SET_SIDEBAR":     return { ...st, sidebarCollapsed: action.payload };
     case "HYDRATE":         return { ...st, ...action.payload };
     default:                return st;
   }
@@ -175,7 +170,7 @@ const VIEWS = {
   caja: Caja, laboratorio: Laboratorio,
   ortodoncia: Ortodoncia, whatsapp: AsistenteDatos, config: Config,
   // Secciones agregadas por la referencia "Confidency OS" (ver
-  // SIDEBAR_SECTIONS más abajo) -- sin pantalla propia todavía.
+  // OVERFLOW_SECTIONS más abajo) -- sin pantalla propia todavía.
   overview:       placeholderVista("Overview", "overview"),
   liveMonitor:    placeholderVista("Live Monitor", "liveMonitor"),
   alerts:         placeholderVista("Alerts", "alerts"),
@@ -192,49 +187,30 @@ const VIEWS = {
   socialChannels: placeholderVista("Social Channels", "socialChannels"),
 };
 
-// ─── ESTRUCTURA SIDEBAR ───────────────────────────────────────────────────────
-// Ajustes NO está en esta lista: va fijo al pie del riel (ver ITEM_AJUSTES), así
-// que tenerlo también acá lo mostraría dos veces.
-// Arquitectura de información. Se reagrupó porque la anterior mezclaba cosas
-// de distinta naturaleza:
-//
-//   · "Finanzas" estaba dentro de "Clínica" — no es trabajo clínico, es gestión
-//     del negocio. Ahora vive con Chat IA bajo "Gestión".
-//   · "Analítica" existió como subsección de Dashboard, pero repetía buena
-//     parte de su información (deudores, por cobrar, estado de tratamientos)
-//     y mostraba MENOS datos que Dashboard (no cruzaba ortodoncia/gastos/
-//     laboratorio). Se eliminó como vista aparte: lo que de verdad aportaba
-//     (total de pacientes, tasa de cobro) se plegó directo en Dashboard.
-//   · "Clínica" queda con lo que de verdad es asistencial: la agenda, la
-//     historia del paciente y los dos tratamientos con flujo propio.
-const SIDEBAR_SECTIONS = [
-  {
-    label: "Principal",
-    items: [
-      { id: "dashboard", label: "Dashboard", icon: "dashboard" },
-    ],
-  },
-  {
-    label: "Clínica",
-    items: [
-      { id: "agenda",      label: "Agenda",     icon: "agenda" },
-      { id: "expediente",  label: "Historial",  icon: "expediente" },
-      { id: "ortodoncia",  label: "Ortodoncia", icon: "ortodoncia" },
-      { id: "laboratorio", label: "Laboratorio", icon: "laboratorio" },
-    ],
-  },
-  {
-    label: "Gestión",
-    items: [
-      { id: "caja",     label: "Finanzas", icon: "caja" },
-      { id: "whatsapp", label: "Chat IA",  icon: "whatsapp", badge: "IA" },
-    ],
-  },
-  // Grupos agregados por la referencia "Confidency OS" -- pedido explícito
-  // del usuario: "agregar a lo que ya tiene, no quites nada actual". Rótulos
-  // en inglés, tal cual la referencia; el usuario dijo que los renombra él
-  // mismo después. Cada ítem apunta a Placeholder.jsx (ver VIEWS arriba) --
-  // no tienen pantalla propia todavía.
+// ─── ESTRUCTURA DE NAVEGACIÓN ─────────────────────────────────────────────────
+// Referencia "YourCRM": barra horizontal de 7 píldoras (Relationship/
+// Opportunities/Leads/Calendar/Cases/Reports/Quotes). DentalOS tiene
+// exactamente 7 ítems reales -- coincide justo, así que van TODOS en la barra
+// horizontal del header, sin reagrupar por secciones (ya no hace falta: la
+// agrupación por "Clínica/Gestión" tenía sentido en un riel largo, no en una
+// fila de 7 píldoras).
+const PRIMARY_NAV = [
+  { id: "dashboard",   label: "Dashboard",   icon: "dashboard" },
+  { id: "agenda",      label: "Agenda",      icon: "agenda" },
+  { id: "expediente",  label: "Historial",   icon: "expediente" },
+  { id: "ortodoncia",  label: "Ortodoncia",  icon: "ortodoncia" },
+  { id: "laboratorio", label: "Laboratorio", icon: "laboratorio" },
+  { id: "caja",        label: "Finanzas",    icon: "caja" },
+  { id: "whatsapp",    label: "Chat IA",     icon: "whatsapp", badge: "IA" },
+];
+
+// Grupos agregados por la referencia "Confidency OS" -- pedido explícito del
+// usuario en su momento: "agregar a lo que ya tiene, no quites nada actual".
+// No entran en la barra horizontal (ya tiene sus 7 píldoras justas), así que
+// viven detrás del botón "Más" del riel delgado -- siguen alcanzables, sólo
+// que no ocupan sitio en la navegación principal. Cada ítem apunta a
+// Placeholder.jsx (ver VIEWS arriba) -- no tienen pantalla propia todavía.
+const OVERFLOW_SECTIONS = [
   {
     label: "Command",
     items: [
@@ -285,284 +261,176 @@ const VIEW_LABELS = {
   marketplace: "Marketplace", pos: "POS", socialChannels: "Social Channels",
 };
 
-// ─── COMPONENTE: ITEM DE NAVEGACIÓN ───────────────────────────────────────────
-// Riel blanco, ítem activo = píldora NEGRA sólida con texto/ícono blanco --
-// calcado de la referencia "YourCRM" (icon rail claro + nav activa en negro).
-// Ya no es un riel relleno de color con una burbuja blanca saliente (versión
-// anterior): la referencia usa un riel casi invisible, así que el contraste
-// tiene que salir del propio ítem activo, no del fondo del riel.
-// El hover ya no lo da .rail-item (ui.css se eliminó) -- se maneja con
-// useState acá mismo, sólo en el ítem inactivo.
-const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
-  const alto = 40; // área táctil cómoda incluso en el riel angosto
+// ─── COMPONENTE: PÍLDORA DE NAV HORIZONTAL ────────────────────────────────────
+// Calcada de la barra superior de "YourCRM": activa = negro sólido + texto
+// blanco, inactiva = texto gris, hover = fondo gris clarito. Vive en el
+// header, no en un riel vertical -- ver PRIMARY_NAV arriba.
+const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
   const [hover, setHover] = useState(false);
-
   return (
     <button
       onClick={() => onClick(item.id)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       aria-current={isActive ? "page" : undefined}
-      title={collapsed ? item.label : undefined}
       style={{
-        position: "relative",
-        width: collapsed ? 40 : "100%",
-        height: alto, minHeight: alto,
-        margin: collapsed ? "0 auto" : 0,
-        display: "flex", alignItems: "center", gap: 11,
-        padding: collapsed ? 0 : "0 12px",
-        justifyContent: collapsed ? "center" : "flex-start",
+        display: "flex", alignItems: "center", gap: 6,
+        height: 34, padding: "0 14px", flexShrink: 0,
         borderRadius: "999px", border: "none",
         background: isActive ? "#0A0A0A" : hover ? "#EDEDED" : "transparent",
         color: isActive ? "#FFFFFF" : "#0A0A0A",
-        fontFamily: C.font, fontSize: 13.5,
-        fontWeight: isActive ? 600 : 450,
-        textAlign: "left",
-        cursor: "pointer", flexShrink: 0,
+        fontFamily: C.font, fontSize: 13.5, fontWeight: isActive ? 600 : 500,
+        cursor: "pointer", whiteSpace: "nowrap",
         transition: "background-color 150ms ease",
       }}
     >
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, flexShrink: 0, opacity: isActive ? 1 : 0.75 }}>
-        <NavIcon name={item.icon} size={18} />
-      </span>
-
-      {/* Colapsado no cabe la píldora "IA": se reduce a un punto. */}
-      {collapsed && item.badge && (
+      {item.label}
+      {item.badge && (
         <span style={{
-          position: "absolute", top: 7, right: 7,
-          width: 6, height: 6, borderRadius: "50%",
-          background: "#729DEE",
-        }} />
+          fontSize: 9.5, fontWeight: 700, letterSpacing: "0.2px",
+          padding: "2px 6px", borderRadius: "999px",
+          background: isActive ? "#729DEE" : "#EDEDED",
+          color: isActive ? "#FFFFFF" : "#0A0A0A",
+        }}>
+          {item.badge}
+        </span>
       )}
-
-      {!collapsed && (
-        <>
-          <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
-          {item.badge && (
-            <span style={{
-              fontSize: 10, fontWeight: 600, letterSpacing: "0.2px",
-              padding: "3px 8px", borderRadius: "999px", flexShrink: 0,
-              background: isActive ? "#729DEE" : "#EDEDED",
-              color: isActive ? "#FFFFFF" : "#0A0A0A",
-            }}>
-              {item.badge}
-            </span>
-          )}
-          {typeof contador === "number" && contador > 0 && (
-            <span style={{
-              fontSize: 11, fontWeight: 600, flexShrink: 0,
-              minWidth: 20, height: 20, padding: "0 6px",
-              borderRadius: "999px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: isActive ? "rgba(255, 255, 255, 0.22)" : "#EDEDED",
-              color: isActive ? "#FFFFFF" : "#0A0A0A",
-              fontVariantNumeric: "tabular-nums",
-            }}>
-              {contador}
-            </span>
-          )}
-        </>
+      {typeof contador === "number" && contador > 0 && (
+        <span style={{
+          fontSize: 10.5, fontWeight: 700, minWidth: 17, height: 17, padding: "0 5px",
+          borderRadius: "999px", display: "flex", alignItems: "center", justifyContent: "center",
+          background: isActive ? "rgba(255, 255, 255, 0.22)" : "#729DEE",
+          color: isActive ? "#FFFFFF" : "#FFFFFF",
+          fontVariantNumeric: "tabular-nums",
+        }}>
+          {contador}
+        </span>
       )}
     </button>
   );
 });
 
-// Botón de pie de riel ("Contraer") -- mismo tratamiento visual que NavItem
-// inactivo (texto/icono negros, hover gris claro), nunca puede estar "activo".
-const PieBoton = ({ onClick, icon, label, collapsed, ...rest }) => {
+// ─── COMPONENTE: BOTÓN DEL RIEL DELGADO ───────────────────────────────────────
+// Círculo de ícono solo, sin texto -- el riel de la referencia es angosto y
+// casi invisible (blanco, sin relleno), estos botones son su único contenido.
+const IconRailButton = memo(({ icon, title, onClick, badge }) => {
   const [hover, setHover] = useState(false);
   return (
     <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      {...rest}
+      onClick={onClick} title={title} aria-label={title}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
-        width: collapsed ? 40 : "100%", height: 40, minHeight: 40,
-        margin: collapsed ? "3px auto 0" : "3px 0 0",
-        display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start",
-        gap: 11, padding: collapsed ? 0 : "0 12px",
-        borderRadius: "999px", border: "none",
-        background: hover ? "#EDEDED" : "transparent",
-        color: "#0A0A0A", fontFamily: C.font, fontSize: 13.5,
-        cursor: "pointer", transition: "background-color 150ms ease",
+        position: "relative", width: 36, height: 36, borderRadius: "50%",
+        border: "none", background: hover ? "#EDEDED" : "transparent",
+        color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", flexShrink: 0, transition: "background-color 150ms ease",
       }}
     >
-      <span style={{ display: "flex", width: 18, height: 18, alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: 0.75 }}>
-        <NavIcon name={icon} size={18} />
-      </span>
-      {label && <span>{label}</span>}
+      <NavIcon name={icon} size={17} />
+      {typeof badge === "number" && badge > 0 && (
+        <span style={{
+          position: "absolute", top: -2, right: -2,
+          minWidth: 15, height: 15, padding: "0 3px", borderRadius: "999px",
+          background: "#729DEE", color: "#FFFFFF", fontSize: 9, fontWeight: 700,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "1.5px solid #FFFFFF", fontVariantNumeric: "tabular-nums",
+        }}>
+          {badge}
+        </span>
+      )}
     </button>
   );
-};
+});
 
-// ─── COMPONENTE: RIEL DE NAVEGACIÓN ───────────────────────────────────────────
-// Panel blanco flotante, calcado de la referencia "YourCRM": riel casi
-// invisible, ítem activo = píldora negra sólida (ver NavItem arriba).
-//
-// Al pie, y en este orden: Ajustes, plegar, y el bloque de perfil del usuario.
-// El perfil vive acá (no en el header) porque es identidad de sesión, no una
-// acción de la vista actual.
-const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreUsuario, rol, onLogout }) => {
-  const { sidebarCollapsed: col, view } = state;
-  // El bucket es privado: el logo va por URL firmada, no por la pública que
-  // quedó guardada en clinicas.logo_url.
-  const logoUrl = useSignedUrl(clinica?.logo_url);
-  const goTo = useCallback(id => dispatch({ type: "SET_VIEW", payload: { view: id } }), [dispatch]);
-  const toggle = useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), [dispatch]);
-  const W = col ? 76 : 248;
+// Panel "Más": las 4 secciones de la referencia "Confidency OS" que no
+// entran en la barra horizontal de 7 píldoras -- siguen alcanzables acá,
+// agrupadas igual que antes en el riel viejo.
+const MasPanel = memo(({ view, onSelect, onClose }) => {
+  const ref = React.useRef(null);
+  useEffect(() => {
+    const alApretar = e => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    window.addEventListener("mousedown", alApretar);
+    return () => window.removeEventListener("mousedown", alApretar);
+  }, [onClose]);
+  return (
+    <div ref={ref} style={{
+      position: "absolute", left: "calc(100% + 8px)", top: 0, zIndex: 210,
+      width: 220, background: "#FFFFFF", border: "1px solid #E2E2E2",
+      borderRadius: "14px", boxShadow: "0 8px 20px rgba(10, 10, 10, 0.10)",
+      padding: "8px 0", maxHeight: "80vh", overflowY: "auto",
+    }}>
+      {OVERFLOW_SECTIONS.map((section, si) => (
+        <div key={si} style={{ padding: "6px 0" }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9AA1AC", letterSpacing: "0.4px", textTransform: "uppercase", padding: "4px 14px" }}>
+            {section.label}
+          </div>
+          {section.items.map(item => (
+            <button
+              key={item.id} onClick={() => onSelect(item.id)}
+              aria-current={view === item.id ? "page" : undefined}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10,
+                padding: "7px 14px", border: "none", background: view === item.id ? "#EDEDED" : "transparent",
+                color: "#0A0A0A", fontFamily: C.font, fontSize: 13, cursor: "pointer", textAlign: "left",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = view === item.id ? "#EDEDED" : "transparent"; }}
+            >
+              <span style={{ display: "flex", opacity: 0.75 }}><NavIcon name={item.icon} size={16} /></span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+// ─── COMPONENTE: RIEL DELGADO ─────────────────────────────────────────────────
+// Sólo iconos, blanco, angosto -- calcado del riel de la referencia "YourCRM"
+// (ahí son accesos genéricos de la página; acá son accesos reales: atajos de
+// creación, el resto de las secciones que no entran en la barra horizontal,
+// Ajustes y cerrar sesión). La navegación PRINCIPAL vive en el header
+// (PRIMARY_NAV), no acá -- este riel es un complemento, no el menú.
+const IconRail = memo(({ state, dispatch, avatarUrl, nombreUsuario, onLogout }) => {
+  const { view } = state;
+  const [masAbierto, setMasAbierto] = useState(false);
+  const goTo = useCallback(id => { dispatch({ type: "SET_VIEW", payload: { view: id } }); setMasAbierto(false); }, [dispatch]);
 
   return (
     <aside style={{
-      width: W, minWidth: W,
+      width: 64, minWidth: 64,
       margin: "28px 0 28px 28px",
       height: "calc(100vh - 28px * 2)",
-      background: "#FFFFFF",
-      border: "1px solid #E2E2E2",
-      borderRadius: "18px",
-      boxShadow: "0 8px 24px rgba(10, 10, 10, 0.05)",
-      display: "flex", flexDirection: "column",
-      padding: "18px 0 12px",
-      flexShrink: 0, zIndex: 101, overflow: "hidden",
-      transition: "width 250ms cubic-bezier(0.25, 0.1, 0.25, 1), min-width 250ms cubic-bezier(0.25, 0.1, 0.25, 1)",
+      background: "#FFFFFF", border: "1px solid #E2E2E2",
+      borderRadius: "18px", boxShadow: "0 8px 24px rgba(10, 10, 10, 0.05)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "16px 0", gap: 6, flexShrink: 0, zIndex: 101,
+      position: "relative",
     }}>
+      <IconRailButton icon="agenda" title="Nueva cita" onClick={() => goTo("agenda")} />
+      <IconRailButton icon="cardPlus" title="Registrar pago" onClick={() => goTo("caja")} />
+      <IconRailButton icon="userPlus" title="Nuevo paciente" onClick={() => goTo("expediente")} />
 
-      {/* ── Marca ── */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
-        padding: col ? 0 : "0 16px", marginBottom: 20,
-        justifyContent: col ? "center" : "flex-start",
+      <div style={{ width: 24, height: 1, background: "#E2E2E2", margin: "6px 0" }} />
+
+      <div style={{ position: "relative" }}>
+        <IconRailButton icon="grid" title="Más secciones" onClick={() => setMasAbierto(v => !v)} />
+        {masAbierto && <MasPanel view={view} onSelect={goTo} onClose={() => setMasAbierto(false)} />}
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      <IconRailButton icon="config" title="Ajustes" onClick={() => goTo("config")} />
+      <span style={{
+        width: 32, height: 32, borderRadius: "50%", flexShrink: 0, marginTop: 4,
+        background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(114, 157, 238, 0.15)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 12, fontWeight: 600, color: "#729DEE",
       }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: "10px", overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "#729DEE",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#FFFFFF",
-        }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
-            </svg>
-          )}
-        </div>
-        {!col && (
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#0A0A0A", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {clinica?.nombre || "DentalOS"}
-            </div>
-            {/* Subtítulo de dos líneas bajo el nombre, como "Business
-                Operations Platform" de la referencia -- texto genérico por
-                ahora, el usuario dijo que renombra esto después. */}
-            <div style={{ fontSize: 11, color: "#9AA1AC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              Plataforma de gestión clínica
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Secciones ── */}
-      <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: col ? 0 : "0 12px" }}>
-        {SIDEBAR_SECTIONS.map((section, si) => (
-          <div key={si} style={{ marginBottom: 14 }}>
-            {section.label && !col && (
-              <div style={{
-                fontSize: 11, fontWeight: 600, color: "#9AA1AC",
-                letterSpacing: "0.4px", textTransform: "uppercase",
-                padding: "0 12px 8px",
-              }}>
-                {section.label}
-              </div>
-            )}
-            {/* Colapsado no hay lugar para el rótulo: una línea fina separa los
-                grupos. */}
-            {section.label && col && si > 0 && (
-              <div style={{ height: 1, background: "#E2E2E2", margin: "0 20px 10px" }} />
-            )}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {section.items.map(item => (
-                <NavItem
-                  key={item.id}
-                  item={item}
-                  isActive={view === item.id}
-                  collapsed={col}
-                  contador={contadores[item.id]}
-                  onClick={goTo}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* ── Pie: Ajustes + plegar ── */}
-      <div style={{ flexShrink: 0, padding: col ? 0 : "0 12px", marginTop: 10 }}>
-        <NavItem
-          item={ITEM_AJUSTES}
-          isActive={view === ITEM_AJUSTES.id}
-          collapsed={col}
-          onClick={goTo}
-        />
-        <PieBoton
-          onClick={toggle}
-          icon="panel"
-          label={!col ? "Contraer" : undefined}
-          aria-label={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
-          title={col ? "Mostrar nombres de las secciones" : "Ocultar nombres de las secciones"}
-          collapsed={col}
-        />
-      </div>
-
-      {/* ── Cuenta ── el perfil vive al pie del riel, no en el header: es
-          identidad de sesión (quién está usando la app), no una acción de la
-          vista actual. */}
-      <div style={{ flexShrink: 0, marginTop: 12, paddingTop: 12, borderTop: "1px solid #E2E2E2" }}>
-        {!col && (
-          <div style={{
-            fontSize: 11, fontWeight: 600, color: "#9AA1AC",
-            letterSpacing: "0.4px", textTransform: "uppercase",
-            padding: "0 24px 8px",
-          }}>
-            Cuenta
-          </div>
-        )}
-        <div style={{ padding: col ? 0 : "0 12px" }}>
-          <button
-            onClick={onLogout}
-            title={`${nombreUsuario} — cerrar sesión`}
-            style={{
-              width: col ? 44 : "100%", minHeight: 44,
-              margin: col ? "0 auto" : 0,
-              display: "flex", alignItems: "center", gap: 10,
-              padding: col ? 0 : "6px 10px",
-              justifyContent: col ? "center" : "flex-start",
-              borderRadius: "10px", border: "none", background: "transparent",
-              cursor: "pointer", textAlign: "left", fontFamily: C.font,
-            }}
-          >
-            <span style={{
-              width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(114, 157, 238, 0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 600, color: "#729DEE",
-            }}>
-              {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
-            </span>
-            {!col && (
-              <span style={{ minWidth: 0, flex: 1 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0A0A0A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {nombreUsuario}
-                </span>
-                <span style={{ display: "block", fontSize: 11.5, color: "#9AA1AC", textTransform: "capitalize" }}>
-                  {rol || "Cerrar sesión"}
-                </span>
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
+        {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
+      </span>
+      <IconRailButton icon="logout" title="Cerrar sesión" onClick={onLogout} />
     </aside>
   );
 });
@@ -571,7 +439,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
 // igual que el hint "/" del teclado. Ahora busca pacientes de verdad por nombre o
 // documento y abre su historial. El RLS acota el resultado a la propia clínica,
 // así que no hace falta filtrar por clinica_id acá.
-const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
+const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente, autoFocus, onCerrar }) => {
   // Se guarda la consulta JUNTO a sus resultados: si sólo se guardaran los
   // resultados, al reescribir se mostrarían los de la búsqueda anterior hasta
   // que llegara la nueva.
@@ -580,22 +448,34 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
   const cajaRef = React.useRef(null);
   const inputRef = React.useRef(null);
 
+  // Header nuevo: el buscador nace como ícono y se expande a este campo al
+  // hacer clic -- autoFocus lo enfoca apenas se monta, como cualquier campo
+  // que reemplaza a un botón.
+  useEffect(() => { if (autoFocus) inputRef.current?.focus(); }, [autoFocus]);
+
   // El atajo "/" que el teclado ya prometía en la UI.
   useEffect(() => {
     const alTeclear = (e) => {
       const enCampo = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
       if (e.key === "/" && !enCampo) { e.preventDefault(); inputRef.current?.focus(); }
-      if (e.key === "Escape") setAbierto(false);
+      if (e.key === "Escape") { setAbierto(false); onCerrar?.(); }
     };
     window.addEventListener("keydown", alTeclear);
     return () => window.removeEventListener("keydown", alTeclear);
-  }, []);
+  }, [onCerrar]);
 
   useEffect(() => {
-    const alApretar = (e) => { if (cajaRef.current && !cajaRef.current.contains(e.target)) setAbierto(false); };
+    const alApretar = (e) => {
+      if (cajaRef.current && !cajaRef.current.contains(e.target)) {
+        setAbierto(false);
+        // Sólo se colapsa de vuelta al ícono si no hay texto -- si el usuario
+        // ya escribió algo, cerrar el campo le borraría la búsqueda sin avisar.
+        if (onCerrar && !(valor || "").trim()) onCerrar();
+      }
+    };
     window.addEventListener("mousedown", alApretar);
     return () => window.removeEventListener("mousedown", alApretar);
-  }, []);
+  }, [onCerrar, valor]);
 
   useEffect(() => {
     const texto = (valor || "").trim();
@@ -630,7 +510,7 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
   const resultados = buscando ? [] : res.items;
 
   return (
-    <div ref={cajaRef} style={{ position: "relative", flex: 1, maxWidth: 430, minWidth: 0 }}>
+    <div ref={cajaRef} style={{ position: "relative", width: 260, flexShrink: 0 }}>
       <span style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: C.inkMute, display: "flex", pointerEvents: "none" }}>
         <NavIcon name="buscar" size={17} />
       </span>
@@ -652,15 +532,6 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
           fontFamily: C.font, color: C.ink, outline: "none",
         }}
       />
-      <kbd style={{
-        position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-        fontSize: 10, color: C.inkMute, fontFamily: C.fontMono,
-        background: C.brandSoft, padding: "2px 6px", borderRadius: "10px",
-        pointerEvents: "none",
-      }}>
-        /
-      </kbd>
-
       {abierto && hayTexto && (
         // Opaco, no vidrio: es una lista densa de resultados (nombre + DNI),
         // y ahí la legibilidad pesa más que el efecto -- mismo criterio que
@@ -707,91 +578,136 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
 });
 
 // ─── COMPONENTE: HEADER SUPERIOR ──────────────────────────────────────────────
-const TopHeader = memo(({ state, dispatch, onAbrirPaciente }) => {
-  const label = VIEW_LABELS[state.view] ?? state.view;
-  // En portrait de iPad (~758-810px, menos los 60-230px del riel) este header
-  // no tenía ningún mecanismo de achique: grupo derecho a flexShrink:0, sin
-  // wrap. El selector de sede es decorativo (no hay más de una sede real
-  // todavía) así que es lo primero que se sacrifica; "Nueva cita" se reduce a
-  // sólo el ícono en vez de perder alguno de los dos por completo.
+// Wordmark + barra de píldoras horizontal + buscador/mail/campana/perfil --
+// calcado de la cabecera de "YourCRM". El título de vista suelto que había
+// antes se retira: la píldora activa de PRIMARY_NAV ya dice en qué sección
+// se está, repetirlo como texto sería redundante.
+const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreUsuario, rol, onLogout, onAbrirPaciente }) => {
   const { isNarrow } = useResponsive();
+  const [buscarAbierto, setBuscarAbierto] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = React.useRef(null);
+  const logoUrl = useSignedUrl(clinica?.logo_url);
+  const goTo = id => dispatch({ type: "SET_VIEW", payload: { view: id } });
+
+  useEffect(() => {
+    const alApretar = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuAbierto(false); };
+    window.addEventListener("mousedown", alApretar);
+    return () => window.removeEventListener("mousedown", alApretar);
+  }, []);
 
   return (
-    // El header también es un panel flotante: sin borde inferior duro, separado
-    // del contenido por aire, igual que el resto de los bloques.
     <header style={{
-      height: 64, minHeight: 64,
+      minHeight: 64,
       display: "flex", alignItems: "center",
-      padding: "0 14px 0 22px",
-      // Mismo canal que el contenido: el header se alinea con los paneles de
-      // abajo en los dos bordes, no flota con su propia medida.
+      padding: "10px 18px",
       margin: "28px 28px 0 28px",
-      gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
-      background: "#FFFFFF",
-      borderRadius: "18px",
-      boxShadow: "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
+      gap: 18, flexShrink: 0, zIndex: 90, position: "relative",
+      background: "#FFFFFF", border: "1px solid #E2E2E2",
+      borderRadius: "18px", flexWrap: "wrap",
+      boxShadow: "0 8px 24px rgba(10, 10, 10, 0.05)",
     }}>
-      {/* Título de la vista */}
-      <span style={{ fontSize: 19, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: "-0.02em", flexShrink: 0 }}>
-        {label}
-      </span>
+      {/* Wordmark */}
+      <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: "8px", overflow: "hidden", flexShrink: 0,
+          background: logoUrl ? "transparent" : "#729DEE",
+          display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF",
+        }}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+            </svg>
+          )}
+        </div>
+        {!isNarrow && (
+          <span style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0A", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
+            {(clinica?.nombre || "DentalOS").replace(/^Consultorio\s+/i, '')}
+          </span>
+        )}
+      </div>
 
-      {/* Buscador global */}
-      <BuscadorGlobal
-        valor={state.globalSearch}
-        onCambio={v => dispatch({ type: "SET_SEARCH", payload: v })}
-        onAbrirPaciente={onAbrirPaciente}
-      />
+      {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia */}
+      <nav style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", flex: 1, minWidth: 0 }}>
+        {PRIMARY_NAV.map(item => (
+          <TopNavPill
+            key={item.id} item={item} isActive={state.view === item.id}
+            contador={contadores[item.id]} onClick={goTo}
+          />
+        ))}
+      </nav>
 
-      {/* Grupo derecho */}
-      <div style={{ display: "flex", alignItems: "center", gap: isNarrow ? 6 : 8, flexShrink: 0, marginLeft: "auto" }}>
+      {/* Grupo derecho: buscar, mensajes (Chat IA), notificaciones, perfil */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, position: "relative" }}>
+        {buscarAbierto ? (
+          <BuscadorGlobal
+            valor={state.globalSearch}
+            onCambio={v => dispatch({ type: "SET_SEARCH", payload: v })}
+            onAbrirPaciente={p => { onAbrirPaciente(p); setBuscarAbierto(false); }}
+            autoFocus
+            onCerrar={() => setBuscarAbierto(false)}
+          />
+        ) : (
+          <HeaderIconBtn label="Buscar paciente" onClick={() => setBuscarAbierto(true)}>
+            <NavIcon name="buscar" size={17} />
+          </HeaderIconBtn>
+        )}
 
-        {/* Botón nueva cita: en portrait de iPad, sólo el ícono. */}
-        <PrimaryBtn
-          onClick={() => dispatch({ type: "SET_VIEW", payload: { view: "agenda" } })}
-          title={isNarrow ? "Nueva cita" : undefined}
-        >
-          <NavIcon name="mas" size={16} />
-          {!isNarrow && "Nueva cita"}
-        </PrimaryBtn>
-
-        {/* Notificaciones. Ajustes ya no está acá: vive fijo al pie del riel. */}
-        <HeaderIconBtn label={`${state.notifCount} notificaciones`} badge={state.notifCount}>
-          <NavIcon name="campana" size={18} />
+        <HeaderIconBtn label="Chat IA" onClick={() => goTo("whatsapp")}>
+          <NavIcon name="mail" size={17} />
         </HeaderIconBtn>
 
-        {/* El perfil ya no está acá: vive al pie del riel (bloque "Cuenta"),
-            porque es identidad de sesión y no una acción de la vista actual. */}
+        <HeaderIconBtn label={`${state.notifCount} notificaciones`} badge={state.notifCount}>
+          <NavIcon name="campana" size={17} />
+        </HeaderIconBtn>
+
+        {/* Perfil: el bloque "Cuenta" del riel viejo se vuelve este menú --
+            el avatar circular arriba a la derecha es el lugar exacto donde
+            la referencia lo pone. */}
+        <div ref={menuRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setMenuAbierto(v => !v)}
+            aria-label={`${nombreUsuario} — cuenta`}
+            style={{
+              width: 34, height: 34, borderRadius: "50%", border: "1.5px solid #E2E2E2", padding: 0,
+              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(114, 157, 238, 0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12, fontWeight: 600, color: "#729DEE", cursor: "pointer",
+            }}
+          >
+            {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
+          </button>
+          {menuAbierto && (
+            <div style={{
+              position: "absolute", right: 0, top: "calc(100% + 8px)", zIndex: 210,
+              width: 200, background: "#FFFFFF", border: "1px solid #E2E2E2",
+              borderRadius: "14px", boxShadow: "0 8px 20px rgba(10, 10, 10, 0.10)", padding: 8,
+            }}>
+              <div style={{ padding: "6px 8px 10px" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombreUsuario}</div>
+                <div style={{ fontSize: 11.5, color: "#9AA1AC", textTransform: "capitalize" }}>{rol || "Usuario"}</div>
+              </div>
+              <button
+                onClick={onLogout}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 9,
+                  padding: "8px 8px", border: "none", background: "transparent",
+                  color: "#0A0A0A", fontFamily: C.font, fontSize: 13, cursor: "pointer",
+                  borderRadius: "8px", borderTop: "1px solid #E2E2E2",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <NavIcon name="logout" size={15} />
+                Cerrar sesión
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
-  );
-});
-
-// ─── MICRO: BOTÓN PRIMARIO ────────────────────────────────────────────────────
-const PrimaryBtn = memo(({ children, onClick, title }) => {
-  const [hov, setHov] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex", alignItems: "center", gap: 5,
-        // Píldora, no radio de control: el botón primario de la referencia es
-        // completamente redondeado en los extremos, no un rectángulo suave.
-        padding: "6px 14px", borderRadius: "999px", border: "none",
-        background: GRAD_PRIMARY,
-        opacity: hov ? 0.9 : 1,
-        color: "#FFFFFF", fontSize: 13, fontWeight: 600,
-        fontFamily: C.font, cursor: "pointer", outline: "none",
-        transition: "opacity 0.12s",
-        boxShadow: GRAD_PRIMARY_SHADOW,
-        letterSpacing: "-0.1px",
-      }}
-    >
-      {children}
-    </button>
   );
 });
 
@@ -922,20 +838,12 @@ export default function App() {
   const { session, loading, logout } = useSession();
   const { currentLevel: aalActual, nextLevel: aalSiguiente, loading: aalLoading } = useAAL(session);
   const [state, dispatch] = useReducer(reducer, INIT);
-  const { isTablet } = useResponsive();
   const { clinicaId, clinica, rol: clinicaRol, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
   const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp(clinicaId);
   // Compartido por el riel y el panel de secciones: el bucket es privado, así que
   // la foto va por URL firmada y no por la pública guardada en la tabla.
   const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
   const contadores = useContadoresNav(clinicaId);
-
-  // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
-  // No pelea con un re-expandido manual del usuario mientras siga en ese ancho
-  // (el efecto solo se dispara cuando isTablet cambia de valor, no en cada render).
-  useEffect(() => {
-    if (isTablet) dispatch({ type: "SET_SIDEBAR", payload: true });
-  }, [isTablet]);
 
   // Si Meta acaba de redirigir aquí tras el OAuth de WhatsApp Business
   // (?code=...), procesa la conexión y regresa a Ajustes. Espera a que
@@ -1035,21 +943,23 @@ export default function App() {
         overflow: "hidden", background: C.pageBg,
         fontFamily: C.font, position: "relative",
       }}>
-        {/* Riel de acento a sangre por la izquierda: colapsado son los iconos,
-            desplegado los mismos con nombre y contador. Nunca las secciones dos
-            veces en pantalla -- no hay pestañas arriba que las repitan. */}
-        <Sidebar
-          state={state} dispatch={dispatch} clinica={clinica} contadores={contadores}
+        {/* Riel delgado sólo-iconos: atajos, "Más" secciones, Ajustes y cerrar
+            sesión. La navegación principal ya no vive acá -- ver PRIMARY_NAV
+            en el header. */}
+        <IconRail
+          state={state} dispatch={dispatch}
           avatarUrl={avatarUrl} onLogout={logout}
           nombreUsuario={session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario"}
-          rol={clinicaRol}
         />
 
         {/* Columna derecha */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative", zIndex: 1 }}>
-          {/* Header: título de vista + buscador + acciones */}
+          {/* Header: wordmark + nav horizontal + buscador + acciones + perfil */}
           <TopHeader
-            state={state} dispatch={dispatch}
+            state={state} dispatch={dispatch} clinica={clinica} contadores={contadores}
+            avatarUrl={avatarUrl} onLogout={logout}
+            nombreUsuario={session?.user?.user_metadata?.full_name || session?.user?.email || "Usuario"}
+            rol={clinicaRol}
             onAbrirPaciente={p => dispatch({ type: "SET_VIEW", payload: { view: "expediente", pat: p } })}
           />
 

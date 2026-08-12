@@ -4,11 +4,12 @@
 // que el resto de la app -- nada de datos de ejemplo ni Math.random().
 //
 // Paleta calcada de la referencia "YourCRM" (UI/UX, Alina Abovyan) --
-// negro/azul/coral sobre blanco, sin acento por clínica: por decisión
-// explícita del usuario, esta vista ya NO importa P/MU/RJ/GL/GLASS_* de
-// utils/constants.js (eso sigue siendo teal para el resto de la app). Todo
-// el color de este archivo vive acá abajo, hardcodeado, para que un cambio
-// de paleta futuro en constants.js no arrastre a este componente sin querer.
+// negro/azul/coral sobre blanco. Esta vista ya NO importa P/MU/RJ/GL/GLASS_*
+// de utils/constants.js -- aunque hoy el resto de la app usa la MISMA
+// paleta (ver commit "Rebrand completo a la referencia YourCRM"), Dashboard
+// la mantiene local a propósito: fue el primer archivo migrado, antes de que
+// el resto de la app cambiara, y así un cambio futuro en constants.js no lo
+// arrastra sin querer.
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
@@ -241,6 +242,13 @@ export default function Dashboard({ setView, clinica }) {
   pacientes.forEach(p => { estados[estadoPaciente(p)]++; });
   const citasHoy = pacientes.filter(p => p.fecha === todayStr && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
+  // ── Tira de avatares ─── calcada de "Case Allocation" en la referencia:
+  // fotos (acá, iniciales) en círculo superpuestas arriba del todo. Sin
+  // citas hoy, se cae a los pacientes más recientes -- la tira nunca se
+  // queda vacía mientras haya al menos un paciente.
+  const avataresStrip = (citasHoy.length > 0 ? citasHoy : [...pacientes].sort((a, b) => (b.created_at || b.fecha || '').localeCompare(a.created_at || a.fecha || ''))).slice(0, 8);
+  const COLOR_ESTADO = { activo: VERDE, nuevo: P, inactivo: MU };
+
   // ── Próximas citas agrupadas por día (hoy + 4 días) ───────────────────────
   const gruposProximos = Array.from({ length: 5 }).map((_, i) => {
     const d = new Date(hoy); d.setDate(d.getDate() + i);
@@ -373,6 +381,35 @@ export default function Dashboard({ setView, clinica }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: '20px', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
+
+      {/* ─── TIRA DE AVATARES ─── calcada de "Case Allocation": círculos
+          superpuestos arriba de todo, con un anillo de color por estado del
+          paciente (verde activo / azul nuevo / gris inactivo) en vez de la
+          foto real -- dental-os no guarda fotos de paciente. */}
+      <div style={{ ...col(12), ...card, flexDirection: 'row', alignItems: 'center', padding: '14px 22px', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {avataresStrip.map((p, i) => (
+            <div
+              key={p.id} onClick={() => setView && setView('expediente')} title={p.name}
+              style={{
+                width: 38, height: 38, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
+                marginLeft: i === 0 ? 0 : -10, zIndex: avataresStrip.length - i,
+                border: `2.5px solid ${COLOR_ESTADO[estadoPaciente(p)] || MU}`,
+                background: '#F5F5F5', boxShadow: '0 0 0 2px #FFFFFF',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12.5, fontWeight: 700, color: NEGRO,
+              }}
+            >
+              {ini(p.name || '?')}
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: MU, fontWeight: 500 }}>
+          {citasHoy.length > 0
+            ? <>{citasHoy.length} paciente{citasHoy.length !== 1 ? 's' : ''} con cita hoy</>
+            : <>Sin citas hoy · últimos pacientes registrados</>}
+        </div>
+      </div>
 
       {/* ─── HERO ─── saludo, tabs de métrica, cifra grande + variación,
           selector de rango e histograma anotado. La línea/barras van en el
