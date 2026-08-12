@@ -4,6 +4,12 @@
 // Cruza las mismas 5 tablas de negocio que la versión anterior (pacientes,
 // historias, ortodoncia, laboratorio_ordenes, gastos) -- ningún dato nuevo,
 // sólo una composición distinta de la misma información real.
+//
+// v2 (re-skin Ledgerix, sin tocar lógica ni Supabase):
+//   - Hero con la cifra ENORME centrada como protagonista + delta.
+//   - Selector de rango como toggle limpio arriba a la derecha.
+//   - Barra "Pregúntale a la IA" (estilo command bar de la referencia) que
+//     enruta al asistente ya existente. Solo presentación; ningún dato nuevo.
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
@@ -76,6 +82,14 @@ const getWeekDays = (anchor) => {
     return d;
   });
 };
+
+// Preguntas sugeridas para la command bar -- solo enrutan al asistente ya
+// existente, no consultan nada nuevo.
+const SUGERENCIAS_IA = [
+  '¿Cuánto facturé este mes?',
+  '¿Quién me debe más?',
+  '¿Qué tratamiento deja más?',
+];
 
 export default function Dashboard({ setView, clinica }) {
   const { isTablet } = useResponsive();
@@ -353,16 +367,18 @@ export default function Dashboard({ setView, clinica }) {
   }
 
   const pctMetricaActiva = metrica === 'ingresos' ? pctIngresos : metrica === 'gastos' ? pctGastos : pctUtilidad;
+  const labelMetrica = METRICAS.find(m => m.key === metrica)?.label;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-      {/* ─── HERO ─── un solo panel: tabs de métrica, cifra enorme + variación,
-          selector de rango e histograma con el pico marcado en verde -- el
-          patrón de la referencia "Ledgerix", con datos reales (ingresos,
-          gastos y utilidad ya calculados arriba, no un valor de ejemplo). */}
+      {/* ─── HERO ─── El patrón de la referencia "Ledgerix": tabs de métrica a
+          la izquierda, selector de rango a la derecha, y sobre todo la CIFRA
+          ENORME centrada como protagonista, con el histograma corriendo debajo.
+          Todo con datos reales (ingresos/gastos/utilidad ya calculados). */}
       <div style={{ ...col(12), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
+        {/* saludo + latido de "en vivo" */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
           <div>
             <h1 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               Hola{nombreClinica ? `, ${nombreClinica}` : ''}
@@ -383,52 +399,75 @@ export default function Dashboard({ setView, clinica }) {
           </div>
         </div>
 
-        {/* Tabs de métrica: radio-dot, como Income/New Profit/Expenses de la
-            referencia -- cambian qué valor muestran la cifra y el histograma
-            de abajo, no un adorno. */}
-        <div style={{ display: 'flex', gap: 20, marginBottom: 4 }}>
-          {METRICAS.map(m => (
-            <button key={m.key} onClick={() => setMetrica(m.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none',
-                padding: 0, cursor: 'pointer', font: 'inherit',
-                fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? 'var(--text-primary)' : MU,
-              }}>
-              <span style={{
-                width: 9, height: 9, borderRadius: '50%',
-                border: `1.5px solid ${metrica === m.key ? 'var(--text-primary)' : 'var(--hairline-strong)'}`,
-                background: metrica === m.key ? 'var(--text-primary)' : 'transparent',
-              }} />
-              {m.label}
-            </button>
-          ))}
+        {/* fila de controles: label + tabs de métrica (izq)  |  rango (der) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, marginTop: 22 }}>
+          <div>
+            <div style={{ ...rotulo, marginBottom: 11 }}>Estado de resultados</div>
+            {/* Tabs de métrica: radio-dot, como Income/New Profit/Expenses de la
+                referencia -- cambian qué valor muestran la cifra y el histograma. */}
+            <div style={{ display: 'flex', gap: 20 }}>
+              {METRICAS.map(m => (
+                <button key={m.key} onClick={() => setMetrica(m.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none',
+                    padding: 0, cursor: 'pointer', font: 'inherit',
+                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? 'var(--text-primary)' : MU,
+                  }}>
+                  <span style={{
+                    width: 9, height: 9, borderRadius: '50%',
+                    border: `1.5px solid ${metrica === m.key ? 'var(--text-primary)' : 'var(--hairline-strong)'}`,
+                    background: metrica === m.key ? 'var(--text-primary)' : 'transparent',
+                  }} />
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Selector de rango: toggle limpio, tipo Week/Month/Quarter/Year de
+              la referencia. Activo = pastilla blanca elevada sobre el hundido. */}
+          <div style={{ display: 'flex', gap: 2, background: 'var(--panel-sunken)', padding: 3, borderRadius: 'var(--radius-pill)' }}>
+            {RANGOS.map(r => {
+              const activo = rango === r.key;
+              return (
+                <button key={r.key} onClick={() => setRango(r.key)}
+                  style={{
+                    border: 'none', cursor: 'pointer', font: 'inherit',
+                    fontSize: 12, fontWeight: 600, padding: '6px 13px', borderRadius: 'var(--radius-pill)',
+                    color: activo ? 'var(--text-primary)' : MU,
+                    background: activo ? 'var(--panel)' : 'transparent',
+                    boxShadow: activo ? 'var(--shadow-raised)' : 'none',
+                    transition: 'background-color var(--dur-fast) var(--ease)',
+                  }}>
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 10, marginBottom: 4 }}>
-          <span style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-            {soles(valorMetricaAnim)}
-          </span>
-          {pctMetricaActiva !== null && (
+        {/* LA CIFRA -- protagonista, centrada y enorme */}
+        <div style={{ textAlign: 'center', margin: '30px 0 4px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             <span style={{
-              fontSize: 12.5, fontWeight: 700, color: pctMetricaActiva >= 0 ? VERDE : RJ,
-              background: `color-mix(in srgb, ${pctMetricaActiva >= 0 ? 'var(--green)' : RJ} 12%, transparent)`,
-              padding: '3px 9px', borderRadius: 'var(--radius-pill)',
+              fontSize: 'clamp(40px, 7vw, 68px)', fontWeight: 700, letterSpacing: '-0.03em',
+              color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
             }}>
-              {pctMetricaActiva >= 0 ? '↑' : '↓'} {Math.abs(pctMetricaActiva)}%
+              {soles(valorMetricaAnim)}
             </span>
-          )}
-        </div>
-        <div style={{ ...rotulo, marginBottom: 16 }}>
-          {METRICAS.find(m => m.key === metrica)?.label} del mes vs. mes anterior
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-          <SegmentedControl
-            options={RANGOS.map(r => ({ key: r.key, label: r.label }))}
-            value={rango}
-            onChange={setRango}
-            style={{ width: 180 }}
-          />
+            {pctMetricaActiva !== null && (
+              <span style={{
+                fontSize: 13, fontWeight: 700, color: pctMetricaActiva >= 0 ? VERDE : RJ,
+                background: `color-mix(in srgb, ${pctMetricaActiva >= 0 ? 'var(--green)' : RJ} 12%, transparent)`,
+                padding: '4px 10px', borderRadius: 'var(--radius-pill)', marginTop: 6,
+              }}>
+                {pctMetricaActiva >= 0 ? '↑' : '↓'} {Math.abs(pctMetricaActiva)}%
+              </span>
+            )}
+          </div>
+          <div style={{ ...rotulo, marginTop: 14 }}>
+            {labelMetrica} del mes · vs. mes anterior
+          </div>
         </div>
 
         <GraficoBarras
@@ -439,6 +478,52 @@ export default function Dashboard({ setView, clinica }) {
           mostrarCadaN={rango === '30d' ? 3 : 1}
           resaltarPico
         />
+      </div>
+
+      {/* ─── COMMAND BAR ─── El elemento más icónico de la referencia: barra
+          oscura "pregúntame lo que sea" con botón de acción verde. No consulta
+          nada nuevo; enruta al asistente de IA ya existente. */}
+      <div style={{ ...col(12) }}>
+        <div
+          onClick={() => setView && setView('whatsapp')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setView && setView('whatsapp'); }}
+          style={{
+            background: 'var(--text-primary)', borderRadius: 'var(--radius-pill)',
+            padding: '10px 10px 10px 22px', display: 'flex', alignItems: 'center', gap: 12,
+            cursor: 'pointer', boxShadow: 'var(--shadow-raised)',
+          }}
+        >
+          <Icon name="chat" size={16} />
+          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13.5, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Pregúntale a la IA sobre tu clínica…
+          </span>
+          <div style={{
+            width: 38, height: 38, borderRadius: '50%', background: VERDE, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+          }}>
+            <Icon name="chat" size={16} />
+          </div>
+        </div>
+
+        {/* chips de sugerencia -- también enrutan al asistente */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          {SUGERENCIAS_IA.map(q => (
+            <button key={q} onClick={() => setView && setView('whatsapp')}
+              style={{
+                border: '1px solid var(--hairline)', background: 'var(--panel)', cursor: 'pointer',
+                font: 'inherit', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)',
+                padding: '6px 12px', borderRadius: 'var(--radius-pill)',
+                transition: 'background-color var(--dur-fast) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--fill-quaternary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--panel)'; }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ─── FILA DE 4: pronóstico semanal, gastos, cobranza, insight ─── */}
