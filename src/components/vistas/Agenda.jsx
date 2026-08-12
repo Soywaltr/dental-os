@@ -391,8 +391,12 @@ export default function Agenda({ clinicaId, clinica }) {
     .sort((a, b) => (a.fecha + a.hora_cita).localeCompare(b.fecha + b.hora_cita))[0];
 
   return (
-    <div style={{ padding: 18, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+    // var(--gutter)/var(--gap-panel), no números sueltos (18/12/16): son el
+    // mismo canal de aire que usa el resto de la app -- con su propio número
+    // acá, Agenda se leía un poco más apretada que las demás vistas aunque
+    // nadie pudiera decir por qué.
+    <div style={{ padding: 'var(--gutter)', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)', marginBottom: 'var(--gap-panel)' }}>
         <Stat label="Citas hoy" value={citasHoy.length} col={P} icon={<Icon name="calendar" size={15} />} />
         <Stat label="Esta semana" value={citasSemana.length} col={DN} icon={<Icon name="activity" size={15} />} />
         <Stat
@@ -438,10 +442,19 @@ export default function Agenda({ clinicaId, clinica }) {
 
       <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
 
+        {/* minmax(0, 1fr), no 1fr a secas, en las TRES grillas de este
+            archivo (esta cabecera, cada fila de hora y la vista mensual): por
+            defecto una columna de grid no se achica más allá del contenido
+            mínimo de lo que tiene adentro. Un evento traído de Google
+            Calendar con un título largo y sin espacio donde partir
+            (whiteSpace: 'nowrap' + ellipsis) empujaba la columna entera a
+            crecer para no cortarlo -- el bloque se leía "estirado" sobre la
+            columna vecina en vez de truncarse con "…", que es lo que de
+            verdad rompía el orden de la grilla. */}
         {/* Cabecera de días. La columna de HOY se marca con la tinta invertida
             (fondo oscuro), no con un tono suave: es la referencia visual que
             más se busca al abrir la agenda. */}
-        <div style={{ display: 'grid', gridTemplateColumns: view === 'Mensual' ? 'repeat(7, 1fr)' : `56px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, background: LT }}>
+        <div style={{ display: 'grid', gridTemplateColumns: view === 'Mensual' ? 'repeat(7, minmax(0, 1fr))' : `56px repeat(${displayDays.length},minmax(0, 1fr))`, borderBottom: `1px solid ${BD}`, background: LT }}>
           {view !== 'Mensual' && <div style={{ padding: 4 }} />}
           {(view === 'Mensual' ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] : displayDays).map((d, i) => {
             const label = view === 'Mensual' ? d : `${d.getDate()} · ${d.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')}`;
@@ -466,7 +479,7 @@ export default function Agenda({ clinicaId, clinica }) {
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {view === 'Mensual' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(100px, 1fr)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridAutoRows: 'minmax(100px, 1fr)' }}>
               {displayDays.map((d, i) => {
                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 const apts = allApts.filter(a => a.fecha === dateStr);
@@ -509,7 +522,7 @@ export default function Agenda({ clinicaId, clinica }) {
               const pctMinuto = (ahora.getMinutes() / 60) * 100;
 
               return (
-              <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},1fr)`, borderBottom: `1px solid ${BD}`, minHeight: 52, position: 'relative' }}>
+              <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},minmax(0, 1fr))`, borderBottom: `1px solid ${BD}`, minHeight: 52, position: 'relative' }}>
                 <div style={{ padding: '6px 9px', fontSize: 11.5, color: 'var(--label-tertiary)', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
                 {displayDays.map((d, di) => {
                   const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
@@ -520,7 +533,7 @@ export default function Agenda({ clinicaId, clinica }) {
 
                   return (
                     <div key={di} style={{
-                      borderLeft: `1px solid ${BD}`, padding: 3, minHeight: 52,
+                      borderLeft: `1px solid ${BD}`, padding: 4, minHeight: 52,
                       background: abierto ? undefined : RAYADO_CERRADO,
                       position: 'relative',
                     }}>
@@ -549,7 +562,7 @@ export default function Agenda({ clinicaId, clinica }) {
                           aria-label={`Agendar el ${targetDate} a las ${h}`}
                           title={`Agendar a las ${h}`}
                           style={{
-                            position: 'absolute', inset: 3,
+                            position: 'absolute', inset: 4,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'transparent', border: 'none',
                             borderRadius: 'var(--radius-sm)', cursor: 'pointer',
@@ -569,8 +582,8 @@ export default function Agenda({ clinicaId, clinica }) {
                               background: tipo.tinte,
                               borderLeft: `3px solid ${tipo.borde}`,
                               borderRadius: 'var(--radius-sm)',
-                              padding: '6px 9px', minHeight: 44, boxSizing: 'border-box',
-                              cursor: 'pointer', marginBottom: 3, position: 'relative', zIndex: 2,
+                              padding: '7px 10px', minHeight: 44, boxSizing: 'border-box',
+                              cursor: 'pointer', marginBottom: 4, position: 'relative', zIndex: 2,
                             }}
                           >
                             <div style={{ fontSize: 12.5, fontWeight: 600, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>
