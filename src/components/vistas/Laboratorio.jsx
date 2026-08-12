@@ -12,14 +12,14 @@ import { BD, P, DN, MU, LT, GL, WA, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLAS
 // curso, azul listo, verde entregado) pero sobre los tokens del tema, para que
 // el badge siga legible en modo oscuro.
 const ESTADO_COLOR = {
-  en_proceso: { bg: 'var(--amber-soft)', c: GL },
-  listo: { bg: 'var(--accent-soft)', c: P },
-  entregado: { bg: 'var(--green-soft)', c: WA },
+  en_proceso: { bg: '#FEF3C7', c: GL },
+  listo: { bg: 'rgba(123, 92, 250, 0.12)', c: P },
+  entregado: { bg: '#DCFCE7', c: WA },
 };
 
 const LABEL_MODAL = { fontSize: 13, fontWeight: 600, color: MU, display: 'block', marginBottom: 6 };
 const INPUT_MODAL = {
-  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: 'var(--radius-sm)',
+  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: '10px',
   border: `1px solid ${BD}`, fontSize: 15, boxSizing: 'border-box',
   color: DN, background: LT, outline: 'none',
   transition: 'border-color .15s cubic-bezier(0.25, 0.1, 0.25, 1)',
@@ -119,7 +119,7 @@ export default function Laboratorio({ clinicaId }) {
       </div>
 
       {orders.length === 0 ? (
-        <div style={{ background: LT, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>
+        <div style={{ background: LT, border: `1px dashed ${BD}`, borderRadius: '14px', padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>
           No hay órdenes de laboratorio registradas. Crea la primera con "+ Nueva orden".
         </div>
       ) : (
@@ -127,23 +127,23 @@ export default function Laboratorio({ clinicaId }) {
           {orders.map(o => {
             const b = ESTADO_COLOR[o.status] || ESTADO_COLOR.en_proceso;
             return (
-              <div key={o.id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+              <div key={o.id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: DN }}>{o.type}</div>
                   <div style={{ fontSize: 12, color: MU }}>Paciente: {o.patient_name} · Pieza: {o.tooth}</div>
                   <div style={{ fontSize: 12, color: MU }}>Lab: {o.lab}</div>
                 </div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: 'var(--label-tertiary)' }}>Enviado</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.sent}</div></div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: 'var(--label-tertiary)' }}>ETA</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.eta || '—'}</div></div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: 'var(--label-tertiary)' }}>Costo</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/{o.cost}</div></div>
-                <Badge bg={b.bg} color={b.c} style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, borderRadius: 'var(--radius-sm)' }}>{o.status.replace('_', ' ')}</Badge>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#8A8A96' }}>Enviado</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.sent}</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#8A8A96' }}>ETA</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{o.eta || '—'}</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: 11, color: '#8A8A96' }}>Costo</div><div style={{ fontSize: 13, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/{o.cost}</div></div>
+                <Badge bg={b.bg} color={b.c} style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, borderRadius: '10px' }}>{o.status.replace('_', ' ')}</Badge>
                 {o.status === 'en_proceso' && (
-                  <Button onClick={() => handleMarcar(o.id, 'listo')} style={{ borderRadius: 'var(--radius-sm)', padding: '8px 14px', minHeight: 36, fontSize: 13 }}>Marcar listo</Button>
+                  <Button onClick={() => handleMarcar(o.id, 'listo')} style={{ borderRadius: '10px', padding: '8px 14px', minHeight: 36, fontSize: 13 }}>Marcar listo</Button>
                 )}
                 {o.status === 'listo' && (
-                  <Button onClick={() => handleMarcar(o.id, 'entregado')} style={{ borderRadius: 'var(--radius-sm)', padding: '8px 14px', minHeight: 36, fontSize: 13 }}>Marcar entregado</Button>
+                  <Button onClick={() => handleMarcar(o.id, 'entregado')} style={{ borderRadius: '10px', padding: '8px 14px', minHeight: 36, fontSize: 13 }}>Marcar entregado</Button>
                 )}
-                <span style={{ fontSize: 13, color: 'var(--label-tertiary)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>ID: {o.id}</span>
+                <span style={{ fontSize: 13, color: '#8A8A96', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>ID: {o.id}</span>
               </div>
             );
           })}
@@ -151,7 +151,7 @@ export default function Laboratorio({ clinicaId }) {
       )}
 
       {showModal && (
-        <Modal cardStyle={{ padding: 24, width: 400, boxShadow: 'var(--shadow-md)' }}>
+        <Modal cardStyle={{ padding: 24, width: 400, boxShadow: '0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)' }}>
           <h3 style={{ marginTop: 0, marginBottom: 18, color: DN, fontSize: 17, fontWeight: 600 }}>Nueva orden de laboratorio</h3>
 
           <div style={{ marginBottom: 14 }}>

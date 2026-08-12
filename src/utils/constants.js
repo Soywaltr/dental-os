@@ -45,7 +45,7 @@ export const META_OAUTH_STATE = "dentalos_whatsapp_connect";
 // deshabilitado, caja de aviso. Con el fondo de página ahora casi blanco
 // (#F8F9FC, para que el lienzo teñido resalte), apuntarlo ahí dejaría todos
 // esos elementos invisibles sobre una tarjeta blanca.
-export const P = 'var(--accent)', PD = 'var(--accent-pressed)', DN = 'var(--label-primary)', LT = 'var(--surface-primary)', MT = 'var(--surface-tertiary)', BD = 'var(--separator)', MU = 'var(--label-secondary)', GL = 'var(--amber)', WA = 'var(--green)', AZ = 'var(--accent)', RJ = 'var(--red)';
+export const P = '#7B5CFA', PD = '#5D46BE', DN = '#16161D', LT = '#FFFFFF', MT = '#F1F1F7', BD = 'rgba(22, 22, 29, 0.06)', MU = '#6B6B78', GL = '#F59E0B', WA = '#16A34A', AZ = '#7B5CFA', RJ = '#EF4444';
 
 // Identidad de la serie "Ingresos" en los gráficos. NO sigue el tema: es el
 // color fijo de una serie de datos, no chrome.
@@ -65,16 +65,16 @@ export const CAT_ACCENT = '#0D9488';
 // casi imperceptible, no glassmorphism -- se vuelve a lo mismo que estas 12
 // vistas + Login.jsx, Modal.jsx y MFAChallenge.jsx ya importan, sólo
 // repuntando estas cuatro constantes, sin tocar cada archivo.
-export const GLASS_BG = 'var(--panel)';
+export const GLASS_BG = '#FFFFFF';
 export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid var(--hairline)';
-export const GLASS_SHADOW = 'var(--shadow-raised)';
+export const GLASS_BORDER = '1px solid rgba(22, 22, 29, 0.06)';
+export const GLASS_SHADOW = '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
 // con los imports existentes (Button.jsx, Login.jsx, MFAChallenge.jsx, App.jsx).
-export const GRAD_PRIMARY = 'var(--accent)';
-export const GRAD_PRIMARY_SHADOW = '0 4px 14px var(--accent-soft)';
-export const GRAD_SUCCESS = 'var(--green)';
+export const GRAD_PRIMARY = '#7B5CFA';
+export const GRAD_PRIMARY_SHADOW = '0 4px 14px rgba(123, 92, 250, 0.12)';
+export const GRAD_SUCCESS = '#16A34A';
 
 export const PATIENTS = [
   { id: 1, name: 'María López', age: 32, phone: '+51 987 654 321', email: 'maria@gmail.com', tag: 'activo', treatment: 'Ortodoncia', nextVisit: 'Hoy 9:00', since: '2023', balance: 0, doc: '72345678', blood: 'O+', allergies: 'Ninguna', meds: 'Ninguno' },

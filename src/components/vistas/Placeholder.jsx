@@ -11,21 +11,21 @@ import { MU } from '../../utils/constants';
 export default function Placeholder({ titulo, icono }) {
   return (
     <div style={{
-      background: 'var(--panel)', borderRadius: 'var(--radius-panel)',
-      boxShadow: 'var(--shadow-raised)',
+      background: '#FFFFFF', borderRadius: '18px',
+      boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)',
       minHeight: 360, display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 14, padding: 40,
       textAlign: 'center',
     }}>
       <div style={{
         width: 52, height: 52, borderRadius: '50%',
-        background: 'var(--accent-soft)', color: 'var(--accent)',
+        background: 'rgba(123, 92, 250, 0.12)', color: '#7B5CFA',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <NavIcon name={icono} size={24} />
       </div>
       <div>
-        <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{titulo}</div>
+        <div style={{ fontSize: 17, fontWeight: 600, color: '#16161D' }}>{titulo}</div>
         <div style={{ fontSize: 13.5, color: MU, marginTop: 6, maxWidth: 320 }}>
           Sección agregada al menú, todavía sin contenido propio.
         </div>

@@ -23,7 +23,7 @@ const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 
 // Las burbujas y las sugerencias se apoyan SOBRE el panel, que ya es
 // --surface-primary: por eso usan la terciaria, si no quedarían invisibles.
-const SUP_BURBUJA = 'var(--surface-tertiary)';
+const SUP_BURBUJA = '#F1F1F7';
 
 const TITULO_MAX = 42;
 const tituloDesde = (texto) => (texto.length > TITULO_MAX ? texto.slice(0, TITULO_MAX - 1).trimEnd() + '…' : texto);
@@ -176,14 +176,14 @@ export default function AsistenteDatos({ clinicaId }) {
     <div style={{ padding: 18, display: 'flex', gap: 14, flex: 1, minHeight: 0 }}>
       <div style={{
         width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10,
-        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)',
+        background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px',
         backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
         padding: 12, overflow: 'hidden',
       }}>
-        <Button onClick={nuevaConversacion} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, padding: '12px 14px', minHeight: 44, borderRadius: 'var(--radius-sm)' }}>
+        <Button onClick={nuevaConversacion} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, padding: '12px 14px', minHeight: 44, borderRadius: '10px' }}>
           <Icon name="plus" size={15} /> Nueva conversación
         </Button>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--label-tertiary)', textTransform: 'uppercase', letterSpacing: 0.5, padding: '2px 2px 0' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#8A8A96', textTransform: 'uppercase', letterSpacing: 0.5, padding: '2px 2px 0' }}>
           Historial
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -196,8 +196,8 @@ export default function AsistenteDatos({ clinicaId }) {
               onClick={() => abrirConversacion(conv)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', minHeight: 44,
-                borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                background: conv.id === conversacionActivaId ? 'var(--accent-soft)' : 'transparent',
+                borderRadius: '10px', cursor: 'pointer',
+                background: conv.id === conversacionActivaId ? 'rgba(123, 92, 250, 0.12)' : 'transparent',
                 transition: `background-color .18s ${EASE}`,
               }}
             >
@@ -208,14 +208,14 @@ export default function AsistenteDatos({ clinicaId }) {
                 }}>
                   {conv.titulo}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--label-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{fechaRelativa(conv.updated_at)}</div>
+                <div style={{ fontSize: 12, color: '#8A8A96', fontVariantNumeric: 'tabular-nums' }}>{fechaRelativa(conv.updated_at)}</div>
               </div>
               <button
                 onClick={(e) => eliminarConversacion(conv.id, e)}
                 title="Eliminar conversación"
                 style={{
-                  border: 'none', background: 'none', cursor: 'pointer', color: 'var(--label-tertiary)',
-                  width: 32, height: 32, borderRadius: 'var(--radius-sm)', flexShrink: 0,
+                  border: 'none', background: 'none', cursor: 'pointer', color: '#8A8A96',
+                  width: 32, height: 32, borderRadius: '10px', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: `color .18s ${EASE}, background-color .18s ${EASE}`,
                 }}
@@ -228,12 +228,12 @@ export default function AsistenteDatos({ clinicaId }) {
       </div>
 
       <div style={{
-        background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)',
+        background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px',
         backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
         flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
       }}>
         <div style={{ padding: '14px 18px', borderBottom: `1px solid ${BD}`, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(123, 92, 250, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="chat" size={18} />
           </div>
           <div>
@@ -249,7 +249,7 @@ export default function AsistenteDatos({ clinicaId }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {SUGERENCIAS.map(s => (
                   <button key={s} onClick={() => enviar(s)} style={{
-                    textAlign: 'left', padding: '12px 14px', minHeight: 44, borderRadius: 'var(--radius-sm)',
+                    textAlign: 'left', padding: '12px 14px', minHeight: 44, borderRadius: '10px',
                     border: `1px solid ${BD}`, background: SUP_BURBUJA, color: DN,
                     fontSize: 13.5, cursor: 'pointer',
                     transition: `background-color .18s ${EASE}, border-color .18s ${EASE}`,
@@ -264,7 +264,7 @@ export default function AsistenteDatos({ clinicaId }) {
           {historial.map((h, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: h.from === 'user' ? 'flex-end' : 'flex-start' }}>
               <div style={{
-                maxWidth: '75%', padding: '10px 14px', borderRadius: 'var(--radius-md)',
+                maxWidth: '75%', padding: '10px 14px', borderRadius: '14px',
                 background: h.from === 'user' ? P : SUP_BURBUJA,
                 // Tinta sobre el acento fijo: se queda blanca literal en ambos temas.
                 color: h.from === 'user' ? '#fff' : DN,
@@ -278,14 +278,14 @@ export default function AsistenteDatos({ clinicaId }) {
 
           {enviando && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: SUP_BURBUJA, border: `1px solid ${BD}`, color: MU, fontSize: 13.5 }}>
+              <div style={{ padding: '10px 14px', borderRadius: '14px', background: SUP_BURBUJA, border: `1px solid ${BD}`, color: MU, fontSize: 13.5 }}>
                 Pensando…
               </div>
             </div>
           )}
 
           {error && (
-            <div style={{ padding: '10px 12px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`, borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13, lineHeight: 1.5 }}>
+            <div style={{ padding: '10px 12px', background: '#FEE2E2', borderLeft: `3px solid ${RJ}`, borderRadius: '10px', color: RJ, fontSize: 13, lineHeight: 1.5 }}>
               {error}
             </div>
           )}
@@ -299,12 +299,12 @@ export default function AsistenteDatos({ clinicaId }) {
             placeholder="Escribe tu pregunta…"
             disabled={enviando}
             style={{
-              flex: 1, minHeight: 44, padding: '11px 14px', borderRadius: 'var(--radius-sm)',
+              flex: 1, minHeight: 44, padding: '11px 14px', borderRadius: '10px',
               border: `1px solid ${BD}`, background: SUP_BURBUJA, fontSize: 15, outline: 'none', color: DN,
               transition: `border-color .18s ${EASE}`,
             }}
           />
-          <Button type="submit" disabled={enviando || !texto.trim()} style={{ padding: '12px 22px', minHeight: 44, fontSize: 13.5, fontWeight: 600, borderRadius: 'var(--radius-sm)' }}>
+          <Button type="submit" disabled={enviando || !texto.trim()} style={{ padding: '12px 22px', minHeight: 44, fontSize: 13.5, fontWeight: 600, borderRadius: '10px' }}>
             Enviar
           </Button>
         </form>

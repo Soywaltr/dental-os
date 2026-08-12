@@ -24,11 +24,11 @@ export default function TabsWrap({ options, value, onChange, style }) {
             className="tab-pill"
             style={{
               border: 'none', cursor: 'pointer', font: 'inherit',
-              padding: '7px 14px', borderRadius: 'var(--radius-pill)',
+              padding: '7px 14px', borderRadius: '999px',
               fontSize: 12.5, fontWeight: activo ? 600 : 500,
-              background: activo ? 'var(--accent-soft)' : 'transparent',
-              color: activo ? 'var(--accent)' : 'var(--text-secondary)',
-              whiteSpace: 'nowrap', transition: 'background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease)',
+              background: activo ? 'rgba(123, 92, 250, 0.12)' : 'transparent',
+              color: activo ? '#7B5CFA' : '#6B6B78',
+              whiteSpace: 'nowrap', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1), color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
           >
             {o.label}

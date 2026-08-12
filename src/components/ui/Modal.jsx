@@ -18,7 +18,7 @@ import { GLASS_BORDER } from '../../utils/constants';
 export default function Modal({ children, overlayStyle, cardStyle, zIndex = 1000, background = 'rgba(15,23,42,0.45)' }) {
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, background, backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex, ...overlayStyle }}>
-      <div style={{ background: 'var(--surface-chrome)', backdropFilter: 'var(--blur-chrome)', WebkitBackdropFilter: 'var(--blur-chrome)', border: GLASS_BORDER, boxShadow: 'var(--shadow-pop)', borderRadius: 'var(--radius-lg)', ...cardStyle }}>
+      <div style={{ background: 'rgba(255, 255, 255, 0.72)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: GLASS_BORDER, boxShadow: '0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)', borderRadius: '18px', ...cardStyle }}>
         {children}
       </div>
     </div>,

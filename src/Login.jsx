@@ -68,9 +68,9 @@ export default function Login({ onLogin }) {
   const inputStyle = (focused) => ({
     width: '100%', padding: '12px 14px', minHeight: 44,
     border: `1.5px solid ${focused ? P : BD}`,
-    borderRadius: 'var(--radius-sm)', fontSize: 15, boxSizing: 'border-box', outline: 'none',
+    borderRadius: '10px', fontSize: 15, boxSizing: 'border-box', outline: 'none',
     transition: 'border-color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)',
-    backgroundColor: 'var(--surface-primary)', color: DN,
+    backgroundColor: '#FFFFFF', color: DN,
     boxShadow: focused ? `0 0 0 3px color-mix(in srgb, ${P} 13%, transparent)` : 'none',
   });
 
@@ -80,16 +80,16 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', background: 'var(--surface-secondary)', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", padding: 24, boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', background: '#F7F7FB', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", padding: 24, boxSizing: 'border-box' }}>
       {/* Tarjeta única centrada */}
       <div style={{
         position: 'relative', zIndex: 1, width: '100%', maxWidth: 420,
         background: GLASS_BG,
-        border: GLASS_BORDER, boxShadow: GLASS_SHADOW, borderRadius: 'var(--radius-lg)',
+        border: GLASS_BORDER, boxShadow: GLASS_SHADOW, borderRadius: '18px',
         padding: '44px 40px', boxSizing: 'border-box',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', background: GRAD_PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', margin: '0 auto 20px', boxShadow: 'var(--shadow-md)' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '14px', background: GRAD_PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', margin: '0 auto 20px', boxShadow: '0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
@@ -137,7 +137,7 @@ export default function Login({ onLogin }) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, minHeight: 36, borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: showPassword ? P : 'var(--label-tertiary)', transition: 'color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
+                style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, minHeight: 36, borderRadius: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: showPassword ? P : '#8A8A96', transition: 'color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
                 title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? (
@@ -150,7 +150,7 @@ export default function Login({ onLogin }) {
           </div>
 
           {isRegistering && (
-            <div style={{ background: MT, padding: 14, borderRadius: 'var(--radius-md)', border: `1px solid ${BD}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <div style={{ background: MT, padding: 14, borderRadius: '14px', border: `1px solid ${BD}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
               <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 600, color: MU }}>Requisitos de contraseña:</p>
               {[
                 [reqLength, 'Mínimo 8 caracteres'],
@@ -167,7 +167,7 @@ export default function Login({ onLogin }) {
           )}
 
           {errorMsg && (
-            <div style={{ padding: '10px 14px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`, borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13.5, fontWeight: 500 }}>
+            <div style={{ padding: '10px 14px', background: '#FEE2E2', borderLeft: `3px solid ${RJ}`, borderRadius: '10px', color: RJ, fontSize: 13.5, fontWeight: 500 }}>
               {errorMsg}
             </div>
           )}
@@ -175,7 +175,7 @@ export default function Login({ onLogin }) {
           <Button
             type="submit"
             disabled={loading || (isRegistering && !isPasswordValid)}
-            style={{ width: '100%', padding: '13px', minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-md)', marginTop: 4 }}
+            style={{ width: '100%', padding: '13px', minHeight: 44, fontSize: 15, borderRadius: '14px', marginTop: 4 }}
           >
             {loading ? 'Procesando...' : (isRegistering ? 'Crear cuenta segura' : 'Ingresar al sistema')}
           </Button>

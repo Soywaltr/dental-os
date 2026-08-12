@@ -9,14 +9,14 @@ import { GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from '../../utils/constants';
 // porque la relación de contraste no es lineal con el color: CSS no puede
 // resolver "blanco o negro" por sí solo.
 const VARIANTS = {
-  primary: { background: GRAD_PRIMARY, color: 'var(--accent-contrast)', boxShadow: GRAD_PRIMARY_SHADOW },
-  secondary: { background: 'var(--fill-tertiary)', color: 'var(--label-secondary)' },
-  danger: { background: 'var(--red-soft)', color: 'var(--red)' },
+  primary: { background: GRAD_PRIMARY, color: '#FFFFFF', boxShadow: GRAD_PRIMARY_SHADOW },
+  secondary: { background: '#F1F1F7', color: '#6B6B78' },
+  danger: { background: '#FEE2E2', color: '#EF4444' },
 };
 
 export default function Button({ children, onClick, variant = 'primary', disabled, style, className, type = 'button' }) {
   const base = {
-    border: 'none', borderRadius: 'var(--radius-control)',
+    border: 'none', borderRadius: '10px',
     cursor: disabled ? 'not-allowed' : 'pointer',
     fontWeight: 600, fontSize: 13, padding: '7px 16px',
   };

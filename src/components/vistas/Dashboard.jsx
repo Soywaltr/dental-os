@@ -2,7 +2,7 @@
 // Cruza las 5 tablas de negocio reales (pacientes, historias, ortodoncia,
 // laboratorio_ordenes, gastos), con el mismo filtro de archivados/huérfanos
 // que el resto de la app -- nada de datos de ejemplo ni Math.random(). Usa
-// los tokens de tokens.css (var(--accent), etc.), no una paleta propia: así
+// los tokens de tokens.css (#7B5CFA, etc.), no una paleta propia: así
 // el acento sigue siendo el de la clínica (white-label), no uno fijo.
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
@@ -43,7 +43,7 @@ const CAT_TABS = [
   { key: 'Implantes', cats: ['Implantología'] },
 ];
 
-const VERDE = 'var(--green)';
+const VERDE = '#16A34A';
 const ESTADO_TRAT = [
   { key: 'pendiente', label: 'Pendiente', color: RJ },
   { key: 'en_curso', label: 'En curso', color: GL },
@@ -332,13 +332,13 @@ export default function Dashboard({ setView, clinica }) {
   // de quedar con su propia copia desincronizada.
   const card = {
     background: GLASS_BG, border: GLASS_BORDER,
-    borderRadius: 'var(--radius-panel)', padding: 24,
+    borderRadius: '18px', padding: 24,
     boxShadow: GLASS_SHADOW,
     display: 'flex', flexDirection: 'column',
   };
-  const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' };
-  const rotulo = { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
-  const subCard = { background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)' };
+  const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: '#16161D', letterSpacing: '-0.01em' };
+  const rotulo = { fontSize: 11, color: '#8A8A96', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
+  const subCard = { background: '#F1F1F7', borderRadius: '14px' };
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
   const nombreClinica = (clinica?.nombre || '').replace(/^Consultorio\s+/i, '').trim();
@@ -358,16 +358,16 @@ export default function Dashboard({ setView, clinica }) {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: 'var(--gap-panel)', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: '20px', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
       {/* ─── HERO ─── saludo, tabs de métrica, cifra grande + variación,
           selector de rango e histograma anotado. La línea/barras van en el
-          acento de la clínica (var(--accent)), no en un violeta fijo: así
+          acento de la clínica (#7B5CFA), no en un violeta fijo: así
           sigue el white-label en vez de clonar el color de la referencia. */}
       <div style={{ ...col(8), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#16161D', margin: 0, letterSpacing: '-0.01em' }}>
               Hola{nombreClinica ? `, ${nombreClinica}` : ''}
             </h1>
             <p style={{ fontSize: 13, color: MU, margin: '4px 0 0' }}>
@@ -394,11 +394,11 @@ export default function Dashboard({ setView, clinica }) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
                     padding: 0, cursor: 'pointer', font: 'inherit',
-                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? 'var(--text-primary)' : MU,
+                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? '#16161D' : MU,
                   }}>
                   <span style={{
                     width: 8, height: 8, borderRadius: '50%',
-                    border: `1.5px solid ${metrica === m.key ? P : 'var(--hairline-strong)'}`,
+                    border: `1.5px solid ${metrica === m.key ? P : 'rgba(22, 22, 29, 0.11)'}`,
                     background: metrica === m.key ? P : 'transparent',
                   }} />
                   {m.label}
@@ -406,14 +406,14 @@ export default function Dashboard({ setView, clinica }) {
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: '#16161D', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                 {soles(valorMetricaAnim)}
               </span>
               {pctMetricaActiva !== null && (
                 <span style={{
                   fontSize: 12, fontWeight: 700, color: pctMetricaActiva >= 0 ? VERDE : RJ,
-                  background: `color-mix(in srgb, ${pctMetricaActiva >= 0 ? 'var(--green)' : RJ} 12%, transparent)`,
-                  padding: '3px 8px', borderRadius: 'var(--radius-pill)',
+                  background: `color-mix(in srgb, ${pctMetricaActiva >= 0 ? '#16A34A' : RJ} 12%, transparent)`,
+                  padding: '3px 8px', borderRadius: '999px',
                 }}>
                   {pctMetricaActiva >= 0 ? '↑' : '↓'} {Math.abs(pctMetricaActiva)}%
                 </span>
@@ -439,8 +439,8 @@ export default function Dashboard({ setView, clinica }) {
             alto={200}
             mostrarBarras={false}
             mostrarArea
-            colorLinea="var(--accent)"
-            colorAcento={pctMetricaActiva === null || pctMetricaActiva >= 0 ? 'var(--green)' : RJ}
+            colorLinea="#7B5CFA"
+            colorAcento={pctMetricaActiva === null || pctMetricaActiva >= 0 ? '#16A34A' : RJ}
             anotacion={{
               idx: valoresHistograma.length - 1,
               delta: pctMetricaActiva,
@@ -455,14 +455,14 @@ export default function Dashboard({ setView, clinica }) {
         <div style={rotulo}>Cobranza</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '12px 0' }}>
           <Anillo pct={tasaCobro} color={P} tamano={78} grosor={8}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>{tasaCobro}%</span>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#16161D' }}>{tasaCobro}%</span>
           </Anillo>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Cobrado <b style={{ color: 'var(--text-primary)' }}>{soles(totalCobrado)}</b></div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Pendiente <b style={{ color: saldoPendienteTotal > 0 ? RJ : 'var(--text-primary)' }}>{soles(saldoPendienteTotal)}</b></div>
+            <div style={{ fontSize: 12, color: '#6B6B78' }}>Cobrado <b style={{ color: '#16161D' }}>{soles(totalCobrado)}</b></div>
+            <div style={{ fontSize: 12, color: '#6B6B78' }}>Pendiente <b style={{ color: saldoPendienteTotal > 0 ? RJ : '#16161D' }}>{soles(saldoPendienteTotal)}</b></div>
           </div>
         </div>
-        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: '#16161D', lineHeight: 1.5 }}>
           {saldoPendienteTotal > 0
             ? <>Hay <b style={{ color: RJ }}>{soles(saldoPendienteTotal)}</b> por cobrar entre {deudaPorPaciente.size} paciente{deudaPorPaciente.size !== 1 ? 's' : ''}.</>
             : <>La cobranza está <b style={{ color: VERDE }}>al día</b>.</>}
@@ -475,20 +475,20 @@ export default function Dashboard({ setView, clinica }) {
           <button key={a.titulo} onClick={() => setView && setView(a.view)}
             style={{
               flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12,
-              padding: '13px 14px', cursor: 'pointer', borderRadius: 'var(--radius-md)', textAlign: 'left',
+              padding: '13px 14px', cursor: 'pointer', borderRadius: '14px', textAlign: 'left',
               background: 'transparent', border: 'none', font: 'inherit', minHeight: 44,
-              borderLeft: (!isTablet && i > 0) ? `1px solid var(--hairline)` : 'none',
-              borderTop: (isTablet && i > 0) ? `1px solid var(--hairline)` : 'none',
+              borderLeft: (!isTablet && i > 0) ? `1px solid rgba(22, 22, 29, 0.06)` : 'none',
+              borderTop: (isTablet && i > 0) ? `1px solid rgba(22, 22, 29, 0.06)` : 'none',
               transition: 'background-color 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--fill-quaternary)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#ECECF5'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(123, 92, 250, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: P, flexShrink: 0 }}>
               <Icon name={a.icon} size={15} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--label-primary)', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#16161D', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{a.titulo}</div>
               <div style={{ fontSize: 12, color: MU, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.sub}</div>
             </div>
           </button>
@@ -500,22 +500,22 @@ export default function Dashboard({ setView, clinica }) {
           color a la derecha -- no el Stat.jsx compartido (ese es de icono a
           la izquierda y cifra neutra), porque cambiarlo ahí correría este
           look a Agenda/Caja/Laboratorio/Ortodoncia sin que lo hayan pedido. */}
-      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)' }}>
+      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
         {[
           { label: 'Ingresos del mes', value: soles(ingresosMes), icon: 'trendingUp', color: VERDE, view: 'caja' },
           { label: 'Gastos del mes', value: soles(gastosMes), icon: 'card', color: GL, view: 'caja' },
           { label: 'Utilidad neta', value: soles(utilidadMes), icon: 'checkCircle', color: P, view: 'caja' },
-          { label: 'Pacientes activos', value: String(pacientes.length), icon: 'users', color: 'var(--info)', view: 'expediente' },
+          { label: 'Pacientes activos', value: String(pacientes.length), icon: 'users', color: '#3B82F6', view: 'expediente' },
         ].map(k => (
           <div
             key={k.label} onClick={() => setView && setView(k.view)}
             style={{
               ...card, flex: 1, minWidth: 180, padding: '20px 22px', cursor: 'pointer',
               flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              borderTop: `3px solid ${k.color}`, borderRadius: 'var(--radius-panel)',
-              transition: 'box-shadow var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease)',
+              borderTop: `3px solid ${k.color}`, borderRadius: '18px',
+              transition: 'box-shadow 250ms cubic-bezier(0.25, 0.1, 0.25, 1), transform 250ms cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-pop)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
             onMouseLeave={e => { e.currentTarget.style.boxShadow = GLASS_SHADOW; e.currentTarget.style.transform = 'none'; }}
           >
             <div style={{ minWidth: 0 }}>
@@ -527,7 +527,7 @@ export default function Dashboard({ setView, clinica }) {
                 tarjeta -- sigue siendo "el mismo color", sólo con más cuerpo. */}
             <div style={{
               width: 48, height: 48, borderRadius: '50%',
-              background: `linear-gradient(145deg, color-mix(in srgb, ${k.color} 22%, var(--panel)), color-mix(in srgb, ${k.color} 10%, var(--panel)))`,
+              background: `linear-gradient(145deg, color-mix(in srgb, ${k.color} 22%, #FFFFFF), color-mix(in srgb, ${k.color} 10%, #FFFFFF))`,
               color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               boxShadow: `0 2px 8px color-mix(in srgb, ${k.color} 25%, transparent)`,
             }}>
@@ -552,17 +552,17 @@ export default function Dashboard({ setView, clinica }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {g.citas.map(c => (
                     <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '9px 11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B78', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
                           {estadoPaciente(c) === 'nuevo' && (
-                            <span style={{ fontSize: 9.5, fontWeight: 700, color: GL, background: `color-mix(in srgb, ${GL} 14%, transparent)`, padding: '1px 6px', borderRadius: 'var(--radius-pill)', flexShrink: 0 }}>Nuevo</span>
+                            <span style={{ fontSize: 9.5, fontWeight: 700, color: GL, background: `color-mix(in srgb, ${GL} 14%, transparent)`, padding: '1px 6px', borderRadius: '999px', flexShrink: 0 }}>Nuevo</span>
                           )}
                         </div>
                         <div style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#16161D', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                     </div>
                   ))}
                 </div>
@@ -579,7 +579,7 @@ export default function Dashboard({ setView, clinica }) {
           <div style={{ display: 'flex', gap: 4 }}>
             {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
               <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
-                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: 'var(--panel-sunken)' }}>
+                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: '#F1F1F7' }}>
                 {lbl}
               </div>
             ))}
@@ -594,7 +594,7 @@ export default function Dashboard({ setView, clinica }) {
             return (
               <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
                 <span style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? 'var(--accent-contrast)' : (isToday ? P : 'var(--text-primary)'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color var(--dur-fast) var(--ease)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#FFFFFF' : (isToday ? P : '#16161D'), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
                   {d.getDate()}
                 </div>
                 <div style={{ width: 4, height: 4, borderRadius: '50%', background: nCitas > 0 ? P : 'transparent' }} />
@@ -611,8 +611,8 @@ export default function Dashboard({ setView, clinica }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 7, width: '100%', minHeight: 96, padding: 16,
               background: 'transparent', color: MU,
-              border: '1.5px dashed var(--hairline-strong)',
-              borderRadius: 'var(--radius-card)',
+              border: '1.5px dashed rgba(22, 22, 29, 0.11)',
+              borderRadius: '14px',
               fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
             }}
           >
@@ -625,9 +625,9 @@ export default function Dashboard({ setView, clinica }) {
               <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
                 <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B78', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                     <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
                   </div>
                 </div>
@@ -663,7 +663,7 @@ export default function Dashboard({ setView, clinica }) {
                   <Icon name={a.icon} size={13} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', lineHeight: 1.35 }}>{a.texto}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#16161D', lineHeight: 1.35 }}>{a.texto}</div>
                   <span style={{ display: 'inline-block', marginTop: 5, fontSize: 11, fontWeight: 600, color: a.color, background: `color-mix(in srgb, ${a.color} 8%, transparent)`, padding: '2px 7px', borderRadius: 100, letterSpacing: '0.3px' }}>
                     {a.etiqueta}
                   </span>
@@ -691,11 +691,11 @@ export default function Dashboard({ setView, clinica }) {
               <input
                 className="field" type="search" placeholder="Buscar…"
                 value={buscarPaciente} onChange={e => { setBuscarPaciente(e.target.value); setPaginaPacientes(1); }}
-                style={{ padding: '7px 10px 7px 30px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--hairline)', background: 'var(--panel-sunken)', fontSize: 12.5, width: 160, fontFamily: 'inherit', color: 'var(--text-primary)' }}
+                style={{ padding: '7px 10px 7px 30px', borderRadius: '999px', border: '1px solid rgba(22, 22, 29, 0.06)', background: '#F1F1F7', fontSize: 12.5, width: 160, fontFamily: 'inherit', color: '#16161D' }}
               />
             </div>
             <button onClick={() => setView && setView('expediente')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: 'var(--accent-contrast)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', font: 'inherit', whiteSpace: 'nowrap' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: P, color: '#FFFFFF', border: 'none', borderRadius: '999px', padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', font: 'inherit', whiteSpace: 'nowrap' }}>
               <Icon name="userPlus" size={13} /> Nuevo paciente
             </button>
           </div>
@@ -712,9 +712,9 @@ export default function Dashboard({ setView, clinica }) {
                 <thead><tr style={{ background: P }}>
                   {['Paciente', 'Tratamiento', 'Fecha', 'Hora', 'Estado'].map((x, i) => (
                     <th key={x} style={{
-                      textAlign: 'left', padding: '10px 12px', color: 'var(--accent-contrast)', fontSize: 11, fontWeight: 600,
+                      textAlign: 'left', padding: '10px 12px', color: '#FFFFFF', fontSize: 11, fontWeight: 600,
                       textTransform: 'uppercase', letterSpacing: '0.4px',
-                      borderRadius: i === 0 ? 'var(--radius-control) 0 0 var(--radius-control)' : i === 4 ? '0 var(--radius-control) var(--radius-control) 0' : 0,
+                      borderRadius: i === 0 ? '10px 0 0 10px' : i === 4 ? '0 10px 10px 0' : 0,
                     }}>{x}</th>
                   ))}
                 </tr></thead>
@@ -722,21 +722,21 @@ export default function Dashboard({ setView, clinica }) {
                   {pacientesPagina.map(p => {
                     const badge = ESTADO_BADGE[estadoPaciente(p)];
                     return (
-                      <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
+                      <tr key={p.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderBottom: '1px solid rgba(22, 22, 29, 0.06)', cursor: 'pointer' }}>
                         <td style={{ padding: '10px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--panel-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11.5, flexShrink: 0 }}>{ini(p.name || '?')}</div>
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B78', fontWeight: 600, fontSize: 11.5, flexShrink: 0 }}>{ini(p.name || '?')}</div>
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{p.name}</div>
+                              <div style={{ fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{p.name}</div>
                               <div style={{ fontSize: 11, color: MU }}>{p.doc || '—'}</div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '10px 12px', color: 'var(--label-primary)' }}>{p.treatment || p.reason || 'Consulta'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.fecha || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--label-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.hora_cita || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: '#16161D' }}>{p.treatment || p.reason || 'Consulta'}</td>
+                        <td style={{ padding: '10px 12px', color: '#16161D', fontVariantNumeric: 'tabular-nums' }}>{p.fecha || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: '#16161D', fontVariantNumeric: 'tabular-nums' }}>{p.hora_cita || '—'}</td>
                         <td style={{ padding: '10px 12px' }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `color-mix(in srgb, ${badge.color} 12%, transparent)`, padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `color-mix(in srgb, ${badge.color} 12%, transparent)`, padding: '2px 8px', borderRadius: '999px' }}>
                             {badge.label}
                           </span>
                         </td>
@@ -749,15 +749,15 @@ export default function Dashboard({ setView, clinica }) {
             {totalPaginasPacientes > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 14 }}>
                 <button onClick={() => setPaginaPacientes(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
-                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === 1 ? 'var(--text-disabled)' : MU, cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: 15 }}>‹</button>
+                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === 1 ? '#B8B8C2' : MU, cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: 15 }}>‹</button>
                 {Array.from({ length: totalPaginasPacientes }, (_, i) => i + 1).map(n => (
                   <button key={n} onClick={() => setPaginaPacientes(n)}
-                    style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: n === paginaActual ? P : 'transparent', color: n === paginaActual ? 'var(--accent-contrast)' : MU }}>
+                    style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: n === paginaActual ? P : 'transparent', color: n === paginaActual ? '#FFFFFF' : MU }}>
                     {n}
                   </button>
                 ))}
                 <button onClick={() => setPaginaPacientes(p => Math.min(totalPaginasPacientes, p + 1))} disabled={paginaActual === totalPaginasPacientes}
-                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === totalPaginasPacientes ? 'var(--text-disabled)' : MU, cursor: paginaActual === totalPaginasPacientes ? 'default' : 'pointer', fontSize: 15 }}>›</button>
+                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'transparent', color: paginaActual === totalPaginasPacientes ? '#B8B8C2' : MU, cursor: paginaActual === totalPaginasPacientes ? 'default' : 'pointer', fontSize: 15 }}>›</button>
               </div>
             )}
           </>
@@ -779,8 +779,8 @@ export default function Dashboard({ setView, clinica }) {
             {topDeudores.map(d => (
               <div key={d.paciente.id} onClick={() => setView && setView('caja')} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--panel-sunken)', border: 'none', color: 'var(--label-primary)', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--label-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#F1F1F7', border: 'none', color: '#16161D', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{ini(d.paciente.name)}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#16161D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.paciente.name}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: RJ, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{soles(d.saldo)}</div>
                 </div>
                 <div style={{ height: 5, background: BD, borderRadius: 3, overflow: 'hidden', marginLeft: 35 }}>
@@ -796,7 +796,7 @@ export default function Dashboard({ setView, clinica }) {
       <div style={{ ...col(6), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Laboratorio</h2>
-          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: 'var(--label-tertiary)' }}>
+          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: '#8A8A96' }}>
             <Icon name="activity" size={14} />
           </div>
         </div>
@@ -805,7 +805,7 @@ export default function Dashboard({ setView, clinica }) {
         ) : (
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { l: 'En proceso', v: labEnProceso.length, c: 'var(--info)' },
+              { l: 'En proceso', v: labEnProceso.length, c: '#3B82F6' },
               { l: 'Atrasadas', v: labAtrasadas.length, c: labAtrasadas.length > 0 ? RJ : MU },
               { l: 'Listas', v: labListo.length, c: VERDE },
             ].map(s => (
@@ -851,8 +851,8 @@ export default function Dashboard({ setView, clinica }) {
               {topTratamientos.map(t => (
                 <div key={t.name} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: 'var(--label-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: 'var(--label-primary)' }}>{soles(t.monto)}</b></span>
+                    <span style={{ fontSize: 13, color: '#16161D', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                    <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: '#16161D' }}>{soles(t.monto)}</b></span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(t.monto / maxTrat) * 100}%`, background: colorPorNombre(t.name), borderRadius: 3 }} />
@@ -865,8 +865,8 @@ export default function Dashboard({ setView, clinica }) {
               {ESTADO_TRAT.map(e => (
                 <div key={e.key} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: 'var(--label-primary)', fontWeight: 500 }}>{e.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--label-primary)' }}>{conteoEstado[e.key]}</span>
+                    <span style={{ fontSize: 13, color: '#16161D', fontWeight: 500 }}>{e.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#16161D' }}>{conteoEstado[e.key]}</span>
                   </div>
                   <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(conteoEstado[e.key] / maxEstado) * 100}%`, background: e.color, borderRadius: 3 }} />

@@ -437,7 +437,7 @@ export default function Consentimientos({ patient, clinica }) {
         })}
       </div>
 
-      <div style={{ marginTop: 16, padding: '11px 14px', background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 12, color: MU, lineHeight: 1.7, fontFamily: 'serif' }}>
+      <div style={{ marginTop: 16, padding: '11px 14px', background: LT, border: `1px solid ${BD}`, borderRadius: '10px', fontSize: 12, color: MU, lineHeight: 1.7, fontFamily: 'serif' }}>
         <strong style={{ color: P }}>Flujo recomendado:</strong> Seleccionar el consentimiento del procedimiento → El paciente lee en pantalla → Completar campos punteados (DNI, domicilio) → Firmar digitalmente → Guardar → Imprimir copia para el paciente.
       </div>
     </div>

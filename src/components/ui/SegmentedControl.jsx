@@ -14,7 +14,7 @@ export default function SegmentedControl({ options, value, onChange, style }) {
       role="tablist"
       style={{
         position: 'relative', display: 'grid', gridTemplateColumns: `repeat(${n}, 1fr)`,
-        background: 'var(--fill-tertiary)', borderRadius: 'var(--radius-sm)', padding: pad,
+        background: '#F1F1F7', borderRadius: '10px', padding: pad,
         ...style,
       }}
     >
@@ -22,8 +22,8 @@ export default function SegmentedControl({ options, value, onChange, style }) {
         position: 'absolute', top: pad, bottom: pad,
         left: `calc(${idx} * (100% - ${pad * 2}px) / ${n} + ${pad}px)`,
         width: `calc((100% - ${pad * 2}px) / ${n})`,
-        background: 'var(--surface-primary)', borderRadius: 'calc(var(--radius-sm) - 2px)',
-        boxShadow: 'var(--shadow-sm)',
+        background: '#FFFFFF', borderRadius: 'calc(10px - 2px)',
+        boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)',
         transition: 'left 200ms cubic-bezier(0.25, 0.1, 0.25, 1)',
       }} />
       {options.map(o => (
@@ -36,8 +36,8 @@ export default function SegmentedControl({ options, value, onChange, style }) {
           style={{
             position: 'relative', zIndex: 1, border: 'none', background: 'transparent',
             padding: '7px 12px', fontSize: 11.5, fontWeight: value === o.key ? 600 : 500,
-            color: value === o.key ? 'var(--label-primary)' : 'var(--label-secondary)',
-            cursor: 'pointer', borderRadius: 'calc(var(--radius-sm) - 2px)',
+            color: value === o.key ? '#16161D' : '#6B6B78',
+            cursor: 'pointer', borderRadius: 'calc(10px - 2px)',
             transition: 'color 150ms ease', whiteSpace: 'nowrap', minHeight: 30,
             font: 'inherit', fontFamily: 'inherit',
           }}

@@ -1,19 +1,13 @@
 // src/utils/theme.js
-// White-label: cada clínica puede fijar su propio color de acento
-// (clinicas.accent_color). Este archivo tiene las dos piezas que CSS no puede
-// resolver solo:
+// contrasteTexto(hex) — qué texto (blanco o casi-negro) es legible SOBRE un
+// acento arbitrario. La relación de contraste no es lineal con el color, así
+// que no se puede decidir con una fórmula fija.
 //
-//   1. contrasteTexto(hex) — qué texto (blanco o casi-negro) es legible SOBRE
-//      un acento arbitrario. La relación de contraste no es lineal con el
-//      color, así que color-mix() no puede decidir esto por sí solo (ver el
-//      comentario de --accent-contrast en tokens.css).
-//   2. aplicarTema(clinica) — fija --accent y --accent-contrast en
-//      document.documentElement. Todo lo demás (--accent-hover/-press/-soft/
-//      -ring) son fórmulas de color-mix() sobre --accent en tokens.css: se
-//      recalculan solas, no hay que tocarlas desde JS.
-//
-// Si `clinica.accent_color` es null/vacío, no se toca nada: la hoja de estilos
-// ya tiene el tema por defecto ("Dra. Sol Vargas", violeta) en :root.
+// Nota: el acento por clínica (clinicas.accent_color) ya no se aplica en
+// runtime -- los colores de la app pasaron a ser literales (hex/rgba) fijos
+// en cada componente, no variables CSS, así que no hay ":root" sobre el cual
+// sobreescribir --accent. El selector de "Apariencia" en Config.jsx sigue
+// guardando accent_color en Supabase, pero hoy no cambia nada visualmente.
 
 const hexToRgb = (hex) => {
   const h = hex.replace('#', '');
@@ -47,20 +41,4 @@ export function contrasteTexto(hexAcento) {
   } catch {
     return '#FFFFFF'; // hex inválido: no romper el render por un dato corrupto
   }
-}
-
-// Aplica el tema de una clínica sobre :root. Sin clínica o sin accent_color,
-// no hace nada -- se queda el default de tokens.css.
-export function aplicarTema(clinica) {
-  const acento = clinica?.accent_color;
-  const root = document.documentElement.style;
-  if (!acento) {
-    // Vuelve al tema por defecto si antes había uno custom aplicado (ej. al
-    // cambiar de clínica en la misma pestaña, caso multi-cuenta futuro).
-    root.removeProperty('--accent');
-    root.removeProperty('--accent-contrast');
-    return;
-  }
-  root.setProperty('--accent', acento);
-  root.setProperty('--accent-contrast', contrasteTexto(acento));
 }

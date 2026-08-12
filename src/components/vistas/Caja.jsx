@@ -28,13 +28,13 @@ const TRANSICION = 'border-color .15s cubic-bezier(0.25, 0.1, 0.25, 1), backgrou
 // a tamaño completo sin desbordar; la de modal para los campos a ancho entero.
 const LABEL_CAMPO = { fontSize: 12, color: MU, fontWeight: 600, display: 'block', marginBottom: 6 };
 const INPUT_CAMPO = {
-  width: '100%', padding: '9px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)',
+  width: '100%', padding: '9px 12px', minHeight: 36, borderRadius: '10px',
   border: `1px solid ${BD}`, fontSize: 13.5, color: DN, background: LT,
   outline: 'none', boxSizing: 'border-box', transition: TRANSICION,
 };
 const LABEL_MODAL = { fontSize: 13, color: MU, fontWeight: 600, display: 'block', marginBottom: 6 };
 const INPUT_MODAL = {
-  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: 'var(--radius-sm)',
+  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: '10px',
   border: `1px solid ${BD}`, fontSize: 15, color: DN, background: LT,
   outline: 'none', boxSizing: 'border-box', transition: TRANSICION,
 };
@@ -359,13 +359,13 @@ export default function Caja({ clinicaId }) {
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
         {['facturas', 'pagos', 'gastos'].map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '8px 16px', minHeight: 36, borderRadius: 'var(--radius-sm)', border: `1px solid ${tab === t ? P : BD}`, fontSize: 13, cursor: 'pointer', fontWeight: tab === t ? 600 : 500, background: tab === t ? P : LT, color: tab === t ? '#fff' : MU, textTransform: 'capitalize', transition: TRANSICION }}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} style={{ padding: '8px 16px', minHeight: 36, borderRadius: '10px', border: `1px solid ${tab === t ? P : BD}`, fontSize: 13, cursor: 'pointer', fontWeight: tab === t ? 600 : 500, background: tab === t ? P : LT, color: tab === t ? '#fff' : MU, textTransform: 'capitalize', transition: TRANSICION }}>{t}</button>
         ))}
       </div>
 
       {tab === 'facturas' && (
         facturas.length === 0 ? (
-          <div style={{ background: LT, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>
+          <div style={{ background: LT, border: `1px dashed ${BD}`, borderRadius: '14px', padding: 40, textAlign: 'center', color: MU, fontSize: 13.5 }}>
             Aún no hay tratamientos facturados. Se agregan desde la pestaña "Plan trat." de cada paciente.
           </div>
         ) : (
@@ -374,7 +374,7 @@ export default function Caja({ clinicaId }) {
               const abierto = expandidosPacientes.has(p.patient_id);
               const b = sc(p.estado);
               return (
-                <div key={p.patient_id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+                <div key={p.patient_id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
                   <div onClick={() => toggleExpandido(p.patient_id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', minHeight: 44, cursor: 'pointer' }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={MU} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: abierto ? 'rotate(90deg)' : 'none', transition: 'transform .15s cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
                       <polyline points="9 18 15 12 9 6" />
@@ -386,18 +386,18 @@ export default function Caja({ clinicaId }) {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: 'var(--label-tertiary)' }}>Total</div>
+                      <div style={{ fontSize: 11, color: '#8A8A96' }}>Total</div>
                       <div style={{ fontSize: 15, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>S/{p.cost.toLocaleString()}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: 'var(--label-tertiary)' }}>Saldo</div>
+                      <div style={{ fontSize: 11, color: '#8A8A96' }}>Saldo</div>
                       <div style={{ fontSize: 15, fontWeight: 600, color: p.saldo > 0 ? RJ : WA, fontVariantNumeric: 'tabular-nums' }}>S/{p.saldo.toLocaleString()}</div>
                     </div>
-                    <Badge bg={b.bg} color={b.c} style={{ fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 'var(--radius-sm)', flexShrink: 0 }}>{p.estado}</Badge>
+                    <Badge bg={b.bg} color={b.c} style={{ fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: '10px', flexShrink: 0 }}>{p.estado}</Badge>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
                       <button
                         onClick={e => { e.stopPropagation(); abrirEmitir(p.patient_id, p.grupos); }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '8px 14px', fontSize: 13, fontWeight: 600, color: P, cursor: 'pointer', whiteSpace: 'nowrap', transition: TRANSICION }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 36, background: LT, border: `1px solid ${BD}`, borderRadius: '10px', padding: '8px 14px', fontSize: 13, fontWeight: 600, color: P, cursor: 'pointer', whiteSpace: 'nowrap', transition: TRANSICION }}
                       >
                         <Icon name="document" size={13} /> Emitir comprobante
                       </button>
@@ -410,7 +410,7 @@ export default function Caja({ clinicaId }) {
                   {abierto && (
                     <div style={{ borderTop: `1px solid ${BD}`, overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                        <thead><tr style={{ background: 'var(--surface-tertiary)' }}>
+                        <thead><tr style={{ background: '#F1F1F7' }}>
                           {['Fecha', 'Tratamiento', 'Piezas', 'Método', 'Total', 'Cobrado', 'Estado', ''].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${BD}`, whiteSpace: 'nowrap' }}>{h}</th>)}
                         </tr></thead>
                         <tbody>
@@ -424,7 +424,7 @@ export default function Caja({ clinicaId }) {
                                 <td style={{ padding: '11px 12px', color: MU }}>{g.metodo || '—'}</td>
                                 <td style={{ padding: '11px 12px', color: DN, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>S/{g.cost}</td>
                                 <td style={{ padding: '11px 12px', color: g.paid < g.cost ? GL : WA, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>S/{g.paid}</td>
-                                <td style={{ padding: '11px 12px' }}><Badge bg={bg.bg} color={bg.c} style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}>{g.status}</Badge></td>
+                                <td style={{ padding: '11px 12px' }}><Badge bg={bg.bg} color={bg.c} style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: '10px' }}>{g.status}</Badge></td>
                                 <td style={{ padding: '11px 12px', whiteSpace: 'nowrap' }}>
                                   {saldoG > 0 && <span onClick={() => irAPagar(g)} style={{ fontSize: 13, color: P, cursor: 'pointer', fontWeight: 600, marginRight: 14 }}>registrar pago →</span>}
                                   {g.comprobante ? (
@@ -453,7 +453,7 @@ export default function Caja({ clinicaId }) {
       )}
 
       {tab === 'pagos' && (
-        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
           <div style={{ fontWeight: 600, fontSize: 15, color: DN, marginBottom: 14 }}>Registrar nuevo pago</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, maxWidth: 560 }}>
             <div>
@@ -494,14 +494,14 @@ export default function Caja({ clinicaId }) {
                 style={{ ...INPUT_CAMPO, fontVariantNumeric: 'tabular-nums' }} />
             </div>
           </div>
-          <Button onClick={registrarPago} disabled={savingPago} style={{ marginTop: 16, padding: '10px 22px', minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-sm)' }}>
+          <Button onClick={registrarPago} disabled={savingPago} style={{ marginTop: 16, padding: '10px 22px', minHeight: 44, fontSize: 15, borderRadius: '10px' }}>
             {savingPago ? 'Registrando...' : 'Registrar pago'}
           </Button>
         </div>
       )}
 
       {tab === 'gastos' && (
-        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontWeight: 600, fontSize: 15, color: DN }}>Gastos del consultorio</div>
             <div style={{ fontSize: 13, color: MU, fontVariantNumeric: 'tabular-nums' }}>Total del mes: <b style={{ color: DN, fontWeight: 600 }}>S/{totalGastosMes.toLocaleString()}</b></div>
@@ -515,10 +515,10 @@ export default function Caja({ clinicaId }) {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 18 }}>
                 {gastosPorCategoria.map(({ cat, monto }) => (
-                  <div key={cat} style={{ background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '14px 16px' }}>
+                  <div key={cat} style={{ background: '#F1F1F7', border: `1px solid ${BD}`, borderRadius: '14px', padding: '14px 16px' }}>
                     <div style={{ fontSize: 12, color: MU, marginBottom: 4 }}>{cat}</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: DN, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>S/{monto.toLocaleString()}</div>
-                    <div style={{ fontSize: 11, color: 'var(--label-tertiary)', marginTop: 2 }}>Este mes</div>
+                    <div style={{ fontSize: 11, color: '#8A8A96', marginTop: 2 }}>Este mes</div>
                   </div>
                 ))}
               </div>
@@ -526,7 +526,7 @@ export default function Caja({ clinicaId }) {
               {gastos.length > 0 && (
                 <div style={{ marginBottom: 18, overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead><tr style={{ background: 'var(--surface-tertiary)' }}>
+                    <thead><tr style={{ background: '#F1F1F7' }}>
                       {['Categoría', 'Monto', 'Fecha', 'Nota'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: MU, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${BD}` }}>{h}</th>)}
                     </tr></thead>
                     <tbody>
@@ -543,7 +543,7 @@ export default function Caja({ clinicaId }) {
                 </div>
               )}
 
-              <Button onClick={() => setShowGastoModal(true)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, padding: '8px 16px', fontSize: 15, borderRadius: 'var(--radius-sm)' }}>
+              <Button onClick={() => setShowGastoModal(true)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, padding: '8px 16px', fontSize: 15, borderRadius: '10px' }}>
                 <Icon name="plus" size={14} /> Registrar gasto
               </Button>
             </>
@@ -552,7 +552,7 @@ export default function Caja({ clinicaId }) {
       )}
 
       {showGastoModal && (
-        <Modal cardStyle={{ padding: 24, width: 380, boxShadow: 'var(--shadow-md)' }}>
+        <Modal cardStyle={{ padding: 24, width: 380, boxShadow: '0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)' }}>
           <h3 style={{ marginTop: 0, marginBottom: 18, color: DN, fontSize: 17, fontWeight: 600 }}>Registrar gasto</h3>
 
           <div style={{ marginBottom: 14 }}>
@@ -583,8 +583,8 @@ export default function Caja({ clinicaId }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="secondary" onClick={() => setShowGastoModal(false)} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-sm)' }}>Cancelar</Button>
-            <Button onClick={registrarGasto} disabled={savingGasto} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-sm)' }}>
+            <Button variant="secondary" onClick={() => setShowGastoModal(false)} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: '10px' }}>Cancelar</Button>
+            <Button onClick={registrarGasto} disabled={savingGasto} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: '10px' }}>
               {savingGasto ? 'Guardando...' : 'Registrar gasto'}
             </Button>
           </div>
@@ -592,13 +592,13 @@ export default function Caja({ clinicaId }) {
       )}
 
       {emitirDraft && (
-        <Modal cardStyle={{ padding: 0, width: 460, maxHeight: '88vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-md)' }}>
+        <Modal cardStyle={{ padding: 0, width: 460, maxHeight: '88vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)' }}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BD}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexShrink: 0 }}>
             <div>
               <div style={{ fontSize: 17, fontWeight: 600, color: DN }}>Emitir comprobante</div>
               <div style={{ fontSize: 13, color: MU, marginTop: 3 }}>{nombrePaciente(emitirDraft.patientId)}</div>
             </div>
-            <button onClick={() => setEmitirDraft(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: MU, fontSize: 22, lineHeight: 1, width: 36, height: 36, minHeight: 36, borderRadius: 'var(--radius-sm)', flexShrink: 0, transition: TRANSICION }}>×</button>
+            <button onClick={() => setEmitirDraft(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: MU, fontSize: 22, lineHeight: 1, width: 36, height: 36, minHeight: 36, borderRadius: '10px', flexShrink: 0, transition: TRANSICION }}>×</button>
           </div>
 
           <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
@@ -607,7 +607,7 @@ export default function Caja({ clinicaId }) {
               <div style={{ display: 'flex', gap: 8 }}>
                 {[['boleta', 'Boleta / Factura'], ['rxh', 'Recibo por Honorarios']].map(([id, lbl]) => (
                   <button key={id} onClick={() => setEmitirDraft(d => ({ ...d, tipo: id }))}
-                    style={{ flex: 1, padding: '10px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)', border: `1px solid ${emitirDraft.tipo === id ? P : BD}`, background: emitirDraft.tipo === id ? P : LT, color: emitirDraft.tipo === id ? '#fff' : DN, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: TRANSICION }}>
+                    style={{ flex: 1, padding: '10px 12px', minHeight: 36, borderRadius: '10px', border: `1px solid ${emitirDraft.tipo === id ? P : BD}`, background: emitirDraft.tipo === id ? P : LT, color: emitirDraft.tipo === id ? '#fff' : DN, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: TRANSICION }}>
                     {lbl}
                   </button>
                 ))}
@@ -616,7 +616,7 @@ export default function Caja({ clinicaId }) {
 
             <div style={{ marginBottom: 16 }}>
               <label style={LABEL_CAMPO}>Incluye</label>
-              <div style={{ background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, color: DN }}>
+              <div style={{ background: '#F1F1F7', border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 12px', fontSize: 13, color: DN }}>
                 {emitirDraft.grupos.map(g => (
                   <div key={g.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
                     <span>{g.name}{g.toothLabel !== '—' ? ` (${g.toothLabel})` : ''}</span>
@@ -629,7 +629,7 @@ export default function Caja({ clinicaId }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <div>
                 <label style={LABEL_CAMPO}>DNI del paciente</label>
-                <div style={{ ...INPUT_CAMPO, display: 'flex', alignItems: 'center', color: docPaciente(emitirDraft.patientId) ? DN : RJ, background: 'var(--surface-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ ...INPUT_CAMPO, display: 'flex', alignItems: 'center', color: docPaciente(emitirDraft.patientId) ? DN : RJ, background: '#F1F1F7', fontVariantNumeric: 'tabular-nums' }}>
                   {docPaciente(emitirDraft.patientId) || 'Sin DNI en Historial'}
                 </div>
               </div>
@@ -640,15 +640,15 @@ export default function Caja({ clinicaId }) {
               </div>
             </div>
 
-            <div style={{ background: 'var(--accent-soft)', border: `1px solid color-mix(in srgb, ${P} 24%, transparent)`, borderRadius: 'var(--radius-sm)', padding: '12px 14px', fontSize: 12, color: DN, marginBottom: 18, lineHeight: 1.5 }}>
+            <div style={{ background: 'rgba(123, 92, 250, 0.12)', border: `1px solid color-mix(in srgb, ${P} 24%, transparent)`, borderRadius: '10px', padding: '12px 14px', fontSize: 12, color: DN, marginBottom: 18, lineHeight: 1.5 }}>
               {GUIA_SOL[emitirDraft.tipo]} La ruta exacta del menú puede variar según cómo esté configurado tu RUC en SUNAT; si no la encuentras igual, usa el buscador dentro de SOL.
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginBottom: 22 }}>
-              <Button variant="secondary" onClick={() => copiarDatos(textoParaCopiar(emitirDraft))} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-sm)' }}>
+              <Button variant="secondary" onClick={() => copiarDatos(textoParaCopiar(emitirDraft))} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: '10px' }}>
                 {copiado ? '✓ Copiado' : 'Copiar datos'}
               </Button>
-              <Button onClick={() => window.open(SOL_LOGIN_URL, '_blank', 'noopener')} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-sm)' }}>
+              <Button onClick={() => window.open(SOL_LOGIN_URL, '_blank', 'noopener')} style={{ flex: 1, padding: 10, minHeight: 44, fontSize: 15, borderRadius: '10px' }}>
                 Abrir SUNAT SOL ↗
               </Button>
             </div>
@@ -687,7 +687,7 @@ export default function Caja({ clinicaId }) {
                   style={{ fontSize: 13, color: MU }} />
               </div>
 
-              <Button onClick={guardarComprobante} disabled={savingComprobante} style={{ width: '100%', padding: 10, minHeight: 44, fontSize: 15, borderRadius: 'var(--radius-sm)', background: WA }}>
+              <Button onClick={guardarComprobante} disabled={savingComprobante} style={{ width: '100%', padding: 10, minHeight: 44, fontSize: 15, borderRadius: '10px', background: WA }}>
                 {savingComprobante ? 'Guardando...' : 'Guardar comprobante'}
               </Button>
             </div>

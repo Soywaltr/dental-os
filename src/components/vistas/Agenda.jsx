@@ -17,7 +17,7 @@ const NAV_TRANSITION = 'background-color .15s cubic-bezier(0.25, 0.1, 0.25, 1), 
 
 // Horas cerradas: rayado diagonal con dos superficies del tema (antes dos
 // grises fijos), para que el patrón siga leyéndose en modo oscuro.
-const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, var(--surface-tertiary), var(--surface-tertiary) 6px, var(--fill-tertiary) 6px, var(--fill-tertiary) 12px)';
+const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, #F1F1F7, #F1F1F7 6px, #F1F1F7 6px, #F1F1F7 12px)';
 
 // Tipos de bloque de cita. Antes eran tres colores saturados con texto blanco
 // (#6366f1 indigo, #0D5C6B teal, #e11d48 rojo) y el rojo era el caso POR
@@ -29,15 +29,28 @@ const RAYADO_CERRADO = 'repeating-linear-gradient(45deg, var(--surface-tertiary)
 // `borde` da el filo de color a la izquierda: es lo que sigue distinguiendo un
 // tipo de otro cuando el relleno es tenue.
 const TIPO_CITA = {
-  google: { tinte: 'color-mix(in srgb, var(--accent) 14%, var(--panel))', borde: 'var(--accent)' },
-  nuevo:  { tinte: 'var(--green-soft)', borde: 'var(--green)' },
-  normal: { tinte: 'var(--panel-sunken)', borde: 'var(--hairline-strong)' },
+  google: { tinte: 'color-mix(in srgb, #7B5CFA 14%, #FFFFFF)', borde: '#7B5CFA' },
+  nuevo:  { tinte: '#DCFCE7', borde: '#16A34A' },
+  normal: { tinte: '#F1F1F7', borde: 'rgba(22, 22, 29, 0.11)' },
 };
 const tipoDeCita = (p) => (p.isGoogleOnly ? 'google' : p.tag === 'nuevo' ? 'nuevo' : 'normal');
 
+// Asistencia: un evento de Google puede no tener fila en `pacientes` (ver
+// isGoogleOnly), así que el estado se guarda en su propia tabla
+// (estados_cita) keyeada por google_event_id -- toda cita, con o sin
+// paciente vinculado, termina teniendo uno porque agendar exige Google
+// Calendar conectado (ver enviarAGoogleCalendar).
+const claveCita = (p) => p.google_event_id || `pac-${p.id}`;
+const ESTADOS_CITA = [
+  { key: 'pendiente',    label: 'Pendiente',   color: MU },
+  { key: 'asistio',      label: 'Asistió',     color: WA },
+  { key: 'no_asistio',   label: 'No asistió',  color: RJ },
+  { key: 'reprogramada', label: 'Reprogramada',color: GL },
+];
+
 const LABEL_MODAL = { fontSize: 13, fontWeight: 600, color: MU };
 const INPUT_MODAL = {
-  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: 'var(--radius-sm)',
+  width: '100%', padding: '10px 12px', minHeight: 44, borderRadius: '10px',
   border: `1px solid ${BD}`, marginTop: 6, boxSizing: 'border-box', fontSize: 15,
   color: DN, background: LT, outline: 'none',
   transition: 'border-color .15s cubic-bezier(0.25, 0.1, 0.25, 1)',
@@ -145,7 +158,13 @@ export default function Agenda({ clinicaId, clinica }) {
         } catch (e) { console.error("Error conectando a Google:", e); }
       }
 
-      const combinedData = [...data, ...externalGoogleApts];
+      let estadosMap = {};
+      if (clinicaId) {
+        const { data: estadosData } = await supabase.from('estados_cita').select('google_event_id, estado').eq('clinica_id', clinicaId);
+        (estadosData || []).forEach(e => { estadosMap[e.google_event_id] = e.estado; });
+      }
+
+      const combinedData = [...data, ...externalGoogleApts].map(p => ({ ...p, estado: estadosMap[claveCita(p)] || 'pendiente' }));
       setAllApts(combinedData);
 
       // El autocompletado de "Nueva cita" no ofrece pacientes archivados: si
@@ -194,7 +213,7 @@ export default function Agenda({ clinicaId, clinica }) {
     };
 
     fetchData();
-  }, [currentDate, view, googleConnected, getToken, googleDisconnect]);
+  }, [currentDate, view, googleConnected, getToken, googleDisconnect, clinicaId]);
 
   const handleNext = () => {
     const next = new Date(currentDate);
@@ -391,12 +410,12 @@ export default function Agenda({ clinicaId, clinica }) {
     .sort((a, b) => (a.fecha + a.hora_cita).localeCompare(b.fecha + b.hora_cita))[0];
 
   return (
-    // var(--gutter)/var(--gap-panel), no números sueltos (18/12/16): son el
+    // 28px/20px, no números sueltos (18/12/16): son el
     // mismo canal de aire que usa el resto de la app -- con su propio número
     // acá, Agenda se leía un poco más apretada que las demás vistas aunque
     // nadie pudiera decir por qué.
-    <div style={{ padding: 'var(--gutter)', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-panel)', marginBottom: 'var(--gap-panel)' }}>
+    <div style={{ padding: '28px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '20px' }}>
         <Stat label="Citas hoy" value={citasHoy.length} col={P} icon={<Icon name="calendar" size={15} />} />
         <Stat label="Esta semana" value={citasSemana.length} col={DN} icon={<Icon name="activity" size={15} />} />
         <Stat
@@ -412,9 +431,9 @@ export default function Agenda({ clinicaId, clinica }) {
       <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
 
         <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={handlePrev} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '6px 12px', minHeight: 36, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: DN, transition: NAV_TRANSITION }}>◄</button>
-          <button onClick={() => setCurrentDate(new Date())} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '6px 14px', minHeight: 36, cursor: 'pointer', fontWeight: 600, color: DN, fontSize: 13, transition: NAV_TRANSITION }}>Hoy</button>
-          <button onClick={handleNext} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '6px 12px', minHeight: 36, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: DN, transition: NAV_TRANSITION }}>►</button>
+          <button onClick={handlePrev} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '10px', padding: '6px 12px', minHeight: 36, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: DN, transition: NAV_TRANSITION }}>◄</button>
+          <button onClick={() => setCurrentDate(new Date())} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '10px', padding: '6px 14px', minHeight: 36, cursor: 'pointer', fontWeight: 600, color: DN, fontSize: 13, transition: NAV_TRANSITION }}>Hoy</button>
+          <button onClick={handleNext} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '10px', padding: '6px 12px', minHeight: 36, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: DN, transition: NAV_TRANSITION }}>►</button>
         </div>
 
         <div style={{ fontSize: 15, fontWeight: 600, color: DN, textTransform: 'capitalize', fontVariantNumeric: 'tabular-nums' }}>
@@ -423,14 +442,14 @@ export default function Agenda({ clinicaId, clinica }) {
             : view === 'Semana' ? `Semana del ${getWeekDays()[0].getDate()} al ${getWeekDays()[5].getDate()}` : `Día: ${currentDate.toLocaleDateString()}`}
         </div>
 
-        <select value={view} onChange={e => setView(e.target.value)} style={{ marginLeft: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 'var(--radius-sm)', border: `1px solid ${BD}`, fontSize: 13, color: DN, background: LT, outline: 'none', transition: NAV_TRANSITION }}>
+        <select value={view} onChange={e => setView(e.target.value)} style={{ marginLeft: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: '10px', border: `1px solid ${BD}`, fontSize: 13, color: DN, background: LT, outline: 'none', transition: NAV_TRANSITION }}>
           <option value="Semana">Vista semanal</option>
           <option value="Día">Vista diaria</option>
           <option value="Mensual">Vista mensual</option>
         </select>
 
         {!googleConnected && (
-          <button onClick={() => login()} style={{ background: 'var(--amber-soft)', color: GL, border: `1px solid color-mix(in srgb, ${GL} 30%, transparent)`, borderRadius: 'var(--radius-sm)', padding: '6px 14px', minHeight: 36, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: NAV_TRANSITION }}>
+          <button onClick={() => login()} style={{ background: '#FEF3C7', color: GL, border: `1px solid color-mix(in srgb, ${GL} 30%, transparent)`, borderRadius: '10px', padding: '6px 14px', minHeight: 36, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: NAV_TRANSITION }}>
             Sincronizar Google
           </button>
         )}
@@ -440,7 +459,7 @@ export default function Agenda({ clinicaId, clinica }) {
         </Button>
       </div>
 
-      <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+      <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
 
         {/* minmax(0, 1fr), no 1fr a secas, en las TRES grillas de este
             archivo (esta cabecera, cada fila de hora y la vista mensual): por
@@ -486,7 +505,7 @@ export default function Agenda({ clinicaId, clinica }) {
                 const isCurrentMonth = d.getMonth() === currentDate.getMonth();
 
                 return (
-                  <div key={i} style={{ borderRight: `1px solid ${BD}`, borderBottom: `1px solid ${BD}`, padding: 6, background: isCurrentMonth ? LT : 'var(--surface-tertiary)' }}>
+                  <div key={i} style={{ borderRight: `1px solid ${BD}`, borderBottom: `1px solid ${BD}`, padding: 6, background: isCurrentMonth ? LT : '#F1F1F7' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: isCurrentMonth ? DN : MU, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>{d.getDate()}</div>
                     {/* Mismo tratamiento de tinte que la vista semanal. El tipo
                         se calcula acá porque estas filas vienen de `allApts`
@@ -500,7 +519,7 @@ export default function Agenda({ clinicaId, clinica }) {
                           style={{
                             background: tipo.tinte, borderLeft: `3px solid ${tipo.borde}`,
                             color: DN, padding: '7px 9px', minHeight: 36, boxSizing: 'border-box',
-                            borderRadius: 'var(--radius-sm)', fontSize: 11.5, lineHeight: 1.35,
+                            borderRadius: '10px', fontSize: 11.5, lineHeight: 1.35,
                             marginBottom: 4, cursor: 'pointer', whiteSpace: 'nowrap',
                             overflow: 'hidden', textOverflow: 'ellipsis', fontVariantNumeric: 'tabular-nums',
                           }}>
@@ -523,7 +542,7 @@ export default function Agenda({ clinicaId, clinica }) {
 
               return (
               <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},minmax(0, 1fr))`, borderBottom: `1px solid ${BD}`, minHeight: 52, position: 'relative' }}>
-                <div style={{ padding: '6px 9px', fontSize: 11.5, color: 'var(--label-tertiary)', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
+                <div style={{ padding: '6px 9px', fontSize: 11.5, color: '#8A8A96', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
                 {displayDays.map((d, di) => {
                   const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -565,7 +584,7 @@ export default function Agenda({ clinicaId, clinica }) {
                             position: 'absolute', inset: 4,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'transparent', border: 'none',
-                            borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                            borderRadius: '10px', cursor: 'pointer',
                             color: 'transparent', padding: 0,
                           }}
                         >
@@ -581,7 +600,7 @@ export default function Agenda({ clinicaId, clinica }) {
                             style={{
                               background: tipo.tinte,
                               borderLeft: `3px solid ${tipo.borde}`,
-                              borderRadius: 'var(--radius-sm)',
+                              borderRadius: '10px',
                               padding: '7px 10px', minHeight: 44, boxSizing: 'border-box',
                               cursor: 'pointer', marginBottom: 4, position: 'relative', zIndex: 2,
                             }}

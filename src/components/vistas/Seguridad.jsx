@@ -15,7 +15,7 @@ import Button from '../ui/Button';
 import { BD, DN, MU, MT, P, RJ, WA, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 
 const cardStyle = {
-  background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 20,
+  background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 20,
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
 
@@ -26,8 +26,8 @@ const tituloCardStyle = { fontSize: 15, fontWeight: 600, color: DN };
 const parrafoStyle = { fontSize: 13, color: MU, lineHeight: 1.5 };
 
 const avisoErrorStyle = {
-  padding: '10px 12px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`,
-  borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13, lineHeight: 1.5,
+  padding: '10px 12px', background: '#FEE2E2', borderLeft: `3px solid ${RJ}`,
+  borderRadius: '10px', color: RJ, fontSize: 13, lineHeight: 1.5,
 };
 
 // Fila de dispositivo/persona: alto de toque cómodo y separador de 1px.
@@ -36,9 +36,9 @@ const filaStyle = {
   gap: 12, padding: '10px 0', minHeight: 52, borderBottom: `1px solid ${BD}`,
 };
 
-const filaBtnStyle = { fontSize: 12, fontWeight: 600, padding: '9px 14px', minHeight: 36, borderRadius: 'var(--radius-sm)' };
+const filaBtnStyle = { fontSize: 12, fontWeight: 600, padding: '9px 14px', minHeight: 36, borderRadius: '10px' };
 
-const accionBtnStyle = { fontSize: 13.5, fontWeight: 600, padding: '12px 20px', minHeight: 44, borderRadius: 'var(--radius-sm)' };
+const accionBtnStyle = { fontSize: 13.5, fontWeight: 600, padding: '12px 20px', minHeight: 44, borderRadius: '10px' };
 
 const IcShield = ({ size = 19, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -125,7 +125,7 @@ export default function Seguridad({ rol }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: verificados.length > 0 ? 'var(--green-soft)' : 'var(--amber-soft)', color: verificados.length > 0 ? WA : 'var(--amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', background: verificados.length > 0 ? '#DCFCE7' : '#FEF3C7', color: verificados.length > 0 ? WA : '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <IcShield />
           </div>
           <div>
@@ -140,7 +140,7 @@ export default function Seguridad({ rol }) {
         </p>
 
         {verificados.length === 1 && (
-          <div style={{ padding: '10px 12px', background: 'var(--amber-soft)', borderLeft: '3px solid var(--amber)', borderRadius: 'var(--radius-sm)', color: DN, fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>
+          <div style={{ padding: '10px 12px', background: '#FEF3C7', borderLeft: '3px solid #F59E0B', borderRadius: '10px', color: DN, fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>
             Te recomendamos agregar un <b>segundo dispositivo</b>. Supabase no ofrece códigos de respaldo — si pierdes el único dispositivo enrolado, necesitarás que un administrador te restablezca el acceso.
           </div>
         )}
@@ -148,7 +148,7 @@ export default function Seguridad({ rol }) {
         {!enrolamiento && (
           <>
             {verificados.map(f => (
-              <div key={f.id} className="row-hoverable" style={{ ...filaStyle, borderRadius: 'var(--radius-control)', paddingLeft: 8, paddingRight: 8 }}>
+              <div key={f.id} className="row-hoverable" style={{ ...filaStyle, borderRadius: '10px', paddingLeft: 8, paddingRight: 8 }}>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>{f.friendly_name || 'Dispositivo'}</div>
                   <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>Agregado el {new Date(f.created_at).toLocaleDateString('es-PE')}</div>
@@ -178,12 +178,12 @@ export default function Seguridad({ rol }) {
             </p>
             {/* El fondo del QR se queda blanco literal: es la zona de silencio que
                 necesita el lector para escanearlo, no una superficie del tema. */}
-            <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: 14, display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <div style={{ background: '#fff', border: `1px solid ${BD}`, borderRadius: '14px', padding: 14, display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
               <img src={enrolamiento.qr_code} alt="Código QR" style={{ width: 160, height: 160 }} />
             </div>
             <details style={{ marginBottom: 12 }}>
               <summary style={{ fontSize: 13, color: P, cursor: 'pointer', fontWeight: 600, minHeight: 36, display: 'flex', alignItems: 'center', transition: `color .18s ${EASE}` }}>¿No puedes escanear? Ingresa el código manualmente</summary>
-              <div style={{ fontSize: 13, color: DN, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: .5, lineHeight: 1.5, background: MT, padding: 10, borderRadius: 'var(--radius-sm)', marginTop: 6, wordBreak: 'break-all' }}>
+              <div style={{ fontSize: 13, color: DN, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: .5, lineHeight: 1.5, background: MT, padding: 10, borderRadius: '10px', marginTop: 6, wordBreak: 'break-all' }}>
                 {enrolamiento.secret}
               </div>
             </details>
@@ -198,7 +198,7 @@ export default function Seguridad({ rol }) {
               className="field"
               style={{
                 width: '100%', minHeight: 52, padding: '12px 14px', border: `1px solid ${BD}`,
-                borderRadius: 'var(--radius-sm)', background: 'var(--surface-tertiary)',
+                borderRadius: '10px', background: '#F1F1F7',
                 fontSize: 22, fontWeight: 600, letterSpacing: 8, fontVariantNumeric: 'tabular-nums',
                 textAlign: 'center', marginBottom: 12, boxSizing: 'border-box', color: DN, outline: 'none',
                 transition: `border-color .18s ${EASE}`,
@@ -280,7 +280,7 @@ function GestionMFA() {
       {miembros.map(m => {
         const verificados = m.factores.filter(f => f.status === 'verified');
         return (
-          <div key={m.userId} className="row-hoverable" style={{ ...filaStyle, borderRadius: 'var(--radius-control)', paddingLeft: 8, paddingRight: 8 }}>
+          <div key={m.userId} className="row-hoverable" style={{ ...filaStyle, borderRadius: '10px', paddingLeft: 8, paddingRight: 8 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, color: DN }}>
                 {m.email || m.userId}{m.esUnoMismo ? ' (tú)' : ''}

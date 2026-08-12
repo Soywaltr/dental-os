@@ -24,7 +24,7 @@ const TABS = [
 const ACENTO_DEFECTO = '#6C5CE7';
 
 const cardStyle = {
-  background: GLASS_BG, border: GLASS_BORDER, borderRadius: 'var(--radius-md)', padding: 20,
+  background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 20,
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
 
@@ -39,15 +39,15 @@ const labelStyle = { fontSize: 11, color: MU, fontWeight: 600, display: 'block',
 const labelCapsStyle = { ...labelStyle, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 6 };
 
 const inputStyle = {
-  width: '100%', minHeight: 44, padding: '10px 12px', borderRadius: 'var(--radius-sm)',
-  border: `1px solid ${BD}`, background: 'var(--surface-tertiary)', fontSize: 13, color: DN,
+  width: '100%', minHeight: 44, padding: '10px 12px', borderRadius: '10px',
+  border: `1px solid ${BD}`, background: '#F1F1F7', fontSize: 13, color: DN,
   outline: 'none', boxSizing: 'border-box',
   transition: `border-color .18s ${EASE}, background-color .18s ${EASE}`,
 };
 
 const guardarBtnStyle = {
   minHeight: 44, padding: '12px 22px', fontSize: 13.5, fontWeight: 600,
-  borderRadius: 'var(--radius-sm)', display: 'inline-flex', alignItems: 'center', gap: 8,
+  borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: 8,
 };
 
 const enlaceArchivoStyle = {
@@ -56,11 +56,11 @@ const enlaceArchivoStyle = {
   transition: `color .18s ${EASE}`,
 };
 
-const accionBtnStyle = { minHeight: 44, padding: '12px 20px', fontSize: 13.5, fontWeight: 600, borderRadius: 'var(--radius-sm)' };
+const accionBtnStyle = { minHeight: 44, padding: '12px 20px', fontSize: 13.5, fontWeight: 600, borderRadius: '10px' };
 
 const avisoErrorStyle = {
-  padding: '10px 12px', background: 'var(--red-soft)', borderLeft: `3px solid ${RJ}`,
-  borderRadius: 'var(--radius-sm)', color: RJ, fontSize: 13, lineHeight: 1.5,
+  padding: '10px 12px', background: '#FEE2E2', borderLeft: `3px solid ${RJ}`,
+  borderRadius: '10px', color: RJ, fontSize: 13, lineHeight: 1.5,
 };
 
 export default function Config({ clinicaId, clinica, clinicaRol, refrescarClinica }) {
@@ -245,7 +245,7 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica }) {
 
       <div style={{ marginBottom: 12 }}>
         <label style={labelStyle}>Domingo</label>
-        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: MU, background: 'var(--fill-tertiary)' }}>Cerrado — la Agenda no muestra domingos</div>
+        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: MU, background: '#F1F1F7' }}>Cerrado — la Agenda no muestra domingos</div>
       </div>
 
       <div style={{ marginBottom: 14 }}>
@@ -309,7 +309,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
     if (!clinicaId) return;
     // El campo de texto acepta cualquier tecleo -- sin este chequeo, un hex a
     // medio escribir se guardaría tal cual, aplicarTema() lo fijaría en
-    // --accent, y CADA componente que usa var(--accent) quedaría inválido en
+    // --accent, y CADA componente que usa #7B5CFA quedaría inválido en
     // tiempo de cómputo: botones, ítem activo del menú, foco, todo a la vez.
     // Justo lo que "el diseño no debe romperse con ningún acento" pide evitar.
     if (!/^#[0-9A-Fa-f]{6}$/.test(acento)) {
@@ -339,7 +339,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
         <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Marca</div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 56, height: 56, borderRadius: '14px', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {logoUrl ? (
               <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
@@ -384,9 +384,9 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
       <div style={cardStyle}>
         <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Vista previa</div>
 
-        <div style={{ background: 'var(--panel-sunken)', borderRadius: 'var(--radius-card)', padding: 16 }}>
+        <div style={{ background: '#F1F1F7', borderRadius: '14px', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-control)', overflow: 'hidden', background: logoUrl ? 'transparent' : acento, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '10px', overflow: 'hidden', background: logoUrl ? 'transparent' : acento, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {logoUrl
                 ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <span style={{ color: textoSobreAcento, fontSize: 13, fontWeight: 700 }}>{(nombre || 'C').charAt(0).toUpperCase()}</span>}
@@ -395,7 +395,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
           </div>
 
           {/* Ítem de navegación activo — mismo patrón que el sidebar real. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 'var(--radius-control)', background: `color-mix(in srgb, ${acento} 10%, transparent)`, color: acento, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: '10px', background: `color-mix(in srgb, ${acento} 10%, transparent)`, color: acento, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
             <Icon name="calendar" size={15} /> Agenda
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', fontSize: 13, color: MU, marginBottom: 14 }}>
@@ -403,12 +403,12 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button disabled style={{ background: acento, color: textoSobreAcento, border: 'none', borderRadius: 'var(--radius-control)', padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'default' }}>
+            <button disabled style={{ background: acento, color: textoSobreAcento, border: 'none', borderRadius: '10px', padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'default' }}>
               + Nueva cita
             </button>
             {/* --accent se fija SOLO en este input (las variables CSS heredan
                 al elemento, no escalan hacia arriba): el switch real de
-                .switch:checked usa var(--accent), así que acá se previsualiza
+                .switch:checked usa #7B5CFA, así que acá se previsualiza
                 con el color en edición sin tocar el tema global de la app. */}
             <input type="checkbox" defaultChecked disabled className="switch" style={{ '--accent': acento, cursor: 'default' }} aria-hidden="true" tabIndex={-1} />
           </div>
@@ -531,7 +531,7 @@ function MiPerfil({ clinicaId }) {
         {firmaUrl ? (
           <img src={firmaUrl} alt="Firma y sello" onError={() => setFirmaUrl(null)} style={{ maxHeight: 70, maxWidth: '100%', objectFit: 'contain', display: 'block', marginBottom: 12 }} />
         ) : (
-          <div style={{ height: 70, border: `1px dashed ${BD}`, borderRadius: 'var(--radius-md)', background: 'var(--surface-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--label-tertiary)', fontSize: 13, marginBottom: 12 }}>
+          <div style={{ height: 70, border: `1px dashed ${BD}`, borderRadius: '14px', background: '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8A8A96', fontSize: 13, marginBottom: 12 }}>
             Sin firma configurada
           </div>
         )}
@@ -553,7 +553,7 @@ function Integraciones({ clinicaId }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(123, 92, 250, 0.12)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="clock" size={19} />
           </div>
           <div>
@@ -575,7 +575,7 @@ function Integraciones({ clinicaId }) {
 
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--green-soft)', color: WA, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#DCFCE7', color: WA, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="chat" size={19} />
           </div>
           <div>

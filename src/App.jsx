@@ -24,7 +24,6 @@ import useContadoresNav from "./utils/useContadoresNav";
 import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
 import NavIcon from "./components/ui/NavIcons";
-import { aplicarTema } from "./utils/theme";
 import { rutaPerfil } from "./utils/storage";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
@@ -45,44 +44,44 @@ const Placeholder = lazy(() => import("./components/vistas/Placeholder"));
 // ya no hay paleta oscura ni atributo data-theme que resolver.
 const C = {
   // Fondos.
-  pageBg:      "var(--surface-secondary)",
-  hoverBg:     "var(--fill-quaternary)",
-  glassBlur:   "var(--blur-chrome)",
-  glassBorder: "1px solid var(--separator-chrome)",
-  glassShadow: "var(--shadow-md)",
+  pageBg:      "#F7F7FB",
+  hoverBg:     "#ECECF5",
+  glassBlur:   "blur(20px) saturate(180%)",
+  glassBorder: "1px solid rgba(22, 22, 29, 0.06)",
+  glassShadow: "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
   // Texto
-  ink:         "var(--label-primary)",
-  inkMid:      "var(--label-secondary)",
-  inkMute:     "var(--label-tertiary)",
-  inkFaint:    "var(--label-quaternary)",
+  ink:         "#16161D",
+  inkMid:      "#6B6B78",
+  inkMute:     "#8A8A96",
+  inkFaint:    "#B8B8C2",
   // Acento — P en utils/constants.js es este mismo azul: es el único acento
   // interactivo de toda la app (botones primarios, tabs activos, focos).
-  brand:       "var(--accent)",
-  brandHov:    "var(--accent-pressed)",
-  brandSoft:   "var(--accent-soft)",
-  brandText:   "var(--accent)",
+  brand:       "#7B5CFA",
+  brandHov:    "#5D46BE",
+  brandSoft:   "rgba(123, 92, 250, 0.12)",
+  brandText:   "#7B5CFA",
   // Semánticos
-  green:       "var(--green)",
-  greenSoft:   "var(--green-soft)",
-  red:         "var(--red)",
-  redSoft:     "var(--red-soft)",
-  amber:       "var(--amber)",
-  amberSoft:   "var(--amber-soft)",
-  blue:        "var(--accent)",
-  blueSoft:    "var(--accent-soft)",
+  green:       "#16A34A",
+  greenSoft:   "#DCFCE7",
+  red:         "#EF4444",
+  redSoft:     "#FEE2E2",
+  amber:       "#F59E0B",
+  amberSoft:   "#FEF3C7",
+  blue:        "#7B5CFA",
+  blueSoft:    "rgba(123, 92, 250, 0.12)",
   // Bordes
-  border:      "var(--separator)",
-  borderStrong:"var(--separator-strong)",
+  border:      "rgba(22, 22, 29, 0.06)",
+  borderStrong:"rgba(22, 22, 29, 0.11)",
   // Sombras
-  shadowSm:    "var(--shadow-sm)",
-  shadowMd:    "var(--shadow-md)",
+  shadowSm:    "0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)",
+  shadowMd:    "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
   // Tipografía
   font:        "-apple-system, 'SF Pro Text', 'SF Pro Display', 'Inter', system-ui, sans-serif",
   fontMono:    "'JetBrains Mono', monospace",
   // Radios
-  r:           "var(--radius-sm)",
-  rl:          "var(--radius-md)",
-  rx:          "var(--radius-lg)",
+  r:           "10px",
+  rl:          "14px",
+  rx:          "18px",
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
@@ -308,9 +307,9 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         display: "flex", alignItems: "center", gap: 11,
         padding: collapsed ? 0 : "0 12px",
         justifyContent: collapsed ? "center" : "flex-start",
-        borderRadius: "var(--radius-control)", border: "none",
-        background: isActive ? "var(--rail-active-bg)" : "transparent",
-        color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink)",
+        borderRadius: "10px", border: "none",
+        background: isActive ? "rgba(123, 92, 250, 0.12)" : "transparent",
+        color: isActive ? "#7B5CFA" : "#6B6B78",
         fontFamily: C.font, fontSize: 13.5,
         fontWeight: isActive ? 600 : 450,
         textAlign: "left",
@@ -326,7 +325,7 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
         <span style={{
           position: "absolute", top: 7, right: 7,
           width: 6, height: 6, borderRadius: "50%",
-          background: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
+          background: isActive ? "#7B5CFA" : "#16161D",
         }} />
       )}
 
@@ -336,9 +335,9 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
           {item.badge && (
             <span style={{
               fontSize: 10, fontWeight: 600, letterSpacing: "0.2px",
-              padding: "3px 8px", borderRadius: "var(--radius-pill)", flexShrink: 0,
-              background: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
-              color: isActive ? "var(--rail-active-bg)" : "var(--rail-bg)",
+              padding: "3px 8px", borderRadius: "999px", flexShrink: 0,
+              background: isActive ? "#7B5CFA" : "#16161D",
+              color: isActive ? "rgba(123, 92, 250, 0.12)" : "#FFFFFF",
             }}>
               {item.badge}
             </span>
@@ -347,10 +346,10 @@ const NavItem = memo(({ item, isActive, collapsed, contador, onClick }) => {
             <span style={{
               fontSize: 11, fontWeight: 600, flexShrink: 0,
               minWidth: 20, height: 20, padding: "0 6px",
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "999px",
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: isActive ? "color-mix(in srgb, var(--rail-active-ink) 20%, transparent)" : "var(--rail-hover)",
-              color: isActive ? "var(--rail-active-ink)" : "var(--rail-ink-strong)",
+              background: isActive ? "color-mix(in srgb, #7B5CFA 20%, transparent)" : "#ECECF5",
+              color: isActive ? "#7B5CFA" : "#16161D",
               fontVariantNumeric: "tabular-nums",
             }}>
               {contador}
@@ -382,15 +381,15 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
   return (
     <aside style={{
       width: W, minWidth: W,
-      margin: "var(--gutter) 0 var(--gutter) var(--gutter)",
-      height: "calc(100vh - var(--gutter) * 2)",
-      background: "var(--rail-bg)",
-      borderRadius: "var(--radius-panel)",
-      boxShadow: "var(--shadow-float)",
+      margin: "28px 0 28px 28px",
+      height: "calc(100vh - 28px * 2)",
+      background: "#FFFFFF",
+      borderRadius: "18px",
+      boxShadow: "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
       display: "flex", flexDirection: "column",
       padding: "18px 0 12px",
       flexShrink: 0, zIndex: 101, overflow: "hidden",
-      transition: "width var(--dur-slow) var(--ease), min-width var(--dur-slow) var(--ease)",
+      transition: "width 250ms cubic-bezier(0.25, 0.1, 0.25, 1), min-width 250ms cubic-bezier(0.25, 0.1, 0.25, 1)",
     }}>
 
       {/* ── Marca ── */}
@@ -400,10 +399,10 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
         justifyContent: col ? "center" : "flex-start",
       }}>
         <div style={{
-          width: 36, height: 36, borderRadius: "var(--radius-control)", overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "var(--accent)",
+          width: 36, height: 36, borderRadius: "10px", overflow: "hidden", flexShrink: 0,
+          background: logoUrl ? "transparent" : "#7B5CFA",
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--accent-contrast)",
+          color: "#FFFFFF",
         }}>
           {logoUrl ? (
             <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -415,13 +414,13 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
         </div>
         {!col && (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--rail-ink-strong)", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#16161D", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {clinica?.nombre || "DentalOS"}
             </div>
             {/* Subtítulo de dos líneas bajo el nombre, como "Business
                 Operations Platform" de la referencia -- texto genérico por
                 ahora, el usuario dijo que renombra esto después. */}
-            <div style={{ fontSize: 11, color: "var(--rail-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 11, color: "#6B6B78", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               Plataforma de gestión clínica
             </div>
           </div>
@@ -434,7 +433,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
           <div key={si} style={{ marginBottom: 14 }}>
             {section.label && !col && (
               <div style={{
-                fontSize: 11, fontWeight: 600, color: "var(--rail-ink)",
+                fontSize: 11, fontWeight: 600, color: "#6B6B78",
                 letterSpacing: "0.4px", textTransform: "uppercase",
                 padding: "0 12px 8px",
               }}>
@@ -444,7 +443,7 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
             {/* Colapsado no hay lugar para el rótulo: una línea fina separa los
                 grupos. */}
             {section.label && col && si > 0 && (
-              <div style={{ height: 1, background: "var(--rail-divisor)", margin: "0 20px 10px" }} />
+              <div style={{ height: 1, background: "rgba(22, 22, 29, 0.06)", margin: "0 20px 10px" }} />
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -483,8 +482,8 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
             margin: col ? "3px auto 0" : "3px 0 0",
             display: "flex", alignItems: "center", justifyContent: col ? "center" : "flex-start",
             gap: 11, padding: col ? 0 : "0 12px",
-            borderRadius: "var(--radius-control)", border: "none", background: "transparent",
-            color: "var(--rail-ink)", fontFamily: C.font, fontSize: 13.5,
+            borderRadius: "10px", border: "none", background: "transparent",
+            color: "#6B6B78", fontFamily: C.font, fontSize: 13.5,
             cursor: "pointer",
           }}
         >
@@ -498,10 +497,10 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
       {/* ── Cuenta ── el perfil vive al pie del riel, no en el header: es
           identidad de sesión (quién está usando la app), no una acción de la
           vista actual. */}
-      <div style={{ flexShrink: 0, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--rail-divisor)" }}>
+      <div style={{ flexShrink: 0, marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(22, 22, 29, 0.06)" }}>
         {!col && (
           <div style={{
-            fontSize: 11, fontWeight: 600, color: "var(--rail-ink)",
+            fontSize: 11, fontWeight: 600, color: "#6B6B78",
             letterSpacing: "0.4px", textTransform: "uppercase",
             padding: "0 24px 8px",
           }}>
@@ -519,24 +518,24 @@ const Sidebar = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreU
               display: "flex", alignItems: "center", gap: 10,
               padding: col ? 0 : "6px 10px",
               justifyContent: col ? "center" : "flex-start",
-              borderRadius: "var(--radius-control)", border: "none", background: "transparent",
+              borderRadius: "10px", border: "none", background: "transparent",
               cursor: "pointer", textAlign: "left", fontFamily: C.font,
             }}
           >
             <span style={{
               width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "var(--accent-soft)",
+              background: avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : "rgba(123, 92, 250, 0.12)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 600, color: "var(--accent)",
+              fontSize: 12, fontWeight: 600, color: "#7B5CFA",
             }}>
               {!avatarUrl && (nombreUsuario || "?").trim().charAt(0).toUpperCase()}
             </span>
             {!col && (
               <span style={{ minWidth: 0, flex: 1 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--rail-ink-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#16161D", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {nombreUsuario}
                 </span>
-                <span style={{ display: "block", fontSize: 11.5, color: "var(--rail-ink)", textTransform: "capitalize" }}>
+                <span style={{ display: "block", fontSize: 11.5, color: "#6B6B78", textTransform: "capitalize" }}>
                   {rol || "Cerrar sesión"}
                 </span>
               </span>
@@ -628,15 +627,15 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
         className="field"
         style={{
           width: "100%", padding: "9px 34px 9px 36px",
-          borderRadius: "var(--radius-control)", border: "1px solid transparent",
-          background: "var(--panel-sunken)", fontSize: 13,
+          borderRadius: "10px", border: "1px solid transparent",
+          background: "#F1F1F7", fontSize: 13,
           fontFamily: C.font, color: C.ink, outline: "none",
         }}
       />
       <kbd style={{
         position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
         fontSize: 10, color: C.inkMute, fontFamily: C.fontMono,
-        background: C.brandSoft, padding: "2px 6px", borderRadius: "var(--radius-control)",
+        background: C.brandSoft, padding: "2px 6px", borderRadius: "10px",
         pointerEvents: "none",
       }}>
         /
@@ -650,8 +649,8 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente }) => {
         // flota sobre el contenido.
         <div style={{
           position: "absolute", top: "calc(100% + 7px)", left: 0, right: 0,
-          background: "var(--panel)", borderRadius: "var(--radius-card)", border: `1px solid ${C.border}`,
-          boxShadow: "var(--shadow-pop)", overflow: "hidden", zIndex: 200,
+          background: "#FFFFFF", borderRadius: "14px", border: `1px solid ${C.border}`,
+          boxShadow: "0 8px 20px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.05)", overflow: "hidden", zIndex: 200,
         }}>
           {buscando && <div style={{ padding: "14px 15px", fontSize: 12, color: C.inkMute }}>Buscando…</div>}
           {!buscando && resultados.length === 0 && (
@@ -706,11 +705,11 @@ const TopHeader = memo(({ state, dispatch, onAbrirPaciente }) => {
       padding: "0 14px 0 22px",
       // Mismo canal que el contenido: el header se alinea con los paneles de
       // abajo en los dos bordes, no flota con su propia medida.
-      margin: "var(--gutter) var(--gutter) 0 var(--gutter)",
+      margin: "28px 28px 0 28px",
       gap: isNarrow ? 10 : 16, flexShrink: 0, zIndex: 90, position: "relative",
-      background: "var(--panel)",
-      borderRadius: "var(--radius-panel)",
-      boxShadow: "var(--shadow-float)",
+      background: "#FFFFFF",
+      borderRadius: "18px",
+      boxShadow: "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
     }}>
       {/* Título de la vista */}
       <span style={{ fontSize: 19, fontWeight: 600, color: C.ink, fontFamily: C.font, letterSpacing: "-0.02em", flexShrink: 0 }}>
@@ -761,10 +760,10 @@ const PrimaryBtn = memo(({ children, onClick, title }) => {
         display: "flex", alignItems: "center", gap: 5,
         // Píldora, no radio de control: el botón primario de la referencia es
         // completamente redondeado en los extremos, no un rectángulo suave.
-        padding: "6px 14px", borderRadius: "var(--radius-pill)", border: "none",
+        padding: "6px 14px", borderRadius: "999px", border: "none",
         background: GRAD_PRIMARY,
         opacity: hov ? 0.9 : 1,
-        color: "var(--accent-contrast)", fontSize: 13, fontWeight: 600,
+        color: "#FFFFFF", fontSize: 13, fontWeight: 600,
         fontFamily: C.font, cursor: "pointer", outline: "none",
         transition: "opacity 0.12s",
         boxShadow: GRAD_PRIMARY_SHADOW,
@@ -788,7 +787,7 @@ const HeaderIconBtn = memo(({ children, label, badge, onClick }) => {
       style={{
         position: "relative", width: 34, height: 34, borderRadius: C.r,
         border: `1px solid ${C.border}`,
-        background: hov ? C.hoverBg : "var(--panel)",
+        background: hov ? C.hoverBg : "#FFFFFF",
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer", color: C.inkMid, outline: "none",
         transition: "background 0.12s", flexShrink: 0,
@@ -800,9 +799,9 @@ const HeaderIconBtn = memo(({ children, label, badge, onClick }) => {
         <span style={{
           position: "absolute", top: 2, right: 2,
           width: 14, height: 14, borderRadius: "50%",
-          background: C.red, color: "var(--red-contrast)", fontSize: 8, fontWeight: 800,
+          background: C.red, color: "#FFFFFF", fontSize: 8, fontWeight: 800,
           display: "flex", alignItems: "center", justifyContent: "center",
-          border: "1.5px solid var(--panel)", fontFamily: C.font,
+          border: "1.5px solid #FFFFFF", fontFamily: C.font,
         }}>
           {badge}
         </span>
@@ -884,7 +883,7 @@ const Splash = () => (
     <div style={{
       position: "relative", zIndex: 1,
       width: 48, height: 48, borderRadius: 14, background: GRAD_PRIMARY,
-      display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent-contrast)",
+      display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF",
       animation: "pulse 1.5s ease-in-out infinite",
       boxShadow: GRAD_PRIMARY_SHADOW,
     }}>
@@ -910,12 +909,6 @@ export default function App() {
   // la foto va por URL firmada y no por la pública guardada en la tabla.
   const avatarUrl = useSignedUrl(clinica?.id ? rutaPerfil(clinica.id) : null);
   const contadores = useContadoresNav(clinicaId);
-
-  // White-label: si la clínica fijó un acento propio (Ajustes → Apariencia),
-  // se aplica sobre :root. hover/press/soft/ring se recalculan solos porque
-  // son fórmulas de color-mix() en tokens.css -- acá solo se fija --accent y
-  // su contraste de texto (ver utils/theme.js).
-  useEffect(() => { aplicarTema(clinica); }, [clinica]);
 
   // Colapsa el sidebar automáticamente al cruzar a ancho de iPad o menor.
   // No pelea con un re-expandido manual del usuario mientras siga en ese ancho
@@ -983,7 +976,7 @@ export default function App() {
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
-        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        :focus-visible { outline: 2px solid #7B5CFA; outline-offset: 2px; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 10px; }
@@ -1055,14 +1048,14 @@ export default function App() {
               El scroll queda en <main> y el lienzo crece con el contenido
               (minHeight 100%), así el tinte llega hasta abajo aunque la vista
               sea más corta que la pantalla. */}
-          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: "var(--gutter)", background: "transparent" }}>
+          <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: "28px", background: "transparent" }}>
             {/* Gradiente radial verde muy suave detrás del contenido, pedido
                 explícitamente -- se agrega como capa ADEMÁS de --canvas, no en
                 reemplazo, así el lienzo sigue teniendo su propio color base. */}
             <div style={{
-              background: "radial-gradient(circle at top, color-mix(in srgb, var(--accent) 8%, transparent), transparent 65%), var(--canvas)",
-              borderRadius: "var(--radius-panel)",
-              padding: "var(--gutter)",
+              background: "radial-gradient(circle at top, color-mix(in srgb, #7B5CFA 8%, transparent), transparent 65%), #F5F5FA",
+              borderRadius: "18px",
+              padding: "28px",
               minHeight: "100%", boxSizing: "border-box",
             }}>
               <div style={{ maxWidth: 2000, margin: "0 auto" }}>

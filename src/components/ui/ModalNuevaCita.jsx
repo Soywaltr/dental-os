@@ -21,7 +21,7 @@ const LABEL = {
 
 const CAMPO = {
   width: '100%', padding: '11px 12px', minHeight: 44,
-  borderRadius: 'var(--radius-control)', border: `1px solid ${BD}`,
+  borderRadius: '10px', border: `1px solid ${BD}`,
   boxSizing: 'border-box', marginTop: 6, outline: 'none',
   fontSize: 15, color: DN, background: LT, fontFamily: 'inherit',
 };

@@ -34,7 +34,7 @@ const etiquetaDoc = { ...labelStyleDoc, fontSize: 12, fontWeight: 600, color: MU
 
 const campoDoc = {
   ...inputStyleDoc,
-  border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)',
+  border: `1px solid ${BD}`, borderRadius: '10px',
   fontSize: 13.5, color: DN, background: LT, height: '38px',
   // Fechas, montos y cuotas viven en estos campos: cifras de ancho fijo.
   fontVariantNumeric: 'tabular-nums',
@@ -111,9 +111,9 @@ const abonoVacio = () => ({ fecha: hoyISO(), monto: '', metodo: 'Efectivo', conc
 const PAGOS_VACIO = { pago_inicial: '', cuota_mensual: '', abonos: [] };
 
 const TIPOS_ABONO = [
-  { id: 'inicial', lbl: 'Cuota inicial', corto: 'Inicial', bg: 'var(--accent-soft)', color: P },
-  { id: 'cuota', lbl: 'Cuota mensual', corto: 'Cuota', bg: 'var(--fill-tertiary)', color: MU },
-  { id: 'extra', lbl: 'Extra / adicional', corto: 'Extra', bg: 'var(--amber-soft)', color: GL },
+  { id: 'inicial', lbl: 'Cuota inicial', corto: 'Inicial', bg: 'rgba(123, 92, 250, 0.12)', color: P },
+  { id: 'cuota', lbl: 'Cuota mensual', corto: 'Cuota', bg: '#F1F1F7', color: MU },
+  { id: 'extra', lbl: 'Extra / adicional', corto: 'Extra', bg: '#FEF3C7', color: GL },
 ];
 const tipoAbono = (id) => TIPOS_ABONO.find(t => t.id === id) || TIPOS_ABONO[1];
 
@@ -159,7 +159,7 @@ function ComparadorDeslizante({ antes, despues, labelAntes = 'Antes', labelDespu
     // imagen (se veía "acercada"/incompleta). "contain" muestra la foto entera,
     // con una franja negra a los lados si la proporción no calza -- el fondo ya
     // es negro, así que esa franja es invisible.
-    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', maxHeight: isTablet ? '46vh' : '62vh', borderRadius: 'var(--radius-md)', overflow: 'hidden', userSelect: 'none', background: '#000', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', maxHeight: isTablet ? '46vh' : '62vh', borderRadius: '14px', overflow: 'hidden', userSelect: 'none', background: '#000', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
       <img src={despues} alt={labelDespues} draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
       <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
         <img src={antes} alt={labelAntes} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -173,8 +173,8 @@ function ComparadorDeslizante({ antes, despues, labelAntes = 'Antes', labelDespu
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0087b3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 3 12 9 6" /><polyline points="15 18 21 12 15 6" /></svg>
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '4px 11px', borderRadius: 'var(--radius-lg)', pointerEvents: 'none' }}>{labelAntes}</div>
-      <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '4px 11px', borderRadius: 'var(--radius-lg)', pointerEvents: 'none' }}>{labelDespues}</div>
+      <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '4px 11px', borderRadius: '18px', pointerEvents: 'none' }}>{labelAntes}</div>
+      <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '4px 11px', borderRadius: '18px', pointerEvents: 'none' }}>{labelDespues}</div>
     </div>
   );
 }
@@ -185,7 +185,7 @@ function CasillaFotoProgreso({ fila, foto, subiendo, onUpload, onDelete }) {
   const hasFile = !!foto;
   return (
     <div style={{ borderTop: `1px solid ${BD}` }}>
-      <div style={{ height: 74, background: hasFile ? '#000' : 'var(--surface-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+      <div style={{ height: 74, background: hasFile ? '#000' : '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
         {hasFile && (
           <>
             <a href={foto.urlFirmada} target="_blank" rel="noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
@@ -194,7 +194,7 @@ function CasillaFotoProgreso({ fila, foto, subiendo, onUpload, onDelete }) {
             <button onClick={onDelete} title="Eliminar" style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </>
         )}
-        {!hasFile && !subiendo && <Icon name="camera" size={20} color="var(--label-quaternary)" />}
+        {!hasFile && !subiendo && <Icon name="camera" size={20} color="#B8B8C2" />}
         {subiendo && <span style={{ fontSize: 11, color: P, fontWeight: 600 }}>Subiendo...</span>}
         {!hasFile && (
           <label style={{ position: 'absolute', inset: 0, cursor: subiendo ? 'not-allowed' : 'pointer' }}>
@@ -202,7 +202,7 @@ function CasillaFotoProgreso({ fila, foto, subiendo, onUpload, onDelete }) {
           </label>
         )}
       </div>
-      <div style={{ padding: '6px 8px', fontSize: 11, color: hasFile ? P : MU, fontWeight: 600, textAlign: 'center', background: hasFile ? 'var(--accent-soft)' : LT }}>
+      <div style={{ padding: '6px 8px', fontSize: 11, color: hasFile ? P : MU, fontWeight: 600, textAlign: 'center', background: hasFile ? 'rgba(123, 92, 250, 0.12)' : LT }}>
         {fila}
       </div>
     </div>
@@ -213,7 +213,7 @@ function CasillaFotoProgreso({ fila, foto, subiendo, onUpload, onDelete }) {
 function ModalComparacionProgreso({ hito, inicio, comparado, filas, onClose }) {
   return (
     <Modal background="rgba(15,23,42,0.75)" overlayStyle={{ padding: 20, zIndex: 1100 }}
-      cardStyle={{ background: '#0f172a', border: 'none', borderRadius: 'var(--radius-lg)', width: '95%', maxWidth: 1100, maxHeight: '94dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      cardStyle={{ background: '#0f172a', border: 'none', borderRadius: '18px', width: '95%', maxWidth: 1100, maxHeight: '94dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <span style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>Inicio vs {hito}</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: 24, lineHeight: 1, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
@@ -228,7 +228,7 @@ function ModalComparacionProgreso({ hito, inicio, comparado, filas, onClose }) {
               {fotoA && fotoB ? (
                 <ComparadorDeslizante antes={fotoA} despues={fotoB} labelAntes="Inicio" labelDespues={hito} />
               ) : (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', padding: '22px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', padding: '22px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '14px' }}>
                   Falta la foto de "{!fotoA ? 'Inicio' : hito}" en "{fila}" para poder comparar.
                 </div>
               )}
@@ -478,13 +478,13 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   // FUNCIONES AYUDANTES UI INTERNAS
   const getOrtoStyle = (isEditing) => ({
     ...campoDoc,
-    background: isEditing ? LT : 'var(--fill-tertiary)', // Superficie al editar, relleno sutil al bloquear
+    background: isEditing ? LT : '#F1F1F7', // Superficie al editar, relleno sutil al bloquear
     borderColor: BD, // El borde se mantiene SIEMPRE visible
     cursor: isEditing ? 'auto' : 'not-allowed', // Muestra el cursor de "prohibido" si está bloqueado
     color: DN, // El texto se mantiene siempre legible
     fontWeight: '500',
     opacity: 1,
-    WebkitTextFillColor: 'var(--label-primary)', // Fuerza a Safari/iOS a no opacar el texto
+    WebkitTextFillColor: '#16161D', // Fuerza a Safari/iOS a no opacar el texto
 
     // Eliminamos el truco de "appearance: none" para que la flecha del select vuelva a aparecer.
   });
@@ -494,15 +494,15 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       <h2 style={{ margin: 0, color: DN, fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>{title}</h2>
       <div>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: LT, color: DN, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '10px 18px', minHeight: 40, fontWeight: 600, cursor: 'pointer', fontSize: 15, transition: `background 150ms ${EASE}, border-color 150ms ${EASE}`, boxShadow: 'var(--shadow-sm)' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--fill-quaternary)'; e.currentTarget.style.borderColor = 'var(--separator-strong)'; }} onMouseLeave={e => { e.currentTarget.style.background = LT; e.currentTarget.style.borderColor = BD; }}>
+          <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: LT, color: DN, border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 18px', minHeight: 40, fontWeight: 600, cursor: 'pointer', fontSize: 15, transition: `background 150ms ${EASE}, border-color 150ms ${EASE}`, boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)' }} onMouseEnter={e => { e.currentTarget.style.background = '#ECECF5'; e.currentTarget.style.borderColor = 'rgba(22, 22, 29, 0.11)'; }} onMouseLeave={e => { e.currentTarget.style.background = LT; e.currentTarget.style.borderColor = BD; }}>
             {/* ICONO LÁPIZ PREMIUM SVG */}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
             Editar Sección
           </button>
         ) : (
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={onCancel} style={{ background: LT, color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 35%, transparent)`, borderRadius: 'var(--radius-sm)', padding: '10px 20px', minHeight: 40, fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>Cancelar</button>
-            <button onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>
+            <button onClick={onCancel} style={{ background: LT, color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 35%, transparent)`, borderRadius: '10px', padding: '10px 20px', minHeight: 40, fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>Cancelar</button>
+            <button onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '11px 22px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>
               {saving ? '⏳ Guardando...' : (
                 <>
                   {/* ICONO GUARDAR PREMIUM SVG */}
@@ -551,7 +551,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
           return (
             <label key={opt} style={{
               fontSize: 13.5,
-              color: isChecked ? DN : 'var(--label-tertiary)', // Color más sutil si está marcado
+              color: isChecked ? DN : '#8A8A96', // Color más sutil si está marcado
               fontWeight: 500, // Quitamos la negrita pesada
               display: 'flex', alignItems: 'center', gap: 6, minHeight: 36,
               cursor: isEditing ? 'pointer' : 'default',
@@ -795,7 +795,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 
   return (
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', background: MT }}>
-            <div style={{ flex: 1, background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: 'var(--radius-lg)', border: GLASS_BORDER, display: 'flex', flexDirection: 'column', boxShadow: GLASS_SHADOW, overflow: 'hidden' }}>
+            <div style={{ flex: 1, background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '18px', border: GLASS_BORDER, display: 'flex', flexDirection: 'column', boxShadow: GLASS_SHADOW, overflow: 'hidden' }}>
 
               {/* Superficie de color FIJO: el degradado se cambió por un plano,
                   pero sigue siendo un fondo oscuro fijo -- todo el texto de
@@ -806,7 +806,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                       misma casilla "Foto de perfil" de la pestaña Fotografías. */}
                   <label
                     title={savingFotosOrto ? 'Subiendo...' : 'Cambiar foto de perfil'}
-                    style={{ position: 'relative', width: 48, height: 48, borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 17, flexShrink: 0, overflow: 'hidden', cursor: savingFotosOrto ? 'wait' : 'pointer' }}
+                    style={{ position: 'relative', width: 48, height: 48, borderRadius: '14px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 17, flexShrink: 0, overflow: 'hidden', cursor: savingFotosOrto ? 'wait' : 'pointer' }}
                     onMouseEnter={e => { const o = e.currentTarget.querySelector('[data-overlay]'); if (o) o.style.opacity = 1; }}
                     onMouseLeave={e => { const o = e.currentTarget.querySelector('[data-overlay]'); if (o) o.style.opacity = 0; }}
                   >
@@ -833,8 +833,8 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                       <span>Progreso del tratamiento</span>
                       <span>{Math.round(progresoPct)}%</span>
                     </div>
-                    <div style={{ height: 6, background: 'rgba(255,255,255,0.25)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${progresoPct}%`, background: '#fff', borderRadius: 'var(--radius-sm)', transition: `width 400ms ${EASE}` }} />
+                    <div style={{ height: 6, background: 'rgba(255,255,255,0.25)', borderRadius: '10px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${progresoPct}%`, background: '#fff', borderRadius: '10px', transition: `width 400ms ${EASE}` }} />
                     </div>
                   </div>
                 )}
@@ -1159,7 +1159,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         <input disabled={!isEditingOrtoTrata} type="date" value={planTrataForm.fecha_inicial || ''} onChange={e => handlePlanTrata('fecha_inicial', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ ...etiquetaDoc }}>Tiempo estimado <span style={{ fontSize: 12, color: 'var(--label-tertiary)', fontWeight: 400 }}>(meses)</span></label>
+                        <label style={{ ...etiquetaDoc }}>Tiempo estimado <span style={{ fontSize: 12, color: '#8A8A96', fontWeight: 400 }}>(meses)</span></label>
                         <input disabled={!isEditingOrtoTrata} type="number" placeholder="Ej: 18" value={planTrataForm.tiempo_estimado || ''} onChange={e => handlePlanTrata('tiempo_estimado', e.target.value)} style={getOrtoStyle(isEditingOrtoTrata)} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1279,9 +1279,9 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <label style={{ ...etiquetaDoc }}>Tiempo estimado</label>
-                        <div style={{ display: 'flex', border: '1px solid', borderColor: isEditingOrtoResumen ? BD : 'transparent', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', border: '1px solid', borderColor: isEditingOrtoResumen ? BD : 'transparent', borderRadius: '10px', overflow: 'hidden' }}>
                           <input disabled={!isEditingOrtoResumen} type="number" value={resumenForm.tiempo_estimado || ''} onChange={e => handleResumen('tiempo_estimado', e.target.value)} style={{ ...getOrtoStyle(isEditingOrtoResumen), border: 'none', borderRadius: 0, flex: 1 }} />
-                          <div style={{ background: 'var(--surface-tertiary)', padding: '0 20px', display: 'flex', alignItems: 'center', color: MU, fontSize: 13, borderLeft: isEditingOrtoResumen ? `1px solid ${BD}` : 'none' }}>Meses</div>
+                          <div style={{ background: '#F1F1F7', padding: '0 20px', display: 'flex', alignItems: 'center', color: MU, fontSize: 13, borderLeft: isEditingOrtoResumen ? `1px solid ${BD}` : 'none' }}>Meses</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1328,7 +1328,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                       <h3 style={{ color: DN, fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>Archivos Clínicos Iniciales</h3>
                       <div>
                         {savingFotosOrto && <span style={{ fontSize: 13.5, color: P, fontWeight: 600, marginRight: 10 }}>Subiendo...</span>}
-                        <button onClick={() => setIsEditingOrtoFotos(!isEditingOrtoFotos)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isEditingOrtoFotos ? LT : 'var(--fill-tertiary)', color: isEditingOrtoFotos ? RJ : MU, border: `1px solid ${isEditingOrtoFotos ? `color-mix(in srgb, ${RJ} 35%, transparent)` : BD}`, borderRadius: 'var(--radius-sm)', padding: '10px 20px', minHeight: 40, fontWeight: 600, cursor: 'pointer', fontSize: 13.5 }}>
+                        <button onClick={() => setIsEditingOrtoFotos(!isEditingOrtoFotos)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isEditingOrtoFotos ? LT : '#F1F1F7', color: isEditingOrtoFotos ? RJ : MU, border: `1px solid ${isEditingOrtoFotos ? `color-mix(in srgb, ${RJ} 35%, transparent)` : BD}`, borderRadius: '10px', padding: '10px 20px', minHeight: 40, fontWeight: 600, cursor: 'pointer', fontSize: 13.5 }}>
                           {isEditingOrtoFotos ? 'Cerrar Edición' : <><Icon name="edit" size={13} /> Editar Fotografías</>}
                         </button>
                       </div>
@@ -1340,7 +1340,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         <div key={grupo.titulo} style={{ marginBottom: 30 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                             <span style={{ fontSize: 15, fontWeight: 600, color: DN }}>{grupo.titulo}</span>
-                            <span style={{ fontSize: 12, color: 'var(--label-tertiary)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{subidas}/{grupo.cajas.length}</span>
+                            <span style={{ fontSize: 12, color: '#8A8A96', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{subidas}/{grupo.cajas.length}</span>
                             <div style={{ flex: 1, height: 1, background: BD }} />
                           </div>
 
@@ -1353,12 +1353,12 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                               const esPerfil = item.key === CLAVE_FOTO_PERFIL;
 
                               return (
-                                <div key={item.key} style={{ background: LT, border: `1px solid ${hasFile ? `color-mix(in srgb, ${P} 45%, transparent)` : BD}`, borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-sm)', transition: `border-color 150ms ${EASE}, box-shadow 150ms ${EASE}` }}>
+                                <div key={item.key} style={{ background: LT, border: `1px solid ${hasFile ? `color-mix(in srgb, ${P} 45%, transparent)` : BD}`, borderRadius: '14px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)', transition: `border-color 150ms ${EASE}, box-shadow 150ms ${EASE}` }}>
                                   {hasFile && isEditingOrtoFotos && (
                                     <button onClick={() => handleDeleteFotoOrto(item.key, fileData.url)} style={{ position: 'absolute', top: 8, right: 8, background: RJ, color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontSize: 12, fontWeight: 600, cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} title="Eliminar">✕</button>
                                   )}
 
-                                  <div style={{ height: '130px', background: hasFile ? '#000' : 'var(--surface-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                  <div style={{ height: '130px', background: hasFile ? '#000' : '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                                     {hasFile ? (
                                       fileData.ext?.match(/(pdf|ppt|pptx)/i) ? (
                                         <a href={fileData.urlFirmada} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -1371,7 +1371,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                                         </a>
                                       )
                                     ) : (
-                                      <Icon name={item.icon} size={34} color="var(--label-quaternary)" />
+                                      <Icon name={item.icon} size={34} color="#B8B8C2" />
                                     )}
 
                                     {/* Reemplazar sin borrar primero: en modo edición, una foto ya
@@ -1379,7 +1379,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                                     {isEditingOrtoFotos && (
                                       <label style={{ position: 'absolute', inset: 0, cursor: savingFotosOrto ? 'not-allowed' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: `opacity 150ms ${EASE}`, background: `color-mix(in srgb, ${LT} 92%, transparent)` }}
                                         onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: P, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: '7px', boxShadow: 'var(--shadow-sm)' }}>+</div>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: P, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: '7px', boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)' }}>+</div>
                                         <span style={{ fontSize: 13, color: P, fontWeight: 600, textAlign: 'center', padding: '0 8px' }}>
                                           {hasFile ? 'Reemplazar' : 'Subir'} {item.key}
                                         </span>
@@ -1388,9 +1388,9 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                                     )}
                                   </div>
 
-                                  <div style={{ padding: '12px 14px', borderTop: `1px solid ${BD}`, background: hasFile ? 'var(--accent-soft)' : LT }}>
+                                  <div style={{ padding: '12px 14px', borderTop: `1px solid ${BD}`, background: hasFile ? 'rgba(123, 92, 250, 0.12)' : LT }}>
                                     <div style={{ fontSize: 13, fontWeight: 600, color: DN }}>{item.key}</div>
-                                    <div style={{ fontSize: 12, color: hasFile ? P : 'var(--label-tertiary)', marginTop: '4px', fontWeight: hasFile ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>
+                                    <div style={{ fontSize: 12, color: hasFile ? P : '#8A8A96', marginTop: '4px', fontWeight: hasFile ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>
                                       {hasFile ? `✓ Subido el ${fileData.date}` : (item.nota || 'Pendiente')}
                                     </div>
                                   </div>
@@ -1412,7 +1412,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         {hitosProgresoConFotos.length} de {HITOS_PROGRESO.length} hitos con fotos
                       </span>
                     </div>
-                    <div style={{ fontSize: 13, color: 'var(--label-tertiary)', marginBottom: '16px', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 13, color: '#8A8A96', marginBottom: '16px', lineHeight: 1.5 }}>
                       Cada columna es un momento del tratamiento. Sube la misma toma (frontal, lateral, oclusal...) en cada hito y usa "Comparar" para ver el avance contra el Inicio.
                     </div>
 
@@ -1431,10 +1431,10 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                           const mitad = Math.ceil(FILAS_PROGRESO.length / 2);
 
                           return (
-                            <div key={hito} style={{ flex: '0 0 150px', width: 150, background: LT, border: `1px solid ${cantidad > 0 ? `color-mix(in srgb, ${P} 45%, transparent)` : BD}`, borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-sm)' }}>
-                              <div style={{ padding: '11px 10px', textAlign: 'center', background: cantidad > 0 ? 'var(--accent-soft)' : 'var(--surface-tertiary)' }}>
+                            <div key={hito} style={{ flex: '0 0 150px', width: 150, background: LT, border: `1px solid ${cantidad > 0 ? `color-mix(in srgb, ${P} 45%, transparent)` : BD}`, borderRadius: '14px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)' }}>
+                              <div style={{ padding: '11px 10px', textAlign: 'center', background: cantidad > 0 ? 'rgba(123, 92, 250, 0.12)' : '#F1F1F7' }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: DN }}>{hito}</div>
-                                <div style={{ fontSize: 11, color: 'var(--label-tertiary)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>{cantidad}/{FILAS_PROGRESO.length} fotos</div>
+                                <div style={{ fontSize: 11, color: '#8A8A96', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>{cantidad}/{FILAS_PROGRESO.length} fotos</div>
                               </div>
 
                               {FILAS_PROGRESO.slice(0, mitad).map(fila => (
@@ -1448,15 +1448,15 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 
                               <div style={{ padding: '8px 10px', display: 'flex', justifyContent: 'center', borderTop: `1px solid ${BD}` }}>
                                 {esInicio ? (
-                                  <span style={{ fontSize: 11, color: 'var(--label-tertiary)', fontWeight: 600, textAlign: 'center', minHeight: 36, display: 'flex', alignItems: 'center' }}>Punto de partida</span>
+                                  <span style={{ fontSize: 11, color: '#8A8A96', fontWeight: 600, textAlign: 'center', minHeight: 36, display: 'flex', alignItems: 'center' }}>Punto de partida</span>
                                 ) : (
                                   <button
                                     onClick={() => setComparando(hito)}
                                     disabled={!inicioTieneFotos || cantidad === 0}
                                     style={{
-                                      background: (!inicioTieneFotos || cantidad === 0) ? 'var(--fill-tertiary)' : P,
-                                      color: (!inicioTieneFotos || cantidad === 0) ? 'var(--label-quaternary)' : '#fff',
-                                      border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 10px', minHeight: 36, fontSize: 13, fontWeight: 600,
+                                      background: (!inicioTieneFotos || cantidad === 0) ? '#F1F1F7' : P,
+                                      color: (!inicioTieneFotos || cantidad === 0) ? '#B8B8C2' : '#fff',
+                                      border: 'none', borderRadius: '10px', padding: '8px 10px', minHeight: 36, fontSize: 13, fontWeight: 600,
                                       cursor: (!inicioTieneFotos || cantidad === 0) ? 'not-allowed' : 'pointer', width: '100%',
                                     }}
                                   >
@@ -1479,7 +1479,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                                 defaultValue={control?.nota || ''}
                                 onChange={e => actualizarNotaHito(hito, e.target.value)}
                                 onBlur={guardarNotaHito}
-                                style={{ margin: '8px 10px 10px', padding: '7px 9px', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', fontSize: 12, color: DN, background: LT, resize: 'none', height: '40px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                                style={{ margin: '8px 10px 10px', padding: '7px 9px', border: `1px solid ${BD}`, borderRadius: '10px', fontSize: 12, color: DN, background: LT, resize: 'none', height: '40px', fontFamily: 'inherit', boxSizing: 'border-box' }}
                               />
                             </div>
                           );
@@ -1498,7 +1498,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 
                     {/* Lo primero que se necesita al atender: qué se hizo la vez anterior. */}
                     {bitacora.length > 0 && (
-                      <div style={{ background: 'var(--accent-soft)', border: `1px solid color-mix(in srgb, ${P} 25%, transparent)`, borderRadius: 'var(--radius-md)', padding: '16px 18px', marginBottom: '20px' }}>
+                      <div style={{ background: 'rgba(123, 92, 250, 0.12)', border: `1px solid color-mix(in srgb, ${P} 25%, transparent)`, borderRadius: '14px', padding: '16px 18px', marginBottom: '20px' }}>
                         <div style={{ fontSize: 11, fontWeight: 600, color: P, letterSpacing: 0.4, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>ÚLTIMO CONTROL · {fmtFecha(bitacora[0].fecha)}</div>
                         <div style={{ fontSize: 15, color: DN, fontWeight: 500, lineHeight: 1.5 }}>{bitacora[0].procedimiento}</div>
                         {bitacora[0].observaciones && <div style={{ fontSize: 13, color: MU, marginTop: 6, lineHeight: 1.5 }}>{bitacora[0].observaciones}</div>}
@@ -1506,7 +1506,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                       </div>
                     )}
 
-                    <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '18px', marginBottom: '24px' }}>
+                    <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '14px', padding: '18px', marginBottom: '24px' }}>
                       <div style={{ fontSize: 15, fontWeight: 600, color: DN, marginBottom: '14px' }}>
                         {editandoControl ? 'Editar control' : 'Registrar control del mes'}
                       </div>
@@ -1529,11 +1529,11 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         <textarea placeholder="Evolución, indicaciones al paciente, pendientes para el próximo control..." value={nuevoControl.observaciones} onChange={e => setNuevoControl(p => ({ ...p, observaciones: e.target.value }))} style={{ ...campoDoc, height: '68px', resize: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={agregarControlMensual} disabled={savingBitacora} style={{ background: savingBitacora ? 'var(--panel-sunken)' : P, color: savingBitacora ? 'var(--text-tertiary)' : '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingBitacora ? 'not-allowed' : 'pointer' }}>
+                        <button onClick={agregarControlMensual} disabled={savingBitacora} style={{ background: savingBitacora ? '#F1F1F7' : P, color: savingBitacora ? '#8A8A96' : '#fff', border: 'none', borderRadius: '10px', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingBitacora ? 'not-allowed' : 'pointer' }}>
                           {savingBitacora ? 'Guardando...' : (editandoControl ? 'Guardar cambios' : '+ Agregar control')}
                         </button>
                         {editandoControl && (
-                          <button onClick={() => { setEditandoControl(null); setNuevoControl(controlVacio()); }} style={{ background: LT, color: MU, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '11px 18px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
+                          <button onClick={() => { setEditandoControl(null); setNuevoControl(controlVacio()); }} style={{ background: LT, color: MU, border: `1px solid ${BD}`, borderRadius: '10px', padding: '11px 18px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
                             Cancelar
                           </button>
                         )}
@@ -1542,16 +1542,16 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 
                     <div style={{ fontSize: 15, fontWeight: 600, color: DN, marginBottom: '12px' }}>Historial de controles</div>
                     {bitacora.length === 0 && (
-                      <div style={{ fontSize: 13.5, color: 'var(--label-tertiary)', padding: '28px 0', textAlign: 'center', lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 13.5, color: '#8A8A96', padding: '28px 0', textAlign: 'center', lineHeight: 1.5 }}>
                         Todavía no hay controles registrados. Registra el primero para ir llevando mes a mes lo que se hace.
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {bitacora.map((b, i) => (
-                        <div key={b.id} style={{ display: 'flex', gap: '14px', background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '14px 16px' }}>
+                        <div key={b.id} style={{ display: 'flex', gap: '14px', background: LT, border: `1px solid ${BD}`, borderRadius: '14px', padding: '14px 16px' }}>
                           <div style={{ width: 84, flexShrink: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: P, fontVariantNumeric: 'tabular-nums' }}>{fmtFecha(b.fecha)}</div>
-                            <div style={{ fontSize: 11, color: 'var(--label-tertiary)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>Control {bitacora.length - i}</div>
+                            <div style={{ fontSize: 11, color: '#8A8A96', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>Control {bitacora.length - i}</div>
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 15, color: DN, fontWeight: 500, lineHeight: 1.5 }}>{b.procedimiento}</div>
@@ -1559,10 +1559,10 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                             {b.proxima_cita && <div style={{ fontSize: 12, color: P, marginTop: 6, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>Próxima cita: {fmtFecha(b.proxima_cita)}</div>}
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-                            <button onClick={() => editarControlMensual(b)} title="Editar" style={{ background: 'none', border: 'none', color: 'var(--label-tertiary)', cursor: 'pointer', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <button onClick={() => editarControlMensual(b)} title="Editar" style={{ background: 'none', border: 'none', color: '#8A8A96', cursor: 'pointer', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <Icon name="edit" size={15} />
                             </button>
-                            <button onClick={() => eliminarControlMensual(b.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: 'var(--label-tertiary)', cursor: 'pointer', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <button onClick={() => eliminarControlMensual(b.id)} title="Eliminar" style={{ background: 'none', border: 'none', color: '#8A8A96', cursor: 'pointer', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <Icon name="trash" size={15} />
                             </button>
                           </div>
@@ -1580,8 +1580,8 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         <h3 style={{ color: DN, fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>Pagos del tratamiento</h3>
                         {r.deuda !== null && (
                           <span style={{
-                            fontSize: 13, fontWeight: 600, padding: '5px 13px', borderRadius: 'var(--radius-lg)',
-                            background: r.deuda > 0 ? 'var(--red-soft)' : 'var(--green-soft)',
+                            fontSize: 13, fontWeight: 600, padding: '5px 13px', borderRadius: '18px',
+                            background: r.deuda > 0 ? '#FEE2E2' : '#DCFCE7',
                             color: r.deuda > 0 ? RJ : WA, fontVariantNumeric: 'tabular-nums',
                           }}>
                             {r.deuda > 0 ? `Debe ${fmtSoles(r.deuda)}` : 'Al día'}
@@ -1596,16 +1596,16 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                           { lbl: 'Costo total acumulado', val: fmtSoles(r.acumulado), col: DN },
                           { lbl: 'Por cobrar', val: r.deuda !== null ? fmtSoles(r.deuda) : '—', col: r.deuda > 0 ? RJ : WA },
                         ].map(s => (
-                          <div key={s.lbl} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '14px 16px' }}>
-                            <div style={{ fontSize: 11, color: 'var(--label-tertiary)', fontWeight: 600, letterSpacing: 0.3, marginBottom: 6 }}>{s.lbl.toUpperCase()}</div>
+                          <div key={s.lbl} style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '14px', padding: '14px 16px' }}>
+                            <div style={{ fontSize: 11, color: '#8A8A96', fontWeight: 600, letterSpacing: 0.3, marginBottom: 6 }}>{s.lbl.toUpperCase()}</div>
                             <div style={{ fontSize: 20, fontWeight: 700, color: s.col, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{s.val}</div>
                           </div>
                         ))}
                       </div>
 
-                      <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '18px', marginBottom: '22px' }}>
+                      <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '14px', padding: '18px', marginBottom: '22px' }}>
                         <div style={{ fontSize: 15, fontWeight: 600, color: DN, marginBottom: '6px' }}>Condiciones del tratamiento</div>
-                        <div style={{ fontSize: 13, color: 'var(--label-tertiary)', marginBottom: '16px', lineHeight: 1.5 }}>
+                        <div style={{ fontSize: 13, color: '#8A8A96', marginBottom: '16px', lineHeight: 1.5 }}>
                           No se pacta un costo total de entrada: se va acumulando control a control. El pago inicial se cobra una sola vez, el mes que arranca el tratamiento.
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: '14px' }}>
@@ -1630,7 +1630,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                         )}
                       </div>
 
-                      <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '18px', marginBottom: '24px' }}>
+                      <div style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '14px', padding: '18px', marginBottom: '24px' }}>
                         <div style={{ fontSize: 15, fontWeight: 600, color: DN, marginBottom: '14px' }}>Registrar pago</div>
                         <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '140px 130px 1fr 150px', gap: '12px', marginBottom: '12px' }}>
                           <div>
@@ -1669,37 +1669,37 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
                               : 'Ej: cuota de agosto'}
                             value={nuevoAbono.concepto} onChange={e => setNuevoAbono(p => ({ ...p, concepto: e.target.value }))} style={campoDoc} />
                         </div>
-                        <button onClick={agregarAbono} disabled={savingAbono} style={{ background: savingAbono ? 'var(--panel-sunken)' : WA, color: savingAbono ? 'var(--text-tertiary)' : '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingAbono ? 'not-allowed' : 'pointer' }}>
+                        <button onClick={agregarAbono} disabled={savingAbono} style={{ background: savingAbono ? '#F1F1F7' : WA, color: savingAbono ? '#8A8A96' : '#fff', border: 'none', borderRadius: '10px', padding: '11px 22px', minHeight: 44, fontWeight: 600, fontSize: 15, cursor: savingAbono ? 'not-allowed' : 'pointer' }}>
                           {savingAbono ? 'Guardando...' : '+ Registrar pago'}
                         </button>
                       </div>
 
                       <div style={{ fontSize: 15, fontWeight: 600, color: DN, marginBottom: '12px' }}>Historial de pagos</div>
                       {r.abonos.length === 0 && (
-                        <div style={{ fontSize: 13.5, color: 'var(--label-tertiary)', padding: '28px 0', textAlign: 'center', lineHeight: 1.5 }}>Todavía no hay pagos registrados para este tratamiento.</div>
+                        <div style={{ fontSize: 13.5, color: '#8A8A96', padding: '28px 0', textAlign: 'center', lineHeight: 1.5 }}>Todavía no hay pagos registrados para este tratamiento.</div>
                       )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {r.abonos.map(a => (
-                          <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', padding: '12px 16px', minHeight: 44 }}>
+                          <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: LT, border: `1px solid ${BD}`, borderRadius: '14px', padding: '12px 16px', minHeight: 44 }}>
                             <div style={{ width: 84, flexShrink: 0, fontSize: 13, fontWeight: 500, color: MU, fontVariantNumeric: 'tabular-nums' }}>{fmtFecha(a.fecha)}</div>
                             <div style={{ fontSize: 15, fontWeight: 600, color: WA, width: 100, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{fmtSoles(a.monto)}</div>
-                            <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-lg)', background: tipoAbono(a.tipo).bg, color: tipoAbono(a.tipo).color, flexShrink: 0 }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: '18px', background: tipoAbono(a.tipo).bg, color: tipoAbono(a.tipo).color, flexShrink: 0 }}>
                               {tipoAbono(a.tipo).corto}
                             </span>
                             <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {a.metodo}{a.concepto ? ` · ${a.concepto}` : ''}
                             </div>
-                            <button onClick={() => eliminarAbono(a.id)} title="Eliminar pago" style={{ background: 'none', border: 'none', color: 'var(--label-tertiary)', cursor: 'pointer', flexShrink: 0, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <button onClick={() => eliminarAbono(a.id)} title="Eliminar pago" style={{ background: 'none', border: 'none', color: '#8A8A96', cursor: 'pointer', flexShrink: 0, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <Icon name="trash" size={15} />
                             </button>
                           </div>
                         ))}
                       </div>
                       {r.abonos.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', marginTop: 4, borderTop: `1px solid var(--separator-strong)` }}>
-                          <div style={{ width: 84, flexShrink: 0, fontSize: 11, fontWeight: 600, color: 'var(--label-tertiary)', letterSpacing: 0.3 }}>TOTAL</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', marginTop: 4, borderTop: `1px solid rgba(22, 22, 29, 0.11)` }}>
+                          <div style={{ width: 84, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#8A8A96', letterSpacing: 0.3 }}>TOTAL</div>
                           <div style={{ fontSize: 17, fontWeight: 600, color: DN, fontVariantNumeric: 'tabular-nums' }}>{fmtSoles(r.acumulado)}</div>
-                          <div style={{ fontSize: 12, color: 'var(--label-tertiary)', fontVariantNumeric: 'tabular-nums' }}>en {r.abonos.length} pago{r.abonos.length !== 1 ? 's' : ''}</div>
+                          <div style={{ fontSize: 12, color: '#8A8A96', fontVariantNumeric: 'tabular-nums' }}>en {r.abonos.length} pago{r.abonos.length !== 1 ? 's' : ''}</div>
                         </div>
                       )}
                     </div>
@@ -1852,7 +1852,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
         <div style={{ padding: '14px 24px 0', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
             onClick={() => setSeleccionado(null)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '9px 16px', minHeight: 40, fontSize: 13.5, fontWeight: 600, color: DN, cursor: 'pointer' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: LT, border: `1px solid ${BD}`, borderRadius: '10px', padding: '9px 16px', minHeight: 40, fontSize: 13.5, fontWeight: 600, color: DN, cursor: 'pointer' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Volver a pacientes
@@ -1860,7 +1860,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
           <button
             onClick={() => irAHistoriaClinica(pacienteActivo)}
             title={`Abrir la historia odontológica de ${pacienteActivo.name} en Historial`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '9px 16px', minHeight: 40, fontSize: 13.5, fontWeight: 600, color: P, cursor: 'pointer' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: LT, border: `1px solid ${BD}`, borderRadius: '10px', padding: '9px 16px', minHeight: 40, fontSize: 13.5, fontWeight: 600, color: P, cursor: 'pointer' }}
           >
             <Icon name="document" size={15} />
             Historia odontológica
@@ -1883,7 +1883,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
         </div>
         <button
           onClick={() => setShowIniciar(true)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: P, color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 20px', minHeight: 44, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '11px 20px', minHeight: 44, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
         >
           <Icon name="plus" size={15} /> Iniciar tratamiento
         </button>
@@ -1903,15 +1903,15 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
           placeholder="Buscar paciente por nombre o DNI..."
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
-          style={{ width: '100%', maxWidth: 340, padding: '11px 14px', minHeight: 40, borderRadius: 'var(--radius-sm)', border: `1px solid ${BD}`, background: LT, color: DN, fontSize: 15, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }}
+          style={{ width: '100%', maxWidth: 340, padding: '11px 14px', minHeight: 40, borderRadius: '10px', border: `1px solid ${BD}`, background: LT, color: DN, fontSize: 15, outline: 'none', marginBottom: 16, boxSizing: 'border-box' }}
         />
       )}
 
       {loading && <div style={{ fontSize: 15, color: MU, textAlign: 'center', padding: 40 }}>Cargando pacientes...</div>}
 
       {!loading && pacientesOrto.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '50px 20px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: 'var(--radius-md)' }}>
-          <Icon name="camera" size={34} color="var(--label-quaternary)" />
+        <div style={{ textAlign: 'center', padding: '50px 20px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px' }}>
+          <Icon name="camera" size={34} color="#B8B8C2" />
           <div style={{ fontSize: 17, fontWeight: 600, color: DN, marginTop: 14, marginBottom: 6 }}>Ningún paciente en tratamiento</div>
           <div style={{ fontSize: 13.5, color: MU }}>Usa "Iniciar tratamiento" para agregar el primero.</div>
         </div>
@@ -1928,11 +1928,11 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
             <div
               key={p.id}
               onClick={() => setSeleccionado(p)}
-              style={{ background: LT, border: `1px solid ${BD}`, borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-sm)', transition: `transform 150ms ${EASE}, box-shadow 150ms ${EASE}` }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+              style={{ background: LT, border: `1px solid ${BD}`, borderRadius: '14px', overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)', transition: `transform 150ms ${EASE}, box-shadow 150ms ${EASE}` }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)'; }}
             >
-              <div style={{ aspectRatio: '1 / 1', background: p.fotoPerfil ? '#000' : 'var(--fill-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ aspectRatio: '1 / 1', background: p.fotoPerfil ? '#000' : '#F1F1F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {p.fotoPerfil ? (
                   <img src={p.fotoPerfil} alt={p.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -1949,11 +1949,11 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
                       pactado; sin eso, lo honesto es no arriesgar un estado. */}
                   <div>
                     {r.deuda === null ? (
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-lg)', background: 'var(--fill-tertiary)', color: MU }}>Sin plan de pago</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: '18px', background: '#F1F1F7', color: MU }}>Sin plan de pago</span>
                     ) : r.deuda > 0 ? (
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-lg)', background: 'var(--red-soft)', color: RJ, fontVariantNumeric: 'tabular-nums' }}>Debe {fmtSoles(r.deuda)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: '18px', background: '#FEE2E2', color: RJ, fontVariantNumeric: 'tabular-nums' }}>Debe {fmtSoles(r.deuda)}</span>
                     ) : (
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-lg)', background: 'var(--green-soft)', color: WA }}>Al día</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: '18px', background: '#DCFCE7', color: WA }}>Al día</span>
                     )}
                   </div>
                   <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>
@@ -1964,9 +1964,9 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
                   <button
                     onClick={e => { e.stopPropagation(); irAHistoriaClinica(p); }}
                     title={`Abrir la historia odontológica de ${p.name} en Historial`}
-                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4, background: 'var(--surface-tertiary)', border: `1px solid ${BD}`, borderRadius: 'var(--radius-sm)', padding: '8px 10px', minHeight: 36, fontSize: 12, fontWeight: 600, color: P, cursor: 'pointer', width: '100%', transition: `background 150ms ${EASE}` }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-soft)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-tertiary)'; }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4, background: '#F1F1F7', border: `1px solid ${BD}`, borderRadius: '10px', padding: '8px 10px', minHeight: 36, fontSize: 12, fontWeight: 600, color: P, cursor: 'pointer', width: '100%', transition: `background 150ms ${EASE}` }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(123, 92, 250, 0.12)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#F1F1F7'; }}
                   >
                     <Icon name="document" size={13} />
                     Historia odontológica
@@ -1980,7 +1980,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
 
       {showIniciar && (
         <Modal background="rgba(17,24,39,0.45)" overlayStyle={{ padding: 24 }}
-          cardStyle={{ background: LT, borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 420, maxHeight: '80dvh', display: 'flex', flexDirection: 'column', border: `1px solid ${BD}` }}>
+          cardStyle={{ background: LT, borderRadius: '18px', width: '100%', maxWidth: 420, maxHeight: '80dvh', display: 'flex', flexDirection: 'column', border: `1px solid ${BD}` }}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BD}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 17, fontWeight: 600, color: DN, letterSpacing: '-0.01em' }}>Iniciar tratamiento de ortodoncia</span>
             <button onClick={() => setShowIniciar(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: MU, fontSize: 22, lineHeight: 1, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
@@ -1991,7 +1991,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
               placeholder="Buscar paciente por nombre o DNI..."
               value={busquedaIniciar}
               onChange={e => setBusquedaIniciar(e.target.value)}
-              style={{ width: '100%', padding: '11px 14px', minHeight: 40, borderRadius: 'var(--radius-sm)', border: `1px solid ${BD}`, background: LT, color: DN, fontSize: 15, outline: 'none', marginBottom: 12, boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '11px 14px', minHeight: 40, borderRadius: '10px', border: `1px solid ${BD}`, background: LT, color: DN, fontSize: 15, outline: 'none', marginBottom: 12, boxSizing: 'border-box' }}
             />
             {disponibles.length === 0 && (
               <div style={{ fontSize: 13.5, color: MU, textAlign: 'center', padding: '16px 0', lineHeight: 1.5 }}>
@@ -2002,11 +2002,11 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
               <div
                 key={p.id}
                 onClick={() => !iniciando && iniciarTratamiento(p)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 10px', minHeight: 44, borderRadius: 'var(--radius-sm)', cursor: iniciando ? 'not-allowed' : 'pointer', transition: `background 150ms ${EASE}` }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-quaternary)'}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 10px', minHeight: 44, borderRadius: '10px', cursor: iniciando ? 'not-allowed' : 'pointer', transition: `background 150ms ${EASE}` }}
+                onMouseEnter={e => e.currentTarget.style.background = '#ECECF5'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-sm)', background: 'var(--fill-tertiary)', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 13, flexShrink: 0 }}>
+                <div style={{ width: 34, height: 34, borderRadius: '10px', background: '#F1F1F7', color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 13, flexShrink: 0 }}>
                   {ini(p.name)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
