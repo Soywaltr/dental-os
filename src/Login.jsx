@@ -80,7 +80,7 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', background: '#F9F9F9', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", padding: 24, boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', background: '#F9F9F9', fontFamily: "'Urbanist', system-ui, -apple-system, sans-serif", padding: 24, boxSizing: 'border-box' }}>
       {/* Tarjeta única centrada */}
       <div style={{
         position: 'relative', zIndex: 1, width: '100%', maxWidth: 420,

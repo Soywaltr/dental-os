@@ -43,7 +43,7 @@ const C = {
   r:           '10px',
   rl:          '14px',
   rx:          '18px',
-  font:        "'Inter', system-ui, sans-serif",
+  font:        "'Urbanist', system-ui, sans-serif",
   shadowSm:    '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)',
   shadowMd:    '0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)',
   ease:        'cubic-bezier(0.25, 0.1, 0.25, 1)',

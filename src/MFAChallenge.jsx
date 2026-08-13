@@ -69,7 +69,7 @@ export default function MFAChallenge({ onLogout }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", padding: 24, boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', fontFamily: "'Urbanist', system-ui, -apple-system, sans-serif", padding: 24, boxSizing: 'border-box' }}>
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0,
         backgroundImage: BACKDROP_IMAGE_URL, backgroundSize: 'cover', backgroundPosition: 'center',

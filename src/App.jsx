@@ -40,7 +40,7 @@ const Placeholder = lazy(() => import("./components/vistas/Placeholder"));
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 // Colores/tipografía fijos (hex/rgba) directo acá, sin variables CSS -- ver
 // commit "Elimina el sistema de design tokens". Paleta negro/azul/coral +
-// Inter, siguiendo la referencia "YourCRM" (UI/UX, Alina Abovyan).
+// Urbanist (antes Inter, cambiado por pedido explícito del usuario).
 const C = {
   // Fondos.
   pageBg:      "#F9F9F9",
@@ -75,7 +75,7 @@ const C = {
   shadowSm:    "0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)",
   shadowMd:    "0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06)",
   // Tipografía
-  font:        "'Inter', -apple-system, system-ui, sans-serif",
+  font:        "'Urbanist', -apple-system, system-ui, sans-serif",
   fontMono:    "'JetBrains Mono', monospace",
   // Radios
   r:           "10px",
@@ -1071,7 +1071,7 @@ export default function App() {
   return (
     <AppContext.Provider value={ctxValue}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;450;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
