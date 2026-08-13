@@ -310,6 +310,104 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
   );
 });
 
+// Reparte PRIMARY_NAV entre "entran" y "no entran" según el ancho medido de
+// cada píldora contra el ancho real disponible -- nada de puntos de quiebre
+// fijos (ej. "en tablet muestra sólo 4"), porque el ancho de cada píldora
+// varía con el largo de su etiqueta y sus badges/contadores, y eso puede
+// cambiar entre clínicas. Si ninguna entra igual, siempre se deja al menos 1
+// visible para que la barra nunca quede vacía.
+function calcularOverflowNav(anchoPildoras, anchoMas, gap, anchoDisponible, idxActivo) {
+  const n = anchoPildoras.length;
+  const anchoTodas = anchoPildoras.reduce((a, w) => a + w, 0) + gap * Math.max(0, n - 1);
+  if (anchoTodas <= anchoDisponible) return { visibles: anchoPildoras.map((_, i) => i), ocultas: [] };
+
+  let usado = 0, ultimoQueEntra = -1;
+  for (let i = 0; i < n; i++) {
+    const extra = (i > 0 ? gap : 0) + anchoPildoras[i];
+    if (usado + extra + gap + anchoMas <= anchoDisponible) { usado += extra; ultimoQueEntra = i; }
+    else break;
+  }
+  let visibles = Array.from({ length: Math.max(0, ultimoQueEntra + 1) }, (_, i) => i);
+  let ocultas = Array.from({ length: n - visibles.length }, (_, i) => visibles.length + i);
+  if (visibles.length === 0) { visibles = [0]; ocultas = ocultas.filter(i => i !== 0); }
+
+  // La píldora de la vista activa nunca puede quedar escondida detrás de
+  // "Más" -- si cayó ahí, se intercambia con la última píldora visible.
+  if (idxActivo != null && ocultas.includes(idxActivo)) {
+    const ultimaVisible = visibles[visibles.length - 1];
+    visibles = visibles.filter(i => i !== ultimaVisible).concat(idxActivo).sort((a, b) => a - b);
+    ocultas = ocultas.filter(i => i !== idxActivo).concat(ultimaVisible).sort((a, b) => a - b);
+  }
+  return { visibles, ocultas };
+}
+
+// Botón "Más" de la barra horizontal -- misma forma de píldora que
+// TopNavPill, se resalta si la vista activa vive entre las escondidas.
+const NavMasBoton = memo(({ activo, abierto, onClick }) => (
+  <button
+    onClick={onClick}
+    aria-expanded={abierto}
+    style={{
+      display: "flex", alignItems: "center", gap: 5,
+      height: 40, padding: "0 16px", flexShrink: 0,
+      borderRadius: "999px", border: "none",
+      background: activo ? "#030303" : "#EDEDED",
+      color: activo ? "#FFFFFF" : "#030303",
+      fontFamily: C.font, fontSize: 14, fontWeight: activo ? 600 : 450,
+      cursor: "pointer", whiteSpace: "nowrap",
+    }}
+  >
+    Más
+    <NavIcon name="chevronDown" size={13} />
+  </button>
+));
+
+// Desplegable de las píldoras que no entraron -- lista plana (a diferencia
+// de MasPanel, que agrupa OVERFLOW_SECTIONS por título): PRIMARY_NAV no
+// tiene secciones, sólo 7 ítems reales.
+const NavOverflowPanel = memo(({ items, activeId, contadores, onSelect, onClose }) => {
+  const ref = React.useRef(null);
+  useEffect(() => {
+    const alApretar = e => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    window.addEventListener("mousedown", alApretar);
+    return () => window.removeEventListener("mousedown", alApretar);
+  }, [onClose]);
+  return (
+    <div ref={ref} style={{
+      position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 210,
+      width: 200, background: "#FFFFFF", border: "1px solid #E2E2E2",
+      borderRadius: "14px", boxShadow: "0 8px 20px rgba(10, 10, 10, 0.10)",
+      padding: "8px 0",
+    }}>
+      {items.map(item => (
+        <button
+          key={item.id} onClick={() => onSelect(item.id)}
+          aria-current={activeId === item.id ? "page" : undefined}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10,
+            padding: "8px 14px", border: "none", background: activeId === item.id ? "#EDEDED" : "transparent",
+            color: "#030303", fontFamily: C.font, fontSize: 13.5, cursor: "pointer", textAlign: "left",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = activeId === item.id ? "#EDEDED" : "transparent"; }}
+        >
+          <span style={{ display: "flex", opacity: 0.75, flexShrink: 0 }}><NavIcon name={item.icon} size={16} /></span>
+          <span style={{ flex: 1 }}>{item.label}</span>
+          {typeof contadores[item.id] === "number" && contadores[item.id] > 0 && (
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, minWidth: 17, height: 17, padding: "0 5px",
+              borderRadius: "999px", background: "#729DEE", color: "#FFFFFF",
+              display: "flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums",
+            }}>
+              {contadores[item.id]}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+});
+
 // ─── COMPONENTE: BOTÓN DEL RIEL DELGADO ───────────────────────────────────────
 // Cada ícono vive SIEMPRE dentro de su propia tarjeta circular (antes el
 // círculo sólo aparecía al pasar el mouse, transparente en reposo) -- calcado
@@ -589,6 +687,7 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
   const { isNarrow } = useResponsive();
   const [buscarAbierto, setBuscarAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [masNavAbierto, setMasNavAbierto] = useState(false);
   const menuRef = React.useRef(null);
   const logoUrl = useSignedUrl(clinica?.logo_url);
   const goTo = id => dispatch({ type: "SET_VIEW", payload: { view: id } });
@@ -598,6 +697,39 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
     window.addEventListener("mousedown", alApretar);
     return () => window.removeEventListener("mousedown", alApretar);
   }, []);
+
+  // ── Overflow de la barra de píldoras ──────────────────────────────────────
+  // navRef mide el ancho REAL disponible (ResizeObserver); measureRef es una
+  // fila gemela fuera de pantalla (position:absolute, no display:none, para
+  // que el navegador SÍ le calcule un ancho) que renderiza las 7 píldoras +
+  // el botón "Más" una vez, así se conoce cuánto ocupa cada una tal cual se
+  // ve (con su badge/contador real) sin adivinar por la sola longitud del
+  // texto.
+  const navRef = React.useRef(null);
+  const measureRef = React.useRef(null);
+  const [anchoNav, setAnchoNav] = useState(0);
+  const [anchosPildoras, setAnchosPildoras] = useState(null);
+  const [anchoMas, setAnchoMas] = useState(72);
+
+  useEffect(() => {
+    if (!navRef.current) return;
+    const ro = new ResizeObserver(entries => setAnchoNav(entries[0].contentRect.width));
+    ro.observe(navRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  React.useLayoutEffect(() => {
+    if (!measureRef.current) return;
+    const hijos = Array.from(measureRef.current.children);
+    const masEl = hijos.pop();
+    setAnchosPildoras(hijos.map(h => h.offsetWidth));
+    if (masEl) setAnchoMas(masEl.offsetWidth);
+  }, [contadores]);
+
+  const idxActivoNav = PRIMARY_NAV.findIndex(item => item.id === state.view);
+  const { visibles: navVisibles, ocultas: navOcultas } = anchosPildoras
+    ? calcularOverflowNav(anchosPildoras, anchoMas, 2, anchoNav, idxActivoNav)
+    : { visibles: PRIMARY_NAV.map((_, i) => i), ocultas: [] };
 
   return (
     <header style={{
@@ -633,14 +765,47 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
         )}
       </div>
 
-      {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia */}
-      <nav style={{ display: "flex", alignItems: "center", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
-        {PRIMARY_NAV.map(item => (
-          <TopNavPill
-            key={item.id} item={item} isActive={state.view === item.id}
-            contador={contadores[item.id]} onClick={goTo}
-          />
-        ))}
+      {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia.
+          Las que no entran en el ancho disponible (iPad y pantallas angostas)
+          se agrupan detrás de "Más" en vez de cortarse contra el borde. */}
+      <nav ref={navRef} style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
+        {/* Fila de medición: mismas píldoras, fuera de pantalla -- sólo para
+            que el navegador les calcule el ancho real (con badge/contador). */}
+        <div ref={measureRef} aria-hidden="true" style={{ position: "absolute", top: -9999, left: 0, display: "flex", gap: 2, visibility: "hidden", pointerEvents: "none" }}>
+          {PRIMARY_NAV.map(item => (
+            <TopNavPill key={item.id} item={item} isActive={false} contador={contadores[item.id]} onClick={() => {}} />
+          ))}
+          <NavMasBoton activo={false} abierto={false} onClick={() => {}} />
+        </div>
+
+        {navVisibles.map(i => {
+          const item = PRIMARY_NAV[i];
+          return (
+            <TopNavPill
+              key={item.id} item={item} isActive={state.view === item.id}
+              contador={contadores[item.id]} onClick={goTo}
+            />
+          );
+        })}
+
+        {navOcultas.length > 0 && (
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <NavMasBoton
+              activo={navOcultas.some(i => PRIMARY_NAV[i].id === state.view)}
+              abierto={masNavAbierto}
+              onClick={() => setMasNavAbierto(v => !v)}
+            />
+            {masNavAbierto && (
+              <NavOverflowPanel
+                items={navOcultas.map(i => PRIMARY_NAV[i])}
+                activeId={state.view}
+                contadores={contadores}
+                onSelect={id => { goTo(id); setMasNavAbierto(false); }}
+                onClose={() => setMasNavAbierto(false)}
+              />
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Grupo derecho: buscar, mensajes (Chat IA), notificaciones, perfil */}

@@ -1283,7 +1283,30 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 <div><label style={labelDoc}>Ocupación</label><input disabled={!isEditingFiliacion} value={editForm.ocupacion || ''} onChange={e => setEditForm({ ...editForm, ocupacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
                 <div style={{ gridColumn: 'span 2' }}><label style={labelDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
                 <div><label style={labelDoc}>Grupo Sanguíneo</label><input disabled={!isEditingFiliacion} value={editForm.blood || ''} onChange={e => setEditForm({ ...editForm, blood: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div><label style={labelDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option><option value="Tiktok">Tiktok</option><option value="Google">Google</option><option value="Referido por paciente">Referido por paciente</option><option value="Referido por doctor">Referido por doctor</option><option value="Amigos y familiares">Amigos y familiares</option><option value="Fachada">Fachada</option></select></div>
+                <div><label style={labelDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}>
+                  <option value="">Seleccionar</option>
+                  <optgroup label="Orgánico">
+                    <option value="Instagram">Instagram</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Tiktok">Tiktok</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Google">Google (búsqueda / Maps)</option>
+                  </optgroup>
+                  <optgroup label="Pagado (Ads)">
+                    <option value="Instagram Ads">Instagram Ads</option>
+                    <option value="Facebook Ads">Facebook Ads</option>
+                    <option value="Tiktok Ads">Tiktok Ads</option>
+                    <option value="Google Ads">Google Ads</option>
+                  </optgroup>
+                  <optgroup label="Referido">
+                    <option value="Referido por paciente">Referido por paciente</option>
+                    <option value="Referido por doctor">Referido por doctor</option>
+                    <option value="Amigos y familiares">Amigos y familiares</option>
+                  </optgroup>
+                  <optgroup label="Directo">
+                    <option value="Fachada">Fachada</option>
+                  </optgroup>
+                </select></div>
                 <div><label style={labelDoc}>Línea de negocio</label><select disabled={!isEditingFiliacion} value={editForm.linea_negocio || ''} onChange={e => setEditForm({ ...editForm, linea_negocio: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Ortodoncia">Ortodoncia</option><option value="Rehabilitación">Rehabilitación</option><option value="Estética">Estética</option><option value="Endodoncia">Endodoncia</option><option value="Tratamiento integral">Tratamiento integral</option><option value="Odontopediatría">Odontopediatría</option></select></div>
                 <div><label style={labelDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
               </div>
