@@ -436,54 +436,54 @@ export default function Dashboard({ setView, clinica }) {
           píxeles de cada tarjeta, que cambia según cuántos pacientes tenga
           cada clínica en cada etapa). */}
       <div style={{ ...col(12), ...card }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18, flexWrap: 'wrap' }}>
-          <h2 style={{ ...h2, flexShrink: 0 }}>Flujo de tratamiento</h2>
+        {/* Cabecera en DOS filas, calcada de "Case Allocation": fila 1 sólo
+            el título; fila 2 la píldora de avatares (izquierda-centro) y los
+            íconos de acción empujados al extremo derecho con auto-margin --
+            antes las 3 cosas vivían apretadas en una sola fila. */}
+        <h2 style={{ ...h2, marginBottom: 16 }}>Flujo de tratamiento</h2>
 
-          {/* Tira de avatares -- CENTRADA en el espacio entre el título y los
-              íconos de acción. Vive dentro de un contenedor en forma de
-              píldora (glassmorphism, la "abraza" de cerca) calcado del
-              "top_users_bar" de la referencia -- antes flotaban sueltos, sin
-              contenedor propio. */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'center',
-              background: 'rgba(255, 255, 255, 0.55)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-              border: GLASS_BORDER, borderRadius: 999, padding: '8px 18px 12px',
-              boxShadow: '0 6px 20px rgba(10, 10, 10, 0.06)',
-            }}>
-              {avataresStrip.map((p, i) => {
-                const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
-                const badgeColor = pendientes > 0 ? (i % 2 === 0 ? P : RJ) : null;
-                return (
-                  <div key={p.id} style={{ position: 'relative', flexShrink: 0 }} title={p.name}>
-                    <div
-                      onClick={() => setView && setView('expediente')}
-                      style={{
-                        width: 38, height: 38, borderRadius: '50%', cursor: 'pointer',
-                        background: `color-mix(in srgb, ${colorPorNombre(p.name)} 22%, #FFFFFF)`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12, fontWeight: 700, color: NEGRO,
-                        border: '2px solid #FFFFFF', boxShadow: '0 2px 6px rgba(10, 10, 10, 0.08)',
-                      }}
-                    >
-                      {ini(p.name || '?')}
-                    </div>
-                    <span style={{
-                      position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)',
-                      minWidth: 19, height: 19, padding: '0 3px', borderRadius: '50%',
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18, flexWrap: 'wrap' }}>
+          {/* Tira de avatares -- dentro de un contenedor en forma de píldora
+              (glassmorphism, la "abraza" de cerca) calcado del
+              "top_users_bar" de la referencia. */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            background: 'rgba(255, 255, 255, 0.55)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
+            border: GLASS_BORDER, borderRadius: 999, padding: '8px 18px 12px',
+            boxShadow: '0 6px 20px rgba(10, 10, 10, 0.06)',
+          }}>
+            {avataresStrip.map((p, i) => {
+              const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
+              const badgeColor = pendientes > 0 ? (i % 2 === 0 ? P : RJ) : null;
+              return (
+                <div key={p.id} style={{ position: 'relative', flexShrink: 0 }} title={p.name}>
+                  <div
+                    onClick={() => setView && setView('expediente')}
+                    style={{
+                      width: 38, height: 38, borderRadius: '50%', cursor: 'pointer',
+                      background: `color-mix(in srgb, ${colorPorNombre(p.name)} 22%, #FFFFFF)`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, fontWeight: 700, border: '2px solid #FFFFFF',
-                      background: badgeColor || '#E5E5E5', color: badgeColor ? '#FFFFFF' : '#9AA1AC',
-                    }}>
-                      {pendientes > 0 ? pendientes : '+'}
-                    </span>
+                      fontSize: 12, fontWeight: 700, color: NEGRO,
+                      border: '2px solid #FFFFFF', boxShadow: '0 2px 6px rgba(10, 10, 10, 0.08)',
+                    }}
+                  >
+                    {ini(p.name || '?')}
                   </div>
-                );
-              })}
-            </div>
+                  <span style={{
+                    position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)',
+                    minWidth: 19, height: 19, padding: '0 3px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, border: '2px solid #FFFFFF',
+                    background: badgeColor || '#E5E5E5', color: badgeColor ? '#FFFFFF' : '#9AA1AC',
+                  }}>
+                    {pendientes > 0 ? pendientes : '+'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
             <button onClick={() => setView && setView('expediente')} title="Nuevo paciente" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Icon name="plus" size={14} />
             </button>
@@ -526,6 +526,10 @@ export default function Dashboard({ setView, clinica }) {
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontSize: 12.5, fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                           <div style={{ fontSize: 10.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.treatment || p.reason || 'Consulta'}</div>
+                        </div>
+                        <Icon name="checkCircle" size={13} style={{ color: colDef.key === 'completado' ? VERDE : '#C4C4C4', flexShrink: 0 }} />
+                        <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MU }}>
+                          <Icon name="calendar" size={11} />
                         </div>
                       </div>
                     ))}
