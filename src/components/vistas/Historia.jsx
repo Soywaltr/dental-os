@@ -1212,7 +1212,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: DN }}>{patData?.name || patient.name}</div>
           </div>
           <div style={{ fontSize: 12, color: MU, marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', fontVariantNumeric: 'tabular-nums' }}>
-            <Icon name="phone" size={12} /> {patData?.phone || 'Sin celular'} · <Icon name="mail" size={12} /> {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años · {patData?.blood || 'O+'} {patData?.sexo ? `· ${patData.sexo}` : ''}
+            <Icon name="phone" size={12} /> {patData?.phone || 'Sin celular'} · <Icon name="mail" size={12} /> {patData?.email || 'Sin email'} · DNI: {patData?.doc} · {patData?.age} años {patData?.blood ? `· ${patData.blood}` : ''} {patData?.sexo ? `· ${patData.sexo}` : ''}
           </div>
           {(patData?.direccion) && (
             <div style={{ fontSize: 11, color: '#9AA1AC', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
