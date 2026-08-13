@@ -68,9 +68,9 @@ export const CAT_ACCENT = '#0D9488';
 // se limpió, sólo se apagó poniendo blur "none" y fondo opaco), alcanza con
 // repuntarlas acá para que las ~15 vistas se pongan translúcidas de una,
 // sin tocar cada archivo.
-export const GLASS_BG = 'rgba(255, 255, 255, 0.62)';
-export const GLASS_BLUR = 'blur(24px) saturate(180%)';
-export const GLASS_BORDER = '1px solid rgba(255, 255, 255, 0.5)';
+export const GLASS_BG = 'rgba(255, 255, 255, 0.38)';
+export const GLASS_BLUR = 'blur(26px) saturate(180%)';
+export const GLASS_BORDER = '1px solid rgba(255, 255, 255, 0.45)';
 export const GLASS_SHADOW = '0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
