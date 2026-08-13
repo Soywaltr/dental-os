@@ -35,6 +35,7 @@ const Caja        = lazy(() => import("./components/vistas/Caja"));
 const Laboratorio = lazy(() => import("./components/vistas/Laboratorio"));
 const AsistenteDatos = lazy(() => import("./components/vistas/AsistenteDatos"));
 const Config      = lazy(() => import("./components/vistas/Config"));
+const MiCuenta    = lazy(() => import("./components/vistas/MiCuenta"));
 const Placeholder = lazy(() => import("./components/vistas/Placeholder"));
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
@@ -168,7 +169,7 @@ const placeholderVista = (titulo, icono) => (props) => <Placeholder titulo={titu
 const VIEWS = {
   dashboard: Dashboard, agenda: Agenda, expediente: Expediente,
   caja: Caja, laboratorio: Laboratorio,
-  ortodoncia: Ortodoncia, whatsapp: AsistenteDatos, config: Config,
+  ortodoncia: Ortodoncia, whatsapp: AsistenteDatos, config: Config, cuenta: MiCuenta,
   // Secciones agregadas por la referencia "Confidency OS" (ver
   // OVERFLOW_SECTIONS más abajo) -- sin pantalla propia todavía.
   overview:       placeholderVista("Overview", "overview"),
@@ -862,12 +863,26 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
                 <div style={{ fontSize: 11.5, color: "#9AA1AC", textTransform: "capitalize" }}>{rol || "Usuario"}</div>
               </div>
               <button
-                onClick={onLogout}
+                onClick={() => { goTo("cuenta"); setMenuAbierto(false); }}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 9,
                   padding: "8px 8px", border: "none", background: "transparent",
                   color: "#030303", fontFamily: C.font, fontSize: 13, cursor: "pointer",
                   borderRadius: "8px", borderTop: "1px solid #E2E2E2",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <NavIcon name="customers" size={15} />
+                Mi cuenta
+              </button>
+              <button
+                onClick={onLogout}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 9,
+                  padding: "8px 8px", border: "none", background: "transparent",
+                  color: "#030303", fontFamily: C.font, fontSize: 13, cursor: "pointer",
+                  borderRadius: "8px",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "#EDEDED"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
