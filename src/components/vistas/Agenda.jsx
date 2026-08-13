@@ -7,7 +7,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
-import { BD, P, GL, MU, DN, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BD, P, GL, MU, DN, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FUENTE_CAPTACION_GRUPOS } from '../../utils/constants';
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
@@ -309,15 +309,19 @@ export default function Agenda({ clinicaId, clinica }) {
       }
 
       if (pacienteEncontrado) {
+        // Un paciente que ya existe conserva su fuente_captacion original --
+        // sólo se toca si el usuario la cambió a mano en este modal (por
+        // ejemplo, para completarla en un paciente antiguo que no la tenía).
         await supabase.from('pacientes').update({
           fecha: cita.fecha, hora_cita: cita.hora, reason: cita.motivo,
-          google_event_id: googleEventId, name: nombreLimpio, phone: cita.celular ? cita.celular : undefined
+          google_event_id: googleEventId, name: nombreLimpio, phone: cita.celular ? cita.celular : undefined,
+          ...(cita.fuenteCaptacion ? { fuente_captacion: cita.fuenteCaptacion } : {}),
         }).eq('id', pacienteEncontrado.id);
       } else {
         await supabase.from('pacientes').insert([{
           name: nombreLimpio, doc: docLimpio, phone: cita.celular, reason: cita.motivo,
           fecha: cita.fecha, hora_cita: cita.hora, tag: 'nuevo', google_event_id: googleEventId,
-          clinica_id: clinicaId
+          fuente_captacion: cita.fuenteCaptacion || null, clinica_id: clinicaId
         }]);
       }
 
@@ -344,7 +348,8 @@ export default function Agenda({ clinicaId, clinica }) {
     if (!selectedCita.isGoogleOnly) {
       const { error } = await supabase.from('pacientes').update({
         fecha: selectedCita.fecha, hora_cita: selectedCita.hora_cita,
-        reason: selectedCita.reason, treatment: selectedCita.treatment
+        reason: selectedCita.reason, treatment: selectedCita.treatment,
+        fuente_captacion: selectedCita.fuente_captacion || null,
       }).eq('id', selectedCita.id);
       if (error) { alert('Error: ' + error.message); setSavingEdit(false); return; }
 
@@ -680,6 +685,26 @@ export default function Agenda({ clinicaId, clinica }) {
                   />
                 </div>
               </div>
+
+              {/* Sin equivalente en un evento puro de Google (isGoogleOnly):
+                  no hay fila en `pacientes` donde guardarlo. */}
+              {!selectedCita.isGoogleOnly && (
+                <div>
+                  <label style={LABEL_MODAL}>FUENTE DE CAPTACIÓN</label>
+                  <select
+                    value={selectedCita.fuente_captacion || ''}
+                    onChange={e => setSelectedCita({ ...selectedCita, fuente_captacion: e.target.value })}
+                    style={INPUT_MODAL}
+                  >
+                    <option value="">Sin especificar</option>
+                    {FUENTE_CAPTACION_GRUPOS.map(g => (
+                      <optgroup key={g.label} label={g.label}>
+                        {g.items.map(v => <option key={v} value={v}>{v}</option>)}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label style={LABEL_MODAL}>ASISTENCIA</label>

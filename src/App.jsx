@@ -262,9 +262,11 @@ const VIEW_LABELS = {
 };
 
 // ─── COMPONENTE: PÍLDORA DE NAV HORIZONTAL ────────────────────────────────────
-// Calcada de la barra superior de "YourCRM": activa = negro sólido + texto
-// blanco, inactiva = texto gris, hover = fondo gris clarito. Vive en el
-// header, no en un riel vertical -- ver PRIMARY_NAV arriba.
+// Cada ítem es su propia tarjeta flotante -- píldora blanca con sombra
+// propia, no una franja de texto dentro de un contenedor compartido. Activa
+// = negro sólido + texto blanco (misma sombra pero más profunda, para que
+// se sienta "levantada"); inactiva = blanca, con la sombra creciendo un
+// poco al pasar el mouse.
 const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
   const [hover, setHover] = useState(false);
   return (
@@ -277,11 +279,14 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
         display: "flex", alignItems: "center", gap: 6,
         height: 40, padding: "0 18px", flexShrink: 0,
         borderRadius: "999px", border: "none",
-        background: isActive ? "#030303" : hover ? "#EDEDED" : "transparent",
+        background: isActive ? "#030303" : "#FFFFFF",
         color: isActive ? "#FFFFFF" : "#030303",
         fontFamily: C.font, fontSize: 14, fontWeight: isActive ? 600 : 450,
         cursor: "pointer", whiteSpace: "nowrap",
-        transition: "background-color 150ms ease",
+        boxShadow: isActive
+          ? "0 6px 16px rgba(10, 10, 10, 0.22)"
+          : hover ? "0 4px 12px rgba(10, 10, 10, 0.12)" : "0 2px 8px rgba(10, 10, 10, 0.06)",
+        transition: "box-shadow 150ms ease",
       }}
     >
       {item.label}
@@ -351,10 +356,11 @@ const NavMasBoton = memo(({ activo, abierto, onClick }) => (
       display: "flex", alignItems: "center", gap: 5,
       height: 40, padding: "0 16px", flexShrink: 0,
       borderRadius: "999px", border: "none",
-      background: activo ? "#030303" : "#EDEDED",
+      background: activo ? "#030303" : "#FFFFFF",
       color: activo ? "#FFFFFF" : "#030303",
       fontFamily: C.font, fontSize: 14, fontWeight: activo ? 600 : 450,
       cursor: "pointer", whiteSpace: "nowrap",
+      boxShadow: activo ? "0 6px 16px rgba(10, 10, 10, 0.22)" : "0 2px 8px rgba(10, 10, 10, 0.06)",
     }}
   >
     Más
@@ -505,7 +511,7 @@ const IconRail = memo(({ state, dispatch, avatarUrl, nombreUsuario, onLogout }) 
       background: "rgba(255, 255, 255, 0.62)", border: "1px solid rgba(255, 255, 255, 0.5)",
       backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)",
       borderRadius: "24px", boxShadow: "0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)",
-      display: "flex", flexDirection: "column", alignItems: "center",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       padding: "16px 0", gap: 6, flexShrink: 0, zIndex: 101,
       position: "relative",
     }}>
@@ -520,7 +526,7 @@ const IconRail = memo(({ state, dispatch, avatarUrl, nombreUsuario, onLogout }) 
         {masAbierto && <MasPanel view={view} onSelect={goTo} onClose={() => setMasAbierto(false)} />}
       </div>
 
-      <div style={{ flex: 1 }} />
+      <div style={{ width: 24, height: 1, background: "#E2E2E2", margin: "6px 0" }} />
 
       <IconRailButton icon="config" title="Ajustes" onClick={() => goTo("config")} />
       <span style={{
@@ -728,23 +734,26 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
 
   const idxActivoNav = PRIMARY_NAV.findIndex(item => item.id === state.view);
   const { visibles: navVisibles, ocultas: navOcultas } = anchosPildoras
-    ? calcularOverflowNav(anchosPildoras, anchoMas, 2, anchoNav, idxActivoNav)
+    ? calcularOverflowNav(anchosPildoras, anchoMas, 8, anchoNav, idxActivoNav)
     : { visibles: PRIMARY_NAV.map((_, i) => i), ocultas: [] };
 
   return (
     <header style={{
       minHeight: 64,
       display: "flex", alignItems: "center",
-      padding: "10px 18px",
+      padding: "0 18px",
       margin: "28px 28px 0 28px",
-      gap: 18, flexShrink: 0, zIndex: 90, position: "relative",
-      background: "rgba(255, 255, 255, 0.62)", border: "1px solid rgba(255, 255, 255, 0.5)",
-      backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)",
-      borderRadius: "24px", flexWrap: "wrap",
-      boxShadow: "0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)",
+      gap: 10, flexShrink: 0, zIndex: 90, position: "relative",
+      background: "transparent", border: "none", boxShadow: "none",
+      flexWrap: "wrap",
     }}>
-      {/* Wordmark */}
-      <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
+      {/* Logo -- tarjeta propia, separada de las píldoras de navegación (antes
+          vivían las dos dentro del mismo contenedor de vidrio compartido). */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 9, flexShrink: 0,
+        height: 52, padding: "0 16px", borderRadius: "18px",
+        background: "#FFFFFF", boxShadow: "0 2px 10px rgba(10, 10, 10, 0.07)",
+      }}>
         <div style={{
           width: 28, height: 28, borderRadius: "8px", overflow: "hidden", flexShrink: 0,
           background: logoUrl ? "transparent" : "#729DEE",
@@ -768,10 +777,10 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
       {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia.
           Las que no entran en el ancho disponible (iPad y pantallas angostas)
           se agrupan detrás de "Más" en vez de cortarse contra el borde. */}
-      <nav ref={navRef} style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
+      <nav ref={navRef} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, position: "relative" }}>
         {/* Fila de medición: mismas píldoras, fuera de pantalla -- sólo para
             que el navegador les calcule el ancho real (con badge/contador). */}
-        <div ref={measureRef} aria-hidden="true" style={{ position: "absolute", top: -9999, left: 0, display: "flex", gap: 2, visibility: "hidden", pointerEvents: "none" }}>
+        <div ref={measureRef} aria-hidden="true" style={{ position: "absolute", top: -9999, left: 0, display: "flex", gap: 8, visibility: "hidden", pointerEvents: "none" }}>
           {PRIMARY_NAV.map(item => (
             <TopNavPill key={item.id} item={item} isActive={false} contador={contadores[item.id]} onClick={() => {}} />
           ))}

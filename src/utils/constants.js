@@ -132,6 +132,18 @@ export const TRATAMIENTOS_CAT = [
   { cat: 'Ortodoncia', items: ['Ortodoncia fija metálica', 'Ortodoncia fija estética', 'Alineadores', 'Control mensual ortodoncia', 'Retenedor'] },
 ];
 
+// Clasificación del canal de captación (pacientes.fuente_captacion), en 4
+// categorías -- orgánico vs. pagado (Ads) vs. referido vs. directo. Un solo
+// lugar para esta lista: Historia.jsx (filiación), ModalNuevaCita.jsx (alta)
+// y el modal de editar cita de Agenda.jsx la reutilizan, en vez de cada uno
+// con su propia copia (que es como se detectó que faltaba WhatsApp/Ads).
+export const FUENTE_CAPTACION_GRUPOS = [
+  { label: 'Orgánico', items: ['Instagram', 'Facebook', 'Tiktok', 'WhatsApp', 'Google'] },
+  { label: 'Pagado (Ads)', items: ['Instagram Ads', 'Facebook Ads', 'Tiktok Ads', 'Google Ads'] },
+  { label: 'Referido', items: ['Referido por paciente', 'Referido por doctor', 'Amigos y familiares'] },
+  { label: 'Directo', items: ['Fachada'] },
+];
+
 export const PRECIOS = {
   'Consulta / Diagnóstico': 30, 'Limpieza y profilaxis': 60, 'Radiografía periapical': 20, 'Radiografía panorámica': 45, 'Fluorización': 35, 'Sellantes': 25,
   'Resina compuesta': 80, 'Amalgama': 60, 'Ionómero de vidrio': 70, 'Incrustación metálica': 250, 'Incrustación estética': 300,

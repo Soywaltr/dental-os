@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import Modal from './Modal';
 import Button from './Button';
 import { findPatientByDoc, findPatientByName } from '../../utils/helpers';
-import { BD, DN, MU, LT } from '../../utils/constants';
+import { BD, DN, MU, LT, FUENTE_CAPTACION_GRUPOS } from '../../utils/constants';
 
 const LABEL = {
   fontSize: 11.5, fontWeight: 600, color: MU,
@@ -34,6 +34,7 @@ export default function ModalNuevaCita({ onClose, onSave, listaPacientes, modo =
     fecha: inicial?.fecha || '',
     hora: inicial?.hora || '',
     motivo: '',
+    fuenteCaptacion: '',
   });
 
   const handleDocChange = (val) => {
@@ -119,6 +120,26 @@ export default function ModalNuevaCita({ onClose, onSave, listaPacientes, modo =
             placeholder="Ej: 990711528"
             style={{ ...CAMPO, fontVariantNumeric: 'tabular-nums' }}
           />
+        </div>
+
+        <div>
+          <label style={LABEL}>Fuente de captación</label>
+          <select
+            className="field"
+            value={form.fuenteCaptacion}
+            onChange={e => setForm({ ...form, fuenteCaptacion: e.target.value })}
+            style={CAMPO}
+          >
+            <option value="">Seleccionar</option>
+            {FUENTE_CAPTACION_GRUPOS.map(g => (
+              <optgroup key={g.label} label={g.label}>
+                {g.items.map(v => <option key={v} value={v}>{v}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          <div style={{ fontSize: 11.5, color: MU, marginTop: 5 }}>
+            Sólo se guarda si el paciente es nuevo, o si lo cambias a mano para uno ya existente.
+          </div>
         </div>
 
         {modo === 'cita' && (
