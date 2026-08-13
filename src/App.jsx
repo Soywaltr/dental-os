@@ -25,6 +25,7 @@ import useSignedUrl from "./utils/useSignedUrl";
 import NavIcon from "./components/ui/NavIcons";
 import { rutaPerfil } from "./utils/storage";
 import logoDefault from "./assets/logo-default.png";
+import useResponsive from "./utils/useResponsive";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -703,6 +704,10 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
   const menuRef = React.useRef(null);
   const logoUrl = useSignedUrl(clinica?.logo_url);
   const goTo = id => dispatch({ type: "SET_VIEW", payload: { view: id } });
+  // iPad (A16, portrait ~820px / landscape ~1180px, ver useResponsive) achica
+  // el logo un poco para que no compita con las píldoras de nav en esos anchos.
+  const { isTablet, isNarrow } = useResponsive();
+  const logoSize = isNarrow ? 44 : isTablet ? 50 : 56;
 
   useEffect(() => {
     const alApretar = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuAbierto(false); };
@@ -757,8 +762,8 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
           de la referencia: una marca chica sola en la esquina). */}
       <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <div style={{
-          width: 44, height: 44, borderRadius: logoUrl ? "10px" : 0, overflow: logoUrl ? "hidden" : "visible", flexShrink: 0,
-          background: "transparent",
+          width: logoSize, height: logoSize, borderRadius: logoUrl ? "10px" : 0, overflow: logoUrl ? "hidden" : "visible", flexShrink: 0,
+          background: "transparent", transition: "width 150ms ease, height 150ms ease",
           display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF",
         }}>
           {logoUrl ? (
