@@ -512,7 +512,22 @@ export default function Dashboard({ setView, clinica }) {
                 <div key={colDef.key}>
                   <div style={{ ...subCard, padding: 14, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {items.length === 0 ? (
-                      <div style={{ fontSize: 12, color: MU, textAlign: 'center', padding: '20px 0' }}>Sin pacientes</div>
+                      // Maqueta -- filas fantasma (silueta gris, sin datos
+                      // inventados) para que la columna vacía mantenga la
+                      // estructura de la referencia en vez de un hueco en
+                      // blanco con solo texto.
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, opacity: 0.45 }}>
+                        {[0, 1].map(i => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: '#E2E2E2' }} />
+                            <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              <div style={{ height: 8, width: `${60 - i * 12}%`, borderRadius: 4, background: '#DADADA' }} />
+                              <div style={{ height: 7, width: `${40 - i * 8}%`, borderRadius: 4, background: '#E6E6E6' }} />
+                            </div>
+                          </div>
+                        ))}
+                        <div style={{ fontSize: 11, color: '#B0B0B0', textAlign: 'center', marginTop: 2 }}>Sin pacientes aún</div>
+                      </div>
                     ) : items.slice(0, 3).map(p => (
                       <div key={p.id} onClick={() => setView && setView('expediente')} style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
                         <div style={{
