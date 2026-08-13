@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
-import { BD, DN, MU, MT, P, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { BD, DN, MU, MT, P, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { BUCKET, rutaPerfil, rutaFirma, rutaLogo, firmar, invalidarFirma } from '../../utils/storage';
 
 const TABS = [
@@ -201,14 +201,18 @@ function MiPerfil({ clinicaId, cardStyle, tituloCardStyle, labelCapsStyle, input
   );
 }
 
-// ── NEGOCIO (marca: logo + nombre comercial) ─────────────────────────────────
-// El color de acento que vivía acá se quitó: no aplicaba ningún cambio real
-// en la app (los colores de los componentes son literales, no variables CSS
-// -- ver utils/theme.js), así que era un control que no hacía nada.
+// ── NEGOCIO (marca, datos de contacto y horario) ─────────────────────────────
+// El color de acento que vivía en la Marca se quitó: no aplicaba ningún
+// cambio real en la app (los colores de los componentes son literales, no
+// variables CSS -- ver utils/theme.js), así que era un control que no hacía
+// nada. WhatsApp IA/Notificaciones (maquetas sin guardar de verdad) también
+// se quitaron acá, no se mudaron.
 function Negocio({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardStyle, labelStyle, labelCapsStyle, inputStyle, guardarBtnStyle, enlaceArchivoStyle }) {
   const [nombre, setNombre] = useState('');
   const [logoUrl, setLogoUrl] = useState(null);
+  const [datos, setDatos] = useState({ direccion: '', telefono: '', email: '', cop: '' });
   const [guardando, setGuardando] = useState(false);
+  const [guardandoDatos, setGuardandoDatos] = useState(false);
   const [subiendoLogo, setSubiendoLogo] = useState(false);
 
   useEffect(() => {
@@ -216,6 +220,12 @@ function Negocio({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardSt
     const sincronizar = async () => {
       if (!clinica) return;
       setNombre(clinica.nombre || '');
+      setDatos({
+        direccion: clinica.direccion || '',
+        telefono: clinica.telefono || '',
+        email: clinica.email || '',
+        cop: clinica.cop || '',
+      });
       const firmada = clinica.logo_url ? await firmar(clinica.logo_url) : null;
       if (vivo) setLogoUrl(firmada);
     };
@@ -250,30 +260,148 @@ function Negocio({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardSt
     refrescarClinica?.();
   };
 
-  return (
-    <div style={cardStyle}>
-      <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Marca</div>
+  const guardarDatos = async () => {
+    if (!clinicaId) return;
+    setGuardandoDatos(true);
+    const { error } = await supabase.from('clinicas').update(datos).eq('id', clinicaId);
+    setGuardandoDatos(false);
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    alert('Datos del consultorio actualizados.');
+    refrescarClinica?.();
+  };
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-        <div style={{ width: 56, height: 56, borderRadius: '14px', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <Icon name="document" size={20} color={MU} />
-          )}
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900 }}>
+      <div style={cardStyle}>
+        <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Marca</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+          <div style={{ width: 56, height: 56, borderRadius: '14px', background: MT, border: `1px solid ${BD}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo del consultorio" onError={() => setLogoUrl(null)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <Icon name="document" size={20} color={MU} />
+            )}
+          </div>
+          <div>
+            <div style={{ ...labelCapsStyle, marginBottom: 2 }}>Logo</div>
+            <label htmlFor="logo-upload" className="link-accent" style={enlaceArchivoStyle}>
+              {subiendoLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar logo' : '+ Subir logo')}
+            </label>
+            <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={subirLogo} />
+          </div>
         </div>
-        <div>
-          <div style={{ ...labelCapsStyle, marginBottom: 2 }}>Logo</div>
-          <label htmlFor="logo-upload" className="link-accent" style={enlaceArchivoStyle}>
-            {subiendoLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar logo' : '+ Subir logo')}
-          </label>
-          <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={subirLogo} />
-        </div>
+
+        <label style={labelStyle}>Nombre comercial</label>
+        <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Consultorio Dra. Sol Vargas"
+          className="field" style={{ ...inputStyle, marginBottom: 16 }} />
+
+        <Button onClick={guardar} disabled={guardando} style={guardarBtnStyle}>
+          <Icon name="save" size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
+        </Button>
       </div>
 
-      <label style={labelStyle}>Nombre comercial</label>
-      <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Consultorio Dra. Sol Vargas"
-        className="field" style={{ ...inputStyle, marginBottom: 16, maxWidth: 420 }} />
+      <div style={cardStyle}>
+        <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Datos de contacto</div>
+
+        {[
+          ['Dirección', 'direccion'],
+          ['Teléfono', 'telefono'],
+          ['Email', 'email'],
+          ['COP', 'cop'],
+        ].map(([label, k]) => (
+          <div key={k} style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>{label}</label>
+            <input value={datos[k]} onChange={e => setDatos(d => ({ ...d, [k]: e.target.value }))} className="field" style={inputStyle} />
+          </div>
+        ))}
+
+        <Button onClick={guardarDatos} disabled={guardandoDatos} style={{ ...guardarBtnStyle, marginTop: 8 }}>
+          <Icon name="save" size={15} /> {guardandoDatos ? 'Guardando...' : 'Guardar'}
+        </Button>
+      </div>
+
+      <HorarioCard clinicaId={clinicaId} clinica={clinica} refrescarClinica={refrescarClinica}
+        cardStyle={cardStyle} tituloCardStyle={tituloCardStyle} labelStyle={labelStyle}
+        inputStyle={inputStyle} guardarBtnStyle={guardarBtnStyle} />
+    </div>
+  );
+}
+
+// ── HORARIO DE ATENCIÓN ──────────────────────────────────────────────────────
+// Se guarda en clinicas.horario (jsonb) y alimenta el rango de horas y el
+// estado abierto/cerrado que dibuja Agenda.jsx en su grilla semanal/diaria.
+function HorarioCard({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardStyle, labelStyle, inputStyle, guardarBtnStyle }) {
+  const [lvInicio, setLvInicio] = useState(DEFAULT_HORARIO.lv_inicio);
+  const [lvFin, setLvFin] = useState(DEFAULT_HORARIO.lv_fin);
+  const [sabCerrado, setSabCerrado] = useState(DEFAULT_HORARIO.sab_cerrado);
+  const [sabInicio, setSabInicio] = useState(DEFAULT_HORARIO.sab_inicio);
+  const [sabFin, setSabFin] = useState(DEFAULT_HORARIO.sab_fin);
+  const [duracionCita, setDuracionCita] = useState(DEFAULT_HORARIO.duracion_cita);
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    const sincronizar = () => {
+      const h = { ...DEFAULT_HORARIO, ...(clinica?.horario || {}) };
+      setLvInicio(h.lv_inicio);
+      setLvFin(h.lv_fin);
+      setSabCerrado(h.sab_cerrado);
+      setSabInicio(h.sab_inicio);
+      setSabFin(h.sab_fin);
+      setDuracionCita(h.duracion_cita);
+    };
+    sincronizar();
+  }, [clinica]);
+
+  const guardar = async () => {
+    if (!clinicaId) return;
+    setGuardando(true);
+    const horario = { lv_inicio: lvInicio, lv_fin: lvFin, sab_inicio: sabInicio, sab_fin: sabFin, sab_cerrado: sabCerrado, duracion_cita: Number(duracionCita) };
+    const { error } = await supabase.from('clinicas').update({ horario }).eq('id', clinicaId);
+    setGuardando(false);
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    alert('Horario de atención actualizado.');
+    refrescarClinica?.();
+  };
+
+  const timeInputStyle = { ...inputStyle, width: 'auto', flex: 1, fontVariantNumeric: 'tabular-nums' };
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ ...tituloCardStyle, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>Horario de atención</div>
+
+      <label style={labelStyle}>Lunes a viernes</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <input type="time" value={lvInicio} onChange={e => setLvInicio(e.target.value)} className="field" style={timeInputStyle} />
+        <input type="time" value={lvFin} onChange={e => setLvFin(e.target.value)} className="field" style={timeInputStyle} />
+      </div>
+
+      {/* Toggle pill en vez de checkbox nativo: mismo <input type="checkbox">
+          por debajo (teclado y lector de pantalla de fábrica), redibujado
+          con la clase .switch de ui.css. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36, marginBottom: 4 }}>
+        <label style={{ ...labelStyle, marginBottom: 0 }}>Sábado</label>
+        <label style={{ fontSize: 12, color: MU, display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', minHeight: 36 }}>
+          Abierto
+          <input type="checkbox" checked={!sabCerrado} onChange={e => setSabCerrado(!e.target.checked)} className="switch" />
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, opacity: sabCerrado ? .5 : 1 }}>
+        <input type="time" disabled={sabCerrado} value={sabInicio} onChange={e => setSabInicio(e.target.value)} className="field" style={timeInputStyle} />
+        <input type="time" disabled={sabCerrado} value={sabFin} onChange={e => setSabFin(e.target.value)} className="field" style={timeInputStyle} />
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={labelStyle}>Domingo</label>
+        <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: MU, background: '#F5F5F5' }}>Cerrado — la Agenda no muestra domingos</div>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>Duración de cita por defecto</label>
+        <select value={duracionCita} onChange={e => setDuracionCita(e.target.value)} className="field" style={inputStyle}>
+          {[15, 20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m} minutos</option>)}
+        </select>
+      </div>
 
       <Button onClick={guardar} disabled={guardando} style={guardarBtnStyle}>
         <Icon name="save" size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
