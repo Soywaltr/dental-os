@@ -440,12 +440,20 @@ export default function Dashboard({ setView, clinica }) {
           <h2 style={{ ...h2, flexShrink: 0 }}>Flujo de tratamiento</h2>
 
           {/* Tira de avatares -- CENTRADA en el espacio entre el título y los
-              íconos de acción (flex:1 + justifyContent:center la empuja al
-              medio de la fila, no pegada a ningún lado). */}
+              íconos de acción. Vive dentro de un contenedor en forma de
+              píldora (glassmorphism, la "abraza" de cerca) calcado del
+              "top_users_bar" de la referencia -- antes flotaban sueltos, sin
+              contenedor propio. */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {avataresStrip.map(p => {
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'center',
+              background: 'rgba(255, 255, 255, 0.55)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
+              border: GLASS_BORDER, borderRadius: 999, padding: '8px 18px 12px',
+              boxShadow: '0 6px 20px rgba(10, 10, 10, 0.06)',
+            }}>
+              {avataresStrip.map((p, i) => {
                 const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
+                const badgeColor = pendientes > 0 ? (i % 2 === 0 ? P : RJ) : null;
                 return (
                   <div key={p.id} style={{ position: 'relative', flexShrink: 0 }} title={p.name}>
                     <div
@@ -455,6 +463,7 @@ export default function Dashboard({ setView, clinica }) {
                         background: `color-mix(in srgb, ${colorPorNombre(p.name)} 22%, #FFFFFF)`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 12, fontWeight: 700, color: NEGRO,
+                        border: '2px solid #FFFFFF', boxShadow: '0 2px 6px rgba(10, 10, 10, 0.08)',
                       }}
                     >
                       {ini(p.name || '?')}
@@ -464,8 +473,7 @@ export default function Dashboard({ setView, clinica }) {
                       minWidth: 19, height: 19, padding: '0 3px', borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 10, fontWeight: 700, border: '2px solid #FFFFFF',
-                      background: pendientes > 0 ? RJ : '#FFFFFF', color: pendientes > 0 ? '#FFFFFF' : NEGRO,
-                      boxShadow: pendientes > 0 ? 'none' : '0 0 0 1px #E2E2E2',
+                      background: badgeColor || '#E5E5E5', color: badgeColor ? '#FFFFFF' : '#9AA1AC',
                     }}>
                       {pendientes > 0 ? pendientes : '+'}
                     </span>
@@ -476,10 +484,10 @@ export default function Dashboard({ setView, clinica }) {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => setView && setView('expediente')} title="Nuevo paciente" style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'rgba(245, 245, 245, 0.8)', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <button onClick={() => setView && setView('expediente')} title="Nuevo paciente" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Icon name="plus" size={14} />
             </button>
-            <button onClick={() => setView && setView('agenda')} title="Ir a Agenda" style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'rgba(245, 245, 245, 0.8)', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <button onClick={() => setView && setView('agenda')} title="Ir a Agenda" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Icon name="calendar" size={14} />
             </button>
           </div>

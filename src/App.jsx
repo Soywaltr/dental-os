@@ -942,15 +942,16 @@ export default function App() {
         }
       `}</style>
 
-      {/* El degradado difuso (azul arriba-izquierda, coral abajo-derecha) vive
-          en el fondo MÁS externo -- riel, header y contenido son todos
-          translúcidos (GLASS_BG/GLASS_BLUR) por encima de esta única capa de
-          color, en vez de cada uno tener su propio fondo opaco. Así es como
-          se ve en la referencia: el color se nota A TRAVÉS de las tarjetas. */}
+      {/* Mesh gradient difuso (azul arriba-izquierda, coral/durazno arriba-
+          derecha Y abajo-derecha, blanco al centro) vive en el fondo MÁS
+          externo -- riel, header y contenido son todos translúcidos
+          (GLASS_BG/GLASS_BLUR) por encima de esta única capa de color, en vez
+          de cada uno tener su propio fondo opaco. Así es como se ve en la
+          referencia: el color se nota A TRAVÉS de las tarjetas. */}
       <div style={{
         display: "flex", height: "100vh",
         overflow: "hidden",
-        background: "radial-gradient(circle at 12% 12%, rgba(114, 157, 238, 0.18), transparent 45%), radial-gradient(circle at 88% 78%, rgba(229, 104, 104, 0.16), transparent 50%), #F9F9F9",
+        background: "radial-gradient(circle at 10% 8%, rgba(114, 157, 238, 0.20), transparent 42%), radial-gradient(circle at 92% 14%, rgba(229, 143, 133, 0.16), transparent 45%), radial-gradient(circle at 88% 85%, rgba(229, 104, 104, 0.15), transparent 50%), #FAFAFA",
         fontFamily: C.font, position: "relative",
       }}>
         {/* Riel delgado sólo-iconos: atajos, "Más" secciones, Ajustes y cerrar
