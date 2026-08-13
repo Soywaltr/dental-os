@@ -17,6 +17,7 @@ import Icon from '../ui/Icon';
 import { Anillo, Dona } from '../ui/Graficos';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
+import useGoogleCalendar from '../../utils/useGoogleCalendar';
 
 // ── Paleta local (referencia "YourCRM") ─────────────────────────────────────
 const NEGRO = '#030303';
@@ -75,11 +76,12 @@ const formatoHaceTiempo = (fecha) => {
   return `${Math.round(seg / 60)}min`;
 };
 
-export default function Dashboard({ setView, clinica }) {
+export default function Dashboard({ setView, clinica, clinicaId }) {
   const { isTablet } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [pacientes, setPacientes] = useState([]);
+  const [citasGoogle, setCitasGoogle] = useState([]);
   const [tratamientos, setTratamientos] = useState([]);
   const [ortoRows, setOrtoRows] = useState([]);
   const [labOrders, setLabOrders] = useState([]);
@@ -91,6 +93,11 @@ export default function Dashboard({ setView, clinica }) {
   const [abiertoPendientes, setAbiertoPendientes] = useState(true);
 
   const esPrimeraCargaRef = useRef(true);
+
+  // Mismo hook que usa Agenda.jsx -- comparte la fila de `integraciones_google`
+  // por clínica, no localStorage. El Dashboard sólo LEE eventos, nunca crea ni
+  // borra, así que no hace falta el callback onConnected.
+  const { connected: googleConnected, getToken, disconnect: googleDisconnect } = useGoogleCalendar(clinicaId);
 
   useEffect(() => {
     let vivo = true;
@@ -104,7 +111,7 @@ export default function Dashboard({ setView, clinica }) {
         { data: labData, error: errL },
         { data: gastosData, error: errG },
       ] = await Promise.all([
-        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment, archivado_at, fuente_captacion'),
+        supabase.from('pacientes').select('id, name, doc, phone, tag, created_at, fecha, hora_cita, reason, treatment, archivado_at, fuente_captacion, google_event_id'),
         supabase.from('historias').select('patient_id, plan_tratamiento'),
         supabase.from('ortodoncia').select('paciente_id, pagos, plan_tratamiento, resumen'),
         supabase.from('laboratorio_ordenes').select('id, patient_id, patient_name, type, cost, eta, status'),
@@ -120,6 +127,42 @@ export default function Dashboard({ setView, clinica }) {
       }
       const activos = (pacientesData || []).filter(p => !p.archivado_at);
       setPacientes(activos);
+
+      // Eventos que viven SÓLO en Google Calendar (creados ahí directamente,
+      // no desde "Nueva cita") -- sin esto, "Próximas citas" nunca los veía
+      // porque sólo miraba la tabla `pacientes`. Mismo merge que Agenda.jsx:
+      // se descartan los que ya tienen fila en `pacientes` (google_event_id
+      // repetido) para no duplicar una cita agendada desde la app.
+      const googleToken = googleConnected ? await getToken() : null;
+      if (googleToken) {
+        try {
+          const timeMin = new Date(); timeMin.setDate(timeMin.getDate() - 1);
+          const timeMax = new Date(); timeMax.setDate(timeMax.getDate() + 14);
+          const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}&singleEvents=true`, {
+            headers: { 'Authorization': `Bearer ${googleToken}` },
+          });
+          if (res.ok) {
+            const gData = await res.json();
+            const soloGoogle = (gData.items || [])
+              .filter(gEvent => !activos.some(p => p.google_event_id === gEvent.id))
+              .map(gEvent => {
+                if (!gEvent.start?.dateTime) return null;
+                const [fecha, horaCompleta] = gEvent.start.dateTime.split('T');
+                return {
+                  id: gEvent.id, google_event_id: gEvent.id,
+                  name: gEvent.summary || 'Cita de Google Calendar',
+                  reason: gEvent.description || 'Agendada desde Google Calendar',
+                  fecha, hora_cita: horaCompleta.substring(0, 5),
+                };
+              }).filter(Boolean);
+            if (vivo) setCitasGoogle(soloGoogle);
+          } else if (res.status === 401 && vivo) {
+            googleDisconnect();
+          }
+        } catch (e) { console.error('Error leyendo Google Calendar en Dashboard:', e); }
+      } else if (vivo) {
+        setCitasGoogle([]);
+      }
 
       // Historias filtradas contra pacientes activos: sin esto se cuelan
       // historias huérfanas/archivadas en todos los totales financieros.
@@ -143,7 +186,7 @@ export default function Dashboard({ setView, clinica }) {
     const intervaloDatos = setInterval(cargar, 60_000);
     const intervaloTick = setInterval(() => forzarTick(v => v + 1), 15_000);
     return () => { vivo = false; clearInterval(intervaloDatos); clearInterval(intervaloTick); };
-  }, []);
+  }, [googleConnected, getToken, googleDisconnect]);
 
   const hoy = new Date();
   const todayStr = dateStr(hoy);
@@ -177,14 +220,20 @@ export default function Dashboard({ setView, clinica }) {
   // ── Pacientes / citas ────────────────────────────────────────────────────
   const estados = { activo: 0, nuevo: 0, inactivo: 0 };
   pacientes.forEach(p => { estados[estadoPaciente(p)]++; });
-  const citasHoy = pacientes.filter(p => p.fecha === todayStr && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
+
+  // Pacientes reales + eventos que viven sólo en Google Calendar -- SOLO para
+  // lo que se agrupa por fecha (citasHoy/gruposProximos). El resto del
+  // dashboard (KPIs, tratamientos, deudores) sigue usando `pacientes` a
+  // secas: un evento suelto de Google no es un paciente ni factura nada.
+  const citasParaAgenda = [...pacientes, ...citasGoogle];
+  const citasHoy = citasParaAgenda.filter(p => p.fecha === todayStr && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
   // ── Próximas citas agrupadas por día (hoy + 4 días) ───────────────────────
   const gruposProximos = Array.from({ length: 5 }).map((_, i) => {
     const d = new Date(hoy); d.setDate(d.getDate() + i);
     const clave = dateStr(d);
     const etiqueta = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'short' }).replace(/^./, c => c.toUpperCase());
-    const citas = pacientes.filter(p => p.fecha === clave && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
+    const citas = citasParaAgenda.filter(p => p.fecha === clave && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
     return { etiqueta, citas };
   }).filter(g => g.citas.length > 0);
 

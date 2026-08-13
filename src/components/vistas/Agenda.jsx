@@ -373,6 +373,17 @@ export default function Agenda({ clinicaId, clinica }) {
       } catch (err) { console.error("Error Google Calendar", err); }
     }
 
+    // Asistencia (llegó / no llegó / reprogramada): vive en `estados_cita`,
+    // no en `pacientes` -- keyeada por claveCita() para que un evento sin
+    // paciente vinculado (isGoogleOnly) también pueda marcarse.
+    if (clinicaId) {
+      const { error: errEstado } = await supabase.from('estados_cita').upsert(
+        { clinica_id: clinicaId, google_event_id: claveCita(selectedCita), estado: selectedCita.estado || 'pendiente' },
+        { onConflict: 'clinica_id,google_event_id' }
+      );
+      if (errEstado) console.error('Error guardando asistencia:', errEstado);
+    }
+
     alert('Cita actualizada correctamente.');
     setShowEditModal(false); setSavingEdit(false); window.location.reload();
   };
@@ -399,7 +410,13 @@ export default function Agenda({ clinicaId, clinica }) {
   };
 
   // ── Resumen de arriba: sólo lo que se puede saber sin abrir el calendario ──
-  const hoyStr = new Date().toISOString().slice(0, 10);
+  // OJO: fecha LOCAL, no toISOString().slice(0,10) -- eso da la fecha en UTC,
+  // y con la clínica en UTC-5, pasadas las ~19:00 hora local el día UTC ya
+  // había rodado al siguiente. Eso hacía que una cita real de MAÑANA a las
+  // 10am se tratara como "de hoy pero ya pasada" (10:00 < hora actual) y se
+  // saltara a la de pasado mañana como "próxima cita".
+  const ahoraLocal = new Date();
+  const hoyStr = `${ahoraLocal.getFullYear()}-${String(ahoraLocal.getMonth() + 1).padStart(2, '0')}-${String(ahoraLocal.getDate()).padStart(2, '0')}`;
   const semana = getWeekDays();
   const semanaSet = new Set(semana.map(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`));
   const citasAgendadas = allApts.filter(a => a.fecha && a.hora_cita);
@@ -661,6 +678,30 @@ export default function Agenda({ clinicaId, clinica }) {
                     onChange={e => setSelectedCita({ ...selectedCita, hora_cita: e.target.value })}
                     style={{ ...INPUT_MODAL, fontVariantNumeric: 'tabular-nums' }}
                   />
+                </div>
+              </div>
+
+              <div>
+                <label style={LABEL_MODAL}>ASISTENCIA</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                  {ESTADOS_CITA.map(e => {
+                    const activo = (selectedCita.estado || 'pendiente') === e.key;
+                    return (
+                      <button
+                        key={e.key} type="button"
+                        onClick={() => setSelectedCita({ ...selectedCita, estado: e.key })}
+                        style={{
+                          padding: '7px 13px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+                          cursor: 'pointer', fontFamily: 'inherit',
+                          border: `1.5px solid ${activo ? e.color : BD}`,
+                          background: activo ? `color-mix(in srgb, ${e.color} 14%, #FFFFFF)` : '#FFFFFF',
+                          color: activo ? e.color : MU,
+                        }}
+                      >
+                        {e.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
