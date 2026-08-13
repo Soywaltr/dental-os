@@ -16,7 +16,6 @@ import { supabase } from "./supabase";
 import Login from "./Login";
 import MFAChallenge from "./MFAChallenge";
 import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
-import useResponsive from "./utils/useResponsive";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
 import useAAL from "./utils/useAAL";
@@ -688,7 +687,6 @@ const BuscadorGlobal = memo(({ valor, onCambio, onAbrirPaciente, autoFocus, onCe
 // antes se retira: la píldora activa de PRIMARY_NAV ya dice en qué sección
 // se está, repetirlo como texto sería redundante.
 const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombreUsuario, rol, onLogout, onAbrirPaciente }) => {
-  const { isNarrow } = useResponsive();
   const [buscarAbierto, setBuscarAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [masNavAbierto, setMasNavAbierto] = useState(false);
@@ -745,8 +743,9 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
       background: "transparent", border: "none", boxShadow: "none",
       flexWrap: "wrap",
     }}>
-      {/* Logo -- solo, sin tarjeta de fondo, más grande. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 11, flexShrink: 0 }}>
+      {/* Logo -- sólo el ícono, sin el nombre de la clínica al lado (calcado
+          de la referencia: una marca chica sola en la esquina). */}
+      <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <div style={{
           width: 40, height: 40, borderRadius: "10px", overflow: "hidden", flexShrink: 0,
           background: logoUrl ? "transparent" : "#729DEE",
@@ -760,11 +759,6 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
             </svg>
           )}
         </div>
-        {!isNarrow && (
-          <span style={{ fontSize: 19, fontWeight: 800, color: "#030303", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
-            {(clinica?.nombre || "DentalOS").replace(/^Consultorio\s+/i, '')}
-          </span>
-        )}
       </div>
 
       {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia.
