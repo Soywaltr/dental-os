@@ -15,7 +15,7 @@ import React, {
 import { supabase } from "./supabase";
 import Login from "./Login";
 import MFAChallenge from "./MFAChallenge";
-import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW, GLASS_BLUR, GLASS_BORDER } from "./utils/constants";
+import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
 import useAAL from "./utils/useAAL";
@@ -280,15 +280,14 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
       style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
         height: 40, padding: "0 18px", flexShrink: 0,
-        borderRadius: "999px", border: isActive ? "none" : GLASS_BORDER,
-        background: isActive ? "#030303" : hover ? "rgba(255, 255, 255, 0.42)" : "rgba(255, 255, 255, 0.24)",
-        backdropFilter: isActive ? "none" : GLASS_BLUR,
-        WebkitBackdropFilter: isActive ? "none" : GLASS_BLUR,
-        color: isActive ? "#FFFFFF" : "#030303",
+        borderRadius: "999px", border: "none",
+        background: isActive ? "#030303" : "transparent",
+        backdropFilter: "none", WebkitBackdropFilter: "none",
+        color: isActive ? "#FFFFFF" : hover ? "#030303" : "rgba(3, 3, 3, 0.62)",
         fontFamily: C.font, fontSize: 14, fontWeight: isActive ? 600 : 450,
         cursor: "pointer", whiteSpace: "nowrap", textAlign: "center",
         boxShadow: isActive ? "0 6px 16px rgba(10, 10, 10, 0.22)" : "none",
-        transition: "background 150ms ease, box-shadow 150ms ease",
+        transition: "background 150ms ease, box-shadow 150ms ease, color 150ms ease",
       }}
     >
       {item.label}
@@ -361,15 +360,14 @@ const NavMasBoton = memo(({ activo, abierto, onClick }) => {
       style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
         height: 40, padding: "0 16px", flexShrink: 0,
-        borderRadius: "999px", border: activo ? "none" : GLASS_BORDER,
-        background: activo ? "#030303" : hover ? "rgba(255, 255, 255, 0.42)" : "rgba(255, 255, 255, 0.24)",
-        backdropFilter: activo ? "none" : GLASS_BLUR,
-        WebkitBackdropFilter: activo ? "none" : GLASS_BLUR,
-        color: activo ? "#FFFFFF" : "#030303",
+        borderRadius: "999px", border: "none",
+        background: activo ? "#030303" : "transparent",
+        backdropFilter: "none", WebkitBackdropFilter: "none",
+        color: activo ? "#FFFFFF" : hover ? "#030303" : "rgba(3, 3, 3, 0.62)",
         fontFamily: C.font, fontSize: 14, fontWeight: activo ? 600 : 450,
         cursor: "pointer", whiteSpace: "nowrap",
         boxShadow: activo ? "0 6px 16px rgba(10, 10, 10, 0.22)" : "none",
-        transition: "background 150ms ease, box-shadow 150ms ease",
+        transition: "background 150ms ease, box-shadow 150ms ease, color 150ms ease",
       }}
     >
       Más
