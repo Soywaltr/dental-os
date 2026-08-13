@@ -620,35 +620,61 @@ export default function Dashboard({ setView, clinica }) {
         })}
       </div>
 
-      {/* ─── PRÓXIMAS CITAS ─── agrupadas por día, no sólo el día elegido en
-          el mini-calendario de abajo -- lo que de verdad hace falta para
-          "qué viene" de un vistazo. */}
-      <div style={{ ...col(4), ...card, minHeight: 178 }}>
+      {/* ─── PRÓXIMAS CITAS ─── calcada de las tarjetas de "Case Allocation":
+          la tarjeta entera tiene una muesca de carpeta (folder) en la esquina
+          superior izquierda -- un corte recto en vez de la curva cóncava
+          exacta de la referencia, porque con clip-path (necesario para que
+          el corte funcione sobre una tarjeta de vidrio con blur) un ángulo
+          recto es mucho más simple que una curva cóncava real, y a este
+          tamaño se lee igual de "carpeta". Cada cita es una fila con avatar
+          circular + nombre + doble check + botón de calendario, seguida de
+          una leyenda y un divisor -- mismo patrón que "John Smith / Assigned
+          · Allocate Case to User" en la referencia. */}
+      <div style={{ ...col(4), ...card, minHeight: 178, clipPath: 'polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 28px)', paddingTop: 30, paddingLeft: 30 }}>
         <h2 style={{ ...h2, marginBottom: 14 }}>Próximas citas</h2>
         {gruposProximos.length === 0 ? (
           <div style={{ fontSize: 13.5, color: MU }}>Sin citas en los próximos días.</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 340 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', maxHeight: 360 }}>
             {gruposProximos.map(g => (
               <div key={g.etiqueta}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'capitalize', marginBottom: 7 }}>{g.etiqueta}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {g.citas.map(c => (
-                    <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '9px 11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontWeight: 600, fontSize: 11, flexShrink: 0 }}>{ini(c.name || '?')}</div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#030303', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
-                          {estadoPaciente(c) === 'nuevo' && (
-                            <span style={{ fontSize: 9.5, fontWeight: 700, color: GL, background: `color-mix(in srgb, ${GL} 14%, transparent)`, padding: '1px 6px', borderRadius: '999px', flexShrink: 0 }}>Nuevo</span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'capitalize', margin: '10px 0 9px' }}>{g.etiqueta}</div>
+                {g.citas.map((c, i) => (
+                  <div key={c.id}>
+                    <div onClick={() => setView && setView('agenda')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                        background: `color-mix(in srgb, ${colorPorNombre(c.name)} 22%, #FFFFFF)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: NEGRO, fontWeight: 700, fontSize: 13,
+                      }}>
+                        {ini(c.name || '?')}
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#030303', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: '#030303', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                        <div style={{ fontSize: 11.5, color: MU }}>
+                          {estadoPaciente(c) === 'nuevo' ? 'Nuevo paciente' : 'Confirmado'}
+                        </div>
+                      </div>
+                      {/* Doble check -- confirmado (todo cita agendada lo está;
+                          "nuevo" en cambio muestra un solo check, aún por confirmar). */}
+                      <Icon name="checkCircle" size={15} style={{ color: estadoPaciente(c) === 'nuevo' ? '#C4C4C4' : VERDE, flexShrink: 0 }} />
+                      <div style={{
+                        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                        background: 'rgba(245, 245, 245, 0.8)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', color: MU,
+                      }}>
+                        <Icon name="calendar" size={13} />
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <div style={{ fontSize: 11.5, color: MU, margin: '6px 0 0 51px' }}>
+                      {c.treatment || c.reason || 'Consulta'} · {c.hora_cita}
+                    </div>
+                    {!(g === gruposProximos[gruposProximos.length - 1] && i === g.citas.length - 1) && (
+                      <div style={{ height: 1, background: 'rgba(10, 10, 10, 0.08)', margin: '12px 0' }} />
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
