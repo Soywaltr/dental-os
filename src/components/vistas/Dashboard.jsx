@@ -14,13 +14,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
-import SegmentedControl from '../ui/SegmentedControl';
 import TabsWrap from '../ui/TabsWrap';
-import { GraficoBarras, Anillo, Dona } from '../ui/Graficos';
+import { Anillo, Dona } from '../ui/Graficos';
 import { TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
-import useNumeroAnimado from '../../utils/useNumeroAnimado';
 
 // ── Paleta local (referencia "YourCRM") ─────────────────────────────────────
 const NEGRO = '#030303';
@@ -30,19 +28,10 @@ const RJ = '#E56868';  // coral -- deuda, alertas urgentes
 const GL = '#E8A63D';  // ámbar -- pendiente/cobranza
 const VERDE = '#22A55E';
 const MU = '#6B7280';  // texto secundario
-const BD = '#E2E2E2';  // borde / track de barra de progreso
 const GLASS_BG = 'rgba(255, 255, 255, 0.62)';
 const GLASS_BLUR = 'blur(24px) saturate(180%)';
 const GLASS_BORDER = '1px solid rgba(255, 255, 255, 0.5)';
 const GLASS_SHADOW = '0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)';
-
-const RANGOS = [
-  { key: '7d', label: '7D', n: 7, dia: true },
-  { key: '30d', label: '30D', n: 30, dia: true },
-  { key: '6m', label: '6M', n: 6, dia: false },
-  { key: '12m', label: '12M', n: 12, dia: false },
-];
-const DIAS_SEMANA_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 // Tabs de métrica del histograma principal. Utilidad se deriva de
 // ingresos-gastos en cada bucket, nunca se guarda aparte -- así no puede
@@ -106,7 +95,6 @@ export default function Dashboard({ setView, clinica }) {
   const [activeTab, setActiveTab] = useState('General');
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [selectedIdx, setSelectedIdx] = useState(null);
-  const [rango, setRango] = useState('12m');
   const [metrica, setMetrica] = useState('ingresos');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [, forzarTick] = useState(0);
@@ -185,47 +173,9 @@ export default function Dashboard({ setView, clinica }) {
   gastos.forEach(g => { const d = parseFecha(g.fecha); if (d) { const b = bucketDe(d); if (b) b.gastos += g.monto || 0; } });
 
   const mesActual = meses12[11];
-  const mesPrevio = meses12[10];
   const ingresosMes = mesActual.ingresos;
   const gastosMes = mesActual.gastos;
   const utilidadMes = ingresosMes - gastosMes;
-  const utilidadPrevia = mesPrevio.ingresos - mesPrevio.gastos;
-
-  const deltaPct = (actual, previo) => (previo > 0 ? Math.round(((actual - previo) / previo) * 100) : null);
-  const pctIngresos = deltaPct(ingresosMes, mesPrevio.ingresos);
-  const pctUtilidad = deltaPct(utilidadMes, utilidadPrevia);
-  const pctGastos = deltaPct(gastosMes, mesPrevio.gastos);
-
-  // ── Serie del histograma: por el rango elegido (7D/30D/6M/12M) ───────────
-  const rangoActual = RANGOS.find(r => r.key === rango) || RANGOS[3];
-  const bucketsRango = Array.from({ length: rangoActual.n }).map((_, i) => {
-    if (rangoActual.dia) {
-      const d = new Date(hoy); d.setDate(d.getDate() - (rangoActual.n - 1 - i));
-      const label = rangoActual.n === 7
-        ? DIAS_SEMANA_CORTOS[d.getDay()]
-        : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return { clave: dateStr(d), label, ingresos: 0, gastos: 0 };
-    }
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (rangoActual.n - 1 - i), 1);
-    return { clave: `${d.getFullYear()}-${d.getMonth()}`, label: `${MESES_CORTOS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`, ingresos: 0, gastos: 0 };
-  });
-  const porClaveRango = new Map(bucketsRango.map(b => [b.clave, b]));
-  const claveDeRango = (d) => (rangoActual.dia ? dateStr(d) : `${d.getFullYear()}-${d.getMonth()}`);
-
-  tratamientos.forEach(t => { const d = parseFecha(t.date); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.ingresos += t.paid || 0; } });
-  ortoRows.forEach(o => (o.pagos?.abonos || []).forEach(a => {
-    const d = parseFecha(a.fecha); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.ingresos += Number(a.monto) || 0; }
-  }));
-  gastos.forEach(g => { const d = parseFecha(g.fecha); if (d) { const b = porClaveRango.get(claveDeRango(d)); if (b) b.gastos += g.monto || 0; } });
-
-  const valoresHistograma = bucketsRango.map(b => (
-    metrica === 'ingresos' ? b.ingresos : metrica === 'gastos' ? b.gastos : b.ingresos - b.gastos
-  ));
-  // Sólo 1 de cada N etiquetas para no amontonar el eje en 30D (30 barras) --
-  // '' en el array le dice a GraficoBarras "no rotules este punto".
-  const pasoEtiqueta = rango === '30d' ? 5 : 1;
-  const etiquetasHistograma = bucketsRango.map((b, i) => (i % pasoEtiqueta === 0 || i === bucketsRango.length - 1) ? b.label : '');
-  const pctMetricaActiva = metrica === 'ingresos' ? pctIngresos : metrica === 'gastos' ? pctGastos : pctUtilidad;
 
   // ── Cobranza ─────────────────────────────────────────────────────────────
   const totalFacturado = tratamientos.reduce((a, t) => a + (t.cost || 0), 0);
@@ -234,10 +184,6 @@ export default function Dashboard({ setView, clinica }) {
   const pendienteOrto = ortoRows.reduce((a, o) => a + (o.resumen.deuda || 0), 0);
   const saldoPendienteTotal = pendienteHistorias + pendienteOrto;
   const tasaCobro = totalFacturado > 0 ? Math.round((totalCobrado / totalFacturado) * 100) : 0;
-
-  // Un solo hook animado para la cifra enorme del hero: "corre" hacia el
-  // nuevo valor cuando se cambia de tab de métrica o llega la auto-actualización.
-  const valorMetricaAnim = useNumeroAnimado(metrica === 'ingresos' ? ingresosMes : metrica === 'gastos' ? gastosMes : utilidadMes);
 
   // ── Pacientes / citas ────────────────────────────────────────────────────
   const estados = { activo: 0, nuevo: 0, inactivo: 0 };
@@ -282,6 +228,18 @@ export default function Dashboard({ setView, clinica }) {
     .map(([id, saldo]) => ({ paciente: pacientes.find(p => p.id === id), saldo }))
     .filter(d => d.paciente)
     .sort((a, b) => b.saldo - a.saldo)
+    .slice(0, 5);
+
+  // ── Top pacientes por facturación ─── calcado de "Top Clients" (Reports):
+  // suma de t.cost (lo facturado, no lo cobrado) por paciente en historias.
+  const facturadoPorPaciente = new Map();
+  tratamientos.forEach(t => {
+    facturadoPorPaciente.set(t.patient_id, (facturadoPorPaciente.get(t.patient_id) || 0) + (t.cost || 0));
+  });
+  const topClientes = Array.from(facturadoPorPaciente.entries())
+    .map(([id, monto]) => ({ paciente: pacientes.find(p => p.id === id), monto }))
+    .filter(d => d.paciente && d.monto > 0)
+    .sort((a, b) => b.monto - a.monto)
     .slice(0, 5);
 
   // ── Flujo de tratamiento ─────────────────────────────────────────────────
@@ -373,8 +331,7 @@ export default function Dashboard({ setView, clinica }) {
   });
   const topTratamientos = Array.from(porNombre.entries())
     .map(([name, v]) => ({ name, ...v }))
-    .sort((a, b) => b.monto - a.monto).slice(0, 4);
-  const maxTrat = Math.max(...topTratamientos.map(t => t.monto), 1);
+    .sort((a, b) => b.monto - a.monto).slice(0, 5);
 
   // ── Semana / agenda ──────────────────────────────────────────────────────
   const weekDays = getWeekDays(weekAnchor);
@@ -592,10 +549,15 @@ export default function Dashboard({ setView, clinica }) {
         })}
       </div>
 
-      {/* ─── HERO ─── saludo, tabs de métrica, cifra grande + variación,
-          selector de rango e histograma anotado. */}
-      <div style={{ ...col(8), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
+      {/* ─── CRECIMIENTO DE INGRESOS ─── calcado de "Revenue Growth" (vista
+          Reports de la referencia): barras cápsula (100% redondeadas), valor
+          arriba de cada una, mes abajo -- el mes ACTUAL en negro sólido con
+          su etiqueta en píldora. Reemplaza el área/línea anterior; se
+          conservan las tabs de métrica (Ingresos/Utilidad/Gastos) porque son
+          funcionalidad real que ya existía, sólo que ahora chicas arriba en
+          vez de con una cifra gigante (esa cifra ya vive en la fila de KPIs). */}
+      <div style={{ ...col(12), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 6 }}>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: NEGRO, margin: 0, letterSpacing: '-0.01em' }}>
               Hola{nombreClinica ? `, ${nombreClinica}` : ''}
@@ -606,75 +568,89 @@ export default function Dashboard({ setView, clinica }) {
                 : <>Hoy no tienes citas agendadas.</>}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
-              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: VERDE, animation: 'pulso-vivo 2.2s ease-out infinite' }} />
-            </span>
-            <span style={{ fontSize: 11.5, color: MU }}>
-              {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
-          <div>
-            <div style={{ display: 'flex', gap: 18, marginBottom: 10 }}>
-              {METRICAS.map(m => (
-                <button key={m.key} onClick={() => setMetrica(m.key)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
-                    padding: 0, cursor: 'pointer', font: 'inherit',
-                    fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? NEGRO : MU,
-                  }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    border: `1.5px solid ${metrica === m.key ? P : 'rgba(10, 10, 10, 0.11)'}`,
-                    background: metrica === m.key ? P : 'transparent',
-                  }} />
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', color: NEGRO, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-                {soles(valorMetricaAnim)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: VERDE, animation: 'pulso-vivo 2.2s ease-out infinite' }} />
               </span>
-              {pctMetricaActiva !== null && (
-                <span style={{
-                  fontSize: 12, fontWeight: 700, color: pctMetricaActiva >= 0 ? VERDE : RJ,
-                  background: `color-mix(in srgb, ${pctMetricaActiva >= 0 ? VERDE : RJ} 12%, transparent)`,
-                  padding: '3px 8px', borderRadius: '999px',
-                }}>
-                  {pctMetricaActiva >= 0 ? '↑' : '↓'} {Math.abs(pctMetricaActiva)}%
-                </span>
-              )}
+              <span style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap' }}>
+                {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button onClick={() => setView && setView('caja')} title="Registrar pago" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <Icon name="plus" size={14} />
+              </button>
+              <button onClick={() => setView && setView('caja')} title="Ver en Finanzas" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <Icon name="external" size={13} />
+              </button>
+              <button onClick={() => setView && setView('agenda')} title="Ir a Agenda" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <Icon name="calendar" size={14} />
+              </button>
             </div>
           </div>
-          <SegmentedControl
-            options={RANGOS.map(r => ({ key: r.key, label: r.label }))}
-            value={rango}
-            onChange={setRango}
-            style={{ width: 232 }}
-          />
         </div>
 
-        <div style={{ marginTop: 14 }}>
-          <GraficoBarras
-            valores={valoresHistograma}
-            etiquetas={etiquetasHistograma}
-            formato={soles}
-            alto={200}
-            mostrarBarras={false}
-            mostrarArea
-            colorLinea={P}
-            colorAcento={pctMetricaActiva === null || pctMetricaActiva >= 0 ? VERDE : RJ}
-            anotacion={{
-              idx: valoresHistograma.length - 1,
-              delta: pctMetricaActiva,
-              texto: `${METRICAS.find(m => m.key === metrica)?.label} vs. período anterior`,
-            }}
-          />
+        <div style={{ display: 'flex', gap: 18, margin: '18px 0 20px' }}>
+          {METRICAS.map(m => (
+            <button key={m.key} onClick={() => setMetrica(m.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
+                padding: 0, cursor: 'pointer', font: 'inherit',
+                fontSize: 12.5, fontWeight: 600, color: metrica === m.key ? NEGRO : MU,
+              }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%',
+                border: `1.5px solid ${metrica === m.key ? P : 'rgba(10, 10, 10, 0.11)'}`,
+                background: metrica === m.key ? P : 'transparent',
+              }} />
+              {m.label}
+            </button>
+          ))}
         </div>
+
+        {(() => {
+          const valorDe = (m) => (metrica === 'gastos' ? m.gastos : metrica === 'utilidad' ? (m.ingresos - m.gastos) : m.ingresos);
+          const maxVal = Math.max(...meses12.map(valorDe), 1);
+          return (
+            <>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: isTablet ? 6 : 12, height: 200 }}>
+                {meses12.map((m, i) => {
+                  const valor = valorDe(m);
+                  const esUltimo = i === meses12.length - 1;
+                  const alturaPct = Math.max(6, Math.round((Math.max(0, valor) / maxVal) * 100));
+                  return (
+                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }}>
+                      <span style={{ fontSize: 10.5, color: MU, marginBottom: 8, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                        {(!isTablet || i % 2 === 0) ? soles(valor) : ''}
+                      </span>
+                      <div style={{
+                        width: isTablet ? 14 : 22, height: `${alturaPct}%`, minHeight: 8, borderRadius: 999,
+                        background: esUltimo ? NEGRO : 'rgba(10, 10, 10, 0.08)',
+                        transition: 'height 400ms cubic-bezier(0.25, 0.1, 0.25, 1)',
+                      }} />
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', gap: isTablet ? 6 : 12, marginTop: 10 }}>
+                {meses12.map((m, i) => {
+                  const esUltimo = i === meses12.length - 1;
+                  return (
+                    <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: esUltimo ? 700 : 500, color: esUltimo ? '#FFFFFF' : MU,
+                        background: esUltimo ? NEGRO : 'transparent', padding: esUltimo ? '4px 11px' : 0, borderRadius: 999,
+                      }}>
+                        {m.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       {/* ─── COBRANZA ─── par de semicírculos (Cobrado/Pendiente), calcado del
@@ -702,6 +678,104 @@ export default function Dashboard({ setView, clinica }) {
             ? <>Hay <b style={{ color: RJ }}>{soles(saldoPendienteTotal)}</b> por cobrar entre {deudaPorPaciente.size} paciente{deudaPorPaciente.size !== 1 ? 's' : ''}.</>
             : <>La cobranza está <b style={{ color: VERDE }}>al día</b>.</>}
         </div>
+      </div>
+
+      {/* ─── TRATAMIENTOS POR ESTADO ─── calcado de "Deals by Stage": leyenda
+          con puntos de color y porcentaje a la IZQUIERDA, dona a la derecha
+          (antes iba dona-izq/leyenda-der, orden invertido contra la
+          referencia). */}
+      <div style={{ ...col(4), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={h2}>Tratamientos por estado</h2>
+          <TabsWrap
+            options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
+        </div>
+        {tratamientosTab.length === 0 ? (
+          <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '24px 0' }}>
+            Sin tratamientos de {activeTab.toLowerCase()} registrados aún.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {ESTADO_TRAT.map(e => (
+                <div key={e.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: e.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12.5, color: NEGRO, fontWeight: 500 }}>{e.label}</span>
+                  <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>
+                    — {totalEstadoTrat > 0 ? Math.round((conteoEstado[e.key] / totalEstadoTrat) * 100) : 0}%
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Dona
+              segmentos={ESTADO_TRAT.map(e => ({ valor: conteoEstado[e.key], color: e.color }))}
+              tamano={100} grosor={18}
+            >
+              <span style={{ fontSize: 18, fontWeight: 700, color: NEGRO }}>{totalEstadoTrat}</span>
+            </Dona>
+          </div>
+        )}
+      </div>
+
+      {/* ─── TRATAMIENTOS MÁS FACTURADOS ─── tabla, calcada de la tabla
+          "Manager / Deals Closed / Revenue" de "Reports" (antes era una
+          lista de barras de progreso). */}
+      <div style={{ ...col(4), ...card, padding: 0 }}>
+        <h2 style={{ ...h2, padding: '20px 20px 0' }}>Más facturados</h2>
+        {topTratamientos.length === 0 ? (
+          <div style={{ fontSize: 13, color: MU, padding: '12px 20px 20px' }}>Sin tratamientos registrados aún.</div>
+        ) : (
+          <div style={{ overflowX: 'auto', marginTop: 10 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr>
+                {['Tratamiento', 'Cant.', 'Facturado'].map(x => (
+                  <th key={x} style={{ textAlign: 'left', padding: '6px 20px', color: MU, fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {topTratamientos.map(t => (
+                  <tr key={t.name} className="row-hoverable" style={{ borderTop: '1px solid rgba(10, 10, 10, 0.06)' }}>
+                    <td style={{ padding: '10px 20px', fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{t.name}</td>
+                    <td style={{ padding: '10px 20px', color: MU }}>{t.n}</td>
+                    <td style={{ padding: '10px 20px', color: NEGRO, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{soles(t.monto)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div style={{ height: 12 }} />
+      </div>
+
+      {/* ─── TOP PACIENTES POR FACTURACIÓN ─── tabla, calcada de "Top
+          Clients" de "Reports". */}
+      <div style={{ ...col(4), ...card, padding: 0 }}>
+        <h2 style={{ ...h2, padding: '20px 20px 0' }}>Top pacientes</h2>
+        {topClientes.length === 0 ? (
+          <div style={{ fontSize: 13, color: MU, padding: '12px 20px 20px' }}>Sin facturación registrada aún.</div>
+        ) : (
+          <div style={{ overflowX: 'auto', marginTop: 10 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr>
+                {['Paciente', 'Facturado'].map(x => (
+                  <th key={x} style={{ textAlign: 'left', padding: '6px 20px', color: MU, fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{x}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {topClientes.map(c => (
+                  <tr key={c.paciente.id} onClick={() => setView && setView('expediente')} className="row-hoverable" style={{ borderTop: '1px solid rgba(10, 10, 10, 0.06)', cursor: 'pointer' }}>
+                    <td style={{ padding: '10px 20px', fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap' }}>{c.paciente.name}</td>
+                    <td style={{ padding: '10px 20px', color: NEGRO, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{soles(c.monto)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div style={{ height: 12 }} />
       </div>
 
       {/* ─── ATAJOS ─── */}
@@ -994,62 +1068,6 @@ export default function Dashboard({ setView, clinica }) {
             ))}
           </div>
         )}
-      </div>
-
-      {/* ─── TRATAMIENTOS POR ESPECIALIDAD ─── */}
-      <div style={{ ...col(6), ...card, minHeight: 178 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={h2}>Tratamientos</h2>
-          <TabsWrap
-            options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
-            value={activeTab}
-            onChange={setActiveTab}
-          />
-        </div>
-
-        {tratamientosTab.length === 0 ? (
-          <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '24px 0' }}>
-            Sin tratamientos de {activeTab.toLowerCase()} registrados aún.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
-            <Dona
-              segmentos={ESTADO_TRAT.map(e => ({ valor: conteoEstado[e.key], color: e.color }))}
-              tamano={100} grosor={18}
-            >
-              <span style={{ fontSize: 18, fontWeight: 700, color: NEGRO }}>{totalEstadoTrat}</span>
-            </Dona>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {ESTADO_TRAT.map(e => (
-                <div key={e.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: e.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12.5, color: NEGRO, fontWeight: 500 }}>{e.label}</span>
-                  <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>
-                    {conteoEstado[e.key]} · {totalEstadoTrat > 0 ? Math.round((conteoEstado[e.key] / totalEstadoTrat) * 100) : 0}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ─── MÁS FACTURADOS ─── */}
-      <div style={{ ...col(12), ...card }}>
-        <div style={rotulo}>Más facturados</div>
-        <div style={{ marginTop: 11, display: 'grid', gridTemplateColumns: isTablet ? '1fr' : '1fr 1fr', gap: '8px 24px' }}>
-          {topTratamientos.map(t => (
-            <div key={t.name}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 13, color: NEGRO, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-                <span style={{ fontSize: 12, color: MU, flexShrink: 0 }}>×{t.n} · <b style={{ color: NEGRO }}>{soles(t.monto)}</b></span>
-              </div>
-              <div style={{ height: 6, background: BD, borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(t.monto / maxTrat) * 100}%`, background: colorPorNombre(t.name), borderRadius: 3 }} />
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       </div>
