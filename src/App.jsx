@@ -745,28 +745,23 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
       background: "transparent", border: "none", boxShadow: "none",
       flexWrap: "wrap",
     }}>
-      {/* Logo -- tarjeta propia, separada de las píldoras de navegación (antes
-          vivían las dos dentro del mismo contenedor de vidrio compartido). */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 9, flexShrink: 0,
-        height: 52, padding: "0 16px", borderRadius: "18px",
-        background: "#FFFFFF", boxShadow: "0 2px 10px rgba(10, 10, 10, 0.07)",
-      }}>
+      {/* Logo -- solo, sin tarjeta de fondo, más grande. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 11, flexShrink: 0 }}>
         <div style={{
-          width: 28, height: 28, borderRadius: "8px", overflow: "hidden", flexShrink: 0,
+          width: 40, height: 40, borderRadius: "10px", overflow: "hidden", flexShrink: 0,
           background: logoUrl ? "transparent" : "#729DEE",
           display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF",
         }}>
           {logoUrl ? (
             <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
             </svg>
           )}
         </div>
         {!isNarrow && (
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#030303", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 19, fontWeight: 800, color: "#030303", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
             {(clinica?.nombre || "DentalOS").replace(/^Consultorio\s+/i, '')}
           </span>
         )}
