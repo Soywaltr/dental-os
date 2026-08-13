@@ -162,6 +162,12 @@ const PATHS = {
       <line x1="10" y1="14" x2="21" y2="3" />
     </>
   ),
+  close: (
+    <>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 14, color = 'currentColor', strokeWidth = 1.75, style }) {

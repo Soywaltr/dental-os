@@ -160,11 +160,22 @@ export default function Agenda({ clinicaId, clinica }) {
 
       let estadosMap = {};
       if (clinicaId) {
-        const { data: estadosData } = await supabase.from('estados_cita').select('google_event_id, estado').eq('clinica_id', clinicaId);
-        (estadosData || []).forEach(e => { estadosMap[e.google_event_id] = e.estado; });
+        const { data: estadosData } = await supabase.from('estados_cita').select('google_event_id, estado, fuente_captacion').eq('clinica_id', clinicaId);
+        (estadosData || []).forEach(e => { estadosMap[e.google_event_id] = e; });
       }
 
-      const combinedData = [...data, ...externalGoogleApts].map(p => ({ ...p, estado: estadosMap[claveCita(p)] || 'pendiente' }));
+      // fuente_captacion de un evento SIN paciente vinculado (isGoogleOnly) no
+      // tiene fila en `pacientes` donde vivir -- se guarda en estados_cita en
+      // su lugar. Para un paciente real, la columna de `pacientes` ya
+      // seleccionada arriba (select('*')) manda; no se pisa con estados_cita.
+      const combinedData = [...data, ...externalGoogleApts].map(p => {
+        const meta = estadosMap[claveCita(p)];
+        return {
+          ...p,
+          estado: meta?.estado || 'pendiente',
+          fuente_captacion: p.isGoogleOnly ? (meta?.fuente_captacion || '') : p.fuente_captacion,
+        };
+      });
       setAllApts(combinedData);
 
       // El autocompletado de "Nueva cita" no ofrece pacientes archivados: si
@@ -380,10 +391,16 @@ export default function Agenda({ clinicaId, clinica }) {
 
     // Asistencia (llegó / no llegó / reprogramada): vive en `estados_cita`,
     // no en `pacientes` -- keyeada por claveCita() para que un evento sin
-    // paciente vinculado (isGoogleOnly) también pueda marcarse.
+    // paciente vinculado (isGoogleOnly) también pueda marcarse. La fuente de
+    // captación sólo se duplica acá para un isGoogleOnly -- un paciente real
+    // ya la guardó arriba en su propia columna de `pacientes`, guardarla
+    // también acá sólo crearía una segunda copia que podría desincronizarse.
     if (clinicaId) {
       const { error: errEstado } = await supabase.from('estados_cita').upsert(
-        { clinica_id: clinicaId, google_event_id: claveCita(selectedCita), estado: selectedCita.estado || 'pendiente' },
+        {
+          clinica_id: clinicaId, google_event_id: claveCita(selectedCita), estado: selectedCita.estado || 'pendiente',
+          ...(selectedCita.isGoogleOnly ? { fuente_captacion: selectedCita.fuente_captacion || null } : {}),
+        },
         { onConflict: 'clinica_id,google_event_id' }
       );
       if (errEstado) console.error('Error guardando asistencia:', errEstado);
@@ -650,8 +667,20 @@ export default function Agenda({ clinicaId, clinica }) {
       {showModalCita && <ModalNuevaCita onClose={() => { setShowModalCita(false); setPreseleccion(null); }} onSave={handleGuardarCita} listaPacientes={listaPacientes} modo="cita" inicial={preseleccion} />}
 
       {showEditModal && selectedCita && (
-        <Modal cardStyle={{ padding: 24, width: 400 }}>
-            <h3 style={{ marginTop: 0, marginBottom: 18, color: DN, fontSize: 17, fontWeight: 600 }}>
+        <Modal cardStyle={{ padding: 24, width: 400, position: 'relative' }}>
+            <button
+              onClick={() => setShowEditModal(false)}
+              aria-label="Cerrar"
+              style={{
+                position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: '50%',
+                border: 'none', background: 'rgba(10, 10, 10, 0.06)', color: MU,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}
+            >
+              <Icon name="close" size={14} />
+            </button>
+
+            <h3 style={{ marginTop: 0, marginBottom: 18, color: DN, fontSize: 17, fontWeight: 600, paddingRight: 24 }}>
               {selectedCita.isGoogleOnly ? 'Editar Evento de Google' : `Editar Cita: ${selectedCita.name}`}
             </h3>
 
@@ -686,25 +715,24 @@ export default function Agenda({ clinicaId, clinica }) {
                 </div>
               </div>
 
-              {/* Sin equivalente en un evento puro de Google (isGoogleOnly):
-                  no hay fila en `pacientes` donde guardarlo. */}
-              {!selectedCita.isGoogleOnly && (
-                <div>
-                  <label style={LABEL_MODAL}>FUENTE DE CAPTACIÓN</label>
-                  <select
-                    value={selectedCita.fuente_captacion || ''}
-                    onChange={e => setSelectedCita({ ...selectedCita, fuente_captacion: e.target.value })}
-                    style={INPUT_MODAL}
-                  >
-                    <option value="">Sin especificar</option>
-                    {FUENTE_CAPTACION_GRUPOS.map(g => (
-                      <optgroup key={g.label} label={g.label}>
-                        {g.items.map(v => <option key={v} value={v}>{v}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Un evento puro de Google (isGoogleOnly) no tiene fila en
+                  `pacientes` -- su fuente_captacion se guarda en
+                  estados_cita en su lugar (ver handleSaveEdit). */}
+              <div>
+                <label style={LABEL_MODAL}>FUENTE DE CAPTACIÓN</label>
+                <select
+                  value={selectedCita.fuente_captacion || ''}
+                  onChange={e => setSelectedCita({ ...selectedCita, fuente_captacion: e.target.value })}
+                  style={INPUT_MODAL}
+                >
+                  <option value="">Sin especificar</option>
+                  {FUENTE_CAPTACION_GRUPOS.map(g => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.items.map(v => <option key={v} value={v}>{v}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
 
               <div>
                 <label style={LABEL_MODAL}>ASISTENCIA</label>
