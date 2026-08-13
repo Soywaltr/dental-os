@@ -15,7 +15,7 @@ import React, {
 import { supabase } from "./supabase";
 import Login from "./Login";
 import MFAChallenge from "./MFAChallenge";
-import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW } from "./utils/constants";
+import { PATIENTS, GRAD_PRIMARY, GRAD_PRIMARY_SHADOW, GLASS_BLUR, GLASS_BORDER } from "./utils/constants";
 import useMetaWhatsApp from "./utils/useMetaWhatsApp";
 import useClinic from "./utils/useClinic";
 import useAAL from "./utils/useAAL";
@@ -24,6 +24,7 @@ import { AppContext } from "./utils/appContext";
 import useSignedUrl from "./utils/useSignedUrl";
 import NavIcon from "./components/ui/NavIcons";
 import { rutaPerfil } from "./utils/storage";
+import logoDefault from "./assets/logo-default.png";
 
 // ─── LAZY VIEWS ───────────────────────────────────────────────────────────────
 const Dashboard   = lazy(() => import("./components/vistas/Dashboard"));
@@ -275,17 +276,17 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
       onMouseLeave={() => setHover(false)}
       aria-current={isActive ? "page" : undefined}
       style={{
-        display: "flex", alignItems: "center", gap: 6,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
         height: 40, padding: "0 18px", flexShrink: 0,
-        borderRadius: "999px", border: "none",
-        background: isActive ? "#030303" : "#FFFFFF",
+        borderRadius: "999px", border: isActive ? "none" : GLASS_BORDER,
+        background: isActive ? "#030303" : hover ? "rgba(255, 255, 255, 0.42)" : "rgba(255, 255, 255, 0.24)",
+        backdropFilter: isActive ? "none" : GLASS_BLUR,
+        WebkitBackdropFilter: isActive ? "none" : GLASS_BLUR,
         color: isActive ? "#FFFFFF" : "#030303",
         fontFamily: C.font, fontSize: 14, fontWeight: isActive ? 600 : 450,
-        cursor: "pointer", whiteSpace: "nowrap",
-        boxShadow: isActive
-          ? "0 6px 16px rgba(10, 10, 10, 0.22)"
-          : hover ? "0 4px 12px rgba(10, 10, 10, 0.12)" : "0 2px 8px rgba(10, 10, 10, 0.06)",
-        transition: "box-shadow 150ms ease",
+        cursor: "pointer", whiteSpace: "nowrap", textAlign: "center",
+        boxShadow: isActive ? "0 6px 16px rgba(10, 10, 10, 0.22)" : "none",
+        transition: "background 150ms ease, box-shadow 150ms ease",
       }}
     >
       {item.label}
@@ -347,25 +348,33 @@ function calcularOverflowNav(anchoPildoras, anchoMas, gap, anchoDisponible, idxA
 
 // Botón "Más" de la barra horizontal -- misma forma de píldora que
 // TopNavPill, se resalta si la vista activa vive entre las escondidas.
-const NavMasBoton = memo(({ activo, abierto, onClick }) => (
-  <button
-    onClick={onClick}
-    aria-expanded={abierto}
-    style={{
-      display: "flex", alignItems: "center", gap: 5,
-      height: 40, padding: "0 16px", flexShrink: 0,
-      borderRadius: "999px", border: "none",
-      background: activo ? "#030303" : "#FFFFFF",
-      color: activo ? "#FFFFFF" : "#030303",
-      fontFamily: C.font, fontSize: 14, fontWeight: activo ? 600 : 450,
-      cursor: "pointer", whiteSpace: "nowrap",
-      boxShadow: activo ? "0 6px 16px rgba(10, 10, 10, 0.22)" : "0 2px 8px rgba(10, 10, 10, 0.06)",
-    }}
-  >
-    Más
-    <NavIcon name="chevronDown" size={13} />
-  </button>
-));
+const NavMasBoton = memo(({ activo, abierto, onClick }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      aria-expanded={abierto}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        height: 40, padding: "0 16px", flexShrink: 0,
+        borderRadius: "999px", border: activo ? "none" : GLASS_BORDER,
+        background: activo ? "#030303" : hover ? "rgba(255, 255, 255, 0.42)" : "rgba(255, 255, 255, 0.24)",
+        backdropFilter: activo ? "none" : GLASS_BLUR,
+        WebkitBackdropFilter: activo ? "none" : GLASS_BLUR,
+        color: activo ? "#FFFFFF" : "#030303",
+        fontFamily: C.font, fontSize: 14, fontWeight: activo ? 600 : 450,
+        cursor: "pointer", whiteSpace: "nowrap",
+        boxShadow: activo ? "0 6px 16px rgba(10, 10, 10, 0.22)" : "none",
+        transition: "background 150ms ease, box-shadow 150ms ease",
+      }}
+    >
+      Más
+      <NavIcon name="chevronDown" size={13} />
+    </button>
+  );
+});
 
 // Desplegable de las píldoras que no entraron -- lista plana (a diferencia
 // de MasPanel, que agrupa OVERFLOW_SECTIONS por título): PRIMARY_NAV no
@@ -747,16 +756,14 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
           de la referencia: una marca chica sola en la esquina). */}
       <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <div style={{
-          width: 40, height: 40, borderRadius: "10px", overflow: "hidden", flexShrink: 0,
-          background: logoUrl ? "transparent" : "#729DEE",
+          width: 44, height: 44, borderRadius: logoUrl ? "10px" : 0, overflow: logoUrl ? "hidden" : "visible", flexShrink: 0,
+          background: "transparent",
           display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF",
         }}>
           {logoUrl ? (
             <img src={logoUrl} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
-            </svg>
+            <img src={logoDefault} alt={clinica?.nombre || "Logo"} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           )}
         </div>
       </div>
@@ -764,7 +771,7 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
       {/* Barra de píldoras -- los 7 ítems reales, calcado de la referencia.
           Las que no entran en el ancho disponible (iPad y pantallas angostas)
           se agrupan detrás de "Más" en vez de cortarse contra el borde. */}
-      <nav ref={navRef} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, position: "relative" }}>
+      <nav ref={navRef} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: 1, minWidth: 0, position: "relative" }}>
         {/* Fila de medición: mismas píldoras, fuera de pantalla -- sólo para
             que el navegador les calcule el ancho real (con badge/contador). */}
         <div ref={measureRef} aria-hidden="true" style={{ position: "absolute", top: -9999, left: 0, display: "flex", gap: 8, visibility: "hidden", pointerEvents: "none" }}>
