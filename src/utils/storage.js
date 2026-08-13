@@ -17,10 +17,16 @@ export const BUCKET = 'imagenes';
 
 export const rutaPerfil = (clinicaId) => `${clinicaId}/perfil.png`;
 export const rutaFirma  = (clinicaId) => `${clinicaId}/firma.png`;
-export const rutaLogo   = (clinicaId) => `${clinicaId}/logo.png`;
-
 const extensionDe = (nombreArchivo, porDefecto = 'jpg') =>
   (nombreArchivo?.split('.').pop() || porDefecto).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// A diferencia de rutaPerfil/rutaFirma, esta ruta lleva Date.now(): el logo
+// se guarda en `clinicas.logo_url`, y ese valor es lo que dispara el refetch
+// de la URL firmada (useSignedUrl depende de él). Con una ruta fija, subir un
+// logo nuevo sobreescribe el mismo archivo sin cambiar el valor guardado, así
+// que el header nunca se enteraba de que había una imagen nueva que mostrar.
+export const rutaLogo = (clinicaId, nombreArchivo) =>
+  `${clinicaId}/logo-${Date.now()}.${extensionDe(nombreArchivo, 'png')}`;
 
 export const rutaImagenPaciente = (clinicaId, pacienteId, nombreArchivo) =>
   `${clinicaId}/pacientes/${pacienteId}-${Date.now()}.${extensionDe(nombreArchivo)}`;

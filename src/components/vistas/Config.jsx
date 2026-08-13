@@ -292,7 +292,7 @@ function Apariencia({ clinicaId, clinica, refrescarClinica }) {
     const file = e.target.files[0];
     if (!file || !clinicaId) return;
     setSubiendoLogo(true);
-    const path = rutaLogo(clinicaId);
+    const path = rutaLogo(clinicaId, file.name);
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
     if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
     // Se guarda la RUTA, no una URL pública: con el bucket privado esa URL no
