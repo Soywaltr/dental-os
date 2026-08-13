@@ -14,9 +14,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Icon from '../ui/Icon';
-import TabsWrap from '../ui/TabsWrap';
 import { Anillo, Dona } from '../ui/Graficos';
-import { TRATAMIENTOS_CAT } from '../../utils/constants';
 import { ini, estadoPaciente, resumenPagosOrtodoncia, colorPorNombre } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 
@@ -42,17 +40,6 @@ const METRICAS = [
   { key: 'gastos', label: 'Gastos' },
 ];
 
-const NOMBRE_A_CAT = {};
-TRATAMIENTOS_CAT.forEach(c => c.items.forEach(n => { NOMBRE_A_CAT[n] = c.cat; }));
-
-const CAT_TABS = [
-  { key: 'General', cats: null },
-  { key: 'Ortodoncia', cats: ['Ortodoncia'] },
-  { key: 'Endodoncia', cats: ['Endodoncia'] },
-  { key: 'Rehabilitación', cats: ['Prótesis', 'Restaurador'] },
-  { key: 'Implantes', cats: ['Implantología'] },
-];
-
 const ESTADO_TRAT = [
   { key: 'pendiente', label: 'Pendiente', color: RJ },
   { key: 'en_curso', label: 'En curso', color: GL },
@@ -60,6 +47,24 @@ const ESTADO_TRAT = [
 ];
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+// Trío de botones circulares blancos que la referencia pone en la cabecera de
+// CADA tarjeta (+ / abrir / calendario). Antes sólo existía suelto en dos
+// tarjetas, copiado y pegado; acá vive en un solo lugar.
+function AccionesCard({ onPlus, onAbrir, onCalendario }) {
+  const b = {
+    width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF',
+    boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: '#030303',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+  };
+  return (
+    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+      <button onClick={onPlus} title="Agregar" style={b}><Icon name="plus" size={14} /></button>
+      <button onClick={onAbrir} title="Abrir" style={b}><Icon name="external" size={13} /></button>
+      <button onClick={onCalendario} title="Ir a Agenda" style={b}><Icon name="calendar" size={14} /></button>
+    </div>
+  );
+}
 
 const dateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseFecha = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d.getTime()) ? null : d; };
@@ -92,7 +97,6 @@ export default function Dashboard({ setView, clinica }) {
   const [ortoRows, setOrtoRows] = useState([]);
   const [labOrders, setLabOrders] = useState([]);
   const [gastos, setGastos] = useState([]);
-  const [activeTab, setActiveTab] = useState('General');
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [metrica, setMetrica] = useState('ingresos');
@@ -317,15 +321,15 @@ export default function Dashboard({ setView, clinica }) {
     },
   ].filter(Boolean);
 
-  // ── Tratamientos por especialidad ─────────────────────────────────────────
-  const tab = CAT_TABS.find(t => t.key === activeTab) || CAT_TABS[0];
-  const tratamientosTab = tab.cats ? tratamientos.filter(t => tab.cats.includes(NOMBRE_A_CAT[t.name])) : tratamientos;
+  // ── Tratamientos por estado y por nombre ─────────────────────────────────
+  // Sobre TODOS los tratamientos: el filtro por especialidad se quitó junto
+  // con las tabs (la referencia no tiene tabs en esa tarjeta).
   const conteoEstado = { pendiente: 0, en_curso: 0, completado: 0 };
-  tratamientosTab.forEach(t => { if (conteoEstado[t.status] !== undefined) conteoEstado[t.status]++; });
+  tratamientos.forEach(t => { if (conteoEstado[t.status] !== undefined) conteoEstado[t.status]++; });
   const totalEstadoTrat = Object.values(conteoEstado).reduce((a, b) => a + b, 0);
 
   const porNombre = new Map();
-  tratamientosTab.forEach(t => {
+  tratamientos.forEach(t => {
     const prev = porNombre.get(t.name) || { n: 0, monto: 0 };
     porNombre.set(t.name, { n: prev.n + 1, monto: prev.monto + (t.cost || 0) });
   });
@@ -351,7 +355,6 @@ export default function Dashboard({ setView, clinica }) {
     display: 'flex', flexDirection: 'column',
   };
   const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: NEGRO, letterSpacing: '-0.01em' };
-  const rotulo = { fontSize: 11, color: '#9AA1AC', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
   const subCard = { background: 'rgba(245, 245, 245, 0.7)', borderRadius: '18px' };
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
@@ -373,18 +376,34 @@ export default function Dashboard({ setView, clinica }) {
 
   return (
     <>
-      {/* ─── TÍTULO DE PÁGINA ─── suelto sobre el lienzo, no dentro de una
-          tarjeta -- calcado de "Customer Journeys" en la referencia. */}
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: NEGRO, margin: '0 0 20px', letterSpacing: '-0.02em' }}>
-        Dashboard
-      </h1>
-
       <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: '20px', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-      {/* ─── FLUJO DE TRATAMIENTO ─── calcado de "Case Allocation": lo primero
-          bajo el título, no una tarjeta más al fondo. La tira de avatares va
-          CENTRADA en la fila de cabecera (título — avatares — íconos), tal
-          cual la referencia -- esa era la diferencia real que quedaba: antes
+      {/* ─── TÍTULO ─── comparte fila con los indicadores, calcado de
+          "Reports": el título a la izquierda y las 4 tarjetas de KPI a su
+          derecha, en la MISMA banda horizontal. Antes el título vivía solo en
+          su propia fila y los KPIs recién aparecían después del kanban. El
+          saludo pasa acá abajo como subtítulo (antes estaba dentro de la
+          tarjeta del gráfico, donde la referencia sólo tiene un título). */}
+      <div style={{ ...col(3), display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: NEGRO, margin: 0, letterSpacing: '-0.02em' }}>
+          Dashboard
+        </h1>
+        <p style={{ fontSize: 12.5, color: MU, margin: 0, lineHeight: 1.45 }}>
+          Hola{nombreClinica ? `, ${nombreClinica}` : ''}.{' '}
+          {citasHoy.length > 0
+            ? <>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''} hoy, la próxima a las {citasHoy[0].hora_cita}.</>
+            : <>Hoy no tienes citas agendadas.</>}
+        </p>
+      </div>
+
+      {/* ─── FLUJO DE TRATAMIENTO ─── calcado de "Case Allocation" (pantalla
+          "Cases" de la referencia). Se queda en el código acá arriba pero
+          RENDERIZA AL FINAL vía `order` de grid: la pantalla que se está
+          copiando ahora es "Reports", que arranca con título + KPIs +
+          gráfico, no con un tablero. Se conserva porque es funcionalidad
+          real que el usuario pidió, sólo pierde el primer lugar.
+          La tira de avatares va CENTRADA en la fila de cabecera
+          (título — avatares — íconos), tal cual la referencia -- antes
           vivía a la izquierda, metida en la tarjeta del saludo. Las 4
           columnas son etapas reales de tratamiento (flujoBuckets arriba),
           cada tarjeta un paciente real. Las flechas entre columnas son
@@ -392,7 +411,7 @@ export default function Dashboard({ setView, clinica }) {
           específico como en la referencia -- eso pediría la posición en
           píxeles de cada tarjeta, que cambia según cuántos pacientes tenga
           cada clínica en cada etapa). */}
-      <div style={{ ...col(12), ...card }}>
+      <div style={{ ...col(12), ...card, order: 2 }}>
         {/* Cabecera en DOS filas, calcada de "Case Allocation": fila 1 sólo
             el título; fila 2 la píldora de avatares (izquierda-centro) y los
             íconos de acción empujados al extremo derecho con auto-margin --
@@ -521,7 +540,7 @@ export default function Dashboard({ setView, clinica }) {
           grande abajo -- la métrica activa del hero (tab de Ingresos/
           Utilidad/Gastos) se resalta como tarjeta negra sólida, igual que
           "Total Opportunities" en la referencia; el resto queda blanco. */}
-      <div style={{ ...col(12), display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+      <div style={{ ...col(9), display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
         {[
           { key: 'ingresos', label: 'Ingresos del mes', value: soles(ingresosMes), view: 'caja' },
           { key: 'gastos', label: 'Gastos del mes', value: soles(gastosMes), view: 'caja' },
@@ -557,17 +576,8 @@ export default function Dashboard({ setView, clinica }) {
           funcionalidad real que ya existía, sólo que ahora chicas arriba en
           vez de con una cifra gigante (esa cifra ya vive en la fila de KPIs). */}
       <div style={{ ...col(12), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 6 }}>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: NEGRO, margin: 0, letterSpacing: '-0.01em' }}>
-              Hola{nombreClinica ? `, ${nombreClinica}` : ''}
-            </h2>
-            <p style={{ fontSize: 13, color: MU, margin: '4px 0 0' }}>
-              {citasHoy.length > 0
-                ? <>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''} hoy, la próxima a las {citasHoy[0].hora_cita}.</>
-                : <>Hoy no tienes citas agendadas.</>}
-            </p>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+          <h2 style={h2}>Crecimiento de ingresos</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: VERDE, flexShrink: 0 }}>
@@ -577,21 +587,15 @@ export default function Dashboard({ setView, clinica }) {
                 {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
               </span>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <button onClick={() => setView && setView('caja')} title="Registrar pago" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <Icon name="plus" size={14} />
-              </button>
-              <button onClick={() => setView && setView('caja')} title="Ver en Finanzas" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <Icon name="external" size={13} />
-              </button>
-              <button onClick={() => setView && setView('agenda')} title="Ir a Agenda" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <Icon name="calendar" size={14} />
-              </button>
-            </div>
+            <AccionesCard
+              onPlus={() => setView && setView('caja')}
+              onAbrir={() => setView && setView('caja')}
+              onCalendario={() => setView && setView('agenda')}
+            />
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 18, margin: '18px 0 20px' }}>
+        <div style={{ display: 'flex', gap: 18, margin: '14px 0 18px' }}>
           {METRICAS.map(m => (
             <button key={m.key} onClick={() => setMetrica(m.key)}
               style={{
@@ -612,21 +616,33 @@ export default function Dashboard({ setView, clinica }) {
         {(() => {
           const valorDe = (m) => (metrica === 'gastos' ? m.gastos : metrica === 'utilidad' ? (m.ingresos - m.gastos) : m.ingresos);
           const maxVal = Math.max(...meses12.map(valorDe), 1);
+          // Las cápsulas arrancan en un 34% en vez de en cero: en la
+          // referencia son barras altas y parejas, y con los meses en cero
+          // (clínica recién empezando) unos muñones de 8px dejaban la tarjeta
+          // casi vacía. El valor exacto va rotulado sobre cada barra, así que
+          // el piso es sólo visual, no esconde el dato.
+          const alturaDe = (valor) => 34 + 66 * (Math.max(0, valor) / maxVal);
           return (
             <>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: isTablet ? 6 : 12, height: 200 }}>
                 {meses12.map((m, i) => {
                   const valor = valorDe(m);
                   const esUltimo = i === meses12.length - 1;
-                  const alturaPct = Math.max(6, Math.round((Math.max(0, valor) / maxVal) * 100));
                   return (
                     <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }}>
-                      <span style={{ fontSize: 10.5, color: MU, marginBottom: 8, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{
+                        fontSize: 10.5, marginBottom: 8, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
+                        color: esUltimo ? NEGRO : MU, fontWeight: esUltimo ? 700 : 400,
+                      }}>
                         {(!isTablet || i % 2 === 0) ? soles(valor) : ''}
                       </span>
+                      {/* El mes actual es la cápsula BLANCA brillante con
+                          sombra (en la referencia el mes destacado resalta por
+                          ser más claro, no más oscuro -- antes iba en negro). */}
                       <div style={{
-                        width: isTablet ? 14 : 22, height: `${alturaPct}%`, minHeight: 8, borderRadius: 999,
-                        background: esUltimo ? NEGRO : 'rgba(10, 10, 10, 0.08)',
+                        width: isTablet ? 14 : 30, height: `${alturaDe(valor)}%`, borderRadius: 999,
+                        background: esUltimo ? '#FFFFFF' : 'rgba(10, 10, 10, 0.07)',
+                        boxShadow: esUltimo ? '0 4px 16px rgba(10, 10, 10, 0.13)' : 'none',
                         transition: 'height 400ms cubic-bezier(0.25, 0.1, 0.25, 1)',
                       }} />
                     </div>
@@ -653,58 +669,33 @@ export default function Dashboard({ setView, clinica }) {
         })()}
       </div>
 
-      {/* ─── COBRANZA ─── par de semicírculos (Cobrado/Pendiente), calcado del
-          gauge doble "Executed/Active" de la referencia. */}
-      <div style={{ ...col(4), ...card }}>
-        <div style={rotulo}>Cobranza</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: 12, margin: '14px 0 6px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <Anillo pct={tasaCobro} color={P} tamano={104} grosor={11} barrido={180}>
-              <span style={{ fontSize: 19, fontWeight: 700, color: NEGRO }}>{tasaCobro}%</span>
-            </Anillo>
-            <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>Cobrado</span>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: NEGRO }}>{soles(totalCobrado)}</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <Anillo pct={100 - tasaCobro} color={RJ} tamano={104} grosor={11} barrido={180}>
-              <span style={{ fontSize: 19, fontWeight: 700, color: NEGRO }}>{100 - tasaCobro}%</span>
-            </Anillo>
-            <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>Pendiente</span>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: saldoPendienteTotal > 0 ? RJ : NEGRO }}>{soles(saldoPendienteTotal)}</span>
-          </div>
-        </div>
-        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: NEGRO, lineHeight: 1.5 }}>
-          {saldoPendienteTotal > 0
-            ? <>Hay <b style={{ color: RJ }}>{soles(saldoPendienteTotal)}</b> por cobrar entre {deudaPorPaciente.size} paciente{deudaPorPaciente.size !== 1 ? 's' : ''}.</>
-            : <>La cobranza está <b style={{ color: VERDE }}>al día</b>.</>}
-        </div>
-      </div>
-
-      {/* ─── TRATAMIENTOS POR ESTADO ─── calcado de "Deals by Stage": leyenda
-          con puntos de color y porcentaje a la IZQUIERDA, dona a la derecha
-          (antes iba dona-izq/leyenda-der, orden invertido contra la
-          referencia). */}
-      <div style={{ ...col(4), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={h2}>Tratamientos por estado</h2>
-          <TabsWrap
-            options={CAT_TABS.map(t => ({ key: t.key, label: t.key }))}
-            value={activeTab}
-            onChange={setActiveTab}
+      {/* ─── TRATAMIENTOS POR ESTADO ─── calcado de "Deals by Stage": la
+          tarjeta más angosta de la fila (3/12), leyenda con puntos de color y
+          porcentaje a la IZQUIERDA, dona a la derecha. Se quitó el filtro por
+          especialidad (General/Ortodoncia/...): en la referencia no hay tabs y
+          acá se envolvían a dos líneas, dejando la tarjeta hecha un lío. La
+          dona ahora cubre TODOS los tratamientos. */}
+      <div style={{ ...col(3), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 10 }}>
+          <h2 style={h2}>Por estado</h2>
+          <AccionesCard
+            onPlus={() => setView && setView('expediente')}
+            onAbrir={() => setView && setView('historia')}
+            onCalendario={() => setView && setView('agenda')}
           />
         </div>
-        {tratamientosTab.length === 0 ? (
+        {tratamientos.length === 0 ? (
           <div style={{ textAlign: 'center', color: MU, fontSize: 13.5, padding: '24px 0' }}>
-            Sin tratamientos de {activeTab.toLowerCase()} registrados aún.
+            Sin tratamientos registrados aún.
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {ESTADO_TRAT.map(e => (
                 <div key={e.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: e.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12.5, color: NEGRO, fontWeight: 500 }}>{e.label}</span>
-                  <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>
+                  <span style={{ fontSize: 12.5, color: NEGRO, fontWeight: 500, whiteSpace: 'nowrap' }}>{e.label}</span>
+                  <span style={{ fontSize: 11.5, color: MU, fontWeight: 600, whiteSpace: 'nowrap' }}>
                     — {totalEstadoTrat > 0 ? Math.round((conteoEstado[e.key] / totalEstadoTrat) * 100) : 0}%
                   </span>
                 </div>
@@ -712,7 +703,7 @@ export default function Dashboard({ setView, clinica }) {
             </div>
             <Dona
               segmentos={ESTADO_TRAT.map(e => ({ valor: conteoEstado[e.key], color: e.color }))}
-              tamano={100} grosor={18}
+              tamano={96} grosor={17}
             >
               <span style={{ fontSize: 18, fontWeight: 700, color: NEGRO }}>{totalEstadoTrat}</span>
             </Dona>
@@ -720,15 +711,22 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-      {/* ─── TRATAMIENTOS MÁS FACTURADOS ─── tabla, calcada de la tabla
-          "Manager / Deals Closed / Revenue" de "Reports" (antes era una
-          lista de barras de progreso). */}
-      <div style={{ ...col(4), ...card, padding: 0 }}>
-        <h2 style={{ ...h2, padding: '20px 20px 0' }}>Más facturados</h2>
+      {/* ─── TRATAMIENTOS MÁS FACTURADOS ─── tabla de 3 columnas, calcada de
+          la tabla "Manager / Deals Closed / Revenue" de "Reports" -- la más
+          ancha de la fila (5/12), igual que ahí. */}
+      <div style={{ ...col(5), ...card, padding: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '20px 20px 0' }}>
+          <h2 style={h2}>Más facturados</h2>
+          <AccionesCard
+            onPlus={() => setView && setView('historia')}
+            onAbrir={() => setView && setView('caja')}
+            onCalendario={() => setView && setView('agenda')}
+          />
+        </div>
         {topTratamientos.length === 0 ? (
           <div style={{ fontSize: 13, color: MU, padding: '12px 20px 20px' }}>Sin tratamientos registrados aún.</div>
         ) : (
-          <div style={{ overflowX: 'auto', marginTop: 10 }}>
+          <div style={{ overflowX: 'auto', marginTop: 14 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr>
                 {['Tratamiento', 'Cant.', 'Facturado'].map(x => (
@@ -738,8 +736,8 @@ export default function Dashboard({ setView, clinica }) {
               <tbody>
                 {topTratamientos.map(t => (
                   <tr key={t.name} className="row-hoverable" style={{ borderTop: '1px solid rgba(10, 10, 10, 0.06)' }}>
-                    <td style={{ padding: '10px 20px', fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{t.name}</td>
-                    <td style={{ padding: '10px 20px', color: MU }}>{t.n}</td>
+                    <td style={{ padding: '10px 20px', fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{t.name}</td>
+                    <td style={{ padding: '10px 20px', color: MU }}>{String(t.n).padStart(2, '0')}</td>
                     <td style={{ padding: '10px 20px', color: NEGRO, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{soles(t.monto)}</td>
                   </tr>
                 ))}
@@ -753,11 +751,18 @@ export default function Dashboard({ setView, clinica }) {
       {/* ─── TOP PACIENTES POR FACTURACIÓN ─── tabla, calcada de "Top
           Clients" de "Reports". */}
       <div style={{ ...col(4), ...card, padding: 0 }}>
-        <h2 style={{ ...h2, padding: '20px 20px 0' }}>Top pacientes</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '20px 20px 0' }}>
+          <h2 style={h2}>Top pacientes</h2>
+          <AccionesCard
+            onPlus={() => setView && setView('expediente')}
+            onAbrir={() => setView && setView('expediente')}
+            onCalendario={() => setView && setView('agenda')}
+          />
+        </div>
         {topClientes.length === 0 ? (
           <div style={{ fontSize: 13, color: MU, padding: '12px 20px 20px' }}>Sin facturación registrada aún.</div>
         ) : (
-          <div style={{ overflowX: 'auto', marginTop: 10 }}>
+          <div style={{ overflowX: 'auto', marginTop: 14 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr>
                 {['Paciente', 'Facturado'].map(x => (
@@ -802,6 +807,42 @@ export default function Dashboard({ setView, clinica }) {
             </div>
           </button>
         ))}
+      </div>
+
+      {/* ─── COBRANZA ─── par de semicírculos (Cobrado/Pendiente), calcado del
+          gauge doble "Executed/Active" de la referencia. Baja acá porque en
+          "Reports" la fila de abajo tiene exactamente 3 tarjetas (dona +
+          tabla + tabla) y ésta era una cuarta que rompía la composición. */}
+      <div style={{ ...col(4), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <h2 style={h2}>Cobranza</h2>
+          <AccionesCard
+            onPlus={() => setView && setView('caja')}
+            onAbrir={() => setView && setView('caja')}
+            onCalendario={() => setView && setView('agenda')}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: 12, margin: '14px 0 6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <Anillo pct={tasaCobro} color={P} tamano={104} grosor={11} barrido={180}>
+              <span style={{ fontSize: 19, fontWeight: 700, color: NEGRO }}>{tasaCobro}%</span>
+            </Anillo>
+            <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>Cobrado</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: NEGRO }}>{soles(totalCobrado)}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <Anillo pct={100 - tasaCobro} color={RJ} tamano={104} grosor={11} barrido={180}>
+              <span style={{ fontSize: 19, fontWeight: 700, color: NEGRO }}>{100 - tasaCobro}%</span>
+            </Anillo>
+            <span style={{ fontSize: 11.5, color: MU, fontWeight: 600 }}>Pendiente</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: saldoPendienteTotal > 0 ? RJ : NEGRO }}>{soles(saldoPendienteTotal)}</span>
+          </div>
+        </div>
+        <div style={{ ...subCard, padding: '12px 14px', marginTop: 'auto', fontSize: 12.5, color: NEGRO, lineHeight: 1.5 }}>
+          {saldoPendienteTotal > 0
+            ? <>Hay <b style={{ color: RJ }}>{soles(saldoPendienteTotal)}</b> por cobrar entre {deudaPorPaciente.size} paciente{deudaPorPaciente.size !== 1 ? 's' : ''}.</>
+            : <>La cobranza está <b style={{ color: VERDE }}>al día</b>.</>}
+        </div>
       </div>
 
       {/* ─── PRÓXIMAS CITAS ─── muesca de carpeta en la esquina superior
@@ -929,7 +970,7 @@ export default function Dashboard({ setView, clinica }) {
       </div>
 
       {/* ─── NECESITA TU ATENCIÓN ─── */}
-      <div style={{ ...col(4), ...card, minHeight: 178 }}>
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h2 style={h2}>Necesita tu atención</h2>
           {alertas.length > 0 && (
@@ -955,6 +996,36 @@ export default function Dashboard({ setView, clinica }) {
                   </span>
                 </div>
                 <span style={{ fontSize: 15, color: MU, flexShrink: 0 }}>→</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── LABORATORIO ─── sube acá para completar la fila junto a
+          "Necesita tu atención" (6+6): antes quedaba solo al final, con media
+          fila vacía a su derecha. */}
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 10 }}>
+          <h2 style={h2}>Laboratorio</h2>
+          <AccionesCard
+            onPlus={() => setView && setView('laboratorio')}
+            onAbrir={() => setView && setView('laboratorio')}
+            onCalendario={() => setView && setView('agenda')}
+          />
+        </div>
+        {labOrders.length === 0 ? (
+          <div style={{ fontSize: 13.5, color: MU }}>Sin órdenes registradas.</div>
+        ) : (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { l: 'En proceso', v: labEnProceso.length, c: P },
+              { l: 'Atrasadas', v: labAtrasadas.length, c: labAtrasadas.length > 0 ? RJ : MU },
+              { l: 'Listas', v: labListo.length, c: VERDE },
+            ].map(s => (
+              <div key={s.l} style={{ ...subCard, flex: 1, padding: '12px 6px', textAlign: 'center' }}>
+                <div style={{ fontSize: 19, fontWeight: 600, color: s.c }}>{s.v}</div>
+                <div style={{ fontSize: 11, color: MU, marginTop: 3 }}>{s.l}</div>
               </div>
             ))}
           </div>
@@ -1042,32 +1113,6 @@ export default function Dashboard({ setView, clinica }) {
             )
           )}
         </div>
-      </div>
-
-      {/* ─── LABORATORIO ─── */}
-      <div style={{ ...col(6), ...card, minHeight: 178 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h2 style={h2}>Laboratorio</h2>
-          <div onClick={() => setView && setView('laboratorio')} style={{ cursor: 'pointer', color: '#9AA1AC' }}>
-            <Icon name="activity" size={14} />
-          </div>
-        </div>
-        {labOrders.length === 0 ? (
-          <div style={{ fontSize: 13.5, color: MU }}>Sin órdenes registradas.</div>
-        ) : (
-          <div style={{ display: 'flex', gap: 8 }}>
-            {[
-              { l: 'En proceso', v: labEnProceso.length, c: P },
-              { l: 'Atrasadas', v: labAtrasadas.length, c: labAtrasadas.length > 0 ? RJ : MU },
-              { l: 'Listas', v: labListo.length, c: VERDE },
-            ].map(s => (
-              <div key={s.l} style={{ ...subCard, flex: 1, padding: '12px 6px', textAlign: 'center' }}>
-                <div style={{ fontSize: 19, fontWeight: 600, color: s.c }}>{s.v}</div>
-                <div style={{ fontSize: 11, color: MU, marginTop: 3 }}>{s.l}</div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       </div>
