@@ -689,12 +689,13 @@ export default function Dashboard({ setView, clinica, clinicaId }) {
         </div>
       </div>
 
-      {/* ─── PRÓXIMAS CITAS ─── muesca de carpeta en la esquina superior
-          izquierda vía clip-path (corte recto, no la curva cóncava exacta de
-          la referencia -- clip-path es la única técnica que corta limpio
-          sobre una tarjeta de vidrio con blur). Cada cita: avatar + nombre +
-          doble check + botón de calendario, con leyenda y divisor. */}
-      <div style={{ ...col(6), ...card, minHeight: 178, clipPath: 'polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 28px)', paddingTop: 30, paddingLeft: 30 }}>
+      {/* ─── PRÓXIMAS CITAS ─── la muesca de carpeta (clip-path con esquinas
+          rectas) se quitó: el polígono pisaba el border-radius de las otras
+          3 esquinas y las dejaba en punta en vez de redondeadas -- un bug
+          real, no sólo estético. Tarjeta lisa, igual que sus vecinas. Cada
+          cita: avatar + nombre + doble check + botón de calendario, con
+          leyenda y divisor. */}
+      <div style={{ ...col(6), ...card, minHeight: 178 }}>
         <h2 style={{ ...h2, marginBottom: 14 }}>Próximas citas</h2>
         {gruposProximos.length === 0 ? (
           <div style={{ fontSize: 13.5, color: MU }}>Sin citas en los próximos días.</div>
