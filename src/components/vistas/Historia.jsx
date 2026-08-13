@@ -652,11 +652,9 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   
   // --- ESTADOS GENERALES DE HISTORIA ---
   const [isEditingFiliacion, setIsEditingFiliacion] = useState(false);
-  const [plan, setPlan] = useState([
-    { id: 1, name: 'Control ortodoncia', tooth: '14-23', status: 'en_curso', cost: 80, paid: 80, date: '10 Jun 2025', sessions: 1 },
-    { id: 2, name: 'Blanqueamiento clínico', tooth: '—', status: 'pendiente', cost: 180, paid: 0, date: '—', sessions: 1 },
-    { id: 3, name: 'Radiografía panorámica', tooth: '—', status: 'completado', cost: 45, paid: 45, date: '10 Jun 2025', sessions: 1 },
-  ]);
+  // Sin datos de ejemplo: arranca vacío y loadCloudData lo llena con el plan
+  // real del paciente (o se queda vacío si nunca tuvo uno).
+  const [plan, setPlan] = useState([]);
   const [showTreatPicker, setShowTreatPicker] = useState(false);
   const [draftTreatment, setDraftTreatment] = useState(null); // tratamiento seleccionado, pendiente de detalles
 const [editingItemId, setEditingItemId] = useState(null);   // id del item en edición inline
@@ -687,6 +685,26 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   }, [imagenesList]);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({});
+
+  // ── Autoguardado ── ya no hay botón "Guardar en Nube" ni "Guardar
+  // Cambios": los cambios se persisten solos, con un pequeño debounce para
+  // no disparar una escritura por cada tecla. 'idle' = nada que guardar
+  // todavía (recién cargó al paciente); 'guardando'/'guardado' informan en
+  // la cabecera en vez de depender de que alguien se acuerde de apretar un
+  // botón.
+  const [autoGuardado, setAutoGuardado] = useState('idle');
+  // Snapshot de lo último cargado/guardado -- comparar CONTENIDO en vez de
+  // "es el primer render" evita el caso donde cargar los datos del paciente
+  // desde la nube (que también cambia teeth/anamnesisData/etc.) se confunda
+  // con una edición real del usuario y dispare un autoguardado espurio justo
+  // al abrir el expediente.
+  const ultimoSnapshotHistoriaRef = useRef(null);
+  const ultimoSnapshotFiliacionRef = useRef(null);
+  const snapshotHistoria = (o) => JSON.stringify({
+    teeth: o.teeth, evo: o.evo, anamnesis: o.anamnesis, plan: o.plan, imagenes: o.imagenes, periodontal: o.periodontal,
+  });
+  const CAMPOS_FILIACION = ['name', 'doc', 'tipo_doc', 'phone', 'cod_pais', 'email', 'direccion', 'sexo', 'birthDate', 'age', 'blood', 'allergies', 'num_hc', 'pais_nacimiento', 'ocupacion', 'fuente_captacion', 'linea_negocio', 'apoderado', 'apoderado_dni', 'parentesco'];
+  const snapshotFiliacion = (f) => JSON.stringify(CAMPOS_FILIACION.map(k => (f || {})[k] ?? null));
 
   // --- EVOLUCIÓN (notas clínicas por consulta) ---
   const [notasEvolucion, setNotasEvolucion] = useState([]);
@@ -719,30 +737,62 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
   useEffect(() => {
     const datosDelPaciente = patData || patient;
-    if (datosDelPaciente) setEditForm(datosDelPaciente);
+    if (datosDelPaciente) {
+      setEditForm(datosDelPaciente);
+      // Misma razón que el snapshot de historia: sin esto, cargar/recargar
+      // los datos del paciente (o el eco que llega tras guardar) se vería
+      // como una edición nueva y el autoguardado se dispararía solo.
+      ultimoSnapshotFiliacionRef.current = snapshotFiliacion(datosDelPaciente);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patData, patient]);
   
+  // Ya no cierra el modo edición ni muestra alert: el autoguardado (más
+  // abajo) la llama sola después de una pausa al escribir, así que debe
+  // poder correr muchas veces sin interrumpir a quien sigue completando
+  // campos.
   const handleSaveEditPatient = async () => {
     setSaving(true);
-    const { data, error } = await supabase.from('pacientes').update({
-      name: editForm.name, doc: editForm.doc, tipo_doc: editForm.tipo_doc, phone: editForm.phone, cod_pais: editForm.cod_pais, email: editForm.email,
-      direccion: editForm.direccion, sexo: editForm.sexo, birthDate: editForm.birthDate, age: editForm.age, blood: editForm.blood, allergies: editForm.allergies,
-      num_hc: editForm.num_hc, pais_nacimiento: editForm.pais_nacimiento, ocupacion: editForm.ocupacion, fuente_captacion: editForm.fuente_captacion,
-      linea_negocio: editForm.linea_negocio, apoderado: editForm.apoderado, apoderado_dni: editForm.apoderado_dni, parentesco: editForm.parentesco
-    }).eq('id', patData.id).select();
-    if (error) alert("Error al guardar en Supabase: " + error.message);
-    else if (data && data.length > 0) { setPatData(data[0]); setIsEditingFiliacion(false); alert("✅ Datos guardados y bloqueados correctamente."); }
+    const payload = Object.fromEntries(CAMPOS_FILIACION.map(k => [k, editForm[k]]));
+    const nuevoSnapshot = snapshotFiliacion(editForm);
+    const { data, error } = await supabase.from('pacientes').update(payload).eq('id', patData.id).select();
+    if (error) { console.error('Error al autoguardar los datos personales:', error); setAutoGuardado('error'); }
+    else if (data && data.length > 0) { setPatData(data[0]); ultimoSnapshotFiliacionRef.current = nuevoSnapshot; setAutoGuardado('guardado'); }
     setSaving(false);
   };
-  
-  const handleCancelEdit = () => { setEditForm(patData); setIsEditingFiliacion(false); };
-  
+
+  // Autoguardado de Filiación -- sólo mientras el modo edición está abierto
+  // (isEditingFiliacion): "Editar Campos" sigue siendo el gesto para
+  // desbloquear los campos (evita ediciones accidentales al tocar la
+  // pantalla en una tablet), pero ya no hace falta un clic aparte para
+  // persistir -- eso ocurre solo, con la misma pausa de 1s que el resto de
+  // la historia.
+  useEffect(() => {
+    if (!isEditingFiliacion || !patData?.id) return;
+    const actual = snapshotFiliacion(editForm);
+    if (actual === ultimoSnapshotFiliacionRef.current) return;
+    setAutoGuardado('guardando');
+    const t = setTimeout(() => { handleSaveEditPatient(); }, 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editForm, isEditingFiliacion]);
+
   useEffect(() => {
     const loadCloudData = async () => {
       if (!patient?.id) return;
 
-      // 1. ⚡ BARRER LA MEMORIA GENERAL ANTES DE CARGAR AL NUEVO PACIENTE ⚡
-      setTeeth({}); 
+      // `null` = "todavía cargando, no juzgues nada como una edición real
+      // todavía" -- el efecto de autoguardado, más abajo, se queda quieto
+      // mientras esto sea null. Nunca se asume de antemano cuál va a ser el
+      // snapshot "ya limpio": en el primer render de un paciente nuevo,
+      // `teeth`/`teethEvolucion` (que vienen como prop, compartidos con el
+      // resto de la app) todavía pueden tener los datos del paciente
+      // ANTERIOR, así que cualquier snapshot adivinado de antemano puede no
+      // coincidir con lo que este render en particular ve.
+      ultimoSnapshotHistoriaRef.current = null;
+
+      // ⚡ BARRER LA MEMORIA GENERAL ANTES DE CARGAR AL NUEVO PACIENTE ⚡
+      setTeeth({});
       setTeethEvolucion({});
       setAnamnesisData({});
       setPlan([]);
@@ -751,28 +801,38 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       setNotasEvolucion([]);
       setShowNuevaNota(false);
       setRecetas([]);
-
-      // 2. CERRAR MODOS DE EDICIÓN
       setIsEditingFiliacion(false);
 
       const { data } = await supabase.from('historias').select('*').eq('patient_id', patient.id).maybeSingle();
-      if (data) {
-        if (data.odontograma && Object.keys(data.odontograma).length > 0) setTeeth(data.odontograma);
-        if (data.evolucion && Object.keys(data.evolucion).length > 0) setTeethEvolucion(data.evolucion);
-        if (data.anamnesis) setAnamnesisData(data.anamnesis);
-        if (data.plan_tratamiento) setPlan(data.plan_tratamiento);
-        if (data.imagenes) setImagenesList(data.imagenes);
-        if (data.periodontal) setPeriodontalDx(data.periodontal.diagnostico);
-        if (data.notas_evolucion) setNotasEvolucion(data.notas_evolucion);
-        if (Array.isArray(data.receta) && data.receta.length > 0) {
-          // Compatibilidad: registros guardados antes del historial de recetas
-          // eran una lista plana de medicamentos, no un historial de recetas.
-          const esFormatoAntiguo = !data.receta[0].meds;
-          setRecetas(esFormatoAntiguo
-            ? [{ id: Date.now(), date: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }), meds: data.receta }]
-            : data.receta);
-        }
+      const cargado = data ? {
+        teeth: (data.odontograma && Object.keys(data.odontograma).length > 0) ? data.odontograma : {},
+        evo: (data.evolucion && Object.keys(data.evolucion).length > 0) ? data.evolucion : {},
+        anamnesis: data.anamnesis || {},
+        plan: data.plan_tratamiento || [],
+        imagenes: data.imagenes || [],
+        periodontal: data.periodontal?.diagnostico || 'Ninguno',
+      } : { teeth: {}, evo: {}, anamnesis: {}, plan: [], imagenes: [], periodontal: 'Ninguno' };
+
+      setTeeth(cargado.teeth);
+      setTeethEvolucion(cargado.evo);
+      setAnamnesisData(cargado.anamnesis);
+      setPlan(cargado.plan);
+      setImagenesList(cargado.imagenes);
+      setPeriodontalDx(cargado.periodontal);
+      if (data?.notas_evolucion) setNotasEvolucion(data.notas_evolucion);
+      if (data && Array.isArray(data.receta) && data.receta.length > 0) {
+        // Compatibilidad: registros guardados antes del historial de recetas
+        // eran una lista plana de medicamentos, no un historial de recetas.
+        const esFormatoAntiguo = !data.receta[0].meds;
+        setRecetas(esFormatoAntiguo
+          ? [{ id: Date.now(), date: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }), meds: data.receta }]
+          : data.receta);
       }
+      // Recién ahora, con los datos reales (o los vacíos por defecto) ya
+      // asignados, se fija la base de comparación -- el efecto de
+      // autoguardado, que corre después de este mismo render, ve que el
+      // contenido actual coincide con lo recién cargado y no dispara.
+      ultimoSnapshotHistoriaRef.current = snapshotHistoria(cargado);
     };
     loadCloudData();
   }, [patient?.id, setTeeth, setTeethEvolucion]);
@@ -804,12 +864,33 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     };
     const cleanInicial = limpiarDientes(teeth);
     const cleanEvo = limpiarDientes(teethEvolucion);
-    setTeeth(cleanInicial); setTeethEvolucion(cleanEvo);
+    // Sólo tocar el estado si la limpieza cambió algo -- si no, setTeeth con
+    // un objeto nuevo pero con el mismo contenido dispararía de nuevo el
+    // efecto de autoguardado (que depende de `teeth`), guardando en bucle.
+    if (JSON.stringify(cleanInicial) !== JSON.stringify(teeth)) setTeeth(cleanInicial);
+    if (JSON.stringify(cleanEvo) !== JSON.stringify(teethEvolucion)) setTeethEvolucion(cleanEvo);
+    const nuevoSnapshot = snapshotHistoria({ teeth: cleanInicial, evo: cleanEvo, anamnesis: anamnesisData, plan, imagenes: imagenesList, periodontal: periodontalDx });
     const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, odontograma: cleanInicial, evolucion: cleanEvo, anamnesis: anamnesisData, plan_tratamiento: plan, imagenes: imagenesList, periodontal: { diagnostico: periodontalDx } }, { onConflict: 'patient_id' });
-    if (error) alert("Error al guardar: " + error.message);
-    else alert("¡Datos guardados con éxito!");
+    if (error) { console.error('Error al autoguardar la historia:', error); setAutoGuardado('error'); }
+    else { ultimoSnapshotHistoriaRef.current = nuevoSnapshot; setAutoGuardado('guardado'); }
     setSaving(false);
   };
+
+  // Debounce: espera una pausa de escritura antes de guardar, para no
+  // disparar una escritura a Supabase por cada tecla/clic. Compara contra
+  // el snapshot de lo último cargado/guardado (no "es el primer render"):
+  // así cargar los datos del paciente desde la nube nunca se confunde con
+  // una edición real, sin importar en qué momento exacto termine esa carga.
+  useEffect(() => {
+    if (!patient?.id) return;
+    if (ultimoSnapshotHistoriaRef.current === null) return; // todavía cargando este paciente
+    const actual = snapshotHistoria({ teeth, evo: teethEvolucion, anamnesis: anamnesisData, plan, imagenes: imagenesList, periodontal: periodontalDx });
+    if (actual === ultimoSnapshotHistoriaRef.current) return;
+    setAutoGuardado('guardando');
+    const t = setTimeout(() => { saveAllToCloud(); }, 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teeth, teethEvolucion, anamnesisData, plan, imagenesList, periodontalDx]);
 
   // Mapeo de material azul (buen estado) → tratamiento de reemplazo sugerido cuando se marca isBad()
   const REEMPLAZO_POR_MATERIAL = {
@@ -936,7 +1017,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     }));
     setShowPagoModal(false);
     setPagoDraft({ itemId: '', monto: '' });
-    alert('Abono registrado. Recuerda hacer clic en "Guardar en Nube" para persistirlo.');
+    // Sin alert de recordatorio: el autoguardado (setPlan ya disparó su
+    // efecto) lo persiste solo.
   };
 
   const imprimirPresupuesto = () => {
@@ -1251,9 +1333,24 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
           </button>
         )}
 
-        <button onClick={saveAllToCloud} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 18px', minHeight: 44, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          <Icon name="save" size={14} /> {saving ? 'Guardando...' : 'Guardar en Nube'}
-        </button>
+        {/* Sin botón "Guardar en Nube": todo se autoguarda (ver los efectos
+            de debounce arriba). Esto solo informa el estado, no dispara
+            nada al hacerle clic. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: autoGuardado === 'error' ? RJ : autoGuardado === 'guardando' ? MU : sc('completado').c, flexShrink: 0 }}>
+          {autoGuardado === 'guardando' ? (
+            <>
+              <Icon name="clock" size={13} /> Guardando...
+            </>
+          ) : autoGuardado === 'error' ? (
+            <>
+              <Icon name="warning" size={13} /> Error al guardar
+            </>
+          ) : autoGuardado === 'guardado' ? (
+            <>
+              <Icon name="checkCircle" size={13} /> Guardado
+            </>
+          ) : null}
+        </div>
 
         <button style={{ background: WA, color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 16px', minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
           <Icon name="chat" size={15} />
@@ -1292,12 +1389,13 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                       <Icon name="edit" size={14} /> Editar Campos
                     </button>
                   ) : (
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={handleCancelEdit} style={{ background: LT, color: RJ, border: `1px solid color-mix(in srgb, ${RJ} 40%, transparent)`, borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>Cancelar</button>
-                      <button onClick={handleSaveEditPatient} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
-                        <Icon name="save" size={14} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
-                      </button>
-                    </div>
+                    // Sin "Guardar Cambios" ni "Cancelar": los campos autoguardan
+                    // solos al escribir (ver el efecto de arriba), así que
+                    // "Listo" sólo cierra el modo edición -- no dispara una
+                    // persistencia aparte, ya está guardado de antes.
+                    <button onClick={() => setIsEditingFiliacion(false)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
+                      <Icon name="checkCircle" size={14} /> Listo
+                    </button>
                   )}
                 </div>
               </div>
@@ -1467,9 +1565,6 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
             </div>
-            <button onClick={saveAllToCloud} style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '11px 22px', minHeight: 44, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
-              <Icon name="save" size={14} /> Guardar anamnesis
-            </button>
           </div>
         )}
 
