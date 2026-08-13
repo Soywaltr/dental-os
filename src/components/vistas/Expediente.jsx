@@ -60,11 +60,6 @@ const IcPlus = () => (
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 );
-const IcFolder = () => (
-  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" style={{ stroke: C.borderStrong }} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </svg>
-);
 const IcUpload = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -552,23 +547,6 @@ const PatientCard = memo(({ patient, isSelected, onClick, onArchivar }) => {
   );
 });
 
-// ─── SUB-COMPONENTE: EMPTY STATE ─────────────────────────────────────────────
-const EmptyState = memo(() => (
-  <div style={{
-    flex: 1, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    padding: 40, gap: 12, textAlign: 'center',
-  }}>
-    <IcFolder />
-    <div style={{ fontSize: 20, fontWeight: 600, color: C.ink, letterSpacing: '-0.02em' }}>
-      Expediente Clínico
-    </div>
-    <div style={{ fontSize: 15, color: C.inkMid, maxWidth: 300, lineHeight: 1.5 }}>
-      Selecciona un paciente del directorio para cargar su historial clínico completo.
-    </div>
-  </div>
-));
-
 // ─── SUB-COMPONENTE: INPUT DE FORMULARIO ─────────────────────────────────────
 const FormField = memo(({ label, children, span }) => (
   <div style={{ gridColumn: span ? '1 / -1' : undefined }}>
@@ -1053,7 +1031,6 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   // `undefined` = todavía no eligió nada en esta vista (vale el paciente con el
   // que la abrieron, si vino uno); `null` = eligió no tener ninguno abierto.
   const [patSeleccionado, setPatSeleccionado] = useState(undefined);
-  const { isNarrow } = useResponsive();
 
   const { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, importarPacientes } = usePatientsDirectory(clinicaId);
 
@@ -1100,16 +1077,15 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
     if (patActivo?.id === saved.id) setPatSeleccionado(saved);
   }, [upsertPatient, patActivo]);
 
-  return (
-    <div style={{
-      display: 'flex', height: 'calc(100vh - 100px)',
-      gap: isNarrow ? 10 : 20, minHeight: 0,
-    }}>
-
-      {/* ─── PANEL IZQUIERDO: DIRECTORIO ─── */}
-      <aside style={{
-        width: isNarrow ? 250 : 320, minWidth: isNarrow ? 230 : 300,
-        display: 'flex', flexDirection: 'column',
+  // Dos vistas en pantalla completa, no un panel compartido: sin paciente
+  // seleccionado se ve SÓLO el directorio (a lo ancho, organizado en grilla
+  // en vez de una columna angosta); al hacer clic, el directorio desaparece
+  // y el expediente ocupa toda la pantalla (con un botón "Directorio" para
+  // volver, ver Historia.jsx).
+  if (patActivo) {
+    return (
+      <div style={{
+        height: 'calc(100vh - 100px)',
         background: GLASS_BG,
         backdropFilter: GLASS_BLUR,
         WebkitBackdropFilter: GLASS_BLUR,
@@ -1117,7 +1093,38 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         border: GLASS_BORDER,
         boxShadow: GLASS_SHADOW,
         overflow: 'hidden',
-        flexShrink: 0,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        <Historia
+          patient={patActivo}
+          teeth={teeth}
+          setTeeth={setTeeth}
+          teethEvolucion={teethEvolucion}
+          setTeethEvolucion={setTeethEvolucion}
+          setView={setView}
+          clinicaId={clinicaId}
+          onVolver={() => setPatSeleccionado(null)}
+        />
+
+        {showModal && <NewPatientModal onClose={() => setShowModal(false)} onSave={handleSave} patientsList={patientsList} />}
+        {showImportModal && <ImportarPacientesModal onClose={() => setShowImportModal(false)} onImportar={importarPacientes} patientsList={patientsList} />}
+        {showExportModal && <ExportarPacientesModal onClose={() => setShowExportModal(false)} patientsList={patientsList} />}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div style={{
+        display: 'flex', flexDirection: 'column',
+        height: 'calc(100vh - 100px)', minHeight: 0,
+        background: GLASS_BG,
+        backdropFilter: GLASS_BLUR,
+        WebkitBackdropFilter: GLASS_BLUR,
+        borderRadius: C.rx,
+        border: GLASS_BORDER,
+        boxShadow: GLASS_SHADOW,
+        overflow: 'hidden',
       }}>
 
         {/* Header directorio */}
@@ -1178,8 +1185,9 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
             </div>
           </div>
 
-          {/* Buscador */}
-          <div style={{ position: 'relative', marginBottom: 10 }}>
+          {/* Buscador -- con tope de ancho: a lo ancho completo de la
+              pantalla un campo de búsqueda estirado se ve raro. */}
+          <div style={{ position: 'relative', marginBottom: 10, maxWidth: 420 }}>
             <span style={{
               position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
               color: C.inkMute, display: 'flex', pointerEvents: 'none',
@@ -1203,23 +1211,29 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
           <FilterPills active={filter} onChange={setFilter} />
         </div>
 
-        {/* Lista de pacientes */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+        {/* Lista de pacientes -- grilla a lo ancho de toda la pantalla (antes
+            era una columna angosta de 320px porque compartía el espacio con
+            el expediente abierto al lado). */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
           {loading && (
             <div style={{ padding: '32px 0', textAlign: 'center', color: C.inkMute, fontSize: 15 }}>
               Cargando…
             </div>
           )}
 
-          {!loading && filteredList.map(p => (
-            <PatientCard
-              key={p.id}
-              patient={p}
-              isSelected={patActivo?.id === p.id}
-              onClick={() => setPatSeleccionado(p)}
-              onArchivar={handleArchivar}
-            />
-          ))}
+          {!loading && filteredList.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 4 }}>
+              {filteredList.map(p => (
+                <PatientCard
+                  key={p.id}
+                  patient={p}
+                  isSelected={false}
+                  onClick={() => setPatSeleccionado(p)}
+                  onArchivar={handleArchivar}
+                />
+              ))}
+            </div>
+          )}
 
           {!loading && filteredList.length === 0 && (
             <div style={{ padding: '32px 16px', textAlign: 'center', color: C.inkMute, fontSize: 15 }}>
@@ -1237,60 +1251,11 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
         }}>
           {filteredList.length} paciente{filteredList.length !== 1 ? 's' : ''}
         </div>
-      </aside>
+      </div>
 
-      {/* ─── PANEL DERECHO: EXPEDIENTE ACTIVO ─── */}
-      <main style={{
-        flex: 1, minWidth: 0,
-        background: GLASS_BG,
-        backdropFilter: GLASS_BLUR,
-        WebkitBackdropFilter: GLASS_BLUR,
-        borderRadius: C.rx,
-        border: GLASS_BORDER,
-        boxShadow: GLASS_SHADOW,
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        {patActivo ? (
-          <Historia
-            patient={patActivo}
-            teeth={teeth}
-            setTeeth={setTeeth}
-            teethEvolucion={teethEvolucion}
-            setTeethEvolucion={setTeethEvolucion}
-            setView={setView}
-            clinicaId={clinicaId}
-          />
-        ) : (
-          <EmptyState />
-        )}
-      </main>
-
-      {/* Modal nuevo paciente */}
-      {showModal && (
-        <NewPatientModal
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-          patientsList={patientsList}
-        />
-      )}
-
-      {/* Modal importar pacientes desde CSV */}
-      {showImportModal && (
-        <ImportarPacientesModal
-          onClose={() => setShowImportModal(false)}
-          onImportar={importarPacientes}
-          patientsList={patientsList}
-        />
-      )}
-
-      {/* Modal exportar pacientes (seleccion + fecha + historial) */}
-      {showExportModal && (
-        <ExportarPacientesModal
-          onClose={() => setShowExportModal(false)}
-          patientsList={patientsList}
-        />
-      )}
-    </div>
+      {showModal && <NewPatientModal onClose={() => setShowModal(false)} onSave={handleSave} patientsList={patientsList} />}
+      {showImportModal && <ImportarPacientesModal onClose={() => setShowImportModal(false)} onImportar={importarPacientes} patientsList={patientsList} />}
+      {showExportModal && <ExportarPacientesModal onClose={() => setShowExportModal(false)} patientsList={patientsList} />}
+    </>
   );
 }

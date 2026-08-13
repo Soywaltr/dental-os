@@ -617,7 +617,7 @@ const inputDoc = { ...inputStyleDoc, fontSize: '15px', height: '40px', padding: 
 // ============================================================================
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
-export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId, clinica, setView }) {
+export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId, clinica, setView, onVolver }) {
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
 
@@ -1180,6 +1180,20 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
       {/* CABECERA DE HISTORIA */}
       <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderBottom: `1px solid ${BD}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, flexWrap: 'wrap' }}>
+        {/* El expediente ahora ocupa toda la pantalla (ya no comparte espacio
+            con el Directorio) -- este botón es la única forma de volver. */}
+        {onVolver && (
+          <button
+            onClick={onVolver}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+              background: 'transparent', border: `1px solid ${BD}`, borderRadius: '10px',
+              padding: '9px 14px', minHeight: 36, fontSize: 13, fontWeight: 600, color: MU, cursor: 'pointer',
+            }}
+          >
+            <Icon name="chevronDown" size={13} style={{ transform: 'rotate(90deg)' }} /> Directorio
+          </button>
+        )}
         <div style={{ width: 44, height: 44, borderRadius: '50%', background: MT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 600, color: P, flexShrink: 0 }}>{ini(patData?.name || patient.name)}</div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
