@@ -14,6 +14,7 @@ import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsA
 // No se importa invalidarFirma: aquí cada subida genera una ruta nueva con
 // timestamp, así que nunca hay una firma cacheada que quede obsoleta.
 import { BUCKET, rutaFirma, rutaImagenPaciente, rutaDesdeUrl, firmar } from '../../utils/storage';
+import useResponsive from '../../utils/useResponsive';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -387,9 +388,14 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '9px', minHeight: 36, background: '#FEE2E2', border: `1px solid color-mix(in srgb, ${RJ} 33%, transparent)`, borderRadius: '10px', fontSize: 13, color: RJ, cursor: 'pointer', fontWeight: 600 }}>Limpiar todo el mapa</button>}
       </div>
 
-      {/* ÁREA CENTRAL */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '30px 20px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-        <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: '24px 30px', display: 'inline-block', minWidth: 750, boxShadow: GLASS_SHADOW }}>
+      {/* ÁREA CENTRAL -- la tarjeta era inline-block con sólo un minWidth,
+          así que quedaba chica y perdida en medio de todo el espacio vacío
+          de una pantalla ancha (cada fila del diagrama ya se autocentra con
+          su propio justifyContent:'center', así que ensanchar la tarjeta no
+          rompe el dibujo -- sólo le da un marco a lo ancho en vez de una
+          isla flotante). */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '30px 20px', boxSizing: 'border-box' }}>
+        <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: '24px 30px', width: '100%', maxWidth: 1400, minWidth: 750, margin: '0 auto', boxSizing: 'border-box', boxShadow: GLASS_SHADOW }}>
           <div style={{ display: 'flex', gap: 15, marginBottom: 15, alignItems: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: DN }}>{patient?.name || 'Paciente'}</div>
             <span style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: '14px', background: mode === 'inicial' ? MT : '#FEF3C7', color: mode === 'inicial' ? P : GL }}>{mode}</span>
@@ -618,6 +624,12 @@ const inputDoc = { ...inputStyleDoc, fontSize: '15px', height: '40px', padding: 
 // 4. COMPONENTE PRINCIPAL HISTORIA
 // ============================================================================
 export default function Historia({ patient, teeth, setTeeth, teethEvolucion, setTeethEvolucion, clinicaId, clinica, setView, onVolver }) {
+  // Columnas de los formularios (Filiación/Anamnesis) según el ancho real --
+  // calcado de "grid-cols-1 md:grid-cols-2 lg:grid-cols-3": 1 en pantallas
+  // angostas, 2 en tablet, 3 en desktop, donde antes era un número fijo.
+  const { isTablet, isNarrow } = useResponsive();
+  const colsFormulario = isNarrow ? 1 : isTablet ? 2 : 3;
+
   const [tab, setTab] = useState('filiacion');
   const [patData, setPatData] = useState(patient);
 
@@ -1265,7 +1277,12 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         {/* --- PESTAÑA FILIACIÓN --- */}
         {tab === 'filiacion' && (
           <div style={{ padding: '30px', overflowY: 'auto', height: '100%', boxSizing: 'border-box', background: MT }}>
-            <div style={{ maxWidth: '1000px', margin: '0 auto', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '18px', border: GLASS_BORDER, padding: '35px', boxShadow: GLASS_SHADOW }}>
+            {/* Antes maxWidth:1000 dejaba la tarjeta angosta y centrada con
+                grandes vacíos a los lados en una pantalla ancha (el Directorio
+                ya es de pantalla completa) -- ahora llena el contenedor, con
+                un tope generoso para que en monitores muy anchos no se estire
+                al infinito. */}
+            <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', boxSizing: 'border-box', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '18px', border: GLASS_BORDER, padding: '35px', boxShadow: GLASS_SHADOW }}>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <h2 style={{ margin: 0, color: DN, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em' }}>Datos Personales</h2>
@@ -1285,7 +1302,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: '24px' }}>
                 <div><label style={labelDoc}>Nombres y Apellidos</label><input disabled={!isEditingFiliacion} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
                 <div><label style={labelDoc}>N° HC</label><input readOnly disabled value={editForm.num_hc || ''} placeholder="Autogenerado" style={{ ...inputDoc, background: '#F5F5F5', borderColor: 'transparent', cursor: 'not-allowed', fontWeight: 600, color: MU, fontVariantNumeric: 'tabular-nums' }} /></div>
                 <div><label style={labelDoc}>Sexo</label><select disabled={!isEditingFiliacion} value={editForm.sexo || ''} onChange={e => setEditForm({ ...editForm, sexo: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Mujer">Mujer</option><option value="Hombre">Hombre</option></select></div>
@@ -1347,7 +1364,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         {/* --- PESTAÑA ANAMNESIS --- */}
         {tab === 'anamnesis' && (
           <div style={{ padding: 18, overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 1000, margin: '0 auto' }}>
+            {/* Antes maxWidth:1000 -- misma razón que Filiación: el
+                Directorio ya no le quita ancho a esta vista. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 1400, margin: '0 auto', boxSizing: 'border-box' }}>
 
               {/* Motivo de consulta */}
               <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18 }}>
@@ -1359,7 +1378,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               {/* Enfermedad actual */}
               <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Enfermedad actual</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: 12 }}>
                   {['Tiempo de enfermedad', 'Signos y síntomas principales', 'Relato cronológico', 'Funciones biológicas'].map(f => (
                     <div key={f}>
                       <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
@@ -1423,7 +1442,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Examen clínico</div>
 
                 <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom:8 }}>Signos vitales</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: 12, marginBottom: 16 }}>
                   {[['PA', 'mmHg'], ['FC', 'bpm'], ['Temperatura', '°C'], ['FR', 'r/m']].map(([f, unidad]) => (
                     <div key={f}>
                       <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
@@ -1436,7 +1455,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   ))}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: 12 }}>
                   {['Examen extraoral', 'Examen intraoral', 'Resultado de exámenes auxiliares', 'Observaciones'].map(f => (
                     <div key={f}>
                       <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 4 }}>{f}</label>
