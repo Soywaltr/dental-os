@@ -280,6 +280,34 @@ export default function Dashboard({ setView, clinica }) {
     .filter(d => d.paciente)
     .sort((a, b) => b.saldo - a.saldo)
     .slice(0, 5);
+
+  // ── Flujo de tratamiento ─────────────────────────────────────────────────
+  // Calcado de "Case Allocation" de la referencia (tablero de 4 columnas con
+  // tarjetas de persona conectadas por flechas), pero con datos reales: cada
+  // paciente cae en UNA sola columna según el estado más avanzado de sus
+  // tratamientos -- en_curso > pendiente > completado > (recién ingresado,
+  // sin tratamientos aún). Nunca en dos columnas a la vez.
+  const tratamientosPorPaciente = new Map();
+  tratamientos.forEach(t => {
+    const arr = tratamientosPorPaciente.get(t.patient_id) || [];
+    arr.push(t);
+    tratamientosPorPaciente.set(t.patient_id, arr);
+  });
+  const FLUJO_COLS = [
+    { key: 'nuevo', label: 'Nuevo ingreso' },
+    { key: 'diagnostico', label: 'Diagnóstico' },
+    { key: 'tratamiento', label: 'En tratamiento' },
+    { key: 'completado', label: 'Completado' },
+  ];
+  const flujoBuckets = { nuevo: [], diagnostico: [], tratamiento: [], completado: [] };
+  pacientes.forEach(p => {
+    const trats = tratamientosPorPaciente.get(p.id) || [];
+    const etapa = trats.some(t => t.status === 'en_curso') ? 'tratamiento'
+      : trats.some(t => t.status === 'pendiente') ? 'diagnostico'
+      : trats.length > 0 ? 'completado'
+      : 'nuevo';
+    flujoBuckets[etapa].push(p);
+  });
   // Primer tratamiento con saldo encontrado para ese paciente -- deudaPorPaciente
   // sólo suma montos, no guarda a qué tratamiento corresponden.
   const tratamientoDeudaPorPaciente = new Map();
@@ -618,6 +646,81 @@ export default function Dashboard({ setView, clinica }) {
             </div>
           );
         })}
+      </div>
+
+      {/* ─── FLUJO DE TRATAMIENTO ─── el tablero de 4 columnas de "Case
+          Allocation" (Case Allocation → Issue Identification → Technical
+          Resolution → New Tasks), pero con datos reales: cada columna es
+          una etapa real del tratamiento (ver flujoBuckets arriba) y cada
+          tarjeta es un paciente en curso, no una maqueta. Las flechas son
+          decorativas (conectan columna con columna, no paciente con
+          paciente específico -- la referencia sí lo hace, pero eso pediría
+          conocer la posición exacta de cada tarjeta en píxeles, y con conteos
+          que cambian por clínica esa posición nunca es la misma dos veces). */}
+      <div style={{ ...col(12), ...card }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <h2 style={h2}>Flujo de tratamiento</h2>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setView && setView('expediente')} title="Nuevo paciente" style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'rgba(245, 245, 245, 0.8)', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <Icon name="plus" size={14} />
+            </button>
+            <button onClick={() => setView && setView('agenda')} title="Ir a Agenda" style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'rgba(245, 245, 245, 0.8)', color: MU, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <Icon name="calendar" size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div>
+          {/* Flechas decorativas -- franja propia de 36px ARRIBA de la
+              grilla (no superpuesta a las tarjetas, ese era el bug: con
+              height:100% + preserveAspectRatio="none" la curva se estiraba
+              contra el alto de las tarjetas y quedaba metida adentro de
+              cada una). Una curva azul por cada unión entre columnas,
+              calcando el trazo de la referencia sin depender de la
+              posición exacta de ninguna tarjeta. */}
+          {!isTablet && (
+            <div style={{ height: 36, position: 'relative' }}>
+              <svg width="100%" height="100%" viewBox="0 0 1000 36" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none' }}>
+                {[125, 375, 625].map(x => (
+                  <path key={x} d={`M ${x} 4 C ${x + 60} 4, ${x + 60} 32, ${x + 120} 32`} stroke={P} strokeWidth="2" fill="none" />
+                ))}
+              </svg>
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(4, 1fr)', gap: 16 }}>
+            {FLUJO_COLS.map(colDef => {
+              const items = flujoBuckets[colDef.key];
+              return (
+                <div key={colDef.key}>
+                  <div style={{ ...subCard, padding: 14, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {items.length === 0 ? (
+                      <div style={{ fontSize: 12, color: MU, textAlign: 'center', padding: '20px 0' }}>Sin pacientes</div>
+                    ) : items.slice(0, 3).map(p => (
+                      <div key={p.id} onClick={() => setView && setView('expediente')} style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                          background: `color-mix(in srgb, ${colorPorNombre(p.name)} 22%, #FFFFFF)`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: NEGRO, fontWeight: 700, fontSize: 11.5,
+                        }}>
+                          {ini(p.name || '?')}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#030303', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                          <div style={{ fontSize: 10.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.treatment || p.reason || 'Consulta'}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {items.length > 3 && (
+                      <div style={{ fontSize: 11, color: MU, fontWeight: 600, textAlign: 'center' }}>+{items.length - 3} más</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: MU, fontWeight: 600, textAlign: 'center', marginTop: 10 }}>{colDef.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* ─── PRÓXIMAS CITAS ─── calcada de las tarjetas de "Case Allocation":
