@@ -1,5 +1,5 @@
 // src/components/vistas/Agenda.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from '../../supabase';
 import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import ModalNuevaCita from '../ui/ModalNuevaCita';
@@ -77,8 +77,18 @@ export default function Agenda({ clinicaId, clinica }) {
     return hora >= lvInicioH && hora <= lvFinH;
   };
 
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState('Semana');
+  // Se restaura desde localStorage para que un F5 (o volver de otra vista)
+  // no salte de vuelta a "hoy" -- se queda en la semana/día que se estaba
+  // viendo, igual que las citas ya no fuerzan un window.location.reload().
+  const [currentDate, setCurrentDate] = useState(() => {
+    const guardada = localStorage.getItem('agenda_currentDate');
+    const parsed = guardada ? new Date(guardada) : null;
+    return parsed && !isNaN(parsed) ? parsed : new Date();
+  });
+  const [view, setView] = useState(() => localStorage.getItem('agenda_view') || 'Semana');
+
+  useEffect(() => { localStorage.setItem('agenda_currentDate', currentDate.toISOString()); }, [currentDate]);
+  useEffect(() => { localStorage.setItem('agenda_view', view); }, [view]);
 
   const [showModalCita, setShowModalCita] = useState(false);
   const [datosTemp, setDatosTemp] = useState(null);
@@ -119,8 +129,12 @@ export default function Agenda({ clinicaId, clinica }) {
     setShowModalCita(true);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
+  // useCallback (no una función suelta dentro del useEffect): así
+  // handleSaveEdit/handleDeleteCita/enviarAGoogleCalendar pueden refrescar
+  // los datos llamándola directo, sin el window.location.reload() de antes
+  // -- ese reload es justo lo que hacía perder la semana/día que se estaba
+  // viendo al actualizar una cita.
+  const fetchData = useCallback(async () => {
       const { data, error } = await supabase.from('pacientes').select('*');
       if (error) { console.error("Error cargando Supabase:", error); return; }
 
@@ -221,10 +235,9 @@ export default function Agenda({ clinicaId, clinica }) {
         }
       });
       setWeekApts(tempApts);
-    };
+  }, [currentDate, googleConnected, getToken, googleDisconnect, clinicaId]);
 
-    fetchData();
-  }, [currentDate, view, googleConnected, getToken, googleDisconnect, clinicaId]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleNext = () => {
     const next = new Date(currentDate);
@@ -341,7 +354,8 @@ export default function Agenda({ clinicaId, clinica }) {
       }
 
       alert("¡Cita agendada correctamente!");
-      window.location.reload();
+      setShowModalCita(false); setPreseleccion(null);
+      await fetchData();
     } catch (error) {
       console.error(error);
       alert("Hubo un problema al guardar la cita.");
@@ -407,7 +421,8 @@ export default function Agenda({ clinicaId, clinica }) {
     }
 
     alert('Cita actualizada correctamente.');
-    setShowEditModal(false); setSavingEdit(false); window.location.reload();
+    setShowEditModal(false); setSavingEdit(false);
+    await fetchData();
   };
 
   const handleDeleteCita = async () => {
@@ -425,7 +440,8 @@ export default function Agenda({ clinicaId, clinica }) {
         if (error) throw error;
       }
       alert("Cita eliminada correctamente.");
-      setShowEditModal(false); window.location.reload();
+      setShowEditModal(false);
+      await fetchData();
     } catch (error) {
       console.error("Error al eliminar:", error); alert("Hubo un problema al eliminar la cita.");
     } finally { setSavingEdit(false); }
