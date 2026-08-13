@@ -311,8 +311,10 @@ const TopNavPill = memo(({ item, isActive, contador, onClick }) => {
 });
 
 // ─── COMPONENTE: BOTÓN DEL RIEL DELGADO ───────────────────────────────────────
-// Círculo de ícono solo, sin texto -- el riel de la referencia es angosto y
-// casi invisible (blanco, sin relleno), estos botones son su único contenido.
+// Cada ícono vive SIEMPRE dentro de su propia tarjeta circular (antes el
+// círculo sólo aparecía al pasar el mouse, transparente en reposo) -- calcado
+// de la referencia, donde cada botón del riel es un círculo relleno visible
+// todo el tiempo, no un ícono suelto que gana fondo recién al hover.
 const IconRailButton = memo(({ icon, title, onClick, badge }) => {
   const [hover, setHover] = useState(false);
   return (
@@ -321,7 +323,7 @@ const IconRailButton = memo(({ icon, title, onClick, badge }) => {
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
         position: "relative", width: 36, height: 36, borderRadius: "50%",
-        border: "none", background: hover ? "#EDEDED" : "transparent",
+        border: "1px solid #E2E2E2", background: hover ? "#EDEDED" : "#F6F9F9",
         color: "#030303", display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer", flexShrink: 0, transition: "background-color 150ms ease",
       }}

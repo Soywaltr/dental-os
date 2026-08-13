@@ -46,7 +46,6 @@ const ESTADO_TRAT = [
   { key: 'completado', label: 'Completado', color: VERDE },
 ];
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 // Trío de botones circulares blancos que la referencia pone en la cabecera de
 // CADA tarjeta (+ / abrir / calendario). Antes sólo existía suelto en dos
@@ -76,18 +75,6 @@ const formatoHaceTiempo = (fecha) => {
   return `${Math.round(seg / 60)}min`;
 };
 
-const getWeekDays = (anchor) => {
-  const start = new Date(anchor);
-  start.setHours(12, 0, 0, 0);
-  const day = start.getDay();
-  start.setDate(start.getDate() - day + (day === 0 ? -6 : 1));
-  return Array.from({ length: 6 }).map((_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    return d;
-  });
-};
-
 export default function Dashboard({ setView, clinica }) {
   const { isTablet } = useResponsive();
   const [loading, setLoading] = useState(true);
@@ -97,8 +84,6 @@ export default function Dashboard({ setView, clinica }) {
   const [ortoRows, setOrtoRows] = useState([]);
   const [labOrders, setLabOrders] = useState([]);
   const [gastos, setGastos] = useState([]);
-  const [weekAnchor, setWeekAnchor] = useState(new Date());
-  const [selectedIdx, setSelectedIdx] = useState(null);
   const [metrica, setMetrica] = useState('ingresos');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [, forzarTick] = useState(0);
@@ -194,14 +179,6 @@ export default function Dashboard({ setView, clinica }) {
   pacientes.forEach(p => { estados[estadoPaciente(p)]++; });
   const citasHoy = pacientes.filter(p => p.fecha === todayStr && p.hora_cita).sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
 
-  // ── Tira de avatares ─── calcada de "Case Allocation": círculos parejos
-  // (sin superponerse) con una insignia circular ABAJO de cada uno -- vive
-  // CENTRADA en la fila de cabecera de "Flujo de tratamiento" (ver más abajo),
-  // no metida en la tarjeta del saludo como en la versión anterior. Sin citas
-  // hoy, se cae a los pacientes más recientes -- la tira nunca se queda vacía
-  // mientras haya al menos un paciente.
-  const avataresStrip = (citasHoy.length > 0 ? citasHoy : [...pacientes].sort((a, b) => (b.created_at || b.fecha || '').localeCompare(a.created_at || a.fecha || ''))).slice(0, 8);
-
   // ── Próximas citas agrupadas por día (hoy + 4 días) ───────────────────────
   const gruposProximos = Array.from({ length: 5 }).map((_, i) => {
     const d = new Date(hoy); d.setDate(d.getDate() + i);
@@ -219,14 +196,6 @@ export default function Dashboard({ setView, clinica }) {
   });
   ortoRows.forEach(o => {
     if (o.resumen.deuda > 0) deudaPorPaciente.set(o.paciente_id, (deudaPorPaciente.get(o.paciente_id) || 0) + o.resumen.deuda);
-  });
-  // Cuántos tratamientos con saldo pendiente tiene cada paciente -- para la
-  // insignia bajo cada avatar de la tira, no cuánto debe.
-  const pendientesCountPorPaciente = new Map();
-  tratamientos.forEach(t => {
-    if ((t.cost || 0) - (t.paid || 0) > 0) {
-      pendientesCountPorPaciente.set(t.patient_id, (pendientesCountPorPaciente.get(t.patient_id) || 0) + 1);
-    }
   });
   const topDeudores = Array.from(deudaPorPaciente.entries())
     .map(([id, saldo]) => ({ paciente: pacientes.find(p => p.id === id), saldo }))
@@ -246,33 +215,6 @@ export default function Dashboard({ setView, clinica }) {
     .sort((a, b) => b.monto - a.monto)
     .slice(0, 5);
 
-  // ── Flujo de tratamiento ─────────────────────────────────────────────────
-  // Calcado de "Case Allocation" de la referencia (tablero de 4 columnas con
-  // tarjetas de persona conectadas por flechas), pero con datos reales: cada
-  // paciente cae en UNA sola columna según el estado más avanzado de sus
-  // tratamientos -- en_curso > pendiente > completado > (recién ingresado,
-  // sin tratamientos aún). Nunca en dos columnas a la vez.
-  const tratamientosPorPaciente = new Map();
-  tratamientos.forEach(t => {
-    const arr = tratamientosPorPaciente.get(t.patient_id) || [];
-    arr.push(t);
-    tratamientosPorPaciente.set(t.patient_id, arr);
-  });
-  const FLUJO_COLS = [
-    { key: 'nuevo', label: 'Nuevo ingreso' },
-    { key: 'diagnostico', label: 'Diagnóstico' },
-    { key: 'tratamiento', label: 'En tratamiento' },
-    { key: 'completado', label: 'Completado' },
-  ];
-  const flujoBuckets = { nuevo: [], diagnostico: [], tratamiento: [], completado: [] };
-  pacientes.forEach(p => {
-    const trats = tratamientosPorPaciente.get(p.id) || [];
-    const etapa = trats.some(t => t.status === 'en_curso') ? 'tratamiento'
-      : trats.some(t => t.status === 'pendiente') ? 'diagnostico'
-      : trats.length > 0 ? 'completado'
-      : 'nuevo';
-    flujoBuckets[etapa].push(p);
-  });
   // Primer tratamiento con saldo encontrado para ese paciente -- deudaPorPaciente
   // sólo suma montos, no guarda a qué tratamiento corresponden.
   const tratamientoDeudaPorPaciente = new Map();
@@ -337,15 +279,6 @@ export default function Dashboard({ setView, clinica }) {
     .map(([name, v]) => ({ name, ...v }))
     .sort((a, b) => b.monto - a.monto).slice(0, 5);
 
-  // ── Semana / agenda ──────────────────────────────────────────────────────
-  const weekDays = getWeekDays(weekAnchor);
-  const idxHoy = weekDays.findIndex(d => dateStr(d) === todayStr);
-  const dayIdx = selectedIdx !== null ? selectedIdx : (idxHoy >= 0 ? idxHoy : 0);
-  const selectedDateStr = dateStr(weekDays[dayIdx]);
-  const citasDia = pacientes
-    .filter(p => p.fecha === selectedDateStr && p.hora_cita)
-    .sort((a, b) => a.hora_cita.localeCompare(b.hora_cita));
-
   // ── Estilos base ─────────────────────────────────────────────────────────
   const card = {
     background: GLASS_BG, border: GLASS_BORDER,
@@ -394,146 +327,6 @@ export default function Dashboard({ setView, clinica }) {
             ? <>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''} hoy, la próxima a las {citasHoy[0].hora_cita}.</>
             : <>Hoy no tienes citas agendadas.</>}
         </p>
-      </div>
-
-      {/* ─── FLUJO DE TRATAMIENTO ─── calcado de "Case Allocation" (pantalla
-          "Cases" de la referencia). Se queda en el código acá arriba pero
-          RENDERIZA AL FINAL vía `order` de grid: la pantalla que se está
-          copiando ahora es "Reports", que arranca con título + KPIs +
-          gráfico, no con un tablero. Se conserva porque es funcionalidad
-          real que el usuario pidió, sólo pierde el primer lugar.
-          La tira de avatares va CENTRADA en la fila de cabecera
-          (título — avatares — íconos), tal cual la referencia -- antes
-          vivía a la izquierda, metida en la tarjeta del saludo. Las 4
-          columnas son etapas reales de tratamiento (flujoBuckets arriba),
-          cada tarjeta un paciente real. Las flechas entre columnas son
-          decorativas (conectan columna con columna, no paciente con paciente
-          específico como en la referencia -- eso pediría la posición en
-          píxeles de cada tarjeta, que cambia según cuántos pacientes tenga
-          cada clínica en cada etapa). */}
-      <div style={{ ...col(12), ...card, order: 2 }}>
-        {/* Cabecera en DOS filas, calcada de "Case Allocation": fila 1 sólo
-            el título; fila 2 la píldora de avatares (izquierda-centro) y los
-            íconos de acción empujados al extremo derecho con auto-margin --
-            antes las 3 cosas vivían apretadas en una sola fila. */}
-        <h2 style={{ ...h2, marginBottom: 16 }}>Flujo de tratamiento</h2>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18, flexWrap: 'wrap' }}>
-          {/* Tira de avatares -- dentro de un contenedor en forma de píldora
-              (glassmorphism, la "abraza" de cerca) calcado del
-              "top_users_bar" de la referencia. */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-            background: 'rgba(255, 255, 255, 0.55)', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-            border: GLASS_BORDER, borderRadius: 999, padding: '8px 18px 12px',
-            boxShadow: '0 6px 20px rgba(10, 10, 10, 0.06)',
-          }}>
-            {avataresStrip.map((p, i) => {
-              const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
-              const badgeColor = pendientes > 0 ? (i % 2 === 0 ? P : RJ) : null;
-              return (
-                <div key={p.id} style={{ position: 'relative', flexShrink: 0 }} title={p.name}>
-                  <div
-                    onClick={() => setView && setView('expediente')}
-                    style={{
-                      width: 38, height: 38, borderRadius: '50%', cursor: 'pointer',
-                      background: `color-mix(in srgb, ${colorPorNombre(p.name)} 22%, #FFFFFF)`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: 700, color: NEGRO,
-                      border: '2px solid #FFFFFF', boxShadow: '0 2px 6px rgba(10, 10, 10, 0.08)',
-                    }}
-                  >
-                    {ini(p.name || '?')}
-                  </div>
-                  <span style={{
-                    position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)',
-                    minWidth: 19, height: 19, padding: '0 3px', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, border: '2px solid #FFFFFF',
-                    background: badgeColor || '#E5E5E5', color: badgeColor ? '#FFFFFF' : '#9AA1AC',
-                  }}>
-                    {pendientes > 0 ? pendientes : '+'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
-            <button onClick={() => setView && setView('expediente')} title="Nuevo paciente" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <Icon name="plus" size={14} />
-            </button>
-            <button onClick={() => setView && setView('agenda')} title="Ir a Agenda" style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#FFFFFF', boxShadow: '0 3px 10px rgba(10, 10, 10, 0.10)', color: NEGRO, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <Icon name="calendar" size={14} />
-            </button>
-          </div>
-        </div>
-
-        <div>
-          {/* Flechas decorativas -- franja propia de 36px ARRIBA de la
-              grilla, para no estirarse contra el alto de las tarjetas. */}
-          {!isTablet && (
-            <div style={{ height: 36, position: 'relative' }}>
-              <svg width="100%" height="100%" viewBox="0 0 1000 36" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none' }}>
-                {[125, 375, 625].map(x => (
-                  <path key={x} d={`M ${x} 4 C ${x + 60} 4, ${x + 60} 32, ${x + 120} 32`} stroke={P} strokeWidth="2" fill="none" />
-                ))}
-              </svg>
-            </div>
-          )}
-          <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(4, 1fr)', gap: 16 }}>
-            {FLUJO_COLS.map(colDef => {
-              const items = flujoBuckets[colDef.key];
-              return (
-                <div key={colDef.key}>
-                  <div style={{ ...subCard, padding: 14, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {items.length === 0 ? (
-                      // Maqueta -- filas fantasma (silueta gris, sin datos
-                      // inventados) para que la columna vacía mantenga la
-                      // estructura de la referencia en vez de un hueco en
-                      // blanco con solo texto.
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, opacity: 0.45 }}>
-                        {[0, 1].map(i => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: '#E2E2E2' }} />
-                            <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                              <div style={{ height: 8, width: `${60 - i * 12}%`, borderRadius: 4, background: '#DADADA' }} />
-                              <div style={{ height: 7, width: `${40 - i * 8}%`, borderRadius: 4, background: '#E6E6E6' }} />
-                            </div>
-                          </div>
-                        ))}
-                        <div style={{ fontSize: 11, color: '#B0B0B0', textAlign: 'center', marginTop: 2 }}>Sin pacientes aún</div>
-                      </div>
-                    ) : items.slice(0, 3).map(p => (
-                      <div key={p.id} onClick={() => setView && setView('expediente')} style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                          background: `color-mix(in srgb, ${colorPorNombre(p.name)} 22%, #FFFFFF)`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: NEGRO, fontWeight: 700, fontSize: 11.5,
-                        }}>
-                          {ini(p.name || '?')}
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-                          <div style={{ fontSize: 10.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.treatment || p.reason || 'Consulta'}</div>
-                        </div>
-                        <Icon name="checkCircle" size={13} style={{ color: colDef.key === 'completado' ? VERDE : '#C4C4C4', flexShrink: 0 }} />
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MU }}>
-                          <Icon name="calendar" size={11} />
-                        </div>
-                      </div>
-                    ))}
-                    {items.length > 3 && (
-                      <div style={{ fontSize: 11, color: MU, fontWeight: 600, textAlign: 'center' }}>+{items.length - 3} más</div>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 11, color: MU, fontWeight: 600, textAlign: 'center', marginTop: 10 }}>{colDef.label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* ─── INDICADORES ─── sin ícono, sólo rótulo chico arriba y cifra
@@ -812,8 +605,10 @@ export default function Dashboard({ setView, clinica }) {
       {/* ─── COBRANZA ─── par de semicírculos (Cobrado/Pendiente), calcado del
           gauge doble "Executed/Active" de la referencia. Baja acá porque en
           "Reports" la fila de abajo tiene exactamente 3 tarjetas (dona +
-          tabla + tabla) y ésta era una cuarta que rompía la composición. */}
-      <div style={{ ...col(4), ...card }}>
+          tabla + tabla) y ésta era una cuarta que rompía la composición.
+          Ahora comparte fila 6/6 con "Próximas citas" (antes eran 4/4 con
+          el mini-calendario semanal al lado, que se quitó). */}
+      <div style={{ ...col(6), ...card }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <h2 style={h2}>Cobranza</h2>
           <AccionesCard
@@ -850,7 +645,7 @@ export default function Dashboard({ setView, clinica }) {
           la referencia -- clip-path es la única técnica que corta limpio
           sobre una tarjeta de vidrio con blur). Cada cita: avatar + nombre +
           doble check + botón de calendario, con leyenda y divisor. */}
-      <div style={{ ...col(4), ...card, minHeight: 178, clipPath: 'polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 28px)', paddingTop: 30, paddingLeft: 30 }}>
+      <div style={{ ...col(6), ...card, minHeight: 178, clipPath: 'polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 28px)', paddingTop: 30, paddingLeft: 30 }}>
         <h2 style={{ ...h2, marginBottom: 14 }}>Próximas citas</h2>
         {gruposProximos.length === 0 ? (
           <div style={{ fontSize: 13.5, color: MU }}>Sin citas en los próximos días.</div>
@@ -895,76 +690,6 @@ export default function Dashboard({ setView, clinica }) {
                 ))}
               </div>
             ))}
-          </div>
-        )}
-      </div>
-
-      {/* ─── AGENDA (mini-calendario semanal) ─── */}
-      <div style={{ ...col(4), ...card, minHeight: 178 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h2 style={h2}>{weekDays[0].toLocaleString('es-PE', { month: 'long' }).replace(/^./, c => c.toUpperCase())} {weekDays[0].getFullYear()}</h2>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[['<', -7], ['>', 7]].map(([lbl, delta]) => (
-              <div key={lbl} onClick={() => { setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + delta); return n; }); setSelectedIdx(null); }}
-                style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: MU, fontSize: 13, background: '#F5F5F5' }}>
-                {lbl}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-          {weekDays.map((d, i) => {
-            const isSel = i === dayIdx;
-            const isToday = dateStr(d) === todayStr;
-            const nCitas = pacientes.filter(p => p.fecha === dateStr(d) && p.hora_cita).length;
-            return (
-              <div key={i} onClick={() => setSelectedIdx(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', flex: 1 }}>
-                <span style={{ fontSize: 11, color: MU, fontWeight: 600 }}>{DIAS_CORTOS[i]}</span>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSel ? P : 'transparent', border: 'none', color: isSel ? '#FFFFFF' : (isToday ? P : NEGRO), fontWeight: isSel || isToday ? 600 : 400, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', transition: 'background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1)' }}>
-                  {d.getDate()}
-                </div>
-                <div style={{ width: 4, height: 4, borderRadius: '50%', background: nCitas > 0 ? P : 'transparent' }} />
-              </div>
-            );
-          })}
-        </div>
-
-        {citasDia.length === 0 ? (
-          <button
-            className="zona-vacia"
-            onClick={() => setView && setView('agenda')}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 7, width: '100%', minHeight: 96, padding: 16,
-              background: 'transparent', color: MU,
-              border: '1.5px dashed rgba(10, 10, 10, 0.11)',
-              borderRadius: '14px',
-              fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
-            }}
-          >
-            <Icon name="plus" size={17} />
-            Agendar una cita
-          </button>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {citasDia.slice(0, 3).map(c => (
-              <div key={c.id} onClick={() => setView && setView('agenda')} style={{ ...subCard, padding: '10px 12px', cursor: 'pointer' }}>
-                <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom: 5, fontVariantNumeric: 'tabular-nums' }}>{c.hora_cita}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{ini(c.name || '?')}</div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: NEGRO, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.treatment || c.reason || 'Consulta'}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {citasDia.length > 3 && (
-              <div onClick={() => setView && setView('agenda')} style={{ fontSize: 12, color: MU, textAlign: 'center', cursor: 'pointer', fontWeight: 600, paddingTop: 2 }}>
-                +{citasDia.length - 3} más →
-              </div>
-            )}
           </div>
         )}
       </div>
