@@ -402,8 +402,9 @@ const IconRail = memo(({ state, dispatch, avatarUrl, nombreUsuario, onLogout }) 
       width: 64, minWidth: 64,
       margin: "28px 0 28px 28px",
       height: "calc(100vh - 28px * 2)",
-      background: "#FFFFFF", border: "1px solid #E2E2E2",
-      borderRadius: "18px", boxShadow: "0 8px 24px rgba(10, 10, 10, 0.05)",
+      background: "rgba(255, 255, 255, 0.62)", border: "1px solid rgba(255, 255, 255, 0.5)",
+      backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)",
+      borderRadius: "24px", boxShadow: "0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)",
       display: "flex", flexDirection: "column", alignItems: "center",
       padding: "16px 0", gap: 6, flexShrink: 0, zIndex: 101,
       position: "relative",
@@ -603,9 +604,10 @@ const TopHeader = memo(({ state, dispatch, clinica, contadores, avatarUrl, nombr
       padding: "10px 18px",
       margin: "28px 28px 0 28px",
       gap: 18, flexShrink: 0, zIndex: 90, position: "relative",
-      background: "#FFFFFF", border: "1px solid #E2E2E2",
-      borderRadius: "18px", flexWrap: "wrap",
-      boxShadow: "0 8px 24px rgba(10, 10, 10, 0.05)",
+      background: "rgba(255, 255, 255, 0.62)", border: "1px solid rgba(255, 255, 255, 0.5)",
+      backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)",
+      borderRadius: "24px", flexWrap: "wrap",
+      boxShadow: "0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)",
     }}>
       {/* Wordmark */}
       <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
@@ -940,9 +942,15 @@ export default function App() {
         }
       `}</style>
 
+      {/* El degradado difuso (azul arriba-izquierda, coral abajo-derecha) vive
+          en el fondo MÁS externo -- riel, header y contenido son todos
+          translúcidos (GLASS_BG/GLASS_BLUR) por encima de esta única capa de
+          color, en vez de cada uno tener su propio fondo opaco. Así es como
+          se ve en la referencia: el color se nota A TRAVÉS de las tarjetas. */}
       <div style={{
         display: "flex", height: "100vh",
-        overflow: "hidden", background: C.pageBg,
+        overflow: "hidden",
+        background: "radial-gradient(circle at 12% 12%, rgba(114, 157, 238, 0.18), transparent 45%), radial-gradient(circle at 88% 78%, rgba(229, 104, 104, 0.16), transparent 50%), #F9F9F9",
         fontFamily: C.font, position: "relative",
       }}>
         {/* Riel delgado sólo-iconos: atajos, "Más" secciones, Ajustes y cerrar
@@ -973,20 +981,12 @@ export default function App() {
           {/* El mismo canal en los cuatro lados: el contenido queda separado del
               riel exactamente igual que del borde derecho. Antes el padding
               izquierdo era 0 y todo quedaba pegado al menú. */}
-          {/* El contenido vive dentro de un LIENZO teñido, no directo sobre la
-              página: es la capa intermedia que hace que las tarjetas blancas se
-              lean como piezas apoyadas sobre un tablero. Sin ella, tarjetas
-              blancas sobre una página casi blanca no se despegan de nada.
-              El scroll queda en <main> y el lienzo crece con el contenido
-              (minHeight 100%), así el tinte llega hasta abajo aunque la vista
-              sea más corta que la pantalla. */}
+          {/* Ya no hay un lienzo propio con su degradado acá adentro -- el
+              degradado vive en el fondo más externo (ver arriba) y se ve A
+              TRAVÉS de las tarjetas translúcidas, así que este contenedor
+              sólo necesita el padding. */}
           <main role="main" style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: "28px", background: "transparent" }}>
-            {/* Gradiente radial verde muy suave detrás del contenido, pedido
-                explícitamente -- se agrega como capa ADEMÁS de --canvas, no en
-                reemplazo, así el lienzo sigue teniendo su propio color base. */}
             <div style={{
-              background: "radial-gradient(circle at top, color-mix(in srgb, #729DEE 8%, transparent), transparent 65%), #F9F9F9",
-              borderRadius: "18px",
               padding: "28px",
               minHeight: "100%", boxSizing: "border-box",
             }}>

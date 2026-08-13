@@ -29,9 +29,10 @@ const RJ = '#E56868';  // coral -- deuda, alertas urgentes
 const GL = '#E8A63D';  // ámbar -- pendiente/cobranza
 const MU = '#6B7280';  // texto secundario
 const BD = '#E2E2E2';  // borde / track de barra de progreso
-const GLASS_BG = '#FFFFFF';
-const GLASS_BORDER = '1px solid #E2E2E2';
-const GLASS_SHADOW = '0 8px 24px rgba(10, 10, 10, 0.06), 0 2px 6px rgba(10, 10, 10, 0.04)';
+const GLASS_BG = 'rgba(255, 255, 255, 0.62)';
+const GLASS_BLUR = 'blur(24px) saturate(180%)';
+const GLASS_BORDER = '1px solid rgba(255, 255, 255, 0.5)';
+const GLASS_SHADOW = '0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)';
 
 const RANGOS = [
   { key: '7d', label: '7D', n: 7, dia: true },
@@ -361,13 +362,14 @@ export default function Dashboard({ setView, clinica }) {
   // de quedar con su propia copia desincronizada.
   const card = {
     background: GLASS_BG, border: GLASS_BORDER,
-    borderRadius: '22px', padding: 24,
+    backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
+    borderRadius: '28px', padding: 24,
     boxShadow: GLASS_SHADOW,
     display: 'flex', flexDirection: 'column',
   };
   const h2 = { margin: 0, fontSize: 16, fontWeight: 600, color: NEGRO, letterSpacing: '-0.01em' };
   const rotulo = { fontSize: 11, color: '#9AA1AC', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' };
-  const subCard = { background: '#F5F5F5', borderRadius: '16px' };
+  const subCard = { background: 'rgba(245, 245, 245, 0.7)', borderRadius: '18px' };
   const col = (n) => ({ gridColumn: isTablet ? 'auto' : `span ${n}` });
 
   const nombreClinica = (clinica?.nombre || '').replace(/^Consultorio\s+/i, '').trim();
@@ -387,63 +389,28 @@ export default function Dashboard({ setView, clinica }) {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: '20px', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
+    <>
+      {/* ─── TÍTULO DE PÁGINA ─── suelto sobre el lienzo, no dentro de una
+          tarjeta -- calcado de "Customer Journeys"/"Reports"/"Opportunities"
+          en la referencia: en las tres, el título de la vista es texto
+          grande directo sobre el fondo, con las tarjetas empezando debajo. */}
+      <h1 style={{ fontSize: 28, fontWeight: 700, color: '#030303', margin: '0 0 20px', letterSpacing: '-0.02em' }}>
+        Dashboard
+      </h1>
 
-      {/* ─── TIRA DE AVATARES ─── calcada al pixel de "Case Allocation": NO se
-          superponen (la versión anterior los solapaba con margin negativo,
-          la referencia los deja parejos con separación real) y cada uno
-          lleva su propia insignia circular ABAJO -- no un anillo de color
-          alrededor. La insignia es coral con el número de tratamientos
-          pendientes de ese paciente, o un "+" neutro si no debe nada
-          (mismo patrón visual que los "+" de la referencia para "sin dato"). */}
-      <div style={{ ...col(12), ...card, flexDirection: 'row', alignItems: 'center', padding: '14px 22px', gap: 22 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {avataresStrip.map(p => {
-            const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
-            return (
-              <div key={p.id} style={{ position: 'relative', flexShrink: 0 }}>
-                <div
-                  onClick={() => setView && setView('expediente')} title={p.name}
-                  style={{
-                    width: 44, height: 44, borderRadius: '50%', cursor: 'pointer',
-                    background: '#F5F5F5',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13.5, fontWeight: 700, color: NEGRO,
-                  }}
-                >
-                  {ini(p.name || '?')}
-                </div>
-                <span style={{
-                  position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
-                  minWidth: 22, height: 22, padding: '0 3px', borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700, border: '2px solid #FFFFFF',
-                  background: pendientes > 0 ? RJ : '#FFFFFF', color: pendientes > 0 ? '#FFFFFF' : NEGRO,
-                  boxShadow: pendientes > 0 ? 'none' : '0 0 0 1px #E2E2E2',
-                }}>
-                  {pendientes > 0 ? pendientes : '+'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ fontSize: 12.5, color: MU, fontWeight: 500 }}>
-          {citasHoy.length > 0
-            ? <>{citasHoy.length} paciente{citasHoy.length !== 1 ? 's' : ''} con cita hoy</>
-            : <>Sin citas hoy · últimos pacientes registrados</>}
-        </div>
-      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr' : 'repeat(12, 1fr)', gap: '20px', alignItems: 'stretch', animation: 'fadeIn 0.4s ease-in-out' }}>
 
-      {/* ─── HERO ─── saludo, tabs de métrica, cifra grande + variación,
-          selector de rango e histograma anotado. La línea/barras van en el
-          acento de la clínica (#729DEE), no en un violeta fijo: así
-          sigue el white-label en vez de clonar el color de la referencia. */}
+      {/* ─── HERO ─── saludo, tira de avatares, tabs de métrica, cifra grande
+          + variación, selector de rango e histograma anotado. La línea/
+          barras van en el acento de la clínica (#729DEE), no en un violeta
+          fijo: así sigue el white-label en vez de clonar el color de la
+          referencia. */}
       <div style={{ ...col(8), ...card }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 14 }}>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#030303', margin: 0, letterSpacing: '-0.01em' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#030303', margin: 0, letterSpacing: '-0.01em' }}>
               Hola{nombreClinica ? `, ${nombreClinica}` : ''}
-            </h1>
+            </h2>
             <p style={{ fontSize: 13, color: MU, margin: '4px 0 0' }}>
               {citasHoy.length > 0
                 ? <>{citasHoy.length} cita{citasHoy.length !== 1 ? 's' : ''} hoy, la próxima a las {citasHoy[0].hora_cita}.</>
@@ -457,6 +424,48 @@ export default function Dashboard({ setView, clinica }) {
             <span style={{ fontSize: 11.5, color: MU }}>
               {ultimaActualizacion ? `Actualizado hace ${formatoHaceTiempo(ultimaActualizacion)}` : 'Cargando…'}
             </span>
+          </div>
+        </div>
+
+        {/* Tira de avatares -- calcada al pixel de "Case Allocation": vive
+            DENTRO de la tarjeta principal, junto al título, no como tarjeta
+            aparte (esa era la diferencia real contra la referencia). Parejos,
+            sin superponerse, con su insignia circular ABAJO de cada uno. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 22, marginBottom: 18, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {avataresStrip.map(p => {
+              const pendientes = pendientesCountPorPaciente.get(p.id) || 0;
+              return (
+                <div key={p.id} style={{ position: 'relative', flexShrink: 0 }}>
+                  <div
+                    onClick={() => setView && setView('expediente')} title={p.name}
+                    style={{
+                      width: 40, height: 40, borderRadius: '50%', cursor: 'pointer',
+                      background: 'rgba(245, 245, 245, 0.8)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12.5, fontWeight: 700, color: NEGRO,
+                    }}
+                  >
+                    {ini(p.name || '?')}
+                  </div>
+                  <span style={{
+                    position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)',
+                    minWidth: 20, height: 20, padding: '0 3px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10.5, fontWeight: 700, border: '2px solid #FFFFFF',
+                    background: pendientes > 0 ? RJ : '#FFFFFF', color: pendientes > 0 ? '#FFFFFF' : NEGRO,
+                    boxShadow: pendientes > 0 ? 'none' : '0 0 0 1px #E2E2E2',
+                  }}>
+                    {pendientes > 0 ? pendientes : '+'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: MU, fontWeight: 500 }}>
+            {citasHoy.length > 0
+              ? <>{citasHoy.length} paciente{citasHoy.length !== 1 ? 's' : ''} con cita hoy</>
+              : <>Sin citas hoy · últimos pacientes registrados</>}
           </div>
         </div>
 
@@ -933,6 +942,7 @@ export default function Dashboard({ setView, clinica }) {
         )}
       </div>
 
-    </div>
+      </div>
+    </>
   );
 }

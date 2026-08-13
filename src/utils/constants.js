@@ -59,15 +59,19 @@ export const P = '#729DEE', PD = '#5B82D6', DN = '#0A0A0A', LT = '#FFFFFF', MT =
 // verde/teal, hay que remedir con validate_palette.js antes de elegirla.
 export const CAT_ACCENT = '#0D9488';
 
-// Superficies de tarjeta — otra vez sólidas y planas, sin vidrio esmerilado.
-// La referencia nueva ("Neue AI") es tarjetas blancas opacas con una sombra
-// casi imperceptible, no glassmorphism -- se vuelve a lo mismo que estas 12
-// vistas + Login.jsx, Modal.jsx y MFAChallenge.jsx ya importan, sólo
-// repuntando estas cuatro constantes, sin tocar cada archivo.
-export const GLASS_BG = '#FFFFFF';
-export const GLASS_BLUR = 'none';
-export const GLASS_BORDER = '1px solid rgba(10, 10, 10, 0.06)';
-export const GLASS_SHADOW = '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.05)';
+// Superficies de tarjeta — vidrio esmerilado otra vez, esta vez a propósito:
+// la referencia "YourCRM" tiñe TODA la app con un degradado de color difuso
+// (ver App.jsx, el lienzo) y cada tarjeta es translúcida encima de eso, no
+// blanca opaca. Como estas ~15 vistas + Login.jsx, Modal.jsx y
+// MFAChallenge.jsx YA traían el fontFamily -- perdón, el backdropFilter --
+// cableado a estas cuatro constantes desde una etapa glass anterior (nunca
+// se limpió, sólo se apagó poniendo blur "none" y fondo opaco), alcanza con
+// repuntarlas acá para que las ~15 vistas se pongan translúcidas de una,
+// sin tocar cada archivo.
+export const GLASS_BG = 'rgba(255, 255, 255, 0.62)';
+export const GLASS_BLUR = 'blur(24px) saturate(180%)';
+export const GLASS_BORDER = '1px solid rgba(255, 255, 255, 0.5)';
+export const GLASS_SHADOW = '0 8px 32px rgba(10, 10, 10, 0.07), 0 2px 8px rgba(10, 10, 10, 0.04)';
 // Botón primario: relleno plano con el acento, sin degradado -- Apple casi
 // nunca degrada un botón. El nombre GRAD_PRIMARY se conserva por compatibilidad
 // con los imports existentes (Button.jsx, Login.jsx, MFAChallenge.jsx, App.jsx).
