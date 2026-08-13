@@ -332,7 +332,7 @@ export default function Dashboard({ setView, clinica, clinicaId }) {
   const card = {
     background: GLASS_BG, border: GLASS_BORDER,
     backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-    borderRadius: '28px', padding: 24,
+    borderRadius: '28px', padding: 24, overflow: 'hidden',
     boxShadow: GLASS_SHADOW,
     display: 'flex', flexDirection: 'column',
   };

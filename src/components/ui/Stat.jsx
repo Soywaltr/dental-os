@@ -19,6 +19,7 @@ export default function Stat({ label, value, sub, subCol, col, icon, onClick }) 
       backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
       border: GLASS_BORDER,
       borderRadius: '18px',
+      overflow: 'hidden',
       boxShadow: GLASS_SHADOW,
       padding: '18px 20px', flex: 1, minWidth: 150,
       cursor: onClick ? 'pointer' : 'default',

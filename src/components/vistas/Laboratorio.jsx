@@ -127,7 +127,7 @@ export default function Laboratorio({ clinicaId }) {
           {orders.map(o => {
             const b = ESTADO_COLOR[o.status] || ESTADO_COLOR.en_proceso;
             return (
-              <div key={o.id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+              <div key={o.id} style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: '16px 18px', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: DN }}>{o.type}</div>
                   <div style={{ fontSize: 12, color: MU }}>Paciente: {o.patient_name} · Pieza: {o.tooth}</div>

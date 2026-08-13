@@ -1910,7 +1910,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
       {loading && <div style={{ fontSize: 15, color: MU, textAlign: 'center', padding: 40 }}>Cargando pacientes...</div>}
 
       {!loading && pacientesOrto.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '50px 20px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px' }}>
+        <div style={{ textAlign: 'center', padding: '50px 20px', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden' }}>
           <Icon name="camera" size={34} color="#C4C4C4" />
           <div style={{ fontSize: 17, fontWeight: 600, color: DN, marginTop: 14, marginBottom: 6 }}>Ningún paciente en tratamiento</div>
           <div style={{ fontSize: 13.5, color: MU }}>Usa "Iniciar tratamiento" para agregar el primero.</div>

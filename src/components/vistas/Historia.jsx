@@ -395,7 +395,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           rompe el dibujo -- sólo le da un marco a lo ancho en vez de una
           isla flotante). */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '30px 20px', boxSizing: 'border-box' }}>
-        <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: '24px 30px', width: '100%', maxWidth: 1400, minWidth: 750, margin: '0 auto', boxSizing: 'border-box', boxShadow: GLASS_SHADOW }}>
+        <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: '24px 30px', width: '100%', maxWidth: 1400, minWidth: 750, margin: '0 auto', boxSizing: 'border-box', boxShadow: GLASS_SHADOW }}>
           <div style={{ display: 'flex', gap: 15, marginBottom: 15, alignItems: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: DN }}>{patient?.name || 'Paciente'}</div>
             <span style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: '14px', background: mode === 'inicial' ? MT : '#FEF3C7', color: mode === 'inicial' ? P : GL }}>{mode}</span>
@@ -1379,7 +1379,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                 ya es de pantalla completa) -- ahora llena el contenedor, con
                 un tope generoso para que en monitores muy anchos no se estire
                 al infinito. */}
-            <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', boxSizing: 'border-box', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '18px', border: GLASS_BORDER, padding: '35px', boxShadow: GLASS_SHADOW }}>
+            <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', boxSizing: 'border-box', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '18px', border: GLASS_BORDER, overflow: 'hidden', padding: '35px', boxShadow: GLASS_SHADOW }}>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <h2 style={{ margin: 0, color: DN, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em' }}>Datos Personales</h2>
@@ -1467,14 +1467,14 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 1400, margin: '0 auto', boxSizing: 'border-box' }}>
 
               {/* Motivo de consulta */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18 }}>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 18 }}>
                 <label style={{ fontSize: 12, color: MU, fontWeight: 500, display: 'block', marginBottom: 6 }}>Motivo de consulta</label>
                 <textarea value={anamnesisData['Motivo de consulta'] || ''} onChange={e => setAnamnesisData({ ...anamnesisData, 'Motivo de consulta': e.target.value })}
                   style={{ width: '100%', minHeight: 48, border: `1px solid ${BD}`, borderRadius: '10px', padding: '9px 12px', fontSize: 13.5, lineHeight: 1.5, outline: 'none', color: DN, background: LT, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
               </div>
 
               {/* Enfermedad actual */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18 }}>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 18 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Enfermedad actual</div>
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: 12 }}>
                   {['Tiempo de enfermedad', 'Signos y síntomas principales', 'Relato cronológico', 'Funciones biológicas'].map(f => (
@@ -1488,7 +1488,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
               {/* Antecedentes */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18 }}>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 18 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Antecedentes</div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -1536,7 +1536,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </div>
 
               {/* Examen clínico */}
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18 }}>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 18 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: P, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BD}`, textTransform: 'uppercase', letterSpacing: .3 }}>Examen clínico</div>
 
                 <div style={{ fontSize: 12, color: MU, fontWeight: 600, marginBottom:8 }}>Signos vitales</div>
@@ -1585,7 +1585,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     </div>
 
     {showTreatPicker && !draftTreatment && (
-      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 18, marginBottom: 16 }}>
+      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 18, marginBottom: 16 }}>
         <div style={{ fontWeight: 600, fontSize: 13.5, color: DN, marginBottom: 12 }}>Seleccionar tratamiento:</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
           {TRATAMIENTOS_CAT.map(cat => (
@@ -1606,7 +1606,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     )}
 
     {draftTreatment && (
-      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '14px', padding: 18, marginBottom: 16 }}>
+      <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '14px', overflow: 'hidden', padding: 18, marginBottom: 16 }}>
         <div style={{ fontWeight: 600, fontSize: 15, color: P, marginBottom: 14 }}>Detalles del tratamiento: {draftTreatment.name}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
           <div>
@@ -1736,7 +1736,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
             )}
 
             {showNuevaNota && (
-              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '14px', padding: 16, marginBottom: 14 }}>
+              <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid color-mix(in srgb, ${P} 33%, transparent)`, borderRadius: '14px', overflow: 'hidden', padding: 16, marginBottom: 14 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: DN, marginBottom: 10 }}>Nueva nota clínica</div>
                 <textarea ref={notaTextareaRef} value={nuevaNotaTexto} onChange={e => setNuevaNotaTexto(e.target.value)}
                   placeholder="Descripción de la consulta, hallazgos clínicos, procedimiento realizado y recomendaciones..."
@@ -1784,7 +1784,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               </button>
             </div>
 
-            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: 22, maxWidth: 500 }}>
+            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 22, maxWidth: 500 }}>
               <div style={{ textAlign: 'center', borderBottom: `1px solid ${BD}`, paddingBottom: 12, marginBottom: 16 }}>
                 <div style={{ fontSize: 12, color: MU }}>Cirujano Dentista · COP 12345</div>
                 <div style={{ fontSize: 12, color: MU, fontVariantNumeric: 'tabular-nums' }}>Los Diamantes 178, Trujillo · +51 915 054 145</div>

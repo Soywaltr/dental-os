@@ -453,7 +453,7 @@ export default function Caja({ clinicaId }) {
       )}
 
       {tab === 'pagos' && (
-        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 18, overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
           <div style={{ fontWeight: 600, fontSize: 15, color: DN, marginBottom: 14 }}>Registrar nuevo pago</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, maxWidth: 560 }}>
             <div>
@@ -501,7 +501,7 @@ export default function Caja({ clinicaId }) {
       )}
 
       {tab === 'gastos' && (
-        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 18, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
+        <div style={{ background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 18, overflow: 'hidden', backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontWeight: 600, fontSize: 15, color: DN }}>Gastos del consultorio</div>
             <div style={{ fontSize: 13, color: MU, fontVariantNumeric: 'tabular-nums' }}>Total del mes: <b style={{ color: DN, fontWeight: 600 }}>S/{totalGastosMes.toLocaleString()}</b></div>

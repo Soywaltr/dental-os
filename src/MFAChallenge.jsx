@@ -79,7 +79,7 @@ export default function MFAChallenge({ onLogout }) {
       <div style={{
         position: 'relative', zIndex: 1, width: '100%', maxWidth: 420,
         background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR,
-        border: GLASS_BORDER, boxShadow: GLASS_SHADOW, borderRadius: 22,
+        border: GLASS_BORDER, boxShadow: GLASS_SHADOW, borderRadius: 22, overflow: 'hidden',
         padding: '44px 40px', boxSizing: 'border-box',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>

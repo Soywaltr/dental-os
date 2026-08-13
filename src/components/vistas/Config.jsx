@@ -13,7 +13,7 @@ const TABS = [
 ];
 
 const cardStyle = {
-  background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 20,
+  background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 20, overflow: 'hidden',
   backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, boxShadow: GLASS_SHADOW,
 };
 
