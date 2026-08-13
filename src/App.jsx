@@ -1136,7 +1136,7 @@ export default function App() {
       <div style={{
         display: "flex", height: "100vh",
         overflow: "hidden",
-        background: "radial-gradient(circle at 10% 8%, rgba(114, 157, 238, 0.20), transparent 42%), radial-gradient(circle at 92% 14%, rgba(229, 143, 133, 0.16), transparent 45%), radial-gradient(circle at 88% 85%, rgba(229, 104, 104, 0.15), transparent 50%), #FAFAFA",
+        background: "radial-gradient(circle at 10% 8%, rgba(114, 157, 238, 0.42), transparent 48%), radial-gradient(circle at 92% 14%, rgba(229, 143, 133, 0.36), transparent 52%), radial-gradient(circle at 88% 85%, rgba(229, 104, 104, 0.34), transparent 58%), #FAFAFA",
         fontFamily: C.font, position: "relative",
       }}>
         {/* Riel delgado sólo-iconos: atajos, "Más" secciones, Ajustes y cerrar
