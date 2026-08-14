@@ -1023,7 +1023,7 @@ const ImportarPacientesModal = memo(({ onClose, onImportar, patientsList }) => {
 });
 
 // ─── COMPONENTE PRINCIPAL: EXPEDIENTE ────────────────────────────────────────
-export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView, clinicaId, patient }) {
+export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEvolucion, setView, setSelPat, clinicaId, patient }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
@@ -1043,6 +1043,25 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   const patActivo = patSeleccionado !== undefined
     ? patSeleccionado
     : (patient?.id ? patientsList.find(p => p.id === patient.id) ?? null : null);
+
+  // Mantiene sincronizado a nivel de App cuál es el paciente abierto acá --
+  // sin esto, App.jsx sólo se enteraba del paciente con el que se entró
+  // desde OTRA vista, nunca de los que se eligen haciendo clic dentro del
+  // propio Directorio. Eso hacía que "volver exactamente a donde se quedó"
+  // tras un F5 sólo funcionara para el primer paciente abierto en la sesión.
+  //
+  // Sólo sincroniza cuando `patSeleccionado` cambia por una acción explícita
+  // en ESTA vista (elegir o cerrar un paciente) -- nunca como eco del valor
+  // ya derivado de `patient` (la prop que ya vino de App.jsx). Sincronizar
+  // ese eco en el montaje competía en una carrera con la restauración de
+  // sesión desde localStorage: `patient` llega en null en el primer render
+  // (antes de que App.jsx la hidrate), este efecto lo reenviaba para arriba,
+  // y borraba el paciente restaurado antes de que patientsList terminara de
+  // cargar y pudiera resolverlo.
+  useEffect(() => {
+    if (patSeleccionado === undefined) return;
+    setSelPat?.(patSeleccionado);
+  }, [patSeleccionado, setSelPat]);
 
   const handleArchivar = async (paciente) => {
     const archivar = !paciente.archivado_at;

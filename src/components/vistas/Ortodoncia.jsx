@@ -1730,7 +1730,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 // Dos momentos: primero la galería (foto + nombre + estado de pago de cada
 // paciente, más los ingresos del mes de toda la ortodoncia); al hacer click en
 // una tarjeta se abre el detalle con todas las secciones del paciente.
-export default function Ortodoncia({ clinicaId, setView, patient }) {
+export default function Ortodoncia({ clinicaId, setView, setSelPat, patient }) {
   const { isTablet } = useResponsive();
   const [pacientesOrto, setPacientesOrto] = useState([]);
   const [todosPacientes, setTodosPacientes] = useState([]);
@@ -1845,6 +1845,17 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
   const pacienteActivo = seleccionado !== undefined
     ? seleccionado
     : (patient?.id ? pacientesOrto.find(p => p.id === patient.id) ?? null : null);
+
+  // Mismo motivo que en Expediente.jsx: sin esto, App.jsx sólo se enteraba
+  // del paciente con el que se entró desde otra vista, nunca de los que se
+  // eligen haciendo clic dentro de esta misma galería. Sólo sincroniza ante
+  // una elección explícita en esta vista, nunca como eco del `patient` que
+  // ya vino de App.jsx (ese eco competía en una carrera con la restauración
+  // de sesión: ver el comentario largo en Expediente.jsx).
+  useEffect(() => {
+    if (seleccionado === undefined) return;
+    setSelPat?.(seleccionado);
+  }, [seleccionado, setSelPat]);
 
   // ── MOMENTO 2: detalle completo del paciente ──
   if (pacienteActivo) {

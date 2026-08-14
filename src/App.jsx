@@ -131,7 +131,7 @@ const sp = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } catc
 // Se borran al cerrar sesión y al detectar otro usuario: en la computadora
 // compartida de recepción, si no, el siguiente en entrar —incluso de otra
 // clínica— se queda con los datos del anterior.
-const CLAVES_PHI = ["dentalOS_odontograma", "dentalOS_odontograma_evo", "dentalOS_patients"];
+const CLAVES_PHI = ["dentalOS_odontograma", "dentalOS_odontograma_evo", "dentalOS_patients", "dentalOS_selected_patient"];
 const limpiarPHILocal = () => {
   try { CLAVES_PHI.forEach(k => localStorage.removeItem(k)); } catch { /* almacenamiento no disponible */ }
 };
@@ -1056,17 +1056,37 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicaLoading]);
 
+  // `hidratado` (estado, no ref) fuerza un re-render antes de dejar escribir
+  // en localStorage. Sin esto, en el primer render los 4 efectos de abajo ya
+  // están armados con el `state` viejo (el de INIT, antes de leer
+  // localStorage) -- ese cierre no cambia aunque el dispatch de HYDRATE
+  // corra primero, porque un dispatch sólo ENCOLA la actualización; no la
+  // aplica en el momento a los efectos que ya se armaron con el render
+  // anterior. El resultado, sin la bandera: cada F5 pisaba lo recién leído
+  // con los valores por defecto de INIT antes de que HYDRATE llegara a
+  // aplicarse. selectedPat es donde más se notaba (volvía siempre al
+  // Directorio), pero afectaba por igual a teeth/teethEvolucion/patientsList.
+  const [hidratado, setHidratado] = useState(false);
   useEffect(() => {
     dispatch({ type: "HYDRATE", payload: {
       teeth:          jp("dentalOS_odontograma",     {}),
       teethEvolucion: jp("dentalOS_odontograma_evo", {}),
       patientsList:   jp("dentalOS_patients",        PATIENTS),
+      // Sólo el id: Expediente.jsx/Ortodoncia.jsx ya resuelven la fila
+      // completa buscando por id en su propia lista (recién traída de
+      // Supabase), así no queda un nombre/documento desactualizado
+      // pisando el dato real si algo cambió mientras no había sesión.
+      selectedPat:    jp("dentalOS_selected_patient", null),
     }});
+    setHidratado(true);
   }, []);
 
-  useEffect(() => { sp("dentalOS_odontograma",     state.teeth);          }, [state.teeth]);
-  useEffect(() => { sp("dentalOS_odontograma_evo", state.teethEvolucion); }, [state.teethEvolucion]);
-  useEffect(() => { sp("dentalOS_patients",        state.patientsList);   }, [state.patientsList]);
+  useEffect(() => { if (hidratado) sp("dentalOS_odontograma",     state.teeth);          }, [state.teeth, hidratado]);
+  useEffect(() => { if (hidratado) sp("dentalOS_odontograma_evo", state.teethEvolucion); }, [state.teethEvolucion, hidratado]);
+  useEffect(() => { if (hidratado) sp("dentalOS_patients",        state.patientsList);   }, [state.patientsList, hidratado]);
+  // Para volver EXACTAMENTE a donde se quedó: no sólo la sección
+  // (Historial/Ortodoncia), sino el paciente que estaba abierto ahí.
+  useEffect(() => { if (hidratado) sp("dentalOS_selected_patient", state.selectedPat ? { id: state.selectedPat.id } : null); }, [state.selectedPat, hidratado]);
 
   useEffect(() => {
     const L = VIEW_LABELS;
