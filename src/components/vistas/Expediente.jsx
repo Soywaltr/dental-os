@@ -9,10 +9,12 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '../../supabase';
 import Historia from './Historia';
 import Modal from '../ui/Modal';
-import { BD, P, DN, MU, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import ConfirmDeleteModal from '../ui/ConfirmDeleteModal';
+import { BD, P, DN, MU, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { normalizarTexto, ini, findPatientByDoc, findPatientByName, estadoPaciente } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
 import { notify } from '../../utils/toast';
+import { eliminarPacienteCompleto } from '../../utils/pacientes';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
 // Ya no son hex fijos: cada entrada apunta a la MISMA variable CSS declarada en
@@ -81,6 +83,14 @@ const IcArchivar = () => (
 const IcRestaurar = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/>
+  </svg>
+);
+// A diferencia de IcArchivar, este SÍ borra -- por eso sólo aparece sobre un
+// paciente YA archivado (un paso extra a propósito antes de un borrado
+// irreversible).
+const IcEliminar = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
   </svg>
 );
 
@@ -342,6 +352,14 @@ function usePatientsDirectory(clinicaId) {
     )));
   }, []);
 
+  // Borrado real (ficha + historia clínica + laboratorio + ortodoncia) --
+  // ver el comentario largo de archivarPatient arriba: esto es la
+  // reconstrucción cuidadosa, en orden, de lo que antes rompía datos.
+  const eliminarPatientDefinitivo = useCallback(async (id) => {
+    await eliminarPacienteCompleto(id);
+    setPatientsList(prev => prev.filter(p => p.id !== id));
+  }, []);
+
   // Importación en bloque: a diferencia de upsertPatient, nunca fusiona por
   // nombre -- cada fila ya llegó etiquetada como "nueva" o "duplicado
   // aprobado por el usuario" desde el modal de importación, así que acá
@@ -382,7 +400,7 @@ function usePatientsDirectory(clinicaId) {
     return data;
   }, [clinicaId]);
 
-  return { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, importarPacientes };
+  return { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, eliminarPatientDefinitivo, importarPacientes };
 }
 
 // ─── HOOK: FORMULARIO DE PACIENTE ────────────────────────────────────────────
@@ -461,7 +479,7 @@ const FilterPills = memo(({ active, onChange }) => (
 ));
 
 // ─── SUB-COMPONENTE: TARJETA DE PACIENTE ─────────────────────────────────────
-const PatientCard = memo(({ patient, isSelected, onClick, onArchivar }) => {
+const PatientCard = memo(({ patient, isSelected, onClick, onArchivar, onEliminar }) => {
   const [hov, setHov] = useState(false);
   const { isTablet } = useResponsive();
   const mostrarAccion = hov || isTablet; // en tablet/iPad no hay "hover" real, asi que se muestra siempre
@@ -478,7 +496,7 @@ const PatientCard = memo(({ patient, isSelected, onClick, onArchivar }) => {
       onMouseLeave={() => setHov(false)}
       aria-pressed={isSelected}
       style={{
-        padding: '10px 12px', paddingRight: mostrarAccion ? 46 : 12,
+        padding: '10px 12px', paddingRight: mostrarAccion ? (archivado ? 82 : 46) : 12,
         minHeight: 44, cursor: 'pointer', borderRadius: C.rl, marginBottom: 2,
         display: 'flex', alignItems: 'center', gap: 12, position: 'relative', // position relative es clave
         background: isSelected ? C.brandSoft : hov ? C.fillHover : 'transparent',
@@ -499,7 +517,7 @@ const PatientCard = memo(({ patient, isSelected, onClick, onArchivar }) => {
           title={archivado ? `Recuperar a ${patient.name}` : `Archivar a ${patient.name}`}
           aria-label={archivado ? 'Recuperar paciente' : 'Archivar paciente'}
           style={{
-            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', right: archivado ? 42 : 6, top: '50%', transform: 'translateY(-50%)',
             width: 36, height: 36, minHeight: 36, borderRadius: '50%', background: 'transparent', color: C.inkMute,
             border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', zIndex: 10,
@@ -508,6 +526,25 @@ const PatientCard = memo(({ patient, isSelected, onClick, onArchivar }) => {
           onMouseEnter={e => { e.currentTarget.style.background = C.brandSoft; e.currentTarget.style.color = C.brand; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.inkMute; }}
         >{archivado ? <IcRestaurar /> : <IcArchivar />}</button>
+      )}
+
+      {/* Borrado real, sólo disponible sobre un paciente YA archivado -- un
+          paso extra a propósito antes de algo irreversible. */}
+      {mostrarAccion && archivado && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onEliminar(patient); }}
+          title={`Eliminar a ${patient.name} para siempre`}
+          aria-label="Eliminar paciente para siempre"
+          style={{
+            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+            width: 36, height: 36, minHeight: 36, borderRadius: '50%', background: 'transparent', color: C.inkMute,
+            border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 10,
+            transition: `background 0.15s ${C.ease}, color 0.15s ${C.ease}`,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = RJ; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.inkMute; }}
+        ><IcEliminar /></button>
       )}
 
       {/* Avatar */}
@@ -1033,7 +1070,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
   // que la abrieron, si vino uno); `null` = eligió no tener ninguno abierto.
   const [patSeleccionado, setPatSeleccionado] = useState(undefined);
 
-  const { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, importarPacientes } = usePatientsDirectory(clinicaId);
+  const { patientsList, loading, upsertPatient, archivarPatient, desarchivarPatient, eliminarPatientDefinitivo, importarPacientes } = usePatientsDirectory(clinicaId);
 
   // Permite entrar directo a la historia de un paciente desde otra vista (por
   // ejemplo el botón "Historia odontológica" de Ortodoncia). Se resuelve la fila
@@ -1074,6 +1111,25 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
       if (archivar && patActivo?.id === paciente.id) setPatSeleccionado(null);
     } catch (err) {
       notify(`No se pudo ${archivar ? 'archivar' : 'recuperar'} el paciente: ${err.message}`);
+    }
+  };
+
+  // Borrado real -- sólo se ofrece sobre un paciente ya archivado (ver
+  // ConfirmDeleteModal más abajo para la doble confirmación).
+  const [pacienteAEliminar, setPacienteAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
+  const handleEliminarDefinitivo = async () => {
+    if (!pacienteAEliminar) return;
+    setEliminando(true);
+    try {
+      await eliminarPatientDefinitivo(pacienteAEliminar.id);
+      if (patActivo?.id === pacienteAEliminar.id) setPatSeleccionado(null);
+      notify('Paciente eliminado correctamente.');
+      setPacienteAEliminar(null);
+    } catch (err) {
+      notify('No se pudo eliminar el paciente: ' + err.message);
+    } finally {
+      setEliminando(false);
     }
   };
 
@@ -1250,6 +1306,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
                   isSelected={false}
                   onClick={() => setPatSeleccionado(p)}
                   onArchivar={handleArchivar}
+                  onEliminar={setPacienteAEliminar}
                 />
               ))}
             </div>
@@ -1276,6 +1333,16 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
       {showModal && <NewPatientModal onClose={() => setShowModal(false)} onSave={handleSave} patientsList={patientsList} />}
       {showImportModal && <ImportarPacientesModal onClose={() => setShowImportModal(false)} onImportar={importarPacientes} patientsList={patientsList} />}
       {showExportModal && <ExportarPacientesModal onClose={() => setShowExportModal(false)} patientsList={patientsList} />}
+      {pacienteAEliminar && (
+        <ConfirmDeleteModal
+          titulo="Eliminar ficha de paciente"
+          mensaje={`Se va a borrar para siempre a "${pacienteAEliminar.name}": su ficha, historia clínica, odontograma, órdenes de laboratorio y tratamiento de ortodoncia (si tenía). Esta acción no se puede deshacer.`}
+          nombreConfirmacion={pacienteAEliminar.name}
+          confirmando={eliminando}
+          onConfirm={handleEliminarDefinitivo}
+          onClose={() => setPacienteAEliminar(null)}
+        />
+      )}
     </>
   );
 }

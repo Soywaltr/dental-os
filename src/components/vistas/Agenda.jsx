@@ -4,11 +4,13 @@ import { supabase } from '../../supabase';
 import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import ModalNuevaCita from '../ui/ModalNuevaCita';
 import Modal from '../ui/Modal';
+import ConfirmDeleteModal from '../ui/ConfirmDeleteModal';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
 import { BD, P, GL, MU, DN, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FUENTE_CAPTACION_GRUPOS } from '../../utils/constants';
 import { notify } from '../../utils/toast';
+import { eliminarPacienteCompleto } from '../../utils/pacientes';
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
@@ -108,6 +110,10 @@ export default function Agenda({ clinicaId, clinica }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCita, setSelectedCita] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  // "Eliminar paciente" (ficha completa, no sólo la cita) -- para el caso de
+  // alguien que no llegó y nunca va a tener una historia clínica real.
+  const [showEliminarPaciente, setShowEliminarPaciente] = useState(false);
+  const [eliminandoPaciente, setEliminandoPaciente] = useState(false);
 
   // Hora actual para la línea de "ahora" sobre la grilla. Se refresca cada
   // minuto: con un `new Date()` calculado en el render, la línea se quedaría
@@ -371,7 +377,23 @@ export default function Agenda({ clinicaId, clinica }) {
     }
 
     setSavingEdit(true);
-    if (!selectedCita.isGoogleOnly) {
+    // Un evento de Google sin paciente vinculado (isGoogleOnly) recién se
+    // convierte en ficha real ACÁ, al guardar el modal -- no al sincronizar
+    // con Google. Crear la ficha en la sincronización volvería "paciente" a
+    // cualquier evento del calendario, hasta un simple "Almuerzo". El nombre
+    // sale del propio evento; el resto de sus datos se completan después
+    // desde el Directorio.
+    const eraGoogleOnly = selectedCita.isGoogleOnly;
+    if (eraGoogleOnly) {
+      const { error } = await supabase.from('pacientes').insert([{
+        name: selectedCita.name, fecha: selectedCita.fecha, hora_cita: selectedCita.hora_cita,
+        reason: selectedCita.reason, treatment: selectedCita.treatment,
+        google_event_id: selectedCita.google_event_id, tag: 'nuevo',
+        fuente_captacion: selectedCita.fuente_captacion || null,
+        clinica_id: clinicaId,
+      }]);
+      if (error) { notify('Error al crear el paciente: ' + error.message); setSavingEdit(false); return; }
+    } else {
       const { error } = await supabase.from('pacientes').update({
         fecha: selectedCita.fecha, hora_cita: selectedCita.hora_cita,
         reason: selectedCita.reason, treatment: selectedCita.treatment,
@@ -406,22 +428,19 @@ export default function Agenda({ clinicaId, clinica }) {
 
     // Asistencia (llegó / no llegó / reprogramada): vive en `estados_cita`,
     // no en `pacientes` -- keyeada por claveCita() para que un evento sin
-    // paciente vinculado (isGoogleOnly) también pueda marcarse. La fuente de
-    // captación sólo se duplica acá para un isGoogleOnly -- un paciente real
-    // ya la guardó arriba en su propia columna de `pacientes`, guardarla
-    // también acá sólo crearía una segunda copia que podría desincronizarse.
+    // paciente vinculado también pueda marcarse. Ya no hace falta duplicar
+    // fuente_captacion acá: desde este mismo guardado, todo evento -- haya
+    // sido isGoogleOnly o no -- termina con una fila real en `pacientes`
+    // que la guarda.
     if (clinicaId) {
       const { error: errEstado } = await supabase.from('estados_cita').upsert(
-        {
-          clinica_id: clinicaId, google_event_id: claveCita(selectedCita), estado: selectedCita.estado || 'pendiente',
-          ...(selectedCita.isGoogleOnly ? { fuente_captacion: selectedCita.fuente_captacion || null } : {}),
-        },
+        { clinica_id: clinicaId, google_event_id: claveCita(selectedCita), estado: selectedCita.estado || 'pendiente' },
         { onConflict: 'clinica_id,google_event_id' }
       );
       if (errEstado) console.error('Error guardando asistencia:', errEstado);
     }
 
-    notify('Cita actualizada correctamente.');
+    notify(eraGoogleOnly ? 'Paciente creado y cita actualizada correctamente.' : 'Cita actualizada correctamente.');
     setShowEditModal(false); setSavingEdit(false);
     await fetchData();
   };
@@ -446,6 +465,32 @@ export default function Agenda({ clinicaId, clinica }) {
     } catch (error) {
       console.error("Error al eliminar:", error); notify("Hubo un problema al eliminar la cita.");
     } finally { setSavingEdit(false); }
+  };
+
+  // Elimina la FICHA completa (no sólo la cita/el hueco de la agenda) --
+  // para el caso de alguien que no llegó y nunca va a tener una historia
+  // clínica real que valga la pena conservar. Sólo tiene sentido para un
+  // paciente ya vinculado (isGoogleOnly no tiene ficha que borrar).
+  const handleEliminarPaciente = async () => {
+    setEliminandoPaciente(true);
+    try {
+      const googleToken = googleConnected ? await getToken() : null;
+      if (googleToken && selectedCita.google_event_id) {
+        await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${selectedCita.google_event_id}`, {
+          method: 'DELETE', headers: { 'Authorization': `Bearer ${googleToken}` }
+        });
+      }
+      await eliminarPacienteCompleto(selectedCita.id);
+      notify('Paciente eliminado correctamente.');
+      setShowEliminarPaciente(false);
+      setShowEditModal(false);
+      await fetchData();
+    } catch (error) {
+      console.error('Error al eliminar el paciente:', error);
+      notify('Hubo un problema al eliminar el paciente: ' + error.message);
+    } finally {
+      setEliminandoPaciente(false);
+    }
   };
 
   // ── Resumen de arriba: sólo lo que se puede saber sin abrir el calendario ──
@@ -776,7 +821,25 @@ export default function Agenda({ clinicaId, clinica }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+            {/* "Eliminar" arriba borra sólo la cita (el paciente conserva su
+                ficha). Esto borra la ficha completa -- para alguien que no
+                llegó y nunca va a tener una historia clínica real. Sólo
+                tiene sentido si ya existe una ficha vinculada. */}
+            {!selectedCita.isGoogleOnly && (
+              <button
+                type="button"
+                onClick={() => setShowEliminarPaciente(true)}
+                disabled={savingEdit}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, marginTop: 14,
+                  background: 'none', border: 'none', padding: 0, cursor: savingEdit ? 'not-allowed' : 'pointer',
+                  color: RJ, fontSize: 12.5, fontWeight: 600, textDecoration: 'underline',
+                }}>
+                <Icon name="trash" size={12} /> No llegó a la cita — eliminar su ficha completa
+              </button>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <Button
                 variant="danger"
                 onClick={handleDeleteCita}
@@ -795,6 +858,17 @@ export default function Agenda({ clinicaId, clinica }) {
               </div>
             </div>
         </Modal>
+      )}
+
+      {showEliminarPaciente && selectedCita && (
+        <ConfirmDeleteModal
+          titulo="Eliminar ficha de paciente"
+          mensaje={`Se va a borrar para siempre a "${selectedCita.name}": su ficha, historia clínica, odontograma, órdenes de laboratorio y tratamiento de ortodoncia (si tenía). Esta acción no se puede deshacer.`}
+          nombreConfirmacion={selectedCita.name}
+          confirmando={eliminandoPaciente}
+          onConfirm={handleEliminarPaciente}
+          onClose={() => setShowEliminarPaciente(false)}
+        />
       )}
     </div>
   );
