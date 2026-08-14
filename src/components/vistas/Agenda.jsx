@@ -54,15 +54,16 @@ const ROW_HEIGHT = 52;
 
 // Ubica los bloques de un día en columnas cuando se solapan en el tiempo
 // (mismo criterio visual que un calendario real: lado a lado, no apilados).
-// No hay hora de fin guardada por cita -- se usa `duracionMin` (la duración
-// de cita configurada en Ajustes) para calcular el rango real de cada una.
-const layoutDayApts = (apts, duracionMin) => {
+// Cada cita ya trae su propia `duracion_min` (real, tomada de Google Calendar
+// cuando el evento existe ahí -- ver fetchData; si no, la duración por
+// defecto de la clínica) para no inventar un mismo largo fijo para todas.
+const layoutDayApts = (apts) => {
   const items = apts
     .filter(a => a.hora_cita)
     .map(a => {
       const [hh, mm] = a.hora_cita.split(':').map(Number);
       const startMin = hh * 60 + mm;
-      return { ...a, startMin, endMin: startMin + duracionMin };
+      return { ...a, startMin, endMin: startMin + (a.duracion_min || 30) };
     })
     .sort((x, y) => x.startMin - y.startMin);
 
@@ -210,6 +211,15 @@ export default function Agenda({ clinicaId, clinica }) {
       if (error) { console.error("Error cargando Supabase:", error); return; }
 
       let externalGoogleApts = [];
+      // Duración real de cada evento de Google (fin - inicio), por
+      // google_event_id -- Google sí guarda una hora de fin real por evento
+      // (a diferencia de `pacientes`, que sólo tiene `hora_cita`). Se calcula
+      // para TODOS los eventos traídos, no sólo los que aún no tienen fila en
+      // `pacientes`, porque una cita ya convertida en paciente real (ver
+      // handleSaveEdit) igual sigue vinculada a su evento de Google y debe
+      // seguir mostrando su duración real, no la duración por defecto de la
+      // clínica.
+      let duracionesMap = {};
       const googleToken = googleConnected ? await getToken() : null;
       if (googleToken) {
         try {
@@ -222,6 +232,12 @@ export default function Agenda({ clinicaId, clinica }) {
 
           if (res.ok) {
             const gData = await res.json();
+            (gData.items || []).forEach(gEvent => {
+              if (gEvent.start?.dateTime && gEvent.end?.dateTime) {
+                const min = (new Date(gEvent.end.dateTime) - new Date(gEvent.start.dateTime)) / 60000;
+                if (min > 0) duracionesMap[gEvent.id] = min;
+              }
+            });
             externalGoogleApts = (gData.items || [])
               .filter(gEvent => !data.some(dbCita => dbCita.google_event_id === gEvent.id))
               .map(gEvent => {
@@ -259,6 +275,7 @@ export default function Agenda({ clinicaId, clinica }) {
           ...p,
           estado: meta?.estado || 'pendiente',
           fuente_captacion: p.isGoogleOnly ? (meta?.fuente_captacion || '') : p.fuente_captacion,
+          duracion_min: (p.google_event_id && duracionesMap[p.google_event_id]) || horario.duracion_cita || 30,
         };
       });
       setAllApts(combinedData);
@@ -306,7 +323,7 @@ export default function Agenda({ clinicaId, clinica }) {
         }
       });
       setWeekApts(tempApts);
-  }, [currentDate, googleConnected, getToken, googleDisconnect, clinicaId]);
+  }, [currentDate, googleConnected, getToken, googleDisconnect, clinicaId, horario.duracion_cita]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -786,7 +803,7 @@ export default function Agenda({ clinicaId, clinica }) {
                 {displayDays.map((d, di) => {
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                   const apts = allApts.filter(a => a.fecha === targetDate && a.hora_cita);
-                  const laidOut = layoutDayApts(apts, horario.duracion_cita || 30);
+                  const laidOut = layoutDayApts(apts);
 
                   return (
                     <div key={di} style={{ position: 'relative' }}>
