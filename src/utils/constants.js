@@ -168,31 +168,148 @@ export const UP = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
 export const LP = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
 export const TNAME = { 18: '3M sup der', 17: '2M sup der', 16: '1M sup der', 15: '2P sup der', 14: '1P sup der', 13: 'C sup der', 12: 'IL sup der', 11: 'IC sup der', 21: 'IC sup izq', 22: 'IL sup izq', 23: 'C sup izq', 24: '1P sup izq', 25: '2P sup izq', 26: '1M sup izq', 27: '2M sup izq', 28: '3M sup izq', 31: 'IC inf izq', 32: 'IL inf izq', 33: 'C inf izq', 34: '1P inf izq', 35: '2P inf izq', 36: '1M inf izq', 37: '2M inf izq', 38: '3M inf izq', 48: '3M inf der', 47: '2M inf der', 46: '1M inf der', 45: '2P inf der', 44: '1P inf der', 43: 'C inf der', 42: 'IL inf der', 41: 'IC inf der' };
 
+// TOOLS: catálogo de hallazgos "pincel" del odontograma, corregido contra la
+// NTS N°150-MINSA-2019/DGIESP (sección 5.3). `g` es el grupo de color de la
+// norma (4.15-4.16): 'r' = rojo (mal estado / hallazgo patológico), 'a' =
+// azul (buen estado / tratamiento). Los hallazgos que la norma permite en
+// los dos colores según estado (restauraciones, coronas, implante,
+// espigo-muñón, tratamiento pulpar) arrancan en 'a' y se pasan a rojo con el
+// toggle "Marcar como en mal estado" (BAD_SUFFIX, ver utils/helpers.js) --
+// no hace falta un id nuevo por color.
+//
+// Los ids que ya usan historias clínicas reales (des, m1, r_t, cc, dis, si,
+// extraer) NO se renombran ni se eliminan aunque la norma pida otra sigla o
+// color -- se corrigen in-place (mismo id, sigla/color correctos) para no
+// romper lo ya guardado. dis/si/extraer no son nomenclatura oficial de la
+// NTS; se conservan como hallazgos adicionales (permitido por el punto 4.23:
+// "las especialidades... pueden adicionar otras nomenclaturas... mas no
+// modificar o contradecir las establecidas").
 export const TOOLS = [
   { id: 'normal', lbl: 'Normal', col: '#f1f5f9', tc: '#475569', sig: '', cr: 'n', mk: '' },
-  { id: 'caries', lbl: 'Caries', col: RJ, tc: '#fff', sig: 'CA', cr: 'r', mk: 'fill', g: 'r' },
-  { id: 'r_t', lbl: 'Rest. temporal', col: '#f97316', tc: '#fff', sig: 'RT', cr: 'r', mk: 'outline', g: 'r' },
-  { id: 'ct', lbl: 'Corona temporal', col: RJ, tc: '#fff', sig: 'CT', cr: 'r', mk: 'cr', g: 'r' },
+
+  // 5.3.1 Lesión de caries dental -- rojo
+  { id: 'caries', lbl: 'Caries (genérico)', col: RJ, tc: '#fff', sig: 'CA', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'mb', lbl: 'Mancha blanca (MB)', col: RJ, tc: '#fff', sig: 'MB', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'ce', lbl: 'Caries esmalte (CE)', col: RJ, tc: '#fff', sig: 'CE', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'cd', lbl: 'Caries dentina (CD)', col: RJ, tc: '#fff', sig: 'CD', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'cdp', lbl: 'Caries dentina/pulpa (CDP)', col: RJ, tc: '#fff', sig: 'CDP', cr: 'r', mk: 'fill', g: 'r' },
+
+  // 5.3.2 Defectos de desarrollo del esmalte (DDE) -- rojo
+  { id: 'hm', lbl: 'Hipomineralización (HM)', col: RJ, tc: '#fff', sig: 'HM', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'hp', lbl: 'Hipoplasia (HP)', col: RJ, tc: '#fff', sig: 'HP', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'o_dde', lbl: 'Opacidad del esmalte (O)', col: RJ, tc: '#fff', sig: 'O', cr: 'r', mk: 'fill', g: 'r' },
+  { id: 'd_dde', lbl: 'Decoloración del esmalte (D)', col: RJ, tc: '#fff', sig: 'D', cr: 'r', mk: 'fill', g: 'r' },
+
+  // 5.3.3 Sellantes -- azul (buen estado) / rojo (mal estado, toggle)
+  { id: 'sellante', lbl: 'Sellante (S)', col: AZ, tc: '#fff', sig: 'S', cr: 'a', mk: 'fill', g: 'a' },
+
+  // 5.3.4 Fractura -- rojo, línea (norma no exige sigla; se detalla en Especificaciones)
   { id: 'frac', lbl: 'Fractura', col: RJ, tc: '#fff', sig: 'FR', cr: 'r', mk: 'frac', g: 'r' },
-  { id: 'rr', lbl: 'Rem. Radicular', col: RJ, tc: '#fff', sig: 'RR', cr: 'r', mk: 'txt', g: 'r' },
+
+  // 5.3.5 Fosas y fisuras profundas -- azul
+  { id: 'ffp', lbl: 'Fosas y fisuras profundas (FFP)', col: AZ, tc: '#fff', sig: 'FFP', cr: 'a', mk: 'fill', g: 'a' },
+
+  // 5.3.6 Pieza ausente -- azul, aspa (corregido: antes el trazo era gris fijo)
+  { id: 'aus', lbl: 'Ausente', col: AZ, tc: '#fff', sig: 'A', cr: 'a', mk: 'x', g: 'a' },
+
+  // 5.3.7 Pieza en erupción -- azul
+  { id: 'erupcion', lbl: 'En erupción (ER)', col: AZ, tc: '#fff', sig: 'ER', cr: 'a', mk: 'fill', g: 'a' },
+
+  // 5.3.8 Restauración definitiva -- azul (buen estado) / rojo (mal estado, toggle)
   { id: 'r_r', lbl: 'Resina (R)', col: AZ, tc: '#fff', sig: 'R', cr: 'a', mk: 'fill', g: 'a' },
   { id: 'r_am', lbl: 'Amalgama (AM)', col: AZ, tc: '#fff', sig: 'AM', cr: 'a', mk: 'fill', g: 'a' },
   { id: 'r_iv', lbl: 'Ionómero (IV)', col: AZ, tc: '#fff', sig: 'IV', cr: 'a', mk: 'fill', g: 'a' },
-  { id: 'r_im', lbl: 'Incrustación IM', col: AZ, tc: '#fff', sig: 'IM', cr: 'a', mk: 'fill', g: 'a' },
-  { id: 'r_ie', lbl: 'Incrustación IE', col: AZ, tc: '#fff', sig: 'IE', cr: 'a', mk: 'fill', g: 'a' },
-  { id: 'aus', lbl: 'Ausente', col: '#64748b', tc: '#fff', sig: 'A', cr: 'a', mk: 'x', g: 'a' },
-  { id: 'cc', lbl: 'Corona CC', col: AZ, tc: '#fff', sig: 'CC', cr: 'a', mk: 'ca', g: 'a' },
-  { id: 'cmc', lbl: 'Corona CMC', col: AZ, tc: '#fff', sig: 'CMC', cr: 'a', mk: 'ca', g: 'a' },
-  { id: 'cj', lbl: 'Corona CJ', col: AZ, tc: '#fff', sig: 'CJ', cr: 'a', mk: 'ca', g: 'a' },
-  { id: 'imp', lbl: 'Implante', col: AZ, tc: '#fff', sig: 'IMP', cr: 'a', mk: 'txt', g: 'a' },
-  { id: 'tc', lbl: 'T. Conducto', col: AZ, tc: '#fff', sig: 'TC', cr: 'a', mk: 'root', g: 'a' },
-  { id: 'pc', lbl: 'Pulpectomía', col: AZ, tc: '#fff', sig: 'PC', cr: 'a', mk: 'root', g: 'a' },
-  { id: 'des', lbl: 'Desgaste DES', col: AZ, tc: '#fff', sig: 'DES', cr: 'a', mk: 'txt', g: 'a' },
-  { id: 'ii', lbl: 'Impactación I', col: AZ, tc: '#fff', sig: 'I', cr: 'a', mk: 'txt', g: 'a' },
-  { id: 'si', lbl: 'Semi-imp. SI', col: AZ, tc: '#fff', sig: 'SI', cr: 'a', mk: 'txt', g: 'a' },
-  { id: 'm1', lbl: 'Movilidad M1', col: AZ, tc: '#fff', sig: 'M1', cr: 'a', mk: 'txt', g: 'a' },
-  { id: 'dis', lbl: 'Discrómico', col: AZ, tc: '#fff', sig: 'DIS', cr: 'a', mk: 'txt', g: 'a' },
-  { id: 'extraer', lbl: 'Por extraer', col: RJ, tc: '#fff', sig: 'EXT', cr: 'r', mk: 'txt', g: 'r' },
+  { id: 'r_im', lbl: 'Incrustación metálica (IM)', col: AZ, tc: '#fff', sig: 'IM', cr: 'a', mk: 'fill', g: 'a' },
+  { id: 'r_ie', lbl: 'Incrustación estética (IE)', col: AZ, tc: '#fff', sig: 'IE', cr: 'a', mk: 'fill', g: 'a' },
+  { id: 'r_c', lbl: 'Carilla estética (C)', col: AZ, tc: '#fff', sig: 'C', cr: 'a', mk: 'fill', g: 'a' },
+
+  // 5.3.9 Restauración temporal -- siempre rojo
+  { id: 'r_t', lbl: 'Restauración temporal (RT)', col: RJ, tc: '#fff', sig: 'RT', cr: 'r', mk: 'outline', g: 'r' },
+
+  // 5.3.23 Impactación -- azul
+  { id: 'ii', lbl: 'Impactación (I)', col: AZ, tc: '#fff', sig: 'I', cr: 'a', mk: 'txt', g: 'a' },
+  { id: 'si', lbl: 'Semi-impactación (SI) — no NTS', col: AZ, tc: '#fff', sig: 'SI', cr: 'a', mk: 'txt', g: 'a' },
+
+  // 5.3.24 Superficie desgastada -- rojo (corregido: antes estaba en azul)
+  { id: 'des', lbl: 'Desgaste (DES)', col: RJ, tc: '#fff', sig: 'DES', cr: 'r', mk: 'txt', g: 'r' },
+
+  // 5.3.25 Remanente radicular -- rojo
+  { id: 'rr', lbl: 'Rem. Radicular (RR)', col: RJ, tc: '#fff', sig: 'RR', cr: 'r', mk: 'txt', g: 'r' },
+
+  // 5.3.26 Movilidad patológica -- rojo, "M" + grado (corregido: antes estaba en azul)
+  { id: 'm1', lbl: 'Movilidad grado 1 (M1)', col: RJ, tc: '#fff', sig: 'M1', cr: 'r', mk: 'txt', g: 'r' },
+  { id: 'm2', lbl: 'Movilidad grado 2 (M2)', col: RJ, tc: '#fff', sig: 'M2', cr: 'r', mk: 'txt', g: 'r' },
+  { id: 'm3', lbl: 'Movilidad grado 3 (M3)', col: RJ, tc: '#fff', sig: 'M3', cr: 'r', mk: 'txt', g: 'r' },
+
+  // 5.3.27 Corona temporal -- siempre rojo
+  { id: 'ct', lbl: 'Corona temporal (CT)', col: RJ, tc: '#fff', sig: 'CT', cr: 'r', mk: 'ca', g: 'r' },
+
+  // 5.3.28 Corona definitiva -- azul (buen estado) / rojo (mal estado, toggle)
+  { id: 'cc', lbl: 'Corona metálica (CM)', col: AZ, tc: '#fff', sig: 'CM', cr: 'a', mk: 'ca', g: 'a' },
+  { id: 'cf', lbl: 'Corona fenestrada (CF)', col: AZ, tc: '#fff', sig: 'CF', cr: 'a', mk: 'ca', g: 'a' },
+  { id: 'cmc', lbl: 'Corona metal-cerámica (CMC)', col: AZ, tc: '#fff', sig: 'CMC', cr: 'a', mk: 'ca', g: 'a' },
+  { id: 'cv', lbl: 'Corona veneer (CV)', col: AZ, tc: '#fff', sig: 'CV', cr: 'a', mk: 'ca', g: 'a' },
+  { id: 'cj', lbl: 'Corona jacket (CJ)', col: AZ, tc: '#fff', sig: 'CJ', cr: 'a', mk: 'ca', g: 'a' },
+
+  // 5.3.29 Espigo-muñón -- azul (buen estado) / rojo (mal estado, toggle)
+  { id: 'espigo', lbl: 'Espigo-muñón', col: AZ, tc: '#fff', sig: 'EM', cr: 'a', mk: 'espigo', g: 'a' },
+
+  // 5.3.30 Implante dental -- azul (buen estado) / rojo (mal estado, toggle)
+  { id: 'imp', lbl: 'Implante (IMP)', col: AZ, tc: '#fff', sig: 'IMP', cr: 'a', mk: 'txt', g: 'a' },
+
+  // 5.3.36 Tratamiento pulpar -- azul (buen estado) / rojo (mal estado, toggle)
+  { id: 'tc', lbl: 'Tratamiento de conductos (TC)', col: AZ, tc: '#fff', sig: 'TC', cr: 'a', mk: 'root', g: 'a' },
+  { id: 'pc', lbl: 'Pulpectomía (PC)', col: AZ, tc: '#fff', sig: 'PC', cr: 'a', mk: 'root', g: 'a' },
+  { id: 'pp', lbl: 'Pulpotomía (PP)', col: AZ, tc: '#fff', sig: 'PP', cr: 'a', mk: 'root', g: 'a' },
+
+  // Adicionales -- no son nomenclatura oficial de la NTS 150 (permitido por
+  // el punto 4.23), se conservan porque ya hay historial guardado con ellos.
+  { id: 'dis', lbl: 'Discrómico (DIS) — no NTS', col: AZ, tc: '#fff', sig: 'DIS', cr: 'a', mk: 'txt', g: 'a' },
+  { id: 'extraer', lbl: 'Por extraer (EXT) — no NTS', col: RJ, tc: '#fff', sig: 'EXT', cr: 'r', mk: 'txt', g: 'r' },
+];
+
+// MARCAS_PIEZA: hallazgos de la NTS 150 que son un atributo de la PIEZA
+// COMPLETA -- posición, forma, número o movimiento -- y conviven con
+// cualquier hallazgo de superficie que la pieza ya tenga (no le pisan el
+// color de relleno). Se guardan en `pieza._marcas` (array de ids) y se
+// dibujan en una fila de insignias aparte (ver mRow en Historia.jsx), no
+// sobre el propio diente. Casi todas van en azul por norma; se ancla cada
+// hallazgo "entre dos piezas" (diastema, fusión, transposición,
+// supernumeraria) a una sola pieza y el detalle de la pieza vecina se anota
+// en Especificaciones, igual que pide la norma para casi todos sus hallazgos.
+export const MARCAS_PIEZA = [
+  { id: 'pos_m', lbl: 'Mesializado (M)', sig: 'M' },
+  { id: 'pos_d', lbl: 'Distalizado (D)', sig: 'D' },
+  { id: 'pos_v', lbl: 'Vestibularizado (V)', sig: 'V' },
+  { id: 'pos_p', lbl: 'Palatinizado (P)', sig: 'P' },
+  { id: 'pos_l', lbl: 'Lingualizado (L)', sig: 'L' },
+  { id: 'ectopica', lbl: 'Pieza ectópica (E)', sig: 'E' },
+  { id: 'clavija', lbl: 'Pieza en clavija', sig: '△' },
+  { id: 'macrodoncia', lbl: 'Macrodoncia (MAC)', sig: 'MAC' },
+  { id: 'microdoncia', lbl: 'Microdoncia (MIC)', sig: 'MIC' },
+  { id: 'geminacion', lbl: 'Geminación', sig: '◯' },
+  { id: 'fusion', lbl: 'Fusión (con pieza vecina)', sig: '◯◯' },
+  { id: 'supernumeraria', lbl: 'Pieza supernumeraria (S)', sig: 'Ⓢ' },
+  { id: 'diastema', lbl: 'Diastema (con pieza vecina)', sig: ')(' },
+  { id: 'giroversion', lbl: 'Giroversión', sig: '↻' },
+  { id: 'extruida', lbl: 'Pieza extruida', sig: '↑' },
+  { id: 'intruida', lbl: 'Pieza intruida', sig: '↓' },
+  { id: 'transposicion', lbl: 'Transposición (con pieza vecina)', sig: '⤨' },
+];
+
+// ANOTACIONES_ARCADA: hallazgos de la NTS 150 que abarcan un RANGO de piezas
+// o toda la arcada, no una sola pieza -- edéntulo total, aparatos
+// ortodónticos y prótesis. Se guardan en `teeth._anotaciones` /
+// `teethEvolucion._anotaciones` (array de { id, tipo, arcada, desde, hasta,
+// bad }), aparte del objeto por pieza. Azul = buen estado, rojo = mal
+// estado (mismo toggle `bad` que el resto de la norma).
+export const ANOTACIONES_ARCADA = [
+  { tipo: 'edentulo_total', lbl: 'Edéntulo total' },
+  { tipo: 'aparato_fijo', lbl: 'Aparato ortodóntico fijo' },
+  { tipo: 'aparato_removible', lbl: 'Aparato ortodóntico removible' },
+  { tipo: 'protesis_fija', lbl: 'Prótesis fija' },
+  { tipo: 'protesis_removible', lbl: 'Prótesis removible' },
+  { tipo: 'protesis_total', lbl: 'Prótesis total' },
 ];
 
 export const TODAY_STR = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });

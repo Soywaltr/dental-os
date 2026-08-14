@@ -7,7 +7,7 @@ import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import {
   TODAS_NACIONES, labelStyleDoc, inputStyleDoc, TRATAMIENTOS_CAT, PRECIOS,
-  P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, UA, LA, UP, LP, TNAME,
+  P, BD, DN, MU, MT, LT, WA, RJ, GL, AZ, TOOLS, MARCAS_PIEZA, ANOTACIONES_ARCADA, UA, LA, UP, LP, TNAME,
   GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FUENTE_CAPTACION_GRUPOS
 } from '../../utils/constants';
 import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsAppNumber } from '../../utils/helpers';
@@ -22,12 +22,17 @@ import { notify } from '../../utils/toast';
 // ============================================================================
 function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots = 0, estadoDot = null }) {
   const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
-  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+  const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== '_marcas');
   const domRaw = conds.length ? conds[0][1] : null;
   const dom = domRaw ? gt(domRaw) : null;
   const domIsBad = isBad(domRaw);
+  // Un solo lugar donde se decide azul/rojo (NTS 4.15-4.16): buen estado o
+  // grupo 'a' -> azul, mal estado o grupo 'r' -> rojo. Antes cada `mk` traía
+  // su propio color a mano (algunos SIEMPRE azul, ignorando el toggle "en
+  // mal estado" -- ej. una corona marcada mal estado pintaba el relleno de
+  // rojo pero el contorno de la corona se quedaba azul).
+  const markColor = (dom?.g === 'r' || domIsBad) ? RJ : AZ;
 
-  // AQUÍ ESTABA EL ERROR: Cambiado dom.cr por dom.g
   const cf = !dom ? '#f8fafc' : (dom.g === 'r' || domIsBad) ? `color-mix(in srgb, ${RJ} 87%, transparent)` : dom.mk === 'x' ? '#64748b22' : `color-mix(in srgb, ${AZ} 87%, transparent)`;
 
   const isExtraer = Object.values(surfs).some(s => s === 'extraer');
@@ -58,11 +63,16 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots =
         </g>
       )}
 
-      {dom?.mk === 'x' && <><line x1="2" y1="2" x2={W - 2} y2={TH - 2} stroke="#64748b" strokeWidth="2" /><line x1={W - 2} y1="2" x2="2" y2={TH - 2} stroke="#64748b" strokeWidth="2" /></>}
-      {dom?.mk === 'ca' && <ellipse cx={W / 2} cy={cY + CH / 2} rx={(W - 4) / 2} ry={CH / 2 - 1} fill="none" stroke={AZ} strokeWidth="2" />}
-      {dom?.mk === 'cr' && <ellipse cx={W / 2} cy={cY + CH / 2} rx={(W - 4) / 2} ry={CH / 2 - 1} fill="none" stroke={RJ} strokeWidth="2" />}
-      {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={RJ} strokeWidth="2" />}
-      {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={AZ} strokeWidth="2" />}
+      {dom?.mk === 'x' && <><line x1="2" y1="2" x2={W - 2} y2={TH - 2} stroke={markColor} strokeWidth="2" /><line x1={W - 2} y1="2" x2="2" y2={TH - 2} stroke={markColor} strokeWidth="2" /></>}
+      {dom?.mk === 'ca' && <ellipse cx={W / 2} cy={cY + CH / 2} rx={(W - 4) / 2} ry={CH / 2 - 1} fill="none" stroke={markColor} strokeWidth="2" />}
+      {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={markColor} strokeWidth="2" />}
+      {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={markColor} strokeWidth="2" />}
+      {/* 5.3.29 Espigo-muñón: línea en la raíz (como 'root') unida a un
+          cuadrado en la corona representando el muñón. */}
+      {dom?.mk === 'espigo' && <>
+        <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={markColor} strokeWidth="2" />
+        <rect x={W / 2 - 4} y={cY + CH / 2 - 4} width="8" height="8" fill="none" stroke={markColor} strokeWidth="1.5" />
+      </>}
       {conds.length > 1 && <circle cx={W - 5} cy={4} r="3.5" fill={P} />}
       {estadoDot && <circle cx={5} cy={4} r="3.5" fill={estadoDot} stroke="#fff" strokeWidth=".8" />}
       {sarroDots > 0 && (
@@ -171,6 +181,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     const exp = {};
     getSurfs(n).forEach(s => { exp[s] = p.todaPieza; });
     if (p.note) exp.note = p.note;
+    if (p._marcas) exp._marcas = p._marcas;
     return exp;
   };
   const mergedPieza = (n) => {
@@ -180,13 +191,25 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     if (!base) return expandPieza(evo, n);
     return { ...expandPieza(base, n), ...expandPieza(evo, n) };
   };
+  // `_anotaciones` (Grupo C -- edéntulo total, aparatos, prótesis) es una
+  // clave reservada a nivel de ARCADA, no de pieza: vive junto a los números
+  // de diente en el mismo objeto `teeth`/`teethEvolucion`, pero no es una
+  // pieza y no debe pasar por mergedPieza/expandPieza (piensan en superficies
+  // por diente) ni contarse como hallazgo de una pieza en `allF` más abajo.
+  const CLAVE_ANOTACIONES = '_anotaciones';
   const currentTeeth = mode === 'inicial'
     ? (teeth || {})
     : Object.fromEntries(
         Array.from(new Set([...Object.keys(teeth || {}), ...Object.keys(teethEvolucion || {})]))
+          .filter(n => n !== CLAVE_ANOTACIONES)
           .map(n => [n, mergedPieza(n)])
       );
   const setCurrentTeeth = mode === 'inicial' ? setTeeth : setTeethEvolucion;
+  // Array.isArray de más: si un registro viejo quedara con `_anotaciones` en
+  // una forma rara, esto evita que toda la vista truene en vez de mostrar
+  // el odontograma sin las anotaciones de arcada.
+  const anotacionesRaw = (mode === 'inicial' ? teeth : teethEvolucion)?.[CLAVE_ANOTACIONES];
+  const anotaciones = Array.isArray(anotacionesRaw) ? anotacionesRaw : [];
 
   const applyAll = n => {
     if (act === 'normal') {
@@ -259,8 +282,63 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     });
   };
 
+  // Grupo B de la NTS 150 (5.3.11/16/17/18/19/20/21/22/37): atributos de la
+  // PIEZA COMPLETA (posición, forma, número, movimiento) que conviven con
+  // cualquier hallazgo de superficie que la pieza ya tenga -- no le pisan el
+  // color de relleno, por eso viven en `_marcas` (array) en vez de en una
+  // cara. Los que la propia norma dibuja "entre dos piezas" (diastema,
+  // fusión, transposición, supernumeraria) se anclan a esta pieza y el
+  // detalle de la pieza vecina se registra en Especificaciones.
+  const toggleMarca = (n, marcaId) => {
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const currentPiece = currentTeeth[n] || {};
+      let expandedPiece = { ...currentPiece };
+      if (expandedPiece.todaPieza) {
+        getSurfs(n).forEach(s => expandedPiece[s] = expandedPiece.todaPieza);
+        delete expandedPiece.todaPieza;
+      }
+      const actuales = expandedPiece._marcas || [];
+      expandedPiece._marcas = actuales.includes(marcaId)
+        ? actuales.filter(m => m !== marcaId)
+        : [...actuales, marcaId];
+      if (expandedPiece._marcas.length === 0) delete expandedPiece._marcas;
+      return { ...safeP, [n]: expandedPiece };
+    });
+  };
+
+  // Grupo C de la NTS 150 (5.3.10/31/32/33/34/35): anotaciones que abarcan un
+  // RANGO de piezas o toda la arcada -- edéntulo total, aparatos
+  // ortodónticos, prótesis. Viven en `_anotaciones` (clave reservada a nivel
+  // de arcada, no de pieza) junto a los números de diente en el mismo
+  // `teeth`/`teethEvolucion`, independiente de Odo. Inicial/Evolución.
+  const [showAnotForm, setShowAnotForm] = useState(false);
+  const [anotDraft, setAnotDraft] = useState({ tipo: ANOTACIONES_ARCADA[0].tipo, arcada: 'UA', desde: '', hasta: '', bad: false });
+  const ARCADAS = { UA, LA, UP, LP };
+
+  const guardarAnotacion = () => {
+    if (!anotDraft.desde || !anotDraft.hasta) return;
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const lista = safeP[CLAVE_ANOTACIONES] || [];
+      const nueva = { id: Date.now(), ...anotDraft };
+      return { ...safeP, [CLAVE_ANOTACIONES]: [...lista, nueva] };
+    });
+    setShowAnotForm(false);
+    setAnotDraft({ tipo: ANOTACIONES_ARCADA[0].tipo, arcada: 'UA', desde: '', hasta: '', bad: false });
+  };
+
+  const eliminarAnotacion = (id) => {
+    setCurrentTeeth(p => {
+      const safeP = p || {};
+      const lista = (safeP[CLAVE_ANOTACIONES] || []).filter(a => a.id !== id);
+      return { ...safeP, [CLAVE_ANOTACIONES]: lista };
+    });
+  };
+
   const allF = [];
   Object.entries(currentTeeth).forEach(([n, ss]) => {
+    if (n === CLAVE_ANOTACIONES) return;
     const superficies = getSurfs(n);
     const valores = superficies.map(s => ss[s]).filter(v => v && v !== 'normal');
     const esTodoIgual = ss.todaPieza || (valores.length === superficies.length && valores.every(v => v === valores[0]));
@@ -270,7 +348,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       allF.push({ n, sf: 'Toda la pieza', c: hallazgoDeteccion });
     } else {
       Object.entries(ss).forEach(([sf, c]) => {
-        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza') {
+        if (c && c !== 'normal' && sf !== 'note' && sf !== 'todaPieza' && sf !== '_marcas') {
           allF.push({ n, sf, c });
         }
       });
@@ -281,7 +359,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       {list.map((n, i) => {
         const ss = currentTeeth[n] || {};
-        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note');
+        const cs = Object.entries(ss).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== '_marcas');
         const csRaw = cs.length ? cs[0][1] : null;
         const t = csRaw ? gt(csRaw) : null;
         return (
@@ -331,6 +409,65 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
       ))}
     </div>
   );
+
+  // Fila de insignias del Grupo B (posición, ectópica, MAC/MIC, clavija,
+  // geminación/fusión, supernumeraria, diastema, giroversión, extruida/
+  // intruida, transposición) -- un badge azul por marca activa en la pieza,
+  // sin tocar el color de relleno del diente.
+  const mRow = (list, w) => {
+    const algunaMarca = list.some(n => (currentTeeth[n]?._marcas || []).length > 0);
+    if (!algunaMarca) return null;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {list.map((n, i) => {
+          const marcas = currentTeeth[n]?._marcas || [];
+          return (
+            <div key={n} style={{ width: w, minHeight: 14, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 1, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
+              {marcas.map(mId => {
+                const m = MARCAS_PIEZA.find(x => x.id === mId);
+                if (!m) return null;
+                return (
+                  <span key={mId} title={m.lbl} style={{ fontSize: 8.5, fontWeight: 700, color: AZ, lineHeight: 1 }}>{m.sig}</span>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Fila de anotaciones del Grupo C (edéntulo total, aparatos ortodónticos,
+  // prótesis): una barra azul/roja continua desde `desde` hasta `hasta`,
+  // sobre el rango de piezas correspondiente. Clic en la barra la elimina
+  // (con confirmación) -- editar un tramo se hace borrando y creando de nuevo.
+  const aRow = (list, w, arcada) => {
+    const anots = anotaciones.filter(a => a.arcada === arcada);
+    if (anots.length === 0) return null;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {list.map((n, i) => {
+          const idx = list.indexOf(n);
+          const activas = anots.filter(a => {
+            const iDesde = list.indexOf(Number(a.desde));
+            const iHasta = list.indexOf(Number(a.hasta));
+            if (iDesde === -1 || iHasta === -1) return false;
+            const lo = Math.min(iDesde, iHasta), hi = Math.max(iDesde, iHasta);
+            return idx >= lo && idx <= hi;
+          });
+          return (
+            <div key={n} style={{ width: w, height: 8, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 1, justifyContent: 'center', borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
+              {activas.map(a => (
+                <div key={a.id} onClick={() => window.confirm(`¿Eliminar "${ANOTACIONES_ARCADA.find(t => t.tipo === a.tipo)?.lbl}"?`) && eliminarAnotacion(a.id)}
+                  title={ANOTACIONES_ARCADA.find(t => t.tipo === a.tipo)?.lbl}
+                  style={{ height: 3, background: a.bad ? RJ : AZ, cursor: 'pointer' }} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   // ⚡ SEGUNDA SOLUCIÓN AQUÍ: Desglosamos "todaPieza" para que el SVG del panel lateral lo pueda leer
   const rawSelSurfs = sel ? (currentTeeth[sel] || {}) : {};
@@ -387,6 +524,50 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
           <input type="checkbox" checked={showP} onChange={e => setShowP(e.target.checked)} style={{ accentColor: P, transform: 'scale(1.2)' }} /> Dientes Deciduos
         </label>
         {allF.length > 0 && <button onClick={() => { setCurrentTeeth({}); setSel(null); }} style={{ width: '100%', marginTop: 10, padding: '9px', minHeight: 36, background: '#FEE2E2', border: `1px solid color-mix(in srgb, ${RJ} 33%, transparent)`, borderRadius: '10px', fontSize: 13, color: RJ, cursor: 'pointer', fontWeight: 600 }}>Limpiar todo el mapa</button>}
+
+        {/* Grupo C de la NTS 150: edéntulo total, aparatos ortodónticos y
+            prótesis -- abarcan un rango de piezas o toda la arcada, no una
+            sola pieza, así que no se pintan con el pincel de arriba. */}
+        <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${BD}` }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: MU, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 }}>Anotaciones de arcada</div>
+          {!showAnotForm ? (
+            <button onClick={() => setShowAnotForm(true)} style={{ width: '100%', padding: '8px 10px', minHeight: 36, border: `1px solid ${P}`, background: 'transparent', borderRadius: '10px', fontSize: 13, color: P, cursor: 'pointer', fontWeight: 600 }}>+ Nueva anotación</button>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <select value={anotDraft.tipo} onChange={e => setAnotDraft(d => ({ ...d, tipo: e.target.value }))}
+                style={{ width: '100%', minHeight: 34, padding: '4px 6px', borderRadius: '8px', border: `1px solid ${BD}`, fontSize: 12.5, color: DN }}>
+                {ANOTACIONES_ARCADA.map(a => <option key={a.tipo} value={a.tipo}>{a.lbl}</option>)}
+              </select>
+              <select value={anotDraft.arcada} onChange={e => setAnotDraft(d => ({ ...d, arcada: e.target.value, desde: '', hasta: '' }))}
+                style={{ width: '100%', minHeight: 34, padding: '4px 6px', borderRadius: '8px', border: `1px solid ${BD}`, fontSize: 12.5, color: DN }}>
+                <option value="UA">Sup. permanente</option>
+                <option value="LA">Inf. permanente</option>
+                <option value="UP">Sup. decidua</option>
+                <option value="LP">Inf. decidua</option>
+              </select>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <select value={anotDraft.desde} onChange={e => setAnotDraft(d => ({ ...d, desde: e.target.value }))}
+                  style={{ flex: 1, minHeight: 34, padding: '4px 6px', borderRadius: '8px', border: `1px solid ${BD}`, fontSize: 12.5, color: DN }}>
+                  <option value="">Desde…</option>
+                  {ARCADAS[anotDraft.arcada].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <select value={anotDraft.hasta} onChange={e => setAnotDraft(d => ({ ...d, hasta: e.target.value }))}
+                  style={{ flex: 1, minHeight: 34, padding: '4px 6px', borderRadius: '8px', border: `1px solid ${BD}`, fontSize: 12.5, color: DN }}>
+                  <option value="">Hasta…</option>
+                  {ARCADAS[anotDraft.arcada].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: MU, cursor: 'pointer' }}>
+                <input type="checkbox" checked={anotDraft.bad} onChange={e => setAnotDraft(d => ({ ...d, bad: e.target.checked }))} style={{ accentColor: RJ }} />
+                Marcar en mal estado (rojo)
+              </label>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button onClick={() => setShowAnotForm(false)} style={{ flex: 1, padding: '7px', minHeight: 34, border: `1px solid ${BD}`, background: 'transparent', borderRadius: '8px', fontSize: 12.5, color: MU, cursor: 'pointer' }}>Cancelar</button>
+                <button onClick={guardarAnotacion} disabled={!anotDraft.desde || !anotDraft.hasta} style={{ flex: 1, padding: '7px', minHeight: 34, border: 'none', background: P, borderRadius: '8px', fontSize: 12.5, color: '#fff', cursor: 'pointer', fontWeight: 600, opacity: (!anotDraft.desde || !anotDraft.hasta) ? .5 : 1 }}>Guardar</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ÁREA CENTRAL -- la tarjeta era inline-block con sólo un minWidth,
@@ -404,12 +585,13 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           <div style={{ fontSize: 12, fontWeight: 600, color: MU, textTransform: 'uppercase', letterSpacing: .4, textAlign: 'center', marginBottom: 6 }}>Maxilar superior</div>
 
-          {recRow(UA, aw)}{eRow(UA, aw)}{nRow(UA, aw)}{tRow(UA, true, aw)}
+          {recRow(UA, aw)}{mRow(UA, aw)}{eRow(UA, aw)}{nRow(UA, aw)}{aRow(UA, aw, 'UA')}{tRow(UA, true, aw)}
 
           {showP && (
             <div style={{ marginTop: 3 }}>
               {tRow(UP, true, pw)}
               {nRow(UP, pw)}
+              {mRow(UP, pw)}
             </div>
           )}
 
@@ -420,12 +602,13 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
 
           {showP && (
             <div style={{ marginTop: 8 }}>
+              {mRow(LP, pw)}
               {nRow(LP, pw)}
               {tRow(LP, false, pw)}
             </div>
           )}
 
-          {tRow(LA, false, aw)}{nRow(LA, aw)}{eRow(LA, aw)}{recRow(LA, aw)}
+          {tRow(LA, false, aw)}{aRow(LA, aw, 'LA')}{nRow(LA, aw)}{eRow(LA, aw)}{mRow(LA, aw)}{recRow(LA, aw)}
 
           <div style={{ fontSize: 12, fontWeight: 600, color: MU, textTransform: 'uppercase', letterSpacing: .4, textAlign: 'center', marginTop: 6 }}>Maxilar inferior</div>
 
@@ -567,6 +750,22 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
               </div>
             );
           })}
+
+          {/* Grupo B de la NTS 150: atributos de la pieza completa (posición,
+              forma, número, movimiento) -- no son un color de relleno, así
+              que van aparte de las superficies de arriba. */}
+          <div style={{ fontSize: 12, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Otras marcas de la pieza</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+            {MARCAS_PIEZA.map(m => {
+              const activa = (selSurfs._marcas || []).includes(m.id);
+              return (
+                <button key={m.id} onClick={() => toggleMarca(sel, m.id)} title={m.lbl}
+                  style={{ padding: '5px 9px', minHeight: 28, borderRadius: '999px', cursor: 'pointer', fontSize: 11.5, fontWeight: 600, border: `1px solid ${activa ? AZ : BD}`, background: activa ? `color-mix(in srgb, ${AZ} 14%, transparent)` : 'transparent', color: activa ? AZ : MU }}>
+                  {m.sig}
+                </button>
+              );
+            })}
+          </div>
 
           <div style={{ fontSize: 12, color: MU, marginTop: 15, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4 }}>Notas de pieza</div>
           <textarea placeholder="Observaciones específicas..." defaultValue={selSurfs.note || ''} onBlur={e => setCurrentTeeth(p => { const next = JSON.parse(JSON.stringify(p||{})); if(!next[sel]) next[sel] = JSON.parse(JSON.stringify(currentTeeth[sel] || {})); next[sel].note = e.target.value; return next; })}
@@ -843,6 +1042,13 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     const limpiarDientes = (dientesBase) => {
       const limpios = {};
       Object.keys(dientesBase || {}).forEach(num => {
+        // `_anotaciones` (Grupo C de la NTS 150: edéntulo total, aparatos,
+        // prótesis) es un array a nivel de arcada, no una pieza -- pasa tal
+        // cual. Sin este corte, getSurfs('_anotaciones') y el
+        // Object.keys(pieza) de abajo tratan el array como si fuera una
+        // pieza con caras, y lo guardan como {"0": {...}} en vez de [...]
+        // (rompía aRow al recargar: "anotaciones.filter is not a function").
+        if (num === '_anotaciones') { limpios[num] = dientesBase[num]; return; }
         const pieza = dientesBase[num];
         const superficies = getSurfs(num);
         const valores = superficies.map(s => pieza[s]).filter(v => v && v !== 'normal');
@@ -850,13 +1056,15 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
         if (esTodoIgual) {
           limpios[num] = { todaPieza: valores[0] };
           if (pieza.note) limpios[num].note = pieza.note;
+          if (pieza._marcas) limpios[num]._marcas = pieza._marcas;
         } else {
           const filtrada = {};
           let tieneHallazgo = false;
           Object.keys(pieza).forEach(k => {
             const v = pieza[k];
             if (k === 'note' && v && v.trim() !== '') { filtrada[k] = v; tieneHallazgo = true; }
-            else if (k !== 'note' && v && v !== 'normal') { filtrada[k] = v; tieneHallazgo = true; }
+            else if (k === '_marcas' && Array.isArray(v) && v.length > 0) { filtrada[k] = v; tieneHallazgo = true; }
+            else if (k !== 'note' && k !== '_marcas' && v && v !== 'normal') { filtrada[k] = v; tieneHallazgo = true; }
           });
           if (tieneHallazgo) limpios[num] = filtrada;
         }
