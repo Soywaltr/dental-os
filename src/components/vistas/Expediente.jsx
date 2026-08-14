@@ -12,6 +12,7 @@ import Modal from '../ui/Modal';
 import { BD, P, DN, MU, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { normalizarTexto, ini, findPatientByDoc, findPatientByName, estadoPaciente } from '../../utils/helpers';
 import useResponsive from '../../utils/useResponsive';
+import { notify } from '../../utils/toast';
 
 // ─── DESIGN TOKENS (alineados con App.jsx) ───────────────────────────────────
 // Ya no son hex fijos: cada entrada apunta a la MISMA variable CSS declarada en
@@ -575,13 +576,13 @@ const NewPatientModal = memo(({ onClose, onSave, patientsList }) => {
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { alert('Nombre requerido'); return; }
+    if (!form.name.trim()) { notify('Nombre requerido'); return; }
     setSaving(true);
     try {
       await onSave(form);
       onClose();
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify('Error: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -768,7 +769,7 @@ const ExportarPacientesModal = memo(({ onClose, patientsList }) => {
       exportarHistorialCompletoCSV(pacientesElegidos, historiasPorPacienteId, fechaDesde, fechaHasta);
       onClose();
     } catch (err) {
-      alert('No se pudo exportar el historial: ' + err.message);
+      notify('No se pudo exportar el historial: ' + err.message);
     } finally {
       setDescargando(false);
     }
@@ -1053,7 +1054,7 @@ export default function Expediente({ teeth, setTeeth, teethEvolucion, setTeethEv
       else await desarchivarPatient(paciente.id);
       if (archivar && patActivo?.id === paciente.id) setPatSeleccionado(null);
     } catch (err) {
-      alert(`No se pudo ${archivar ? 'archivar' : 'recuperar'} el paciente: ${err.message}`);
+      notify(`No se pudo ${archivar ? 'archivar' : 'recuperar'} el paciente: ${err.message}`);
     }
   };
 

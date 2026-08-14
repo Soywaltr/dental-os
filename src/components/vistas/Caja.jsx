@@ -9,6 +9,7 @@ import Icon from '../ui/Icon';
 import { BD, P, GL, MU, DN, LT, WA, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { sc } from '../../utils/helpers';
 import { BUCKET, rutaComprobante, firmar } from '../../utils/storage';
+import { notify } from '../../utils/toast';
 
 const METODOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
 const CATEGORIAS_GASTO = ['Materiales', 'Laboratorio', 'Servicios', 'Sueldos', 'Otros'];
@@ -141,7 +142,7 @@ export default function Caja({ clinicaId }) {
   const verComprobante = async (path) => {
     const url = await firmar(path);
     if (url) window.open(url, '_blank', 'noopener');
-    else alert('No se pudo abrir el archivo adjunto.');
+    else notify('No se pudo abrir el archivo adjunto.');
   };
 
   const guardarComprobante = async () => {
@@ -149,7 +150,7 @@ export default function Caja({ clinicaId }) {
     const serie = d.serie.trim();
     const numero = d.numero.trim();
     if (!serie && !numero && !d.archivoFile && !d.archivoExistente) {
-      alert('Ingresa la serie y número del comprobante, o adjunta el archivo emitido en SUNAT.');
+      notify('Ingresa la serie y número del comprobante, o adjunta el archivo emitido en SUNAT.');
       return;
     }
     setSavingComprobante(true);
@@ -181,7 +182,7 @@ export default function Caja({ clinicaId }) {
       }));
       setEmitirDraft(null);
     } catch (err) {
-      alert('Error al guardar el comprobante: ' + err.message);
+      notify('Error al guardar el comprobante: ' + err.message);
     } finally {
       setSavingComprobante(false);
     }
@@ -200,7 +201,7 @@ export default function Caja({ clinicaId }) {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     } catch {
-      alert('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
+      notify('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
     }
   };
 
@@ -210,12 +211,12 @@ export default function Caja({ clinicaId }) {
   };
 
   const registrarPago = async () => {
-    if (!pagoDraft.patientId || !pagoDraft.grupoKey) { alert('Selecciona paciente y tratamiento.'); return; }
+    if (!pagoDraft.patientId || !pagoDraft.grupoKey) { notify('Selecciona paciente y tratamiento.'); return; }
     const monto = parseFloat(pagoDraft.monto);
-    if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
+    if (!monto || monto <= 0) { notify('Ingresa un monto válido.'); return; }
 
     const grupo = facturasAgrupadas.find(g => g.key === pagoDraft.grupoKey);
-    if (!grupo) { alert('No se encontró el tratamiento seleccionado.'); return; }
+    if (!grupo) { notify('No se encontró el tratamiento seleccionado.'); return; }
 
     setSavingPago(true);
 
@@ -246,7 +247,7 @@ export default function Caja({ clinicaId }) {
 
     const { error } = await supabase.from('historias').upsert({ patient_id: pagoDraft.patientId, clinica_id: clinicaId, plan_tratamiento: planActualizado }, { onConflict: 'patient_id' });
     setSavingPago(false);
-    if (error) { alert('Error al registrar el pago: ' + error.message); return; }
+    if (error) { notify('Error al registrar el pago: ' + error.message); return; }
 
     setFacturas(prev => prev.map(f => {
       if (String(f.patient_id) !== String(pagoDraft.patientId)) return f;
@@ -254,12 +255,12 @@ export default function Caja({ clinicaId }) {
       return actualizado ? { ...actualizado, patient_id: f.patient_id } : f;
     }));
     setPagoDraft(PAGO_VACIO);
-    alert('Pago registrado correctamente.');
+    notify('Pago registrado correctamente.');
   };
 
   const registrarGasto = async () => {
     const monto = parseFloat(gastoDraft.monto);
-    if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
+    if (!monto || monto <= 0) { notify('Ingresa un monto válido.'); return; }
 
     setSavingGasto(true);
     const { data, error } = await supabase.from('gastos').insert([{
@@ -268,7 +269,7 @@ export default function Caja({ clinicaId }) {
     }]).select();
     setSavingGasto(false);
 
-    if (error) { alert('Error al registrar el gasto: ' + error.message); return; }
+    if (error) { notify('Error al registrar el gasto: ' + error.message); return; }
     setGastos(prev => [data[0], ...prev]);
     setShowGastoModal(false);
     setGastoDraft(GASTO_VACIO);

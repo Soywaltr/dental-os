@@ -13,6 +13,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../supabase';
 import Button from '../ui/Button';
 import { BD, DN, MU, MT, P, RJ, WA, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { notify } from '../../utils/toast';
 
 const cardStyle = {
   background: GLASS_BG, border: GLASS_BORDER, borderRadius: '14px', padding: 20, overflow: 'hidden',
@@ -115,7 +116,7 @@ export default function Seguridad({ rol }) {
     setQuitando(factorId);
     const { error: err } = await supabase.auth.mfa.unenroll({ factorId });
     setQuitando(null);
-    if (err) { alert('Error al quitar el dispositivo: ' + err.message); return; }
+    if (err) { notify('Error al quitar el dispositivo: ' + err.message); return; }
     await cargarFactores();
   };
 
@@ -257,8 +258,8 @@ function GestionMFA() {
     setReseteando(userId);
     const { data, error: err } = await supabase.functions.invoke('mfa-admin-reset', { body: { action: 'reset', targetUserId: userId } });
     setReseteando(null);
-    if (err) { alert('Error: ' + err.message); return; }
-    if (data?.error) { alert('Error: ' + data.error); return; }
+    if (err) { notify('Error: ' + err.message); return; }
+    if (data?.error) { notify('Error: ' + data.error); return; }
     setReloadTick(t => t + 1);
   };
 

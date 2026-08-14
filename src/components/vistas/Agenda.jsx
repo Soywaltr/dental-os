@@ -8,6 +8,7 @@ import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
 import { BD, P, GL, MU, DN, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FUENTE_CAPTACION_GRUPOS } from '../../utils/constants';
+import { notify } from '../../utils/toast';
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
@@ -281,7 +282,7 @@ export default function Agenda({ clinicaId, clinica }) {
   const handleGuardarCita = async (datosCita) => {
     const isOccupied = allApts.some(cita => cita.fecha === datosCita.fecha && cita.hora_cita === datosCita.hora);
     if (isOccupied) {
-      alert("⚠️ Ese horario ya está ocupado. Por favor, elige otra fecha u hora para la cita.");
+      notify("⚠️ Ese horario ya está ocupado. Por favor, elige otra fecha u hora para la cita.");
       return;
     }
     const googleToken = googleConnected ? await getToken() : null;
@@ -353,19 +354,19 @@ export default function Agenda({ clinicaId, clinica }) {
         await sincronizarConGHL({ nombre: nombreLimpio, telefono: cita.celular, fecha: cita.fecha, hora: cita.hora, motivo: cita.motivo });
       }
 
-      alert("¡Cita agendada correctamente!");
+      notify("¡Cita agendada correctamente!");
       setShowModalCita(false); setPreseleccion(null);
       await fetchData();
     } catch (error) {
       console.error(error);
-      alert("Hubo un problema al guardar la cita.");
+      notify("Hubo un problema al guardar la cita.");
     }
   };
 
   const handleSaveEdit = async () => {
     const isOccupied = allApts.some(cita => cita.id !== selectedCita.id && cita.fecha === selectedCita.fecha && cita.hora_cita === selectedCita.hora_cita);
     if (isOccupied) {
-      alert("⚠️ Ese horario ya está ocupado por otra cita. Por favor, elige otra fecha u hora.");
+      notify("⚠️ Ese horario ya está ocupado por otra cita. Por favor, elige otra fecha u hora.");
       return;
     }
 
@@ -376,7 +377,7 @@ export default function Agenda({ clinicaId, clinica }) {
         reason: selectedCita.reason, treatment: selectedCita.treatment,
         fuente_captacion: selectedCita.fuente_captacion || null,
       }).eq('id', selectedCita.id);
-      if (error) { alert('Error: ' + error.message); setSavingEdit(false); return; }
+      if (error) { notify('Error: ' + error.message); setSavingEdit(false); return; }
 
       if (selectedCita.phone) {
         await sincronizarConGHL({
@@ -420,7 +421,7 @@ export default function Agenda({ clinicaId, clinica }) {
       if (errEstado) console.error('Error guardando asistencia:', errEstado);
     }
 
-    alert('Cita actualizada correctamente.');
+    notify('Cita actualizada correctamente.');
     setShowEditModal(false); setSavingEdit(false);
     await fetchData();
   };
@@ -439,11 +440,11 @@ export default function Agenda({ clinicaId, clinica }) {
         const { error } = await supabase.from('pacientes').update({ fecha: null, hora_cita: null, google_event_id: null }).eq('id', selectedCita.id);
         if (error) throw error;
       }
-      alert("Cita eliminada correctamente.");
+      notify("Cita eliminada correctamente.");
       setShowEditModal(false);
       await fetchData();
     } catch (error) {
-      console.error("Error al eliminar:", error); alert("Hubo un problema al eliminar la cita.");
+      console.error("Error al eliminar:", error); notify("Hubo un problema al eliminar la cita.");
     } finally { setSavingEdit(false); }
   };
 

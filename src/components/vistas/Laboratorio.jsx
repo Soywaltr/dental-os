@@ -7,6 +7,7 @@ import Badge from '../ui/Badge';
 import Modal from '../ui/Modal';
 import Icon from '../ui/Icon';
 import { BD, P, DN, MU, LT, GL, WA, RJ, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import { notify } from '../../utils/toast';
 
 // Estados de la orden: cada uno conserva su significado semántico (ámbar en
 // curso, azul listo, verde entregado) pero sobre los tokens del tema, para que
@@ -54,14 +55,14 @@ export default function Laboratorio({ clinicaId }) {
 
   const handleMarcar = async (id, nuevoStatus) => {
     const { error } = await supabase.from('laboratorio_ordenes').update({ status: nuevoStatus }).eq('id', id);
-    if (error) { alert('Error al actualizar: ' + error.message); return; }
+    if (error) { notify('Error al actualizar: ' + error.message); return; }
     setOrders(prev => prev.map(x => x.id === id ? { ...x, status: nuevoStatus } : x));
   };
 
   const handleCrearOrden = async () => {
-    if (!draft.patient_id) { alert('Selecciona un paciente.'); return; }
-    if (!draft.type.trim()) { alert('Ingresa el tipo de trabajo.'); return; }
-    if (!draft.lab.trim()) { alert('Ingresa el laboratorio.'); return; }
+    if (!draft.patient_id) { notify('Selecciona un paciente.'); return; }
+    if (!draft.type.trim()) { notify('Ingresa el tipo de trabajo.'); return; }
+    if (!draft.lab.trim()) { notify('Ingresa el laboratorio.'); return; }
 
     setSaving(true);
     const paciente = pacientes.find(p => String(p.id) === String(draft.patient_id));
@@ -79,7 +80,7 @@ export default function Laboratorio({ clinicaId }) {
     }]).select();
     setSaving(false);
 
-    if (error) { alert('Error al crear la orden: ' + error.message); return; }
+    if (error) { notify('Error al crear la orden: ' + error.message); return; }
     setOrders(prev => [data[0], ...prev]);
     setShowModal(false);
     setDraft(ORDEN_VACIA);

@@ -8,6 +8,7 @@ import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import { BD, DN, MU, MT, P, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { BUCKET, rutaPerfil, rutaFirma, rutaLogo, firmar, invalidarFirma } from '../../utils/storage';
+import { notify } from '../../utils/toast';
 
 const TABS = [
   { id: 'perfil', lbl: 'Mi perfil' },
@@ -114,8 +115,8 @@ function MiPerfil({ clinicaId, cardStyle, tituloCardStyle, labelCapsStyle, input
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ data: { full_name: nombre, phone: telefono } });
     setSaving(false);
-    if (error) alert('Error al guardar: ' + error.message);
-    else alert('Perfil actualizado.');
+    if (error) notify('Error al guardar: ' + error.message);
+    else notify('Perfil actualizado.');
   };
 
   const subirAvatar = async (e) => {
@@ -124,7 +125,7 @@ function MiPerfil({ clinicaId, cardStyle, tituloCardStyle, labelCapsStyle, input
     setSubiendoAvatar(true);
     const ruta = rutaPerfil(clinicaId);
     const { error } = await supabase.storage.from(BUCKET).upload(ruta, file, { upsert: true });
-    if (error) { alert('Error al subir la foto: ' + error.message); setSubiendoAvatar(false); return; }
+    if (error) { notify('Error al subir la foto: ' + error.message); setSubiendoAvatar(false); return; }
     invalidarFirma(ruta);
     setAvatarUrl(await firmar(ruta));
     setSubiendoAvatar(false);
@@ -136,7 +137,7 @@ function MiPerfil({ clinicaId, cardStyle, tituloCardStyle, labelCapsStyle, input
     setSubiendoFirma(true);
     const ruta = rutaFirma(clinicaId);
     const { error } = await supabase.storage.from(BUCKET).upload(ruta, file, { upsert: true });
-    if (error) { alert('Error al subir la firma: ' + error.message); setSubiendoFirma(false); return; }
+    if (error) { notify('Error al subir la firma: ' + error.message); setSubiendoFirma(false); return; }
     invalidarFirma(ruta);
     setFirmaUrl(await firmar(ruta));
     setSubiendoFirma(false);
@@ -239,12 +240,12 @@ function Negocio({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardSt
     setSubiendoLogo(true);
     const path = rutaLogo(clinicaId, file.name);
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
-    if (upErr) { alert('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
+    if (upErr) { notify('Error al subir el logo: ' + upErr.message); setSubiendoLogo(false); return; }
     // Se guarda la RUTA, no una URL pública: con el bucket privado esa URL no
     // resuelve, y la firma se genera al momento de mostrar.
     const { error: dbErr } = await supabase.from('clinicas').update({ logo_url: path }).eq('id', clinicaId);
     setSubiendoLogo(false);
-    if (dbErr) { alert('Error al guardar el logo: ' + dbErr.message); return; }
+    if (dbErr) { notify('Error al guardar el logo: ' + dbErr.message); return; }
     invalidarFirma(path);
     setLogoUrl(await firmar(path));
     refrescarClinica?.();
@@ -255,8 +256,8 @@ function Negocio({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardSt
     setGuardando(true);
     const { error } = await supabase.from('clinicas').update({ nombre }).eq('id', clinicaId);
     setGuardando(false);
-    if (error) { alert('Error al guardar: ' + error.message); return; }
-    alert('Datos del negocio actualizados.');
+    if (error) { notify('Error al guardar: ' + error.message); return; }
+    notify('Datos del negocio actualizados.');
     refrescarClinica?.();
   };
 
@@ -265,8 +266,8 @@ function Negocio({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCardSt
     setGuardandoDatos(true);
     const { error } = await supabase.from('clinicas').update(datos).eq('id', clinicaId);
     setGuardandoDatos(false);
-    if (error) { alert('Error al guardar: ' + error.message); return; }
-    alert('Datos del consultorio actualizados.');
+    if (error) { notify('Error al guardar: ' + error.message); return; }
+    notify('Datos del consultorio actualizados.');
     refrescarClinica?.();
   };
 
@@ -359,8 +360,8 @@ function HorarioCard({ clinicaId, clinica, refrescarClinica, cardStyle, tituloCa
     const horario = { lv_inicio: lvInicio, lv_fin: lvFin, sab_inicio: sabInicio, sab_fin: sabFin, sab_cerrado: sabCerrado, duracion_cita: Number(duracionCita) };
     const { error } = await supabase.from('clinicas').update({ horario }).eq('id', clinicaId);
     setGuardando(false);
-    if (error) { alert('Error al guardar: ' + error.message); return; }
-    alert('Horario de atención actualizado.');
+    if (error) { notify('Error al guardar: ' + error.message); return; }
+    notify('Horario de atención actualizado.');
     refrescarClinica?.();
   };
 

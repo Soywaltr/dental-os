@@ -6,6 +6,7 @@ import {
   P, DN, MU, BD, MT, RJ,
   GRAD_PRIMARY, GLASS_BG, GLASS_BORDER, GLASS_SHADOW,
 } from './utils/constants';
+import { notify } from './utils/toast';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -49,7 +50,7 @@ export default function Login({ onLogin }) {
       if (error) {
         setErrorMsg(error.message);
       } else {
-        alert('¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.');
+        notify('¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.');
         setIsRegistering(false);
         setPassword('');
       }

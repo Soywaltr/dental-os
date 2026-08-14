@@ -15,6 +15,7 @@ import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsA
 // timestamp, así que nunca hay una firma cacheada que quede obsoleta.
 import { BUCKET, rutaFirma, rutaImagenPaciente, rutaDesdeUrl, firmar } from '../../utils/storage';
 import useResponsive from '../../utils/useResponsive';
+import { notify } from '../../utils/toast';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -957,7 +958,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     });
 
     if (sugerencias.length === 0) {
-      alert('No se detectaron hallazgos en el odontograma para sugerir al plan de tratamiento.');
+      notify('No se detectaron hallazgos en el odontograma para sugerir al plan de tratamiento.');
       return;
     }
 
@@ -982,7 +983,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
     const removidos = plan.filter(esPeriodontalObsoleto).length;
     if (nuevas.length === 0 && removidos === 0) {
-      alert('Las sugerencias detectadas ya estaban en el plan de tratamiento.');
+      notify('Las sugerencias detectadas ya estaban en el plan de tratamiento.');
       return;
     }
 
@@ -997,16 +998,16 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     ]);
 
     if (removidos > 0) {
-      alert(`Se actualizó el tratamiento periodontal en el plan${nuevas.length > removidos ? ` y se agregaron ${nuevas.length - removidos} sugerencia(s) más` : ''}.`);
+      notify(`Se actualizó el tratamiento periodontal en el plan${nuevas.length > removidos ? ` y se agregaron ${nuevas.length - removidos} sugerencia(s) más` : ''}.`);
     } else {
-      alert(`Se agregaron ${nuevas.length} sugerencia(s) al plan de tratamiento.`);
+      notify(`Se agregaron ${nuevas.length} sugerencia(s) al plan de tratamiento.`);
     }
   };
 
   const registrarAbono = () => {
-    if (!pagoDraft.itemId) { alert('Selecciona un tratamiento.'); return; }
+    if (!pagoDraft.itemId) { notify('Selecciona un tratamiento.'); return; }
     const monto = parseFloat(pagoDraft.monto);
-    if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
+    if (!monto || monto <= 0) { notify('Ingresa un monto válido.'); return; }
 
     setPlan(p => p.map(i => {
       if (String(i.id) !== String(pagoDraft.itemId)) return i;
@@ -1022,7 +1023,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   };
 
   const imprimirPresupuesto = () => {
-    if (plan.length === 0) { alert('No hay tratamientos en el plan para generar un presupuesto.'); return; }
+    if (plan.length === 0) { notify('No hay tratamientos en el plan para generar un presupuesto.'); return; }
 
     // Escapa también & y comillas: hay valores que se interpolan dentro de
     // atributos (src="..."), donde escapar solo < y > no alcanza.
@@ -1097,10 +1098,10 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   };
 
   const enviarPresupuestoWhatsApp = () => {
-    if (plan.length === 0) { alert('No hay tratamientos en el plan para generar un presupuesto.'); return; }
+    if (plan.length === 0) { notify('No hay tratamientos en el plan para generar un presupuesto.'); return; }
 
     const telefono = toWhatsAppNumber(patData?.phone || patient.phone);
-    if (!telefono) { alert('El paciente no tiene un número de celular registrado.'); return; }
+    if (!telefono) { notify('El paciente no tiene un número de celular registrado.'); return; }
 
     const nombre = patData?.name || patient.name;
     const totalCosto = plan.reduce((a, c) => a + c.cost, 0);
@@ -1121,7 +1122,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     setSaving(true);
     const fileName = rutaImagenPaciente(clinicaId, patient.id, file.name);
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(fileName, file);
-    if (uploadError) { alert('Error al subir la imagen: ' + uploadError.message); setSaving(false); return; }
+    if (uploadError) { notify('Error al subir la imagen: ' + uploadError.message); setSaving(false); return; }
     // Se guarda la RUTA, no una URL pública: el bucket es privado y la firma se
     // genera al mostrar. Los registros antiguos con URL completa siguen
     // funcionando porque firmar() deriva la ruta de la URL.
@@ -1130,7 +1131,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     setImagenesList(nuevaLista);
     await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, imagenes: nuevaLista }, { onConflict: 'patient_id' });
     setSaving(false);
-    alert("¡Imagen subida y guardada correctamente!");
+    notify("¡Imagen subida y guardada correctamente!");
   };
   
   const handleDeleteImage = async (indexToDelete, imageUrl) => {
@@ -1141,11 +1142,11 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
       const nuevaLista = imagenesList.filter((_, i) => i !== indexToDelete);
       setImagenesList(nuevaLista);
       await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, imagenes: nuevaLista }, { onConflict: 'patient_id' });
-    } catch (err) { console.error(err); alert("Hubo un error al intentar eliminar la imagen."); } finally { setSaving(false); }
+    } catch (err) { console.error(err); notify("Hubo un error al intentar eliminar la imagen."); } finally { setSaving(false); }
   };
 
   const handleAgregarNotaEvolucion = async () => {
-    if (!nuevaNotaTexto.trim()) { alert('Escribe una nota antes de guardar.'); return; }
+    if (!nuevaNotaTexto.trim()) { notify('Escribe una nota antes de guardar.'); return; }
     setSavingNota(true);
     const nuevaNota = {
       id: Date.now(),
@@ -1155,7 +1156,7 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     };
     const listaActualizada = [nuevaNota, ...notasEvolucion];
     const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, notas_evolucion: listaActualizada }, { onConflict: 'patient_id' });
-    if (error) { alert('Error al guardar la nota: ' + error.message); setSavingNota(false); return; }
+    if (error) { notify('Error al guardar la nota: ' + error.message); setSavingNota(false); return; }
     setNotasEvolucion(listaActualizada);
     setNuevaNotaTexto('');
     setSavingNota(false);
@@ -1174,12 +1175,12 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
     setRecetas(listaActualizada);
     setSavingReceta(true);
     const { error } = await supabase.from('historias').upsert({ patient_id: patient.id, clinica_id: clinicaId, receta: listaActualizada }, { onConflict: 'patient_id' });
-    if (error) alert('Error al guardar la receta: ' + error.message);
+    if (error) notify('Error al guardar la receta: ' + error.message);
     setSavingReceta(false);
   };
 
   const handleAgregarMedicamento = () => {
-    if (!medDraft.med.trim()) { alert('Ingresa al menos el nombre del medicamento.'); return; }
+    if (!medDraft.med.trim()) { notify('Ingresa al menos el nombre del medicamento.'); return; }
     const nuevoMed = { id: Date.now(), med: medDraft.med.trim(), dose: medDraft.dose.trim(), inst: medDraft.inst.trim() };
     const listaActualizada = recetas.length === 0
       ? [{ id: Date.now(), date: fechaLarga(), meds: [nuevoMed] }]
@@ -1194,14 +1195,14 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
 
   const handleNuevaReceta = () => {
     if (recetas.length > 0 && recetas[0].meds.length === 0) {
-      alert('La receta actual todavía está vacía.');
+      notify('La receta actual todavía está vacía.');
       return;
     }
     guardarRecetas([{ id: Date.now(), date: fechaLarga(), meds: [] }, ...recetas]);
   };
 
   const imprimirReceta = (receta) => {
-    if (!receta || receta.meds.length === 0) { alert('Esta receta no tiene medicamentos.'); return; }
+    if (!receta || receta.meds.length === 0) { notify('Esta receta no tiene medicamentos.'); return; }
     // Escapa también & y comillas: hay valores que se interpolan dentro de
     // atributos (src="..."), donde escapar solo < y > no alcanza.
     const esc = s => String(s ?? '')
@@ -1256,9 +1257,9 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
   };
 
   const enviarRecetaWhatsApp = (receta) => {
-    if (!receta || receta.meds.length === 0) { alert('Esta receta no tiene medicamentos.'); return; }
+    if (!receta || receta.meds.length === 0) { notify('Esta receta no tiene medicamentos.'); return; }
     const telefono = toWhatsAppNumber(patData?.phone || patient.phone);
-    if (!telefono) { alert('El paciente no tiene un número de celular registrado.'); return; }
+    if (!telefono) { notify('El paciente no tiene un número de celular registrado.'); return; }
 
     const nombre = patData?.name || patient.name;
     const lineas = receta.meds.map(m => `- ${m.med}${m.dose ? ` — ${m.dose}` : ''}${m.inst ? ` (${m.inst})` : ''}`).join('\n');

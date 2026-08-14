@@ -20,6 +20,7 @@ import { ini, normalizarTexto, resumenPagosOrtodoncia } from '../../utils/helper
 import useResponsive from '../../utils/useResponsive';
 import { BUCKET, rutaFotoOrto, rutaDesdeUrl, firmar, firmarVarias, invalidarFirma } from '../../utils/storage';
 import { generarMiniatura, rutaMiniatura } from '../../utils/imagen';
+import { notify } from '../../utils/toast';
 
 // Mismos métodos de pago que usa Caja.jsx, para que el historial sea coherente
 // entre la caja general y los pagos de ortodoncia.
@@ -326,10 +327,10 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
 
       if (errorGuardado) throw errorGuardado;
       
-      alert(`✅ ${nombreSeccion} guardado correctamente.`);
+      notify(`✅ ${nombreSeccion} guardado correctamente.`);
       setLockState(false); // Bloquea la pantalla al terminar con éxito
     } catch (err) {
-      alert(`Error al guardar en Supabase: ${err.message}`);
+      notify(`Error al guardar en Supabase: ${err.message}`);
     } finally {
       setLoader(false);
     }
@@ -396,7 +397,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
         viejas.forEach(invalidarFirma);
       }
     } catch (err) {
-      alert('Error al subir el archivo: ' + err.message);
+      notify('Error al subir el archivo: ' + err.message);
     } finally {
       setSavingFotosOrto(false);
     }
@@ -416,7 +417,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       await guardarFotografiasOrto(nuevoObjetoFotos);
       setFotosOrto(nuevoObjetoFotos);
     } catch (err) {
-      alert('Error al eliminar el archivo: ' + err.message);
+      notify('Error al eliminar el archivo: ' + err.message);
     } finally {
       setSavingFotosOrto(false);
     }
@@ -633,7 +634,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       await guardarControles(nuevosControles);
       setControles(nuevosControles);
     } catch (err) {
-      alert('Error al subir la foto: ' + err.message);
+      notify('Error al subir la foto: ' + err.message);
     } finally {
       setSubiendoCasilla('');
     }
@@ -654,7 +655,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       await guardarControles(nuevosControles);
       setControles(nuevosControles);
     } catch (err) {
-      alert('Error al eliminar la foto: ' + err.message);
+      notify('Error al eliminar la foto: ' + err.message);
     }
   };
 
@@ -667,7 +668,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   };
 
   const guardarNotaHito = async () => {
-    try { await guardarControles(controles); } catch (err) { alert('Error al guardar la nota: ' + err.message); }
+    try { await guardarControles(controles); } catch (err) { notify('Error al guardar la nota: ' + err.message); }
   };
 
   // --- CONTROLES MENSUALES (bitácora clínica: qué se hizo en cada cita) ------
@@ -679,8 +680,8 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   const [editandoControl, setEditandoControl] = useState(null); // id en edición
 
   const agregarControlMensual = async () => {
-    if (!nuevoControl.fecha) { alert('Indica la fecha del control.'); return; }
-    if (!nuevoControl.procedimiento.trim()) { alert('Describe qué se hizo en este control.'); return; }
+    if (!nuevoControl.fecha) { notify('Indica la fecha del control.'); return; }
+    if (!nuevoControl.procedimiento.trim()) { notify('Describe qué se hizo en este control.'); return; }
     setSavingBitacora(true);
     try {
       const entrada = {
@@ -698,7 +699,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       setNuevoControl(controlVacio());
       setEditandoControl(null);
     } catch (err) {
-      alert('Error al guardar el control: ' + err.message);
+      notify('Error al guardar el control: ' + err.message);
     } finally {
       setSavingBitacora(false);
     }
@@ -722,7 +723,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       setBitacora(nueva);
       if (editandoControl === id) { setEditandoControl(null); setNuevoControl(controlVacio()); }
     } catch (err) {
-      alert('Error al eliminar el control: ' + err.message);
+      notify('Error al eliminar el control: ' + err.message);
     }
   };
 
@@ -732,13 +733,13 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
   const [nuevoAbono, setNuevoAbono] = useState(abonoVacio());
 
   const guardarConfigPagos = async (nuevosPagos) => {
-    try { await guardarColumnaOrto('pagos', nuevosPagos); } catch (err) { alert('Error al guardar los datos de pago: ' + err.message); }
+    try { await guardarColumnaOrto('pagos', nuevosPagos); } catch (err) { notify('Error al guardar los datos de pago: ' + err.message); }
   };
 
   const agregarAbono = async () => {
     const monto = parseFloat(nuevoAbono.monto);
-    if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return; }
-    if (!nuevoAbono.fecha) { alert('Indica la fecha del pago.'); return; }
+    if (!monto || monto <= 0) { notify('Ingresa un monto válido.'); return; }
+    if (!nuevoAbono.fecha) { notify('Indica la fecha del pago.'); return; }
     setSavingAbono(true);
     try {
       const entrada = {
@@ -755,7 +756,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       setNuevoAbono({ ...abonoVacio(), fecha: nuevoAbono.fecha });
       onPacienteActualizado?.(patient.id, { pagos: nuevosPagos });
     } catch (err) {
-      alert('Error al registrar el pago: ' + err.message);
+      notify('Error al registrar el pago: ' + err.message);
     } finally {
       setSavingAbono(false);
     }
@@ -769,7 +770,7 @@ function OrtodonciaDetalle({ patient, clinicaId, onPacienteActualizado }) {
       setPagos(nuevosPagos);
       onPacienteActualizado?.(patient.id, { pagos: nuevosPagos });
     } catch (err) {
-      alert('Error al eliminar el pago: ' + err.message);
+      notify('Error al eliminar el pago: ' + err.message);
     }
   };
 
@@ -1803,7 +1804,7 @@ export default function Ortodoncia({ clinicaId, setView, patient }) {
       setShowIniciar(false);
       setBusquedaIniciar('');
     } catch (err) {
-      alert('Error al iniciar el tratamiento: ' + err.message);
+      notify('Error al iniciar el tratamiento: ' + err.message);
     } finally {
       setIniciando(false);
     }

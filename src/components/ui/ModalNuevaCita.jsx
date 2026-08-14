@@ -13,6 +13,7 @@ import Modal from './Modal';
 import Button from './Button';
 import { findPatientByDoc, findPatientByName } from '../../utils/helpers';
 import { BD, DN, MU, LT, FUENTE_CAPTACION_GRUPOS } from '../../utils/constants';
+import { notify } from '../../utils/toast';
 
 const LABEL = {
   fontSize: 11.5, fontWeight: 600, color: MU,
@@ -63,12 +64,12 @@ export default function ModalNuevaCita({ onClose, onSave, listaPacientes, modo =
     e.preventDefault();
     if (modo === 'cita') {
       if (!form.paciente || !form.fecha || !form.hora) {
-        alert("Por favor completa al menos el Nombre, la Fecha y la Hora de la cita.");
+        notify("Por favor completa al menos el Nombre, la Fecha y la Hora de la cita.");
         return;
       }
     } else {
       if (!form.paciente || !form.doc) {
-        alert("Por favor completa al menos el Nombre y el DNI del paciente.");
+        notify("Por favor completa al menos el Nombre y el DNI del paciente.");
         return;
       }
     }

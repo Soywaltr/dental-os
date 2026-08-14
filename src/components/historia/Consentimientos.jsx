@@ -8,6 +8,7 @@ import { getPreamble } from '../../utils/helpers';
 import { supabase } from '../../supabase';
 import useSignedUrl from '../../utils/useSignedUrl';
 import { rutaPerfil } from '../../utils/storage';
+import { notify } from '../../utils/toast';
 
 const DOCS = [
   {
@@ -82,12 +83,12 @@ function DocModal({ doc, patient, clinica, nombreDoctor, onClose, onGuardar, sav
   const dniFirmaP = isMinor ? (patient?.apoderado_dni || 'Falta DNI') : patient?.doc;
 
   const guardar = () => {
-    if (!firmaP) { alert('El paciente o apoderado debe firmar antes de guardar.'); return; }
+    if (!firmaP) { notify('El paciente o apoderado debe firmar antes de guardar.'); return; }
     setSaving(true);
     setTimeout(() => {
       onGuardar(doc.id, { texto, firmaP, firmaDr, fecha, titulo: doc.title });
       setIsSaved(true); setSaving(false);
-      alert('✓ Consentimiento guardado en la historia clínica');
+      notify('✓ Consentimiento guardado en la historia clínica');
     }, 500);
   };
 
