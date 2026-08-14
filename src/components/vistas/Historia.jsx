@@ -21,7 +21,13 @@ import { notify } from '../../utils/toast';
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
 // ============================================================================
 function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots = 0, estadoDot = null }) {
-  const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? 0 : RH;
+  // La corona (donde se pinta el hallazgo) va pegada al PLANO OCLUSAL, no al
+  // número: para el maxilar superior eso es la mitad de ABAJO del ícono (la
+  // raíz apunta hacia arriba, hacia la encía); para el inferior es al revés.
+  // Antes cY quedaba invertido -- la corona se pintaba pegada al número
+  // (la encía) en el maxilar superior, al revés de los gráficos N°01/N°02
+  // de la propia NTS 150.
+  const W = w, CH = 20, RH = 22, TH = CH + RH, M = isMol(num), PM = isPM(num), cY = upper ? RH : 0;
   const conds = Object.entries(surfs).filter(([k, v]) => v && v !== 'normal' && k !== 'note' && k !== '_marcas');
   const domRaw = conds.length ? conds[0][1] : null;
   const dom = domRaw ? gt(domRaw) : null;
@@ -37,9 +43,13 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots =
 
   const isExtraer = Object.values(surfs).some(s => s === 'extraer');
 
+  // Raíz: apunta siempre hacia la encía (lejos del plano oclusal). Para el
+  // maxilar superior la encía está arriba (ápice en y=1); para el inferior,
+  // abajo (ápice en y=TH-1). Los molares se dibujan como dos raíces
+  // separadas (M), el resto como una sola.
   const rp = upper
-    ? M ? `M 2 ${CH} L ${W / 2 - 1} ${TH - 1} L ${W / 2 - 1} ${CH} Z M ${W / 2 + 1} ${CH} L ${W - 2} ${TH - 1} L ${W - 2} ${CH} Z` : `M 3 ${CH} L ${W / 2} ${TH - 1} L ${W - 3} ${CH} Z`
-    : M ? `M 2 ${RH} L ${W / 2 - 1} 1 L ${W / 2 - 1} ${RH} Z M ${W / 2 + 1} ${RH} L ${W - 2} 1 L ${W - 2} ${RH} Z` : `M 3 ${RH} L ${W / 2} 1 L ${W - 3} ${RH} Z`;
+    ? M ? `M 2 ${RH} L ${W / 2 - 1} 1 L ${W / 2 - 1} ${RH} Z M ${W / 2 + 1} ${RH} L ${W - 2} 1 L ${W - 2} ${RH} Z` : `M 3 ${RH} L ${W / 2} 1 L ${W - 3} ${RH} Z`
+    : M ? `M 2 ${CH} L ${W / 2 - 1} ${TH - 1} L ${W / 2 - 1} ${CH} Z M ${W / 2 + 1} ${CH} L ${W - 2} ${TH - 1} L ${W - 2} ${CH} Z` : `M 3 ${CH} L ${W / 2} ${TH - 1} L ${W - 3} ${CH} Z`;
 
   return (
     <svg viewBox={`0 0 ${W} ${TH}`} width={W} height={TH} onClick={onClick}
@@ -66,11 +76,11 @@ function ToothSVG({ num, upper, surfs = {}, active, onClick, w = 31, sarroDots =
       {dom?.mk === 'x' && <><line x1="2" y1="2" x2={W - 2} y2={TH - 2} stroke={markColor} strokeWidth="2" /><line x1={W - 2} y1="2" x2="2" y2={TH - 2} stroke={markColor} strokeWidth="2" /></>}
       {dom?.mk === 'ca' && <ellipse cx={W / 2} cy={cY + CH / 2} rx={(W - 4) / 2} ry={CH / 2 - 1} fill="none" stroke={markColor} strokeWidth="2" />}
       {dom?.mk === 'frac' && <line x1="3" y1={cY + 2} x2={W - 3} y2={cY + CH - 2} stroke={markColor} strokeWidth="2" />}
-      {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={markColor} strokeWidth="2" />}
+      {dom?.mk === 'root' && <line x1={W / 2} y1={upper ? 2 : CH + 3} x2={W / 2} y2={upper ? RH - 2 : TH - 2} stroke={markColor} strokeWidth="2" />}
       {/* 5.3.29 Espigo-muñón: línea en la raíz (como 'root') unida a un
           cuadrado en la corona representando el muñón. */}
       {dom?.mk === 'espigo' && <>
-        <line x1={W / 2} y1={upper ? CH + 3 : 2} x2={W / 2} y2={upper ? TH - 2 : RH - 2} stroke={markColor} strokeWidth="2" />
+        <line x1={W / 2} y1={upper ? 2 : CH + 3} x2={W / 2} y2={upper ? RH - 2 : TH - 2} stroke={markColor} strokeWidth="2" />
         <rect x={W / 2 - 4} y={cY + CH / 2 - 4} width="8" height="8" fill="none" stroke={markColor} strokeWidth="1.5" />
       </>}
       {conds.length > 1 && <circle cx={W - 5} cy={4} r="3.5" fill={P} />}
