@@ -10,7 +10,7 @@ import Icon from '../ui/Icon';
 import Stat from '../ui/Stat';
 import { BD, P, GL, MU, DN, LT, RJ, WA, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW, FUENTE_CAPTACION_GRUPOS } from '../../utils/constants';
 import { notify } from '../../utils/toast';
-import { eliminarPacienteCompleto } from '../../utils/pacientes';
+import { eliminarPacienteCompleto, siguienteNumHC } from '../../utils/pacientes';
 
 const horaNum = (str) => parseInt((str || '0:00').split(':')[0], 10);
 
@@ -390,6 +390,7 @@ export default function Agenda({ clinicaId, clinica }) {
         reason: selectedCita.reason, treatment: selectedCita.treatment,
         google_event_id: selectedCita.google_event_id, tag: 'nuevo',
         fuente_captacion: selectedCita.fuente_captacion || null,
+        num_hc: await siguienteNumHC(),
         clinica_id: clinicaId,
       }]);
       if (error) { notify('Error al crear el paciente: ' + error.message); setSavingEdit(false); return; }
@@ -415,12 +416,18 @@ export default function Agenda({ clinicaId, clinica }) {
       try {
         const startDateTime = `${selectedCita.fecha}T${selectedCita.hora_cita}:00-05:00`;
         const endDate = new Date(new Date(startDateTime).getTime() + horario.duracion_cita * 60 * 1000);
+        // Sólo se agrega el tratamiento si es un texto real escrito por la
+        // doctora -- antes caía a `selectedCita.reason`, que para un evento
+        // de Google sin tratamiento es el placeholder "Agendada desde Google
+        // Calendar" (ver fetchData): cada vez que se reguardaba esa cita sin
+        // llenar el tratamiento, ese placeholder se re-agregaba al título del
+        // evento (y, ya como paciente real, a su nombre), acumulándose.
         await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${selectedCita.google_event_id}`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${googleToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             start: { dateTime: startDateTime }, end: { dateTime: endDate.toISOString() },
-            summary: `${selectedCita.name} - ${selectedCita.treatment || selectedCita.reason}`
+            summary: selectedCita.treatment ? `${selectedCita.name} - ${selectedCita.treatment}` : selectedCita.name
           })
         });
       } catch (err) { console.error("Error Google Calendar", err); }

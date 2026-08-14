@@ -1,6 +1,22 @@
 // src/utils/pacientes.js
 import { supabase } from '../supabase';
 
+// N° de historia clínica autoincremental (4 dígitos, "0001", "0002", ...).
+// Misma lógica que ya usaban upsertPatient/importarPacientes en Expediente.jsx
+// -- se centraliza acá porque el insert de Agenda.jsx (al convertir un evento
+// de Google en paciente real) también necesita el próximo número.
+export async function siguienteNumHC() {
+  const { data: hcData } = await supabase
+    .from('pacientes').select('num_hc').not('num_hc', 'is', null)
+    .order('id', { ascending: false }).limit(1);
+  let next = 1;
+  if (hcData?.[0]?.num_hc) {
+    const match = hcData[0].num_hc.match(/\d+/);
+    if (match) next = parseInt(match[0], 10) + 1;
+  }
+  return String(next).padStart(4, '0');
+}
+
 // Borra al paciente Y, en cascada, su historia clínica, órdenes de
 // laboratorio, tratamiento de ortodoncia y el estado de asistencia de su
 // cita (si tenía una vinculada a Google Calendar).
