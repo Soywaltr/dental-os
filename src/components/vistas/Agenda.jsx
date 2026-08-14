@@ -38,6 +38,14 @@ const TIPO_CITA = {
 };
 const tipoDeCita = (p) => (p.isGoogleOnly ? 'google' : p.tag === 'nuevo' ? 'nuevo' : 'normal');
 
+// Minutos desde medianoche -> "HH:MM", para mostrar la hora de fin calculada
+// (no hay una hora de fin guardada por cita, ver layoutDayApts).
+const minToHora = (min) => {
+  const hh = Math.floor(min / 60) % 24;
+  const mm = min % 60;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+};
+
 // Alto fijo (no minHeight) de cada fila de hora en la grilla de Semana/Día:
 // la capa de bloques de cita se posiciona por matemática de píxeles sobre
 // esta misma grilla, así que necesita que cada hora ocupe siempre el mismo
@@ -805,7 +813,7 @@ export default function Agenda({ clinicaId, clinica }) {
                           >
                             <div style={{ fontSize: 12.5, fontWeight: 600, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                              <span style={{ fontSize: 11.5, color: MU, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{a.hora_cita}</span>
+                              <span style={{ fontSize: 11.5, color: MU, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{a.hora_cita} - {minToHora(a.endMin)}</span>
                               {(a.treatment || a.reason) && (
                                 <span style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {a.treatment || a.reason}</span>
                               )}
