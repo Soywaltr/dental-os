@@ -86,8 +86,15 @@ const C = {
 };
 
 // ─── REDUCER ──────────────────────────────────────────────────────────────────
+// Se restaura la última sección vista para que un F5 (o volver de otra
+// pestaña del navegador) no salte de vuelta a Dashboard -- mismo patrón que
+// ya usa Agenda.jsx para su semana/día.
+const vistaGuardada = () => {
+  try { return localStorage.getItem('app_view') || 'dashboard'; } catch { return 'dashboard'; }
+};
+
 const INIT = {
-  view: "dashboard", selectedPat: null,
+  view: vistaGuardada(), selectedPat: null,
   teeth: {}, teethEvolucion: {}, patientsList: [],
   globalSearch: "", notifCount: 3,
 };
@@ -1030,6 +1037,7 @@ export default function App() {
   const { session, loading, logout } = useSession();
   const { currentLevel: aalActual, nextLevel: aalSiguiente, loading: aalLoading } = useAAL(session);
   const [state, dispatch] = useReducer(reducer, INIT);
+  useEffect(() => { try { localStorage.setItem('app_view', state.view); } catch { /* no crítico */ } }, [state.view]);
   const { clinicaId, clinica, rol: clinicaRol, loading: clinicaLoading, refrescar: refrescarClinica } = useClinic();
   const { handleOAuthCallback: handleMetaWhatsAppCallback } = useMetaWhatsApp(clinicaId);
   // Compartido por el riel y el panel de secciones: el bucket es privado, así que

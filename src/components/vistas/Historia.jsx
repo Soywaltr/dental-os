@@ -16,6 +16,7 @@ import { ini, sc, getSurfs, gt, isMol, isPM, isBad, baseId, BAD_SUFFIX, toWhatsA
 import { BUCKET, rutaFirma, rutaImagenPaciente, rutaDesdeUrl, firmar } from '../../utils/storage';
 import useResponsive from '../../utils/useResponsive';
 import { notify } from '../../utils/toast';
+import usePersisted from '../../utils/usePersisted';
 
 // ============================================================================
 // 1. COMPONENTE TOOTHSVG (Corregido .g)
@@ -171,8 +172,8 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
   const [act, setAct] = useState('caries');
   const [sel, setSel] = useState(null);
   const [specs, setSpecs] = useState('');
-  const [mode, setMode] = useState('inicial');
-  const [showP, setShowP] = useState(true);
+  const [mode, setMode] = usePersisted('odontograma_mode', 'inicial');
+  const [showP, setShowP] = usePersisted('odontograma_showP', true);
 
   const at = gt(act);
   const aw = 42;
@@ -432,7 +433,7 @@ function Odontograma({ patient, teeth, setTeeth, teethEvolucion, setTeethEvoluci
         {list.map((n, i) => {
           const marcas = currentTeeth[n]?._marcas || [];
           return (
-            <div key={n} style={{ width: w, minHeight: 14, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 1, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : 'none' }}>
+            <div key={n} style={{ width: w, height: 18, border: '0.5px solid #374151', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 1, overflow: 'hidden', background: sel === n ? `color-mix(in srgb, ${P} 13%, transparent)` : undefined, borderLeft: i === 8 && list.length === 16 ? '2px solid #374151' : '0.5px solid #374151' }}>
               {marcas.map(mId => {
                 const m = MARCAS_PIEZA.find(x => x.id === mId);
                 if (!m) return null;
@@ -840,7 +841,7 @@ export default function Historia({ patient, teeth, setTeeth, teethEvolucion, set
   const { isTablet, isNarrow } = useResponsive();
   const colsFormulario = isNarrow ? 1 : isTablet ? 2 : 3;
 
-  const [tab, setTab] = useState('filiacion');
+  const [tab, setTab] = usePersisted('historia_tab', 'filiacion');
   const [patData, setPatData] = useState(patient);
 
   useEffect(() => {

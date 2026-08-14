@@ -1,10 +1,11 @@
 // src/components/vistas/Config.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
 import useGoogleCalendar from '../../utils/useGoogleCalendar';
 import useMetaWhatsApp from '../../utils/useMetaWhatsApp';
 import { BD, DN, MU, P, RJ, WA, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
+import usePersisted from '../../utils/usePersisted';
 import Seguridad from './Seguridad';
 
 const TABS = [
@@ -29,7 +30,7 @@ const avisoErrorStyle = {
 };
 
 export default function Config({ clinicaId, clinicaRol }) {
-  const [tab, setTab] = useState('integraciones');
+  const [tab, setTab] = usePersisted('config_tab', 'integraciones');
 
   return (
     <div style={{ padding: 22, overflowY: 'auto', flex: 1 }}>

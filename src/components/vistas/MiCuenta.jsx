@@ -9,6 +9,7 @@ import Icon from '../ui/Icon';
 import { BD, DN, MU, MT, P, DEFAULT_HORARIO, GLASS_BG, GLASS_BLUR, GLASS_BORDER, GLASS_SHADOW } from '../../utils/constants';
 import { BUCKET, rutaPerfil, rutaFirma, rutaLogo, firmar, invalidarFirma } from '../../utils/storage';
 import { notify } from '../../utils/toast';
+import usePersisted from '../../utils/usePersisted';
 
 const TABS = [
   { id: 'perfil', lbl: 'Mi perfil' },
@@ -47,7 +48,7 @@ const enlaceArchivoStyle = {
 };
 
 export default function MiCuenta({ clinicaId, clinica, refrescarClinica }) {
-  const [tab, setTab] = useState('perfil');
+  const [tab, setTab] = usePersisted('mi_cuenta_tab', 'perfil');
 
   return (
     <div style={{ padding: 22, overflowY: 'auto', flex: 1 }}>
