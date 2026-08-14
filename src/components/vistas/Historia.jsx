@@ -1592,46 +1592,73 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
        {/* --- PESTAÑA ORTODONCIA --- */}
 
         {/* --- PESTAÑA FILIACIÓN --- */}
-        {tab === 'filiacion' && (
-          <div style={{ padding: '30px', overflowY: 'auto', height: '100%', boxSizing: 'border-box', background: MT }}>
-            {/* Antes maxWidth:1000 dejaba la tarjeta angosta y centrada con
-                grandes vacíos a los lados en una pantalla ancha (el Directorio
-                ya es de pantalla completa) -- ahora llena el contenedor, con
-                un tope generoso para que en monitores muy anchos no se estire
-                al infinito. */}
-            <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', boxSizing: 'border-box', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, borderRadius: '18px', border: GLASS_BORDER, overflow: 'hidden', padding: '35px', boxShadow: GLASS_SHADOW }}>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h2 style={{ margin: 0, color: DN, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em' }}>Datos Personales</h2>
-                <div>
-                  {!isEditingFiliacion ? (
-                    <button onClick={() => setIsEditingFiliacion(true)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#F5F5F5', color: MU, border: `1px solid ${BD}`, borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
-                      <Icon name="edit" size={14} /> Editar Campos
-                    </button>
-                  ) : (
-                    // Sin "Guardar Cambios" ni "Cancelar": los campos autoguardan
-                    // solos al escribir (ver el efecto de arriba), así que
-                    // "Listo" sólo cierra el modo edición -- no dispara una
-                    // persistencia aparte, ya está guardado de antes.
-                    <button onClick={() => setIsEditingFiliacion(false)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', minHeight: 44, fontWeight: 600, cursor: 'pointer', fontSize: '15px' }}>
-                      <Icon name="checkCircle" size={14} /> Listo
-                    </button>
-                  )}
+        {tab === 'filiacion' && (() => {
+          // Encabezado de cada grupo de campos: mismo lenguaje visual que ya
+          // usan Anamnesis/Examen clínico (título en mayúsculas, color P,
+          // borde inferior), con un ícono en una insignia circular para que
+          // cada grupo se distinga de un vistazo en vez de ser un solo bloque
+          // de 14 campos sin jerarquía.
+          const seccion = (icon, titulo, contenido) => (
+            <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 22 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18, paddingBottom: 10, borderBottom: `1px solid ${BD}` }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: `color-mix(in srgb, ${P} 12%, transparent)`, color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon name={icon} size={13} />
                 </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: P, textTransform: 'uppercase', letterSpacing: .3 }}>{titulo}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: '20px' }}>
+                {contenido}
+              </div>
+            </div>
+          );
+
+          return (
+          <div style={{ padding: '30px', overflowY: 'auto', height: '100%', boxSizing: 'border-box', background: MT }}>
+            {/* Antes era una sola tarjeta con los 14 campos en una sola
+                grilla plana -- ahora son varias tarjetas más chicas, cada una
+                con su propio grupo temático, igual que ya hacen Anamnesis y
+                Examen clínico en este mismo componente. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: '1400px', margin: '0 auto', boxSizing: 'border-box' }}>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', padding: '18px 22px', boxShadow: GLASS_SHADOW }}>
+                <h2 style={{ margin: 0, color: DN, fontSize: '20px', fontWeight: 600, letterSpacing: '-0.02em' }}>Datos Personales</h2>
+                {!isEditingFiliacion ? (
+                  <Button onClick={() => setIsEditingFiliacion(true)} style={{ padding: '10px 20px', minHeight: 44, fontSize: 14, gap: 7 }}>
+                    <Icon name="edit" size={14} /> Editar Campos
+                  </Button>
+                ) : (
+                  // Sin "Guardar Cambios" ni "Cancelar": los campos autoguardan
+                  // solos al escribir (ver el efecto de arriba), así que
+                  // "Listo" sólo cierra el modo edición -- no dispara una
+                  // persistencia aparte, ya está guardado de antes.
+                  <Button onClick={() => setIsEditingFiliacion(false)} style={{ padding: '10px 20px', minHeight: 44, fontSize: 14, gap: 7 }}>
+                    <Icon name="checkCircle" size={14} /> Listo
+                  </Button>
+                )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${colsFormulario}, 1fr)`, gap: '24px' }}>
+              {seccion('user', 'Identificación', <>
                 <div><label style={labelDoc}>Nombres y Apellidos</label><input disabled={!isEditingFiliacion} value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
                 <div><label style={labelDoc}>N° HC</label><input readOnly disabled value={editForm.num_hc || ''} placeholder="Autogenerado" style={{ ...inputDoc, background: '#F5F5F5', borderColor: 'transparent', cursor: 'not-allowed', fontWeight: 600, color: MU, fontVariantNumeric: 'tabular-nums' }} /></div>
                 <div><label style={labelDoc}>Sexo</label><select disabled={!isEditingFiliacion} value={editForm.sexo || ''} onChange={e => setEditForm({ ...editForm, sexo: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Mujer">Mujer</option><option value="Hombre">Hombre</option></select></div>
                 <div><label style={labelDoc}>Documento</label><div style={{ display: 'grid', gridTemplateColumns: '85px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.tipo_doc || ''} onChange={e => setEditForm({ ...editForm, tipo_doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="DNI">DNI</option><option value="CE">C.E.</option><option value="Pasaporte">Pasap.</option><option value="RUC">RUC</option></select><input disabled={!isEditingFiliacion} value={editForm.doc || ''} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
-                <div><label style={labelDoc}>Teléfono</label><div style={{ display: 'grid', gridTemplateColumns: '95px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.cod_pais || '+51'} onChange={e => setEditForm({ ...editForm, cod_pais: e.target.value })} style={{ ...inputDoc, padding: '9px 6px', background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}>{TODAS_NACIONES.map(n => <option key={n.n} value={n.c}>{n.b} {n.c}</option>)}</select><input disabled={!isEditingFiliacion} value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
-                <div><label style={labelDoc}>Email</label><input disabled={!isEditingFiliacion} value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
                 <div><label style={labelDoc}>F. nacimiento y Edad</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 70px', gap: '8px' }}><input disabled={!isEditingFiliacion} type="date" value={editForm.birthDate || ''} onChange={e => { const bDay = e.target.value; let calculatedAge = editForm.age; if (bDay) { const today = new Date(); const birth = new Date(bDay); calculatedAge = today.getFullYear() - birth.getFullYear(); } setEditForm({ ...editForm, birthDate: bDay, age: calculatedAge }); }} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /><input value={editForm.age || ''} readOnly placeholder="Edad" style={{ ...inputDoc, background: '#F5F5F5', textAlign: 'center', borderColor: 'transparent', fontVariantNumeric: 'tabular-nums' }} /></div></div>
                 <div><label style={labelDoc}>País de nacimiento</label><select disabled={!isEditingFiliacion} value={editForm.pais_nacimiento || ''} onChange={e => setEditForm({ ...editForm, pais_nacimiento: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option>{TODAS_NACIONES.map(n => <option key={n.n} value={n.n}>{n.b} {n.n}</option>)}</select></div>
                 <div><label style={labelDoc}>Ocupación</label><input disabled={!isEditingFiliacion} value={editForm.ocupacion || ''} onChange={e => setEditForm({ ...editForm, ocupacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-                <div style={{ gridColumn: 'span 2' }}><label style={labelDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+              </>)}
+
+              {seccion('phone', 'Contacto', <>
+                <div><label style={labelDoc}>Teléfono</label><div style={{ display: 'grid', gridTemplateColumns: '95px 1fr', gap: '8px' }}><select disabled={!isEditingFiliacion} value={editForm.cod_pais || '+51'} onChange={e => setEditForm({ ...editForm, cod_pais: e.target.value })} style={{ ...inputDoc, padding: '9px 6px', background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}>{TODAS_NACIONES.map(n => <option key={n.n} value={n.c}>{n.b} {n.c}</option>)}</select><input disabled={!isEditingFiliacion} value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div></div>
+                <div><label style={labelDoc}>Email</label><input disabled={!isEditingFiliacion} value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div style={{ gridColumn: colsFormulario > 1 ? 'span 2' : undefined }}><label style={labelDoc}>Dirección</label><input disabled={!isEditingFiliacion} value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="+ Agregar" style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+              </>)}
+
+              {seccion('activity', 'Datos clínicos', <>
                 <div><label style={labelDoc}>Grupo Sanguíneo</label><input disabled={!isEditingFiliacion} value={editForm.blood || ''} onChange={e => setEditForm({ ...editForm, blood: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+                <div><label style={labelDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
+              </>)}
+
+              {seccion('trendingUp', 'Captación', <>
                 <div><label style={labelDoc}>Fuente captación</label><select disabled={!isEditingFiliacion} value={editForm.fuente_captacion || ''} onChange={e => setEditForm({ ...editForm, fuente_captacion: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}>
                   <option value="">Seleccionar</option>
                   {FUENTE_CAPTACION_GRUPOS.map(g => (
@@ -1641,14 +1668,17 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
                   ))}
                 </select></div>
                 <div><label style={labelDoc}>Línea de negocio</label><select disabled={!isEditingFiliacion} value={editForm.linea_negocio || ''} onChange={e => setEditForm({ ...editForm, linea_negocio: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }}><option value="">Seleccionar</option><option value="Ortodoncia">Ortodoncia</option><option value="Rehabilitación">Rehabilitación</option><option value="Estética">Estética</option><option value="Endodoncia">Endodoncia</option><option value="Tratamiento integral">Tratamiento integral</option><option value="Odontopediatría">Odontopediatría</option></select></div>
-                <div><label style={labelDoc}>Alergias</label><input disabled={!isEditingFiliacion} value={editForm.allergies || ''} onChange={e => setEditForm({ ...editForm, allergies: e.target.value })} style={{ ...inputDoc, background: isEditingFiliacion ? LT : '#F5F5F5', borderColor: isEditingFiliacion ? BD : 'transparent' }} /></div>
-              </div>
+              </>)}
 
               {editForm.age < 18 && (
-                <div style={{ marginTop: '45px' }}>
-                  <h3 style={{ color: P, fontSize: '17px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Familiar / Apoderado <span style={{ fontSize: 12, fontWeight: 600, background: '#FEE2E2', color: RJ, padding: '4px 10px', borderRadius: '10px' }}>Requerido</span>
-                  </h3>
+                <div style={{ background: GLASS_BG, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: GLASS_BORDER, borderRadius: '14px', overflow: 'hidden', padding: 22 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: `color-mix(in srgb, ${P} 12%, transparent)`, color: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon name="users" size={13} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: P, textTransform: 'uppercase', letterSpacing: .3 }}>Familiar / Apoderado</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, background: '#FEE2E2', color: RJ, padding: '3px 9px', borderRadius: '999px' }}>Requerido</span>
+                  </div>
                   <div style={{ border: `1px solid ${BD}`, borderRadius: '14px', overflow: 'hidden' }}>
                     <div style={{ background: P, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '12px 20px' }}><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>Nombre</div><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>N° doc</div><div style={{ color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>Parentesco</div></div>
                     <div style={{ background: '#F5F5F5', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px', padding: '20px' }}>
@@ -1661,7 +1691,8 @@ const [periodontalDx, setPeriodontalDx] = useState('Ninguno'); // diagnóstico p
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* --- PESTAÑA ODONTOGRAMA --- */}
         {tab === 'odontograma' && (
