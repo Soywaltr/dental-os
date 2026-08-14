@@ -38,6 +38,62 @@ const TIPO_CITA = {
 };
 const tipoDeCita = (p) => (p.isGoogleOnly ? 'google' : p.tag === 'nuevo' ? 'nuevo' : 'normal');
 
+// Alto fijo (no minHeight) de cada fila de hora en la grilla de Semana/Día:
+// la capa de bloques de cita se posiciona por matemática de píxeles sobre
+// esta misma grilla, así que necesita que cada hora ocupe siempre el mismo
+// alto en vez de crecer con su contenido.
+const ROW_HEIGHT = 52;
+
+// Ubica los bloques de un día en columnas cuando se solapan en el tiempo
+// (mismo criterio visual que un calendario real: lado a lado, no apilados).
+// No hay hora de fin guardada por cita -- se usa `duracionMin` (la duración
+// de cita configurada en Ajustes) para calcular el rango real de cada una.
+const layoutDayApts = (apts, duracionMin) => {
+  const items = apts
+    .filter(a => a.hora_cita)
+    .map(a => {
+      const [hh, mm] = a.hora_cita.split(':').map(Number);
+      const startMin = hh * 60 + mm;
+      return { ...a, startMin, endMin: startMin + duracionMin };
+    })
+    .sort((x, y) => x.startMin - y.startMin);
+
+  // Columna: la primera que ya quedó libre (su última cita ya terminó antes
+  // de que esta empiece).
+  const colEnds = [];
+  items.forEach(it => {
+    let col = colEnds.findIndex(end => end <= it.startMin);
+    if (col === -1) { col = colEnds.length; colEnds.push(it.endMin); }
+    else { colEnds[col] = it.endMin; }
+    it.col = col;
+  });
+
+  // Grupo de solapados: mientras la siguiente cita empiece antes de que el
+  // grupo actual termine, sigue en el mismo grupo -- así el ancho de
+  // columna sólo se achica donde de verdad hay solapamiento, no en todo el
+  // día por una sola coincidencia de horario.
+  let grupo = [];
+  let finGrupo = -Infinity;
+  const grupos = [];
+  items.forEach(it => {
+    if (grupo.length > 0 && it.startMin >= finGrupo) {
+      grupos.push(grupo);
+      grupo = [];
+      finGrupo = -Infinity;
+    }
+    grupo.push(it);
+    finGrupo = Math.max(finGrupo, it.endMin);
+  });
+  if (grupo.length) grupos.push(grupo);
+
+  grupos.forEach(g => {
+    const totalCols = Math.max(...g.map(it => it.col)) + 1;
+    g.forEach(it => { it.totalCols = totalCols; });
+  });
+
+  return items;
+};
+
 // Asistencia: un evento de Google puede no tener fila en `pacientes` (ver
 // isGoogleOnly), así que el estado se guarda en su propia tabla
 // (estados_cita) keyeada por google_event_id -- toda cita, con o sin
@@ -640,95 +696,128 @@ export default function Agenda({ clinicaId, clinica }) {
               })}
             </div>
           ) : (
-            hours.map(h => {
-              const horaFila = parseInt(h, 10);
-              // ¿La línea de "ahora" cae dentro de esta fila? Si sí, se calcula
-              // a qué % de alto va, para que la línea quede en el minuto real y
-              // no pegada al borde de la hora.
-              const esFilaActual = ahora.getHours() === horaFila;
-              const pctMinuto = (ahora.getMinutes() / 60) * 100;
+            <div style={{ position: 'relative' }}>
+              {hours.map(h => {
+                const horaFila = parseInt(h, 10);
+                // ¿La línea de "ahora" cae dentro de esta fila? Si sí, se calcula
+                // a qué % de alto va, para que la línea quede en el minuto real y
+                // no pegada al borde de la hora.
+                const esFilaActual = ahora.getHours() === horaFila;
+                const pctMinuto = (ahora.getMinutes() / 60) * 100;
 
-              return (
-              <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},minmax(0, 1fr))`, borderBottom: `1px solid ${BD}`, minHeight: 52, position: 'relative' }}>
-                <div style={{ padding: '6px 9px', fontSize: 11.5, color: '#9AA1AC', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
+                return (
+                <div key={h} style={{ display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},minmax(0, 1fr))`, borderBottom: `1px solid ${BD}`, height: ROW_HEIGHT, position: 'relative' }}>
+                  <div style={{ padding: '6px 9px', fontSize: 11.5, color: '#9AA1AC', textAlign: 'right', background: LT, borderRight: `1px solid ${BD}`, fontVariantNumeric: 'tabular-nums' }}>{h}</div>
+                  {displayDays.map((d, di) => {
+                    const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
+                    const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const abierto = estaAbierto(d, horaFila);
+                    const esHoy = d.toDateString() === ahora.toDateString();
+                    const citasCelda = (weekApts[mapIndex] || []).filter(a => a.h === horaFila && a.fecha === targetDate);
+
+                    return (
+                      <div key={di} style={{
+                        borderLeft: `1px solid ${BD}`, padding: 4, height: ROW_HEIGHT,
+                        background: abierto ? undefined : RAYADO_CERRADO,
+                        position: 'relative', boxSizing: 'border-box',
+                      }}>
+                        {/* Línea de hora actual: sólo en la columna de hoy y sólo
+                            en la fila de la hora en curso. */}
+                        {esHoy && esFilaActual && (
+                          <div aria-hidden="true" style={{
+                            position: 'absolute', left: 0, right: 0, top: `${pctMinuto}%`,
+                            height: 2, background: RJ, zIndex: 3, pointerEvents: 'none',
+                          }}>
+                            <span style={{
+                              position: 'absolute', left: 0, top: -1, width: 7, height: 7,
+                              borderRadius: '50%', background: RJ, transform: 'translate(-3px, -2.5px)',
+                            }} />
+                          </div>
+                        )}
+
+                        {/* Celda vacía y abierta: crea una cita YA con esa fecha y
+                            hora. Antes había que abrir "Nueva cita" y volver a
+                            escribir a mano el día y la hora que ya se estaban
+                            mirando. El :hover lo pone .celda-libre en ui.css. */}
+                        {citasCelda.length === 0 && abierto && (
+                          <button
+                            className="celda-libre"
+                            onClick={() => abrirNuevaCitaEn(targetDate, h)}
+                            aria-label={`Agendar el ${targetDate} a las ${h}`}
+                            title={`Agendar a las ${h}`}
+                            style={{
+                              position: 'absolute', inset: 4,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: 'transparent', border: 'none',
+                              borderRadius: '10px', cursor: 'pointer',
+                              color: 'transparent', padding: 0,
+                            }}
+                          >
+                            <Icon name="plus" size={15} />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                );
+              })}
+
+              {/* Bloques de cita, en una capa superpuesta a la grilla de horas:
+                  se posicionan y se dimensionan por su hora/duración real (no por
+                  la fila de hora en la que empiezan), así una cita de 11:00 a
+                  12:00 llena esa hora completa en vez de un bloque de alto fijo
+                  como antes. Si dos citas se solapan, se acomodan lado a lado
+                  (mismo criterio que un calendario real) en vez de apilarse. */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                display: 'grid', gridTemplateColumns: `56px repeat(${displayDays.length},minmax(0, 1fr))`,
+                pointerEvents: 'none',
+              }}>
+                <div />
                 {displayDays.map((d, di) => {
-                  const mapIndex = view === 'Semana' ? di : d.getUTCDay() - 1;
                   const targetDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  const abierto = estaAbierto(d, horaFila);
-                  const esHoy = d.toDateString() === ahora.toDateString();
-                  const citasCelda = (weekApts[mapIndex] || []).filter(a => a.h === horaFila && a.fecha === targetDate);
+                  const apts = allApts.filter(a => a.fecha === targetDate && a.hora_cita);
+                  const laidOut = layoutDayApts(apts, horario.duracion_cita || 30);
 
                   return (
-                    <div key={di} style={{
-                      borderLeft: `1px solid ${BD}`, padding: 4, minHeight: 52,
-                      background: abierto ? undefined : RAYADO_CERRADO,
-                      position: 'relative',
-                    }}>
-                      {/* Línea de hora actual: sólo en la columna de hoy y sólo
-                          en la fila de la hora en curso. */}
-                      {esHoy && esFilaActual && (
-                        <div aria-hidden="true" style={{
-                          position: 'absolute', left: 0, right: 0, top: `${pctMinuto}%`,
-                          height: 2, background: RJ, zIndex: 3, pointerEvents: 'none',
-                        }}>
-                          <span style={{
-                            position: 'absolute', left: 0, top: -1, width: 7, height: 7,
-                            borderRadius: '50%', background: RJ, transform: 'translate(-3px, -2.5px)',
-                          }} />
-                        </div>
-                      )}
-
-                      {/* Celda vacía y abierta: crea una cita YA con esa fecha y
-                          hora. Antes había que abrir "Nueva cita" y volver a
-                          escribir a mano el día y la hora que ya se estaban
-                          mirando. El :hover lo pone .celda-libre en ui.css. */}
-                      {citasCelda.length === 0 && abierto && (
-                        <button
-                          className="celda-libre"
-                          onClick={() => abrirNuevaCitaEn(targetDate, h)}
-                          aria-label={`Agendar el ${targetDate} a las ${h}`}
-                          title={`Agendar a las ${h}`}
-                          style={{
-                            position: 'absolute', inset: 4,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'transparent', border: 'none',
-                            borderRadius: '10px', cursor: 'pointer',
-                            color: 'transparent', padding: 0,
-                          }}
-                        >
-                          <Icon name="plus" size={15} />
-                        </button>
-                      )}
-
-                      {citasCelda.map((a, ai) => {
-                        const tipo = TIPO_CITA[a.tipo] || TIPO_CITA.normal;
+                    <div key={di} style={{ position: 'relative' }}>
+                      {laidOut.map((a, ai) => {
+                        const hh = parseInt(a.hora_cita.split(':')[0], 10);
+                        if (hh < inicioH || hh > finH) return null;
+                        const tipo = TIPO_CITA[tipoDeCita(a)] || TIPO_CITA.normal;
+                        const top = ((a.startMin - inicioH * 60) / 60) * ROW_HEIGHT;
+                        const height = Math.max((a.endMin - a.startMin) / 60 * ROW_HEIGHT - 4, 22);
+                        const widthPct = 100 / a.totalCols;
                         return (
                           <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }}
                             className="bloque-cita"
                             style={{
+                              position: 'absolute', top, height,
+                              left: `calc(${widthPct * a.col}% + 2px)`,
+                              width: `calc(${widthPct}% - 4px)`,
                               background: tipo.tinte,
                               borderLeft: `3px solid ${tipo.borde}`,
-                              borderRadius: '10px',
-                              padding: '7px 10px', minHeight: 44, boxSizing: 'border-box',
-                              cursor: 'pointer', marginBottom: 4, position: 'relative', zIndex: 2,
+                              borderRadius: '8px',
+                              padding: '4px 8px', boxSizing: 'border-box', overflow: 'hidden',
+                              cursor: 'pointer', pointerEvents: 'auto', zIndex: 2,
                             }}
                           >
-                            <div style={{ fontSize: 12.5, fontWeight: 600, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.p}</div>
+                            <div style={{ fontSize: 12.5, fontWeight: 600, color: DN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
                               <span style={{ fontSize: 11.5, color: MU, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{a.hora_cita}</span>
-                              {a.t && (
-                                <span style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {a.t}</span>
+                              {(a.treatment || a.reason) && (
+                                <span style={{ fontSize: 11.5, color: MU, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {a.treatment || a.reason}</span>
                               )}
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                  )
+                  );
                 })}
               </div>
-              );
-            })
+            </div>
           )}
         </div>
       </div>
