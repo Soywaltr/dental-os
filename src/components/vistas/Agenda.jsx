@@ -259,37 +259,52 @@ export default function Agenda({ clinicaId, clinica }) {
           const timeMin = new Date(); timeMin.setDate(timeMin.getDate() - 30);
           const timeMax = new Date(); timeMax.setDate(timeMax.getDate() + 60);
 
-          const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}&singleEvents=true`, {
-            headers: { 'Authorization': `Bearer ${googleToken}` }
-          });
+          // Google pagina de a 250 eventos por página -- en una ventana de 90
+          // días con la agenda tan llena como la de este consultorio, eso se
+          // podía superar fácil, y los eventos de páginas siguientes (con o
+          // sin colorId) simplemente no se leían. Se recorren todas las
+          // páginas antes de seguir.
+          let gItems = [];
+          let pageToken = null;
+          do {
+            const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}&singleEvents=true&maxResults=250${pageToken ? `&pageToken=${pageToken}` : ''}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${googleToken}` } });
 
-          if (res.ok) {
-            const gData = await res.json();
-            (gData.items || []).forEach(gEvent => {
-              if (gEvent.start?.dateTime && gEvent.end?.dateTime) {
-                const min = (new Date(gEvent.end.dateTime) - new Date(gEvent.start.dateTime)) / 60000;
-                if (min > 0) duracionesMap[gEvent.id] = min;
+            if (!res.ok) {
+              if (res.status === 401) {
+                // getToken() ya renovó el token antes de esta llamada — un 401
+                // aquí significa que el usuario revocó el acceso desde su
+                // cuenta de Google.
+                googleDisconnect();
               }
-              if (gEvent.colorId) coloresMap[gEvent.id] = gEvent.colorId;
-            });
-            externalGoogleApts = (gData.items || [])
-              .filter(gEvent => !data.some(dbCita => dbCita.google_event_id === gEvent.id))
-              .map(gEvent => {
-                if (!gEvent.start || !gEvent.start.dateTime) return null;
-                const dateParts = gEvent.start.dateTime.split('T');
-                const timeStr = dateParts[1].substring(0, 5);
-                return {
-                  id: gEvent.id, google_event_id: gEvent.id, isGoogleOnly: true,
-                  name: gEvent.summary || 'Cita Google', doc: '', phone: '',
-                  reason: gEvent.description || 'Agendada desde Google Calendar',
-                  fecha: dateParts[0], hora_cita: timeStr, tag: 'google'
-                };
-              }).filter(Boolean);
-          } else if (res.status === 401) {
-            // getToken() ya renovó el token antes de esta llamada — un 401 aquí
-            // significa que el usuario revocó el acceso desde su cuenta de Google.
-            googleDisconnect();
-          }
+              break;
+            }
+
+            const gData = await res.json();
+            gItems = gItems.concat(gData.items || []);
+            pageToken = gData.nextPageToken || null;
+          } while (pageToken);
+
+          gItems.forEach(gEvent => {
+            if (gEvent.start?.dateTime && gEvent.end?.dateTime) {
+              const min = (new Date(gEvent.end.dateTime) - new Date(gEvent.start.dateTime)) / 60000;
+              if (min > 0) duracionesMap[gEvent.id] = min;
+            }
+            if (gEvent.colorId) coloresMap[gEvent.id] = gEvent.colorId;
+          });
+          externalGoogleApts = gItems
+            .filter(gEvent => !data.some(dbCita => dbCita.google_event_id === gEvent.id))
+            .map(gEvent => {
+              if (!gEvent.start || !gEvent.start.dateTime) return null;
+              const dateParts = gEvent.start.dateTime.split('T');
+              const timeStr = dateParts[1].substring(0, 5);
+              return {
+                id: gEvent.id, google_event_id: gEvent.id, isGoogleOnly: true,
+                name: gEvent.summary || 'Cita Google', doc: '', phone: '',
+                reason: gEvent.description || 'Agendada desde Google Calendar',
+                fecha: dateParts[0], hora_cita: timeStr, tag: 'google'
+              };
+            }).filter(Boolean);
         } catch (e) { console.error("Error conectando a Google:", e); }
       }
 
