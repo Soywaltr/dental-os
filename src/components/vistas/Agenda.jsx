@@ -292,6 +292,10 @@ export default function Agenda({ clinicaId, clinica }) {
             }
             if (gEvent.colorId) coloresMap[gEvent.id] = gEvent.colorId;
           });
+          // TEMPORAL -- diagnóstico del color que Google realmente devuelve
+          // por evento, para ver por qué un color puesto a mano en Google
+          // (ej. Delia) no siempre se copia. Se quita en cuanto se resuelva.
+          console.log('[diagnóstico color] eventos de Google traídos:', gItems.length, gItems.map(g => ({ id: g.id, summary: g.summary, colorId: g.colorId ?? '(sin color propio)' })));
           externalGoogleApts = gItems
             .filter(gEvent => !data.some(dbCita => dbCita.google_event_id === gEvent.id))
             .map(gEvent => {
