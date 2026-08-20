@@ -38,6 +38,33 @@ const TIPO_CITA = {
 };
 const tipoDeCita = (p) => (p.isGoogleOnly ? 'google' : p.tag === 'nuevo' ? 'nuevo' : 'normal');
 
+// Paleta oficial de "colorId" de eventos de Google Calendar (11 colores,
+// estable desde hace años) -- así un bloque coloreado a mano en el
+// calendario real (ej. "Almuerzo" en naranja, una cita reprogramada en rosa)
+// se ve con ESE mismo color acá, en vez del esquema propio de 3 tintes.
+const GOOGLE_EVENT_COLORS = {
+  '1': '#7986CB', // Lavanda
+  '2': '#33B679', // Salvia
+  '3': '#8E24AA', // Uva
+  '4': '#E67C73', // Flamenco
+  '5': '#F6BF26', // Plátano
+  '6': '#F4511E', // Mandarina
+  '7': '#039BE5', // Pavo real
+  '8': '#616161', // Grafito
+  '9': '#3F51B5', // Arándano
+  '10': '#0B8043', // Albahaca
+  '11': '#D50000', // Tomate
+};
+
+// Si el evento tiene un color asignado a mano en Google Calendar, se copia
+// ese color (mismo tratamiento de tinte suave + borde que ya usan los otros
+// tipos). Si no, se cae al esquema de 3 tintes de siempre.
+const coloresDeCita = (a) => {
+  const hex = a.google_color_id && GOOGLE_EVENT_COLORS[a.google_color_id];
+  if (hex) return { tinte: `color-mix(in srgb, ${hex} 16%, #FFFFFF)`, borde: hex };
+  return TIPO_CITA[tipoDeCita(a)] || TIPO_CITA.normal;
+};
+
 // Minutos desde medianoche -> "HH:MM", para mostrar la hora de fin calculada
 // (no hay una hora de fin guardada por cita, ver layoutDayApts).
 const minToHora = (min) => {
@@ -220,6 +247,12 @@ export default function Agenda({ clinicaId, clinica }) {
       // seguir mostrando su duración real, no la duración por defecto de la
       // clínica.
       let duracionesMap = {};
+      // colorId real de cada evento (ver GOOGLE_EVENT_COLORS) -- igual que la
+      // duración, se guarda para TODOS los eventos traídos, no sólo los que
+      // aún no tienen fila en `pacientes`, porque una cita ya convertida en
+      // paciente real sigue vinculada a su evento y debe seguir mostrando el
+      // color que tiene en el calendario real.
+      let coloresMap = {};
       const googleToken = googleConnected ? await getToken() : null;
       if (googleToken) {
         try {
@@ -237,6 +270,7 @@ export default function Agenda({ clinicaId, clinica }) {
                 const min = (new Date(gEvent.end.dateTime) - new Date(gEvent.start.dateTime)) / 60000;
                 if (min > 0) duracionesMap[gEvent.id] = min;
               }
+              if (gEvent.colorId) coloresMap[gEvent.id] = gEvent.colorId;
             });
             externalGoogleApts = (gData.items || [])
               .filter(gEvent => !data.some(dbCita => dbCita.google_event_id === gEvent.id))
@@ -276,6 +310,7 @@ export default function Agenda({ clinicaId, clinica }) {
           estado: meta?.estado || 'pendiente',
           fuente_captacion: p.isGoogleOnly ? (meta?.fuente_captacion || '') : p.fuente_captacion,
           duracion_min: (p.google_event_id && duracionesMap[p.google_event_id]) || horario.duracion_cita || 30,
+          google_color_id: (p.google_event_id && coloresMap[p.google_event_id]) || null,
         };
       });
       setAllApts(combinedData);
@@ -701,7 +736,7 @@ export default function Agenda({ clinicaId, clinica }) {
                         (datos crudos), no de `weekApts`, que es donde se
                         precalcula `.tipo`. */}
                     {apts.map((a, ai) => {
-                      const tipo = TIPO_CITA[tipoDeCita(a)];
+                      const tipo = coloresDeCita(a);
                       return (
                         <div key={ai} onClick={() => { setSelectedCita(a); setShowEditModal(true); }}
                           className="bloque-cita"
@@ -810,7 +845,7 @@ export default function Agenda({ clinicaId, clinica }) {
                       {laidOut.map((a, ai) => {
                         const hh = parseInt(a.hora_cita.split(':')[0], 10);
                         if (hh < inicioH || hh > finH) return null;
-                        const tipo = TIPO_CITA[tipoDeCita(a)] || TIPO_CITA.normal;
+                        const tipo = coloresDeCita(a);
                         const top = ((a.startMin - inicioH * 60) / 60) * ROW_HEIGHT;
                         const height = Math.max((a.endMin - a.startMin) / 60 * ROW_HEIGHT - 4, 22);
                         const widthPct = 100 / a.totalCols;
